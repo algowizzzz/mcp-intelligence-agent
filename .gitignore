@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+ENV/
+
+# Environment & secrets
+.env
+*.env.local
+*.env.*.local
+
+# Test artifacts
+test_screenshots/
+.pytest_cache/
+*.log
+
+# SAJHA server internals
+sajhamcpserver/venv/
+sajhamcpserver/.venv/
+sajhamcpserver/logs/
+sajhamcpserver/__pycache__/
+sajhamcpserver/**/__pycache__/
+sajhamcpserver/*.log
+sajhamcpserver/.env
+
+# SQLite checkpoints
+*.db
+*.sqlite
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
