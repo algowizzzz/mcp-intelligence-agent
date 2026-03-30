@@ -23,6 +23,25 @@ async def _get_token() -> str:
         return _sajha_token
 
 
+_MAX_TOOL_OUTPUT_CHARS = 12_000  # ~3k tokens per tool — keeps accumulated results well within context
+
+
+def _truncate_result(result: dict, tool_name: str) -> dict:
+    """Truncate oversized tool results before they enter the LangGraph checkpoint."""
+    serialised = json.dumps(result)
+    if len(serialised) <= _MAX_TOOL_OUTPUT_CHARS:
+        return result
+    # Return a trimmed JSON string with a clear truncation notice
+    truncated = serialised[:_MAX_TOOL_OUTPUT_CHARS]
+    # Close the JSON cleanly enough for the LLM to parse what's there
+    return {
+        '_truncated': True,
+        '_tool': tool_name,
+        '_note': f'Output truncated from {len(serialised):,} to {_MAX_TOOL_OUTPUT_CHARS:,} chars to stay within context limits.',
+        'data': truncated,
+    }
+
+
 async def _call_sajha(tool_name: str, args: dict) -> dict:
     global _sajha_token
     token = await _get_token()
@@ -35,7 +54,8 @@ async def _call_sajha(tool_name: str, args: dict) -> dict:
                 _sajha_token = None
                 return await _call_sajha(tool_name, args)
             r.raise_for_status()
-            return r.json()['result']
+            result = r.json()['result']
+            return _truncate_result(result, tool_name)
     except httpx.TimeoutException:
         return {'error': f'{tool_name} timed out after 30s'}
     except httpx.HTTPStatusError as e:

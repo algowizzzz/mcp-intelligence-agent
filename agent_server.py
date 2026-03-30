@@ -1,7 +1,8 @@
 import os, json, uuid
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from agent.agent import agent
@@ -13,9 +14,28 @@ _cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:8080,http://127.0.0.
 app.add_middleware(CORSMiddleware,
     allow_origins=_cors_origins,
     allow_origin_regex=r'https://.*\.vercel\.app',
-    allow_methods=['POST', 'OPTIONS'],
-    allow_headers=['Content-Type'],
+    allow_methods=['GET', 'POST', 'OPTIONS'],
+    allow_headers=['Content-Type', 'Authorization'],
 )
+
+# API key auth — keys are a comma-separated list in AGENT_API_KEYS env var.
+# If AGENT_API_KEYS is unset or empty, auth is disabled (local dev mode).
+_raw_keys = os.getenv('AGENT_API_KEYS', '')
+_VALID_KEYS: set[str] = {k.strip() for k in _raw_keys.split(',') if k.strip()} if _raw_keys else set()
+
+_bearer = HTTPBearer(auto_error=False)
+
+def require_api_key(creds: HTTPAuthorizationCredentials | None = Depends(_bearer)):
+    if not _VALID_KEYS:
+        return  # auth disabled
+    if creds is None or creds.credentials not in _VALID_KEYS:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid or missing API key')
+
+
+@app.get('/health')
+async def health():
+    return {'status': 'ok'}
+
 
 class RunRequest(BaseModel):
     query: str
@@ -23,7 +43,7 @@ class RunRequest(BaseModel):
     resume: str | None = None
 
 @app.post('/api/agent/run')
-async def run_agent(req: RunRequest):
+async def run_agent(req: RunRequest, _: None = Depends(require_api_key)):
     thread_id = req.thread_id or str(uuid.uuid4())
     config = {'configurable': {'thread_id': thread_id}}
 

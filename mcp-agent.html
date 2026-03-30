@@ -1427,6 +1427,7 @@
     var COST_PER_M_INPUT  = 3.00;
     var COST_PER_M_OUTPUT = 15.00;
     var API_URL = window.MCP_API_URL || 'http://localhost:8000/api/agent/run';
+    var FRONTEND_API_KEY = window.FRONTEND_API_KEY || '';
 
     var _threadId      = null;
     var _activeReader  = null;
@@ -2677,6 +2678,25 @@
     }
 
     function onDone() {
+      // If no tools were called and synthesis is empty, the agent answered directly.
+      // Move the reasoning text to synthesis so it shows in the response bubble, not the thinking section.
+      var noToolsUsed = Object.keys(_toolDataStore).length === 0;
+      if (noToolsUsed && _currentReasoning.trim() && !_currentSynthesis.trim()) {
+        _currentSynthesis = _currentReasoning;
+        _currentReasoning = '';
+        // Hide reasoning bubble
+        if (_currentAgentMsg) {
+          var rb = _currentAgentMsg.querySelector('.reasoning-bubble');
+          if (rb) rb.style.display = 'none';
+          _reasoningDone = true;
+          // Render into synthesis div
+          var sd = _currentAgentMsg.querySelector('.synthesis');
+          if (sd) {
+            sd.style.display = '';
+            sd.innerHTML = parseMarkdown(_currentSynthesis);
+          }
+        }
+      }
       finishReasoning();
       finishSynthesis();
 
@@ -2770,9 +2790,12 @@
 
       var body = JSON.stringify({ query: q, thread_id: _threadId || '' });
 
+      var reqHeaders = { 'Content-Type': 'application/json' };
+      if (FRONTEND_API_KEY) reqHeaders['Authorization'] = 'Bearer ' + FRONTEND_API_KEY;
+
       fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: reqHeaders,
         body: body
       }).then(function(res) {
         if (!res.ok) throw new Error('Server error: ' + res.status);
