@@ -86,6 +86,7 @@ async def run_agent(req: RunRequest, _: None = Depends(require_api_key)):
         try:
             inp = ({'messages': [{'role': 'user', 'content': req.query}]}
                    if not req.resume else {'resume': req.resume})
+            full_text = []
             async for event in agent.astream_events(inp, config=config, version='v2'):
                 t = event['event']
                 if t == 'on_chat_model_stream':
@@ -94,12 +95,15 @@ async def run_agent(req: RunRequest, _: None = Depends(require_api_key)):
                     if hasattr(chunk, 'content'):
                         content = chunk.content
                         if isinstance(content, str) and content:
+                            full_text.append(content)
                             yield f"data: {json.dumps({'type': 'text', 'text': content})}\n\n"
                         elif isinstance(content, list):
                             for block in content:
                                 if isinstance(block, dict) and block.get('type') == 'text' and block.get('text'):
+                                    full_text.append(block['text'])
                                     yield f"data: {json.dumps({'type': 'text', 'text': block['text']})}\n\n"
                                 elif hasattr(block, 'text') and block.text:
+                                    full_text.append(block.text)
                                     yield f"data: {json.dumps({'type': 'text', 'text': block.text})}\n\n"
                 elif t == 'on_tool_start':
                     yield f"data: {json.dumps({'type': 'tool_start', 'name': event['name'], 'input': event['data'].get('input', {}), 'run_id': event['run_id']})}\n\n"
@@ -122,6 +126,20 @@ async def run_agent(req: RunRequest, _: None = Depends(require_api_key)):
                             usage = um if isinstance(um, dict) else dict(um)
                     if usage:
                         yield f"data: {json.dumps({'type': 'usage', 'usage': usage})}\n\n"
+            # Canvas envelope detection
+            import json as _json
+            assembled = ''.join(full_text).strip()
+            if assembled.startswith('{') and assembled.endswith('}'):
+                try:
+                    envelope = _json.loads(assembled)
+                    if 'summary' in envelope and 'canvas' in envelope:
+                        canvas = envelope['canvas']
+                        # Re-emit as structured canvas events instead of raw text
+                        # (The text was already streamed — nothing to suppress now,
+                        #  but emit the structured events for the frontend router)
+                        yield f"data: {_json.dumps({'type': 'canvas', 'title': canvas.get('title','Document'), 'content': canvas.get('content',''), 'canvas_type': canvas.get('type','report')})}\n\n"
+                except Exception:
+                    pass
             yield 'data: [DONE]\n\n'
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"

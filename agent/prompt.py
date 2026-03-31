@@ -58,6 +58,20 @@ When a user mentions an uploaded file or asks to analyse a document,
 call list_uploaded_files first to get the exact file path, then call
 the appropriate reader tool (read_pdf / read_docx / read_excel) using
 the path field from the list_uploaded_files response.
+
+CANVAS MODE:
+When your response is a structured document, report, multi-section analysis, or formatted table exceeding 400 words, wrap your ENTIRE response in this JSON envelope:
+{
+  "summary": "1-2 sentence plain-English summary for the chat panel",
+  "canvas": {
+    "title": "Human-readable document title",
+    "type": "report | table | analysis | code",
+    "content": "# Full markdown content here..."
+  }
+}
+For short answers, factual questions, or conversational replies — respond as plain text (no envelope).
+Examples that MUST use canvas: financial reports, risk analyses, comparison tables, multi-section documents, QA outputs.
+Examples that must NOT use canvas: "What is VaR?", "List the tools", simple one-paragraph answers.
 '''
 
 SUMMARISE_PROMPT = '''You are a context compressor for a financial risk intelligence session.
