@@ -141,21 +141,38 @@ class BaseMCPTool(ABC):
         """
         if not self.enabled:
             raise RuntimeError(f"Tool is disabled: {self.name}")
-        
+
         # Validate arguments
         self.validate_arguments(arguments)
-        
+
         # Track execution
         start_time = datetime.now()
         try:
             result = self.execute(arguments)
             execution_time = (datetime.now() - start_time).total_seconds()
-            
+
+            # Response size guardrail
+            import json as _json
+            try:
+                size = len(_json.dumps(result))
+                if size > 100_000:
+                    result = {'success': False, 'error': f'Response too large ({size//1024}KB). Use a more specific query — specify a period, metric, or form_type to narrow the scope.', '_size_kb': size//1024}
+                elif size > 50_000:
+                    # Truncate array fields
+                    for key, val in result.items():
+                        if isinstance(val, list) and len(val) > 20:
+                            original_count = len(val)
+                            result[key] = val[:20]
+                            result['_truncated'] = True
+                            result['_original_count'] = original_count
+            except Exception:
+                pass
+
             # Update metrics
             self._execution_count += 1
             self._last_execution = datetime.now()
             self._total_execution_time += execution_time
-            
+
             self.logger.info(f"Tool executed successfully: {self.name} ({execution_time:.2f}s)")
             return result
             

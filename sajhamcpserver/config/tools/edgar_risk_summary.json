@@ -1,0 +1,30 @@
+{
+  "name": "edgar_risk_summary",
+  "implementation": "sajha.tools.impl.edgar_tavily_tools.EdgarRiskSummaryTool",
+  "description": "Extract and categorise risk factors from a company 10-K annual report. Can compare risks between two years to identify new or removed risks.",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "ticker": {"type": "string", "description": "Stock ticker symbol"},
+      "fiscal_year": {"type": "string", "description": "Fiscal year e.g. FY2024, 2024", "default": "latest"}
+    },
+    "required": ["ticker"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "ticker": {"type": "string"},
+      "risk_categories": {"type": "array"}
+    }
+  },
+  "metadata": {
+    "author": "Saad Ahmed",
+    "category": "EDGAR Intelligence",
+    "tags": ["edgar", "sec", "10-K", "risk factors", "annual report"],
+    "rateLimit": 20,
+    "cacheTTL": 600,
+    "copyright": "Copyright All Rights Reserved 2025-2030"
+  }
+}

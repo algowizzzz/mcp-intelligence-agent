@@ -1,0 +1,31 @@
+{
+  "name": "edgar_company_brief",
+  "implementation": "sajha.tools.impl.edgar_tavily_tools.EdgarCompanyBriefTool",
+  "description": "Get a comprehensive company brief: recent key financials (revenue, EPS, margins), latest filing info, and recent news. Use as the starting point for any new company analysis before drilling into specifics.",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "ticker": {"type": "string", "description": "Stock ticker symbol"}
+    },
+    "required": ["ticker"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "ticker": {"type": "string"},
+      "financials": {"type": "object"},
+      "latest_filing": {"type": "object"},
+      "recent_news": {"type": "array"}
+    }
+  },
+  "metadata": {
+    "author": "Saad Ahmed",
+    "category": "EDGAR Intelligence",
+    "tags": ["edgar", "sec", "company brief", "financials", "news", "snapshot"],
+    "rateLimit": 15,
+    "cacheTTL": 300,
+    "copyright": "Copyright All Rights Reserved 2025-2030"
+  }
+}

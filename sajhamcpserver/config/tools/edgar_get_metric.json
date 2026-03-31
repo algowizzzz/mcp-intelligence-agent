@@ -1,0 +1,33 @@
+{
+  "name": "edgar_get_metric",
+  "implementation": "sajha.tools.impl.edgar_metric_tools.EdgarGetMetricTool",
+  "description": "Get a specific financial metric (EPS, revenue, net income, etc.) for a company from SEC XBRL filings. Returns last N quarterly or annual records. Use for: numeric analyst queries like AAPL EPS last 4 quarters.",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "ticker": {"type": "string", "description": "Stock ticker symbol (e.g. AAPL, MSFT)"},
+      "metric": {"type": "string", "description": "Human-readable metric name: revenue, net income, eps, eps diluted, gross profit, operating income, total assets, total debt, cash, operating cash flow, capex, r&d, etc."},
+      "periods": {"type": "integer", "description": "Number of periods to return (default 4, max 20)", "default": 4, "minimum": 1, "maximum": 20},
+      "form_type": {"type": "string", "description": "Filing type: 10-Q (quarterly), 10-K (annual), or both", "enum": ["10-Q", "10-K", "both"], "default": "10-Q"}
+    },
+    "required": ["ticker", "metric"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "ticker": {"type": "string"},
+      "metric": {"type": "string"},
+      "records": {"type": "array"}
+    }
+  },
+  "metadata": {
+    "author": "Saad Ahmed",
+    "category": "EDGAR Intelligence",
+    "tags": ["edgar", "sec", "xbrl", "financial metrics", "eps", "revenue", "net income"],
+    "rateLimit": 60,
+    "cacheTTL": 300,
+    "copyright": "Copyright All Rights Reserved 2025-2030"
+  }
+}

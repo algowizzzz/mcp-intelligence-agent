@@ -1,0 +1,32 @@
+{
+  "name": "edgar_extract_section",
+  "implementation": "sajha.tools.impl.edgar_tavily_tools.EdgarExtractSectionTool",
+  "description": "Extract and summarise a specific section (MD&A, Risk Factors, Business, Guidance, Segment Revenue) from a 10-K or 10-Q filing. Returns structured text analysis. Use for qualitative analyst queries about management commentary, risks, or strategy.",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "ticker": {"type": "string", "description": "Stock ticker symbol"},
+      "section": {"type": "string", "description": "Section to extract", "enum": ["MD&A", "Risk_Factors", "Business", "Guidance", "Segment_Revenue", "Notes", "Audit"]},
+      "period": {"type": "string", "description": "Period hint e.g. Q1 2026, FY2024, latest", "default": "latest"}
+    },
+    "required": ["ticker", "section"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "section": {"type": "string"},
+      "ticker": {"type": "string"},
+      "key_points": {"type": "array"}
+    }
+  },
+  "metadata": {
+    "author": "Saad Ahmed",
+    "category": "EDGAR Intelligence",
+    "tags": ["edgar", "sec", "10-K", "10-Q", "MD&A", "risk factors", "section extraction"],
+    "rateLimit": 20,
+    "cacheTTL": 600,
+    "copyright": "Copyright All Rights Reserved 2025-2030"
+  }
+}

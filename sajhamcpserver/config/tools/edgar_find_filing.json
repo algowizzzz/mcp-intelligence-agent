@@ -1,0 +1,31 @@
+{
+  "name": "edgar_find_filing",
+  "implementation": "sajha.tools.impl.edgar_tavily_tools.EdgarFindFilingTool",
+  "description": "Find a specific SEC filing (10-K, 10-Q, 8-K) for a company. Returns filing URL, accession number, and filing date. Use this first when you need to access a specific filing document.",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "ticker": {"type": "string", "description": "Stock ticker symbol"},
+      "form_type": {"type": "string", "description": "Filing type", "enum": ["10-K", "10-Q", "8-K", "DEF14A"], "default": "10-K"},
+      "limit": {"type": "integer", "description": "Max filings to return (default 5)", "default": 5}
+    },
+    "required": ["ticker"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "ticker": {"type": "string"},
+      "filings": {"type": "array"}
+    }
+  },
+  "metadata": {
+    "author": "Saad Ahmed",
+    "category": "EDGAR Intelligence",
+    "tags": ["edgar", "sec", "filing", "10-K", "10-Q", "8-K"],
+    "rateLimit": 30,
+    "cacheTTL": 300,
+    "copyright": "Copyright All Rights Reserved 2025-2030"
+  }
+}

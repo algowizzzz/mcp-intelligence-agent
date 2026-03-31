@@ -1,0 +1,30 @@
+{
+  "name": "edgar_segment_analysis",
+  "implementation": "sajha.tools.impl.edgar_tavily_tools.EdgarSegmentAnalysisTool",
+  "description": "Get revenue breakdown by business segment (e.g. Apple: iPhone/Services/Mac/iPad/Wearables, or Microsoft: Cloud/Productivity/Gaming). Segment data is extracted from 10-Q/10-K filings.",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "ticker": {"type": "string", "description": "Stock ticker symbol"},
+      "period": {"type": "string", "description": "Period e.g. latest, Q1 2026", "default": "latest"}
+    },
+    "required": ["ticker"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "ticker": {"type": "string"},
+      "segments": {"type": "array"}
+    }
+  },
+  "metadata": {
+    "author": "Saad Ahmed",
+    "category": "EDGAR Intelligence",
+    "tags": ["edgar", "sec", "segment", "revenue breakdown", "business segments"],
+    "rateLimit": 20,
+    "cacheTTL": 600,
+    "copyright": "Copyright All Rights Reserved 2025-2030"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "edgar_earnings_brief",
+  "implementation": "sajha.tools.impl.edgar_tavily_tools.EdgarEarningsBriefTool",
+  "description": "Get a complete earnings brief for a company and quarter: key metrics, management commentary, guidance, and analyst reaction. Replaces a 5-tool chain for earnings queries like How did Apple do in Q1 2026?",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "ticker": {"type": "string", "description": "Stock ticker symbol"},
+      "period": {"type": "string", "description": "Quarter/period e.g. Q1 2026, Q3 FY2025, latest"}
+    },
+    "required": ["ticker", "period"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "ticker": {"type": "string"},
+      "period": {"type": "string"},
+      "key_metrics": {"type": "object"}
+    }
+  },
+  "metadata": {
+    "author": "Saad Ahmed",
+    "category": "EDGAR Intelligence",
+    "tags": ["edgar", "sec", "earnings", "quarterly results", "guidance", "analyst"],
+    "rateLimit": 15,
+    "cacheTTL": 600,
+    "copyright": "Copyright All Rights Reserved 2025-2030"
+  }
+}

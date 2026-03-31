@@ -1,0 +1,33 @@
+{
+  "name": "edgar_get_statements",
+  "implementation": "sajha.tools.impl.edgar_metric_tools.EdgarGetStatementsTool",
+  "description": "Get a complete financial statement (income statement, balance sheet, or cash flow statement) for a company. Returns all standard line items for a specific period. Use instead of fetching individual metrics one by one.",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "ticker": {"type": "string", "description": "Stock ticker symbol"},
+      "statement": {"type": "string", "description": "Statement type", "enum": ["income_statement", "balance_sheet", "cash_flow"]},
+      "periods": {"type": "integer", "description": "Number of periods (default 2)", "default": 2, "minimum": 1, "maximum": 8},
+      "form_type": {"type": "string", "description": "10-Q or 10-K", "enum": ["10-Q", "10-K"], "default": "10-Q"}
+    },
+    "required": ["ticker", "statement"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "ticker": {"type": "string"},
+      "statement": {"type": "string"},
+      "line_items": {"type": "array"}
+    }
+  },
+  "metadata": {
+    "author": "Saad Ahmed",
+    "category": "EDGAR Intelligence",
+    "tags": ["edgar", "sec", "xbrl", "income statement", "balance sheet", "cash flow"],
+    "rateLimit": 20,
+    "cacheTTL": 300,
+    "copyright": "Copyright All Rights Reserved 2025-2030"
+  }
+}

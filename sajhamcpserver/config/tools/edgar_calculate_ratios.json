@@ -1,0 +1,32 @@
+{
+  "name": "edgar_calculate_ratios",
+  "implementation": "sajha.tools.impl.edgar_metric_tools.EdgarCalculateRatiosTool",
+  "description": "Calculate financial ratios (gross margin, operating margin, net margin, FCF, revenue growth) for a company over multiple periods. Use for margin analysis, growth trends, and ratio comparisons.",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "ticker": {"type": "string", "description": "Stock ticker symbol"},
+      "ratios": {"type": "array", "items": {"type": "string"}, "description": "List of ratios: gross_margin, operating_margin, net_margin, fcf, revenue_growth_yoy"},
+      "periods": {"type": "integer", "description": "Number of periods (default 4)", "default": 4, "minimum": 1, "maximum": 12},
+      "form_type": {"type": "string", "enum": ["10-Q", "10-K"], "default": "10-Q"}
+    },
+    "required": ["ticker", "ratios"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "ticker": {"type": "string"},
+      "ratios": {"type": "array"}
+    }
+  },
+  "metadata": {
+    "author": "Saad Ahmed",
+    "category": "EDGAR Intelligence",
+    "tags": ["edgar", "sec", "xbrl", "ratios", "margins", "gross margin", "operating margin", "fcf"],
+    "rateLimit": 20,
+    "cacheTTL": 300,
+    "copyright": "Copyright All Rights Reserved 2025-2030"
+  }
+}
