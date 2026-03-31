@@ -7,10 +7,14 @@ import logging
 import csv
 import io
 import os
+import datetime as dt
 from pathlib import Path
 from flask import request, jsonify, make_response
 from datetime import datetime
+from werkzeug.utils import secure_filename
 from sajha.web.routes.base_routes import BaseRoutes
+
+ALLOWED_UPLOAD_EXTENSIONS = {'pdf', 'docx', 'xlsx', 'csv', 'txt'}
 
 
 class ApiRoutes(BaseRoutes):
@@ -549,3 +553,63 @@ class ApiRoutes(BaseRoutes):
             except Exception as e:
                 logging.error(f"Error exporting users: {e}")
                 return jsonify({'error': 'Failed to export users'}), 500
+
+        # ==================== File Upload Endpoint ====================
+        @app.route('/api/files/upload', methods=['POST'])
+        def upload_file():
+            """
+            File upload endpoint. Accepts multipart/form-data with a 'file' field.
+            Requires Bearer token authentication.
+            Supported types: pdf, docx, xlsx, csv, txt
+            """
+            # Authenticate request
+            headers = dict(request.headers)
+            is_auth, auth_context, auth_msg = self.auth_manager.authenticate_request(headers)
+            if not is_auth:
+                return jsonify({'success': False, 'error': 'UNAUTHORIZED', 'message': auth_msg or 'Unauthorized'}), 401
+
+            from sajha.core.properties_configurator import PropertiesConfigurator
+            props = PropertiesConfigurator()
+            uploads_dir = props.get('data.uploads_dir', './CCR_data/uploads')
+            max_size_mb = int(props.get('data.uploads_max_size_mb', '50'))
+
+            os.makedirs(uploads_dir, exist_ok=True)
+
+            if 'file' not in request.files:
+                return jsonify({'success': False, 'error': 'NO_FILE', 'message': 'No file provided.'}), 400
+
+            f = request.files['file']
+            if not f.filename:
+                return jsonify({'success': False, 'error': 'NO_FILE', 'message': 'No file selected.'}), 400
+
+            ext = f.filename.rsplit('.', 1)[-1].lower() if '.' in f.filename else ''
+            if ext not in ALLOWED_UPLOAD_EXTENSIONS:
+                return jsonify({'success': False, 'error': 'INVALID_TYPE',
+                                'message': f'Supported: {", ".join(sorted(ALLOWED_UPLOAD_EXTENSIONS))}',
+                                'allowed': list(ALLOWED_UPLOAD_EXTENSIONS)}), 400
+
+            safe_name = secure_filename(f.filename)
+            dest = os.path.join(uploads_dir, safe_name)
+
+            if os.path.exists(dest):
+                ts = dt.datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+                base, dot_ext = os.path.splitext(safe_name)
+                safe_name = f'{base}_{ts}{dot_ext}'
+                dest = os.path.join(uploads_dir, safe_name)
+
+            f.save(dest)
+            size = os.path.getsize(dest)
+
+            if size > max_size_mb * 1024 * 1024:
+                os.remove(dest)
+                return jsonify({'success': False, 'error': 'TOO_LARGE',
+                                'message': f'Max size is {max_size_mb}MB.', 'max_mb': max_size_mb}), 413
+
+            return jsonify({
+                'success': True,
+                'filename': safe_name,
+                'path': dest,
+                'size_bytes': size,
+                'uploaded_at': dt.datetime.utcnow().isoformat() + 'Z',
+                'file_type': ext
+            })

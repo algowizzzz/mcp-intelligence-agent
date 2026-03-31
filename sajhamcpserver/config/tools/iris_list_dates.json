@@ -1,0 +1,30 @@
+{
+  "name": "iris_list_dates",
+  "implementation": "sajha.tools.impl.iris_ccr_tools.IrisListDatesTool",
+  "description": "Discover available snapshot dates in the IRIS CCR dataset. ALWAYS call this first before any other IRIS tool to know which dates are valid. Returns dates[], count, and latest date.",
+  "version": "1.0.0",
+  "enabled": true,
+  "data_path": "${data.iris_combined_csv}",
+  "inputSchema": {
+    "type": "object",
+    "properties": {},
+    "required": []
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "dates": {"type": "array", "items": {"type": "string"}},
+      "count": {"type": "integer"},
+      "latest": {"type": "string"}
+    }
+  },
+  "metadata": {
+    "author": "Ashutosh Sinha",
+    "email": "ajsinha@gmail.com",
+    "category": "Risk Data",
+    "tags": ["iris", "ccr", "counterparty credit risk", "limits", "exposure"],
+    "rateLimit": 60,
+    "cacheTTL": 300,
+    "copyright": "Copyright All Rights Reserved 2025-2030"
+  }
+}

@@ -1,0 +1,27 @@
+SAJHA File Upload — list_uploaded_files Tool
+
+What this tool does:
+Lists all files in the SAJHA uploads folder with their full path, type, size, and upload time.
+
+When to call it:
+- Before any read_pdf, read_docx, or read_excel call — use the path field from the response
+- When user mentions "the file I uploaded", "the document I sent", or asks to analyse an uploaded file
+- When user says "analyse my report" or "summarise the document I uploaded"
+
+Call sequence:
+list_uploaded_files → read_pdf / read_docx / read_excel using the path field from the response
+
+What read tools to use:
+- .docx files: use read_docx tool with path from list_uploaded_files
+- .pdf files: use read_pdf tool with path from list_uploaded_files
+- .xlsx files: use read_excel tool with path from list_uploaded_files
+- .csv files: use read_csv tool with path from list_uploaded_files
+- .txt files: use read_text tool with path from list_uploaded_files
+
+If no files found:
+Tell the user no files have been uploaded yet and they can use the Upload button in the UI.
+
+Path handling:
+Always use the path field from list_uploaded_files — never construct paths manually.
+
+Supported types: pdf, docx, xlsx, csv, txt

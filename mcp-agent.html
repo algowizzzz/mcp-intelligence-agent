@@ -265,6 +265,13 @@
       position: relative;
     }
 
+    #uploadBanner {
+      flex-shrink: 0;
+      margin: 8px 16px 0 16px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
     /* ================================================================
        HEADER BAR
        ================================================================ */
@@ -1353,6 +1360,9 @@
         </div>
       </div>
 
+      <!-- Upload banner -->
+      <div id="uploadBanner" style="display:none"></div>
+
       <!-- Chat messages -->
       <div id="chat-container">
         <div id="chat-inner">
@@ -1375,6 +1385,10 @@
         <div id="input-inner">
           <div class="input-container">
             <textarea id="query-input" placeholder="Send a message" rows="1"></textarea>
+            <input type="file" id="fileInput" accept=".pdf,.docx,.xlsx,.csv,.txt" style="display:none">
+            <button onclick="document.getElementById('fileInput').click()" title="Upload file" style="background:transparent;border:none;cursor:pointer;padding:6px 8px;color:var(--text-secondary);display:flex;align-items:center;font-size:18px;line-height:1;border-radius:var(--radius-sm);transition:color var(--transition),background var(--transition);" onmouseover="this.style.color='var(--text-primary)';this.style.background='var(--bg-hover)';" onmouseout="this.style.color='var(--text-secondary)';this.style.background='transparent';">
+              &#128206;
+            </button>
             <button class="btn-send" id="send-btn" onclick="runAgent()" title="Send">
               <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z"/>
@@ -2877,6 +2891,59 @@
     }
 
     document.addEventListener('DOMContentLoaded', init);
+
+    /* ==============================================================
+       FILE UPLOAD
+       ============================================================== */
+    document.addEventListener('DOMContentLoaded', function() {
+      var fileInput = document.getElementById('fileInput');
+      if (fileInput) {
+        fileInput.addEventListener('change', async function(e) {
+          var file = e.target.files[0];
+          if (!file) return;
+          showUploadBanner('Uploading ' + file.name + '...', 'info');
+          var formData = new FormData();
+          formData.append('file', file);
+          // SAJHA server base URL — derived from API_URL (agent server is on 8000, SAJHA MCP on 3002)
+          var sajhaBase = window.SAJHA_BASE || 'http://localhost:3002';
+          try {
+            var headers = {};
+            if (FRONTEND_API_KEY) {
+              headers['Authorization'] = 'Bearer ' + FRONTEND_API_KEY;
+            }
+            var res = await fetch(sajhaBase + '/api/files/upload', {
+              method: 'POST',
+              headers: headers,
+              body: formData
+            });
+            var data = await res.json();
+            if (data.success) {
+              showUploadBanner('\u2705 ' + data.filename + ' uploaded \u2014 ask me to analyse it.', 'success');
+            } else {
+              showUploadBanner('\u274C Upload failed: ' + (data.message || 'Unknown error'), 'error');
+            }
+          } catch (err) {
+            showUploadBanner('\u274C Upload error: ' + err.message, 'error');
+          }
+          e.target.value = '';
+        });
+      }
+    });
+
+    function showUploadBanner(message, type) {
+      type = type || 'info';
+      var colours = {
+        info:    { bg: '#EEF4FB', border: '#2E75B6', text: '#1F3864' },
+        success: { bg: '#E2EFDA', border: '#1E7145', text: '#1E7145' },
+        error:   { bg: '#FFCCCC', border: '#9C0006', text: '#9C0006' }
+      };
+      var c = colours[type] || colours.info;
+      var banner = document.getElementById('uploadBanner');
+      if (!banner) return;
+      banner.textContent = message;
+      banner.style.cssText = 'display:block; padding:10px 16px; margin:0 0 8px 0; background:' + c.bg + '; border-left:4px solid ' + c.border + '; color:' + c.text + '; border-radius:4px; font-size:14px;';
+      if (type === 'success') setTimeout(function() { banner.style.display = 'none'; }, 6000);
+    }
   </script>
 </body>
 </html>

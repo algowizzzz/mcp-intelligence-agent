@@ -1,0 +1,28 @@
+Counterparty Intelligence Workflow — Agent Knowledge Base
+
+What this workflow does:
+Builds a full intelligence brief combining Tavily news (last 7 days) with live IRIS CCR data.
+Produces an executive brief with overall risk signal (GREEN / AMBER / RED).
+
+When to invoke it:
+- "Give me a full brief on RBC"
+- "What's the risk picture for TD?"
+- "Run a counterparty deep-dive on Goldman Sachs"
+- "Intelligence report for [counterparty name]"
+- "Full risk overview for [counterparty]"
+
+The 4 steps:
+Step 1 — News Intelligence: 4 Tavily queries covering general news, credit/regulatory events, earnings/performance, and stress/distress signals. All run in parallel.
+Step 2 — IRIS Data Pull: iris_list_dates → iris_search_counterparties → iris_counterparty_dashboard + iris_limit_breach_check + iris_exposure_trend (last 3 in parallel after search resolves).
+Step 3 — Integrated Analysis: Classifies news signals, summarises exposure, flags breaches, analyses trend, identifies news-vs-internal-data divergences.
+Step 4 — Executive Brief: Concise action-oriented summary with risk signal, key findings (referenced to sources/limit_keys), exposure snapshot, breach status, recommended actions.
+
+IRIS non-aggregation rule:
+Limits are NOT additive across levels. Never sum Product + Customer + Connection limits.
+Always report separately with limit_key.
+
+Output timing:
+Typical completion: 4 LLM calls + 6+ tool calls. All steps stream live to the UI.
+
+Required IRIS tools:
+iris_list_dates, iris_search_counterparties, iris_counterparty_dashboard, iris_limit_breach_check, iris_exposure_trend must be enabled and accessible.

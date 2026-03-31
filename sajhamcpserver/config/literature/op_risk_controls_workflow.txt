@@ -1,0 +1,37 @@
+Op Risk Controls Workflow — Agent Knowledge Base
+
+What this workflow does:
+Analyses a control description in 3 sequential LLM steps:
+Step 1: 5Ws Analysis — decompose control into Who/What/Where/When/Why
+Step 2: Design Effectiveness — assess whether control design adequately addresses the risk
+Step 3: Operational Effectiveness — assess whether control is executable and auditable in practice
+
+When to invoke it:
+- User asks to "analyse", "review", "assess", or "evaluate" a control description
+- "Is this a good control?"
+- "What are the gaps in this control?"
+- "Review this control for audit readiness"
+
+What it requires:
+At minimum: the control description text.
+Control ID, type, owner, and risk domain improve output quality but are optional.
+
+5Ws definition:
+- WHO: Who performs it, who is accountable, who is the recipient
+- WHAT: What specific action is taken, what evidence is produced
+- WHERE: What system, process, or location it operates in
+- WHEN: Frequency or trigger (event-based vs time-based)
+- WHY: What risk it mitigates, what the objective is
+
+Design effectiveness:
+Whether the control is structurally sound — right type, right coverage, produces evidence, has escalation path.
+
+Operational effectiveness:
+Whether the control can realistically be executed — ownership clarity, frequency feasibility, auditable evidence.
+
+Output format:
+Step 1 output feeds into Step 2. Steps 1+2 feed into Step 3.
+Final output is a complete analysis with overall rating (EFFECTIVE / PARTIALLY EFFECTIVE / INEFFECTIVE) and prioritised remediation plan (HIGH / MEDIUM / LOW).
+
+What it does NOT do:
+Does not access any internal systems or external data — operates entirely on the text provided.

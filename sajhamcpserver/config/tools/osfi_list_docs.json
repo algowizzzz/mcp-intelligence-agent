@@ -1,0 +1,25 @@
+{
+  "name": "osfi_list_docs",
+  "implementation": "sajha.tools.impl.osfi_tools.OsfiListDocsTool",
+  "description": "Lists all OSFI guideline documents available locally. Returns filename, path, guideline code, year, and size. Call this first before osfi_read_document or osfi_search_guidance to discover what documents are available.",
+  "version": "1.0.0",
+  "enabled": true,
+  "data_path": "${data.osfi_docs_dir}",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "file_type": {"type": "string", "enum": ["md", "all"], "description": "Default: md"},
+      "category": {"type": "string", "description": "Filter e.g. guideline, all"}
+    },
+    "required": []
+  },
+  "metadata": {
+    "author": "Ashutosh Sinha",
+    "email": "ajsinha@gmail.com",
+    "category": "Regulatory Intelligence",
+    "tags": ["osfi", "bsif", "regulatory", "canadian banking", "guidelines"],
+    "rateLimit": 30,
+    "cacheTTL": 300,
+    "copyright": "Copyright All Rights Reserved 2025-2030"
+  }
+}

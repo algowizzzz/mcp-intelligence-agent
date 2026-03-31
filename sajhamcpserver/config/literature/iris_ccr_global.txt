@@ -1,0 +1,163 @@
+IRIS CCR KNOWLEDGE BASE
+=======================
+Copyright All Rights Reserved 2025-2030, Ashutosh Sinha
+
+
+WHAT IS IRIS?
+-------------
+IRIS is the Internal CCR (Counterparty Credit Risk) limit and exposure management platform. It
+provides a daily snapshot-based view of credit limits, current exposures, and available headroom
+across all counterparties, products, and legal entities. Each row in the IRIS dataset represents
+the state of one limit record as of a specific snapshot date.
+
+
+WHAT IS COUNTERPARTY CREDIT RISK (CCR)?
+----------------------------------------
+CCR is the risk that a counterparty to a financial contract will default on its obligations before
+the final settlement of the contract's cash flows. Unlike traditional lending risk, CCR applies
+to bilateral derivative contracts (e.g., interest rate swaps, FX forwards) where the exposure
+can move in either direction. CCR encompasses pre-settlement risk, replacement cost risk, and
+potential future exposure (PFE).
+
+
+HIERARCHY OF LIMIT LEVELS
+--------------------------
+IRIS tracks exposure and limits at three independent levels:
+
+1. PRODUCT LEVEL
+   - The most granular level. Controls exposure for a specific product type (e.g., FX Forward,
+     Derivative Products, Interest Rate Products, Equity Products, Commodity Products) for a
+     given counterparty under a specific legal entity and facility.
+   - Columns: Product Limit, Product Exposure, Product Avail
+
+2. CUSTOMER LEVEL
+   - Aggregates exposure across all products for a given counterparty (Customer Code) under a
+     specific legal entity. Represents the total credit relationship at the customer level.
+   - Columns: Cust Limit, Cust Exposure, Cust Avail
+
+3. CONNECTION LEVEL
+   - The broadest level. Aggregates exposure across all legal entities and all products for a
+     connection group (group of related entities sharing a Connection Code). Used for group-level
+     credit control.
+   - Columns: Conn Limit, Conn Exposure, Conn Avail
+
+
+!!!!! CRITICAL NON-AGGREGATION RULE !!!!!
+-----------------------------------------
+LIMITS AT DIFFERENT LEVELS ARE PARALLEL, INDEPENDENT CONTROLS — NEVER SUM THEM TOGETHER.
+
+Product Limit + Customer Limit + Connection Limit MUST NOT be added.
+
+Each level represents a different risk dimension and control point. A transaction may be checked
+against all three simultaneously, but the limits are not additive. Always report each level
+separately with its own limit_key. Summing across levels would produce a meaningless and
+misleading number.
+
+Similarly, do NOT sum Product Limits across different facilities or legal entities for the same
+counterparty — each limit_key is an independent control.
+
+
+LIMITS vs EXPOSURE vs HEADROOM
+-------------------------------
+- LIMIT: The maximum permitted exposure for a given counterparty / product / legal entity.
+  Established by credit officers and approved through the credit process.
+
+- EXPOSURE: The current mark-to-market (MTM) or notional exposure on the date of the snapshot.
+  This is the actual risk amount outstanding.
+
+- HEADROOM (Avail): Headroom = Limit - Exposure. Positive headroom means capacity remains.
+  Negative headroom means the limit is BREACHED (exposure exceeds the approved limit).
+
+- BREACH: When Exposure > Limit (i.e., Avail is negative). Breaches require immediate escalation
+  and reporting to credit risk officers.
+
+
+COMPOSITE LIMIT KEY
+--------------------
+Each limit record is uniquely identified by a composite limit key:
+
+    limit_key = CustomerCode / FacilityID / LegalEntity / Product
+
+Example: "RBC / 76830 / BCMC / FX Forward"
+
+This key identifies exactly which limit record you are looking at. Always use the limit_key when
+reporting breach findings or limit details to avoid ambiguity.
+
+
+UEN / FACILITY ID
+------------------
+The Facility ID (also called UEN — Unique Entity Number in some contexts) is a numeric identifier
+assigned to each credit facility. It is specific to a counterparty-legal entity combination.
+Multiple products can share the same Facility ID if they are booked under the same facility.
+
+
+CSA AGREEMENT (Credit Support Annex)
+--------------------------------------
+A CSA (Credit Support Annex) is a legal document under the ISDA Master Agreement framework that
+governs collateral posting between two counterparties. If CSA Agreement = Y, the counterparty
+has a collateral agreement in place, which reduces net exposure by allowing margin calls.
+If CSA Agreement = N, there is no collateral support — the full exposure is at risk.
+
+
+NETTING AGREEMENT
+-----------------
+A Netting Agreement allows the firm to offset positive and negative mark-to-market values across
+multiple contracts with the same counterparty. If Netting Agreement = Y, exposures may be netted,
+which can significantly reduce the reported gross exposure. If Netting Agreement = N, exposures
+are computed on a gross basis.
+
+
+SNAPSHOT LOGIC
+--------------
+- The IRIS dataset is snapshot-based. Each row captures the state of a limit on a specific Date.
+- Dates are stored in YYYY-MM-DD format.
+- Always filter by Date before performing any analysis. The latest available date represents
+  the most current view of the book.
+- Trend analysis requires comparing the same limit_key across multiple snapshot dates.
+- Never interpolate between dates — only compare actual snapshot values.
+
+
+LEGAL ENTITIES
+--------------
+IRIS covers the following legal entities (booking entities):
+  BCMC  - Primary booking entity (most common)
+  BMO   - Bank of Montreal entity
+  BNBI  - Secondary entity
+  BOMI  - International entity
+  HARRIS BANK - US entity
+  BHIC  - Holding company entity
+  BMN   - Nordic entity
+  BCML  - Luxembourg entity
+  BLAC  - Asset management entity
+  BMMC  - Capital markets entity
+
+A counterparty may have limits under multiple legal entities simultaneously. Each legal entity
+is an independent booking entity with its own limits and exposures.
+
+
+SCALE AND PERFORMANCE GUIDANCE
+--------------------------------
+In production, the IRIS dataset contains approximately:
+  - 300,000+ rows per daily snapshot
+  - 5,000+ active counterparties
+  - Multiple products per counterparty per legal entity
+
+ALWAYS filter by Date first when querying. Failing to filter by date will cause full-table scans
+across multiple snapshots and will be extremely slow and memory-intensive.
+
+
+COUNTRY RATINGS
+---------------
+Country ratings follow S&P-style notation:
+  AAA — Top tier (e.g., CANADA)
+  AA  — High quality (e.g., USA)
+  A   — Upper medium grade (e.g., GERMANY)
+  BBB — Lower medium grade (e.g., SWITZERLAND)
+  BB  — Speculative (e.g., CAYMAN ISLANDS)
+  B and below — Highly speculative / distressed
+
+
+INTERNAL RATINGS
+----------------
+Customer Internal Rating is an integer from 1 (lowest quality / most risk) to 10 (highest quality
+/ lowest risk). Counterparties with rating <= 4 require enhanced monitoring and closer oversight.

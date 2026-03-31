@@ -1,0 +1,44 @@
+OSFI Tool Suite — Agent Knowledge Base
+
+What OSFI is:
+Office of the Superintendent of Financial Institutions — Canada's federal financial regulator for banks, insurance companies, and pension plans. OSFI issues binding guidelines that federally regulated financial institutions must comply with.
+
+Why these tools exist:
+OSFI guidelines are authoritative regulatory expectations. The agent uses them to answer compliance questions, compare controls against regulatory requirements, and monitor regulatory developments.
+
+CRITICAL — Document size warning:
+OSFI guidelines are very large — some exceed 1 million tokens. NEVER attempt to read a full document. Always search first to find the relevant section, then read only that chunk.
+
+Call sequence:
+1. osfi_list_docs — discover what documents are available
+2. osfi_search_guidance — find the relevant section by keyword
+3. osfi_read_document — read that specific chunk using char_offset from step 2
+4. If has_more=true and more context needed: call osfi_read_document again with next_char_offset
+
+osfi_list_docs — when to call:
+First call whenever user asks about OSFI guidelines, rules, or requirements. Returns available documents with paths.
+
+osfi_search_guidance — when to call:
+Before any osfi_read_document call. Use keywords like guideline code (B-13, E-23, CAR), topic (credit risk, liquidity, model risk, patch management), or specific regulatory terms.
+
+osfi_read_document — when to call:
+After osfi_search_guidance returns a char_offset. Always supply char_offset or chapter. Never call with filename only unless reading the introduction.
+
+osfi_fetch_announcements — when to call:
+When user asks about latest OSFI news, quarterly releases, upcoming guidance, or regulatory schedule.
+
+Key guidelines available locally:
+- CAR 2026: Capital Adequacy Requirements (risk-based capital ratios)
+- LAR 2026: Liquidity Adequacy Requirements (LCR, NSFR)
+- E-23 2027: Model Risk Management
+- B-10: Third-Party Risk Management
+- B-13: Technology and Cyber Risk Management
+- B-15: Climate Risk Management
+- B-20: Residential Mortgage Underwriting
+
+OSFI quarterly release cadence:
+OSFI publishes guidance on a quarterly schedule. Next release: April 14, 2026.
+
+Combining tools:
+osfi_read_document + op_risk_controls_workflow: read OSFI expectation then run controls analysis against it.
+osfi_fetch_announcements + tavily_domain_search: combine for comprehensive regulatory intelligence.

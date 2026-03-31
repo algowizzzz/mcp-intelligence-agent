@@ -1,0 +1,158 @@
+IRIS CCR TOOL ROUTING GUIDE
+============================
+Copyright All Rights Reserved 2025-2030, Ashutosh Sinha
+
+
+OVERVIEW
+--------
+There are 9 IRIS CCR tools. Two tools are mandatory first steps for any counterparty-specific
+query. The remaining 7 tools serve specific analytical purposes. Use this guide to select the
+correct tool and call sequence.
+
+
+MANDATORY CALL SEQUENCE FOR COUNTERPARTY-SPECIFIC QUERIES
+----------------------------------------------------------
+Step 1: iris_list_dates      — Discover which dates are in the dataset
+Step 2: iris_search_counterparties — Resolve the counterparty_code to use in subsequent calls
+Step 3: [specific tool]      — Perform the targeted query
+
+NEVER skip steps 1 and 2 for counterparty-specific queries. The counterparty_code must be
+confirmed before calling any limit, exposure, or breach tool.
+
+
+TOOL REFERENCE
+--------------
+
+1. iris_list_dates
+   Purpose  : Discover all available snapshot dates in the IRIS dataset.
+   Use when : ALWAYS call this first, before any other IRIS tool, to confirm valid dates.
+   Returns  : dates[] (sorted list of YYYY-MM-DD), count, latest date.
+   Params   : None required.
+   Notes    : Results are stable within a session. The "latest" field gives the most recent snapshot.
+
+2. iris_search_counterparties
+   Purpose  : Resolve a counterparty by partial name, exact code, or Facility ID / UEN.
+   Use when : Any time you need to look up a counterparty before querying limits or exposure.
+              Call this second, after iris_list_dates, for any counterparty-specific workflow.
+   Returns  : counterparties[] with Customer Code, Customer Name, rating, legal_entity,
+              facility_id, country, connection_code.
+   Params   : search_term (partial name/code), OR counterparty_code (exact), OR uen (facility ID).
+              At least one of these three is required. date defaults to latest.
+   Notes    : Use the returned Customer Code as counterparty_code in all downstream tools.
+
+3. iris_counterparty_dashboard
+   Purpose  : Get the full CCR picture for one counterparty — all products, all legal entities,
+              all 42 columns for a given snapshot date.
+   Use when : You need a comprehensive overview of a counterparty's credit exposure and limits.
+              Good for counterparty review meetings, credit monitoring, or initial triage.
+   Returns  : rows[] (full raw data), row_count, total_matched, filters_applied, date_used.
+   Params   : counterparty_code (required), date, uen, legal_entity, product, max_rows.
+   Notes    : Returns all columns including Cust Limit, Conn Limit, CSA, Netting fields.
+
+4. iris_limit_lookup
+   Purpose  : Pinpoint one or more specific limit records using the composite limit key
+              (counterparty / facility / legal_entity / product).
+   Use when : You know the specific limit you want and need precise limit, exposure, and headroom
+              values. Good for answering "what is the limit for RBC FX Forward under BCMC?"
+   Returns  : records[] each with limit_key, limit, exposure, headroom, currency, agreement,
+              cust_limit, conn_limit, internal_rating, date_used.
+   Params   : counterparty_code (required), date, facility_id, legal_entity, product.
+   Notes    : The more filters provided, the more targeted the result.
+
+5. iris_limit_breach_check
+   Purpose  : Check whether a specific counterparty is breaching any limits on a given date.
+              Checks product, customer, and connection levels independently.
+   Use when : You need to determine if a counterparty has exceeded any approved limits.
+              Use after iris_search_counterparties to confirm the counterparty_code.
+   Returns  : breaches[] each with limit_key, counterparty, product, level, limit, exposure,
+              overage, overage_pct, date_used. Also returns breach_count.
+   Params   : counterparty_code (required), date, legal_entity, product, level.
+   Notes    : level can be "product", "customer", or "connection". Omit level to check all three.
+              Remember: DO NOT sum breaches across levels — each is an independent control.
+
+6. iris_exposure_trend
+   Purpose  : Track one counterparty's exposure movement across multiple snapshot dates.
+              Used for drift analysis, escalating exposure monitoring, and trend reporting.
+   Use when : You need to understand how exposure has changed over time for a counterparty.
+              Examples: "Is RBC's FX Forward exposure growing?", "Show me JPM's trend since Jan."
+   Returns  : trend[] (date, limit_key, exposure, limit, headroom per date),
+              delta_first_to_last (net change), date_count.
+   Params   : counterparty_code (required), date_from (required), date_to (defaults to latest),
+              legal_entity, product, level (product/customer/connection, default: product).
+   Notes    : Returns actual snapshot values — no interpolation between dates.
+              Use product filter to isolate a specific product type.
+
+7. iris_multi_counterparty_comparison
+   Purpose  : Compare two or more counterparties side by side on limits, exposures, headroom,
+              and utilization percentage for a given snapshot date.
+   Use when : You need to rank or benchmark multiple counterparties. Examples: "Compare RBC,
+              TD, and BMO_CP" or "Show me GS vs JPM on FX Forward exposure."
+   Returns  : comparison[] each with limit_key, counterparty, counterparty_name, rating,
+              country, product, legal_entity, limit, exposure, headroom, utilization_pct.
+   Params   : counterparty_codes (required, list of 2+), date, legal_entity, product, group_by.
+   Notes    : group_by can be rating, country, legal_entity, or product. Minimum 2 counterparties.
+
+8. iris_portfolio_breach_scan
+   Purpose  : Portfolio-wide scan — finds ALL limit records in breach across the entire book
+              on a given date, across all counterparties simultaneously.
+   Use when : You need a book-wide view of all breaches. Examples: "Show me all breaches today",
+              "Scan for all counterparties breaching product limits by more than $5M."
+   Returns  : breaches[] with counterparty, counterparty_name, rating, country, legal_entity,
+              product, level, limit, exposure, overage, overage_pct. Also total_breaches,
+              total_overage.
+   Params   : date (required), min_overage (REQUIRED — prevents full-book dumps),
+              legal_entity, country, internal_rating, level.
+   IMPORTANT: min_overage is MANDATORY. Always ask the user to specify a minimum overage threshold
+              (e.g., $1M = 1000000) before calling this tool. Never call it with min_overage = 0
+              or without user confirmation of the threshold.
+
+9. iris_rating_screen
+   Purpose  : Portfolio-wide screen — filter and rank counterparties by internal rating band,
+              country rating, or minimum exposure level.
+   Use when : You need to identify all counterparties meeting certain risk criteria. Examples:
+              "Show me all counterparties rated 3 or below", "Screen for high-exposure BB-rated
+              country counterparties."
+   Returns  : counterparties[] each with limit_key, name, code, rating, country, country_rating,
+              legal_entity, product, exposure, headroom.
+   Params   : date (defaults to latest), min_rating, max_rating, country_rating, legal_entity,
+              country, min_exposure. All filters are optional — combine as needed.
+   Notes    : No counterparty_code required. This is a portfolio-wide screen.
+              Use min_exposure to filter out immaterial positions.
+
+
+COMMON WORKFLOWS
+----------------
+
+Workflow A — Single Counterparty Deep Dive:
+  1. iris_list_dates → confirm latest date
+  2. iris_search_counterparties → confirm counterparty_code
+  3. iris_counterparty_dashboard → get full picture
+  4. iris_limit_breach_check → check for breaches
+
+Workflow B — Trend Analysis:
+  1. iris_list_dates → confirm available dates
+  2. iris_search_counterparties → confirm counterparty_code
+  3. iris_exposure_trend → track exposure across date range
+
+Workflow C — Portfolio Breach Report:
+  1. iris_list_dates → confirm date to use
+  2. iris_portfolio_breach_scan → scan all counterparties (always confirm min_overage with user first)
+
+Workflow D — Peer Comparison:
+  1. iris_list_dates → confirm date
+  2. iris_search_counterparties → confirm each counterparty_code
+  3. iris_multi_counterparty_comparison → side-by-side view
+
+Workflow E — Credit Quality Screen:
+  1. iris_list_dates → confirm date
+  2. iris_rating_screen → filter by rating band or country rating
+
+
+IMPORTANT REMINDERS
+-------------------
+- Always use the Date returned by iris_list_dates. Never assume a date is valid.
+- Always use the Customer Code (not Customer Name) in downstream tool calls.
+- NEVER sum limits across levels (product + customer + connection). They are independent controls.
+- NEVER sum limits across different facilities for the same counterparty.
+- Always report each breach separately with its full limit_key.
+- For iris_portfolio_breach_scan, min_overage MUST be confirmed with the user before calling.

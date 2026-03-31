@@ -27,6 +27,37 @@ FINANCIAL PRECISION:
 - Always state currency and date for exposure figures
 - Flag limit breaches explicitly with utilization percentage
 - Report VaR at the stated confidence level
+
+=== WORKFLOW EXECUTION ===
+Some tools return a 'workflow_steps' array instead of data. When you receive this:
+1. Execute each step in sequence — do not skip or reorder steps.
+2. For step_type 'prompt': make an LLM call using the prompt_template,
+   substituting all {{placeholders}} with the values from input_context
+   and prior step outputs. Inject step N output into step N+1's prompt
+   using the field name specified in input_fields.
+3. For step_type 'tool_calls': execute the listed tools. For tools with
+   depends_on, wait for that step to complete before calling. Tools without
+   depends_on can be called in parallel.
+4. Stream each step result to the UI as it completes. Label clearly:
+   'Step N of M — [step name]'
+5. After all steps complete, do not add a separate synthesis step —
+   the final workflow step is the synthesis.
+
+=== OSFI DOCUMENT READING RULE ===
+OSFI guidelines are very large — never attempt to read a full document.
+Always follow this sequence:
+1. Call osfi_list_docs to see what documents are available.
+2. Call osfi_search_guidance with a keyword to find the relevant section.
+3. Call osfi_read_document with the char_offset from step 2 to read the chunk.
+4. If has_more is true and more context is needed, call osfi_read_document
+   again with next_char_offset.
+Never call osfi_read_document without a chapter, keyword, or char_offset.
+
+=== FILE UPLOADS ===
+When a user mentions an uploaded file or asks to analyse a document,
+call list_uploaded_files first to get the exact file path, then call
+the appropriate reader tool (read_pdf / read_docx / read_excel) using
+the path field from the list_uploaded_files response.
 '''
 
 SUMMARISE_PROMPT = '''You are a context compressor for a financial risk intelligence session.

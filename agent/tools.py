@@ -143,7 +143,11 @@ def _build_pydantic_model(tool_name: str, schema: dict):
             fields[name] = (ptype, Field(description=desc))
         else:
             ptype = Optional[ptype]
-            prop_default = prop.get('default', default)
+            # Always default to None for optional fields so _run can safely
+            # filter them out — avoids numeric defaults (0, 0.0) being sent
+            # to tools that treat 0 as a real filter value (e.g. internal_rating=0
+            # would incorrectly exclude all rows in breach scan tools).
+            prop_default = prop.get('default', None)
             fields[name] = (ptype, Field(default=prop_default, description=desc))
     if not fields:
         fields['input'] = (Optional[str], Field(default='', description='Tool input'))
