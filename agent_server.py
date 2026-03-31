@@ -42,17 +42,28 @@ async def health():
 @app.post('/api/files/upload')
 async def upload_file(file: UploadFile = File(...), _: None = Depends(require_api_key)):
     """Proxy file uploads to SAJHA — frontend only needs the agent API key."""
+    from agent.tools import _sajha_token as _tok
+    import agent.tools as _agent_tools
     try:
-        token = await _get_token()
         content = await file.read()
-        async with httpx.AsyncClient(timeout=30.0) as c:
-            r = await c.post(
-                f'{SAJHA_BASE}/api/files/upload',
-                headers={'Authorization': f'Bearer {token}'},
-                files={'file': (file.filename, content, file.content_type or 'application/octet-stream')},
-            )
-            r.raise_for_status()
-            return JSONResponse(content=r.json())
+
+        async def _do_upload(retry: bool = True):
+            token = await _get_token()
+            async with httpx.AsyncClient(timeout=30.0) as c:
+                r = await c.post(
+                    f'{SAJHA_BASE}/api/files/upload',
+                    headers={'Authorization': f'Bearer {token}'},
+                    files={'file': (file.filename, content,
+                                    file.content_type or 'application/octet-stream')},
+                )
+                if r.status_code == 401 and retry:
+                    # Token expired — clear cache and retry once (same as _call_sajha)
+                    _agent_tools._sajha_token = None
+                    return await _do_upload(retry=False)
+                r.raise_for_status()
+                return JSONResponse(content=r.json())
+
+        return await _do_upload()
     except httpx.HTTPStatusError as e:
         return JSONResponse(status_code=e.response.status_code,
                             content={'success': False, 'error': f'SAJHA returned {e.response.status_code}'})
