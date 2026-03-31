@@ -1,11 +1,13 @@
 import os, json, uuid
-from fastapi import FastAPI, Depends, HTTPException, status
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File
+from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from dotenv import load_dotenv
+import httpx
 from agent.agent import agent
+from agent.tools import _get_token, SAJHA_BASE
 
 load_dotenv()
 
@@ -35,6 +37,27 @@ def require_api_key(creds: HTTPAuthorizationCredentials | None = Depends(_bearer
 @app.get('/health')
 async def health():
     return {'status': 'ok'}
+
+
+@app.post('/api/files/upload')
+async def upload_file(file: UploadFile = File(...), _: None = Depends(require_api_key)):
+    """Proxy file uploads to SAJHA — frontend only needs the agent API key."""
+    try:
+        token = await _get_token()
+        content = await file.read()
+        async with httpx.AsyncClient(timeout=30.0) as c:
+            r = await c.post(
+                f'{SAJHA_BASE}/api/files/upload',
+                headers={'Authorization': f'Bearer {token}'},
+                files={'file': (file.filename, content, file.content_type or 'application/octet-stream')},
+            )
+            r.raise_for_status()
+            return JSONResponse(content=r.json())
+    except httpx.HTTPStatusError as e:
+        return JSONResponse(status_code=e.response.status_code,
+                            content={'success': False, 'error': f'SAJHA returned {e.response.status_code}'})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={'success': False, 'error': str(e)})
 
 
 class RunRequest(BaseModel):
