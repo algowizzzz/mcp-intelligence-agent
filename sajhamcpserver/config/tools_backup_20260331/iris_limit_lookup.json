@@ -1,0 +1,28 @@
+{
+  "name": "iris_limit_lookup",
+  "implementation": "sajha.tools.impl.iris_ccr_tools.IrisLimitLookupTool",
+  "description": "Pinpoint a specific limit record using the composite limit key (counterparty/facility/legal_entity/product). Returns limit, exposure, headroom, currency, cust_limit, conn_limit for the exact matching record.",
+  "version": "1.0.0",
+  "enabled": true,
+  "data_path": "${data.iris_combined_csv}",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "date": {"type": "string", "description": "Snapshot date YYYY-MM-DD. Defaults to latest."},
+      "counterparty_code": {"type": "string", "description": "Customer Code (exact match)"},
+      "facility_id": {"type": "string", "description": "Facility ID / UEN"},
+      "legal_entity": {"type": "string", "enum": ["BCMC","HARRIS BANK","BMO","BNBI","BOMI","BHIC","BMN","BCML","BLAC","BMMC"]},
+      "product": {"type": "string", "description": "Product type partial match"}
+    },
+    "required": ["counterparty_code"]
+  },
+  "metadata": {
+    "author": "Ashutosh Sinha",
+    "email": "ajsinha@gmail.com",
+    "category": "Risk Data",
+    "tags": ["iris", "ccr", "counterparty credit risk", "limits", "exposure"],
+    "rateLimit": 60,
+    "cacheTTL": 300,
+    "copyright": "Copyright All Rights Reserved 2025-2030"
+  }
+}

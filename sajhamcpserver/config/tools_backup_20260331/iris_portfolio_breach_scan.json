@@ -1,0 +1,29 @@
+{
+  "name": "iris_portfolio_breach_scan",
+  "implementation": "sajha.tools.impl.iris_ccr_tools.IrisPortfolioBreachScanTool",
+  "description": "Portfolio-wide scan — returns ALL limit records in breach across the entire book on a given date. min_overage is REQUIRED to prevent full-book dumps. No counterparty_code needed — scans all counterparties.",
+  "version": "1.0.0",
+  "enabled": true,
+  "data_path": "${data.iris_combined_csv}",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "date": {"type": "string", "description": "Snapshot date YYYY-MM-DD"},
+      "min_overage": {"type": "number", "description": "REQUIRED minimum overage amount in native currency. E.g. 1000000 for $1M threshold. Must be provided — no default."},
+      "legal_entity": {"type": "string", "enum": ["BCMC","HARRIS BANK","BMO","BNBI","BOMI","BHIC","BMN","BCML","BLAC","BMMC"]},
+      "country": {"type": "string"},
+      "internal_rating": {"type": "integer", "description": "Return only counterparties with rating <= this value"},
+      "level": {"type": "string", "enum": ["product","customer","connection"]}
+    },
+    "required": ["date", "min_overage"]
+  },
+  "metadata": {
+    "author": "Ashutosh Sinha",
+    "email": "ajsinha@gmail.com",
+    "category": "Risk Data",
+    "tags": ["iris", "ccr", "counterparty credit risk", "limits", "exposure"],
+    "rateLimit": 60,
+    "cacheTTL": 300,
+    "copyright": "Copyright All Rights Reserved 2025-2030"
+  }
+}

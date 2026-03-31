@@ -1,0 +1,16 @@
+{
+  "name": "get_credit_limits",
+  "implementation": "sajha.tools.impl.credit_limits_tool.CreditLimitsTool",
+  "description": "Retrieve credit limit utilization data including Settlement, Pre-Settlement, PFE and Wrong-Way-Risk limits",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "counterparty": {
+        "type": "string",
+        "description": "Filter by counterparty name (optional). Returns all limit records if omitted."
+      }
+    }
+  }
+}

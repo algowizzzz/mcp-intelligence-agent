@@ -1,0 +1,29 @@
+{
+  "name": "iris_counterparty_dashboard",
+  "implementation": "sajha.tools.impl.iris_ccr_tools.IrisCounterpartyDashboardTool",
+  "description": "Pull the full CCR picture for a counterparty — all products, all limit levels, all 42 columns. Use for a complete snapshot of limits, exposures, and headroom across all legal entities and products.",
+  "version": "1.0.0",
+  "enabled": true,
+  "data_path": "${data.iris_combined_csv}",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "date": {"type": "string", "description": "Snapshot date YYYY-MM-DD. Defaults to latest."},
+      "counterparty_code": {"type": "string", "description": "Customer Code (exact match)"},
+      "uen": {"type": "string", "description": "Facility ID filter"},
+      "legal_entity": {"type": "string", "enum": ["BCMC","HARRIS BANK","BMO","BNBI","BOMI","BHIC","BMN","BCML","BLAC","BMMC"]},
+      "product": {"type": "string", "description": "Product partial match"},
+      "max_rows": {"type": "integer", "default": 500, "maximum": 5000}
+    },
+    "required": ["counterparty_code"]
+  },
+  "metadata": {
+    "author": "Ashutosh Sinha",
+    "email": "ajsinha@gmail.com",
+    "category": "Risk Data",
+    "tags": ["iris", "ccr", "counterparty credit risk", "limits", "exposure"],
+    "rateLimit": 60,
+    "cacheTTL": 300,
+    "copyright": "Copyright All Rights Reserved 2025-2030"
+  }
+}

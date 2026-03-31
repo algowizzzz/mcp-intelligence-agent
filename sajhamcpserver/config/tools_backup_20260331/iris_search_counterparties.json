@@ -1,0 +1,28 @@
+{
+  "name": "iris_search_counterparties",
+  "implementation": "sajha.tools.impl.iris_ccr_tools.IrisSearchCounterpartiesTool",
+  "description": "Resolve a counterparty by name, code, or UEN/Facility ID. Call before any limit or exposure query to confirm the counterparty_code to use downstream. Returns code, name, rating, legal_entity, facility_id, country.",
+  "version": "1.0.0",
+  "enabled": true,
+  "data_path": "${data.iris_combined_csv}",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "search_term": {"type": "string", "description": "Partial name or code match (case-insensitive)"},
+      "counterparty_code": {"type": "string", "description": "Exact Customer Code match"},
+      "uen": {"type": "string", "description": "Exact Facility ID match"},
+      "date": {"type": "string", "description": "Snapshot date YYYY-MM-DD. Defaults to latest."},
+      "limit": {"type": "integer", "default": 50, "maximum": 500}
+    },
+    "required": []
+  },
+  "metadata": {
+    "author": "Ashutosh Sinha",
+    "email": "ajsinha@gmail.com",
+    "category": "Risk Data",
+    "tags": ["iris", "ccr", "counterparty credit risk", "limits", "exposure"],
+    "rateLimit": 60,
+    "cacheTTL": 300,
+    "copyright": "Copyright All Rights Reserved 2025-2030"
+  }
+}

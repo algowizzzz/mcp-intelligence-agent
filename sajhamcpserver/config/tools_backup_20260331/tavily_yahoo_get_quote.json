@@ -1,0 +1,7 @@
+{
+  "name": "yahoo_get_quote",
+  "implementation": "sajha.tools.impl.tavily_yahoo_finance_tool.TavilyYahooGetQuoteTool",
+  "description": "Retrieve real-time stock quote data via Tavily/Yahoo Finance",
+  "version": "2.0.0",
+  "enabled": true
+}
