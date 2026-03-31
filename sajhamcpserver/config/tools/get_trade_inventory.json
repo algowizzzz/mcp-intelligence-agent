@@ -1,0 +1,16 @@
+{
+  "name": "get_trade_inventory",
+  "implementation": "sajha.tools.impl.trade_inventory_tool.TradeInventoryTool",
+  "description": "Retrieve trade inventory data including asset class, notional, MTM and instrument details",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "counterparty": {
+        "type": "string",
+        "description": "Filter by counterparty name (optional). Returns all trades if omitted."
+      }
+    }
+  }
+}

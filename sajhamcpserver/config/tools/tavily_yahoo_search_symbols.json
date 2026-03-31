@@ -1,0 +1,7 @@
+{
+  "name": "yahoo_search_symbols",
+  "implementation": "sajha.tools.impl.tavily_yahoo_finance_tool.TavilyYahooSearchSymbolsTool",
+  "description": "Search for stock symbols via Tavily/Yahoo Finance",
+  "version": "2.0.0",
+  "enabled": true
+}

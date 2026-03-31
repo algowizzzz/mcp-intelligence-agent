@@ -1,0 +1,119 @@
+{
+  "name": "duckdb_query",
+  "implementation": "sajha.tools.impl.duckdb_olap_tools_refactored.DuckDbQueryTool",
+  "description": "Execute SQL queries on CSV, Parquet, and JSON files using DuckDB analytics engine. Query the customers, orders, and products tables directly with SQL.",
+  "version": "2.9.8",
+  "enabled": true,
+  "data_directory": "${data.duckdb.dir}",
+  "auto_refresh_enabled": true,
+  "auto_refresh_interval": 300,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "sql_query": {
+        "type": "string",
+        "description": "SQL query to execute. Tables available: customers, orders, products (auto-created from CSV files in data directory)",
+        "minLength": 1
+      },
+      "limit": {
+        "type": "integer",
+        "description": "Maximum number of rows to return",
+        "minimum": 1,
+        "maximum": 10000,
+        "default": 100
+      },
+      "output_format": {
+        "type": "string",
+        "description": "Format for query results",
+        "enum": ["json", "csv", "table"],
+        "default": "json"
+      }
+    },
+    "required": ["sql_query"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "query": {
+        "type": "string",
+        "description": "The SQL query that was executed"
+      },
+      "columns": {
+        "type": "array",
+        "description": "Column names in result set",
+        "items": {
+          "type": "string"
+        }
+      },
+      "rows": {
+        "type": "array",
+        "description": "Query results as array of rows",
+        "items": {
+          "type": "object",
+          "description": "Row data as key-value pairs"
+        }
+      },
+      "row_count": {
+        "type": "integer",
+        "description": "Number of rows returned"
+      },
+      "execution_time_ms": {
+        "type": "number",
+        "description": "Query execution time in milliseconds"
+      },
+      "limited": {
+        "type": "boolean",
+        "description": "Whether results were limited by the limit parameter"
+      }
+    },
+    "required": ["query", "columns", "rows", "row_count"]
+  },
+  "metadata": {
+    "author": "Ashutosh Sinha",
+    "category": "Data Analytics",
+    "tags": ["duckdb", "sql", "query", "analytics", "customers", "orders"],
+    "rateLimit": 60,
+    "cacheTTL": 60,
+    "note": "Execute analytical SQL queries with DuckDB. Tables are auto-created from CSV files: customers, orders, products.",
+    "examples": [
+      {
+        "description": "List all tables",
+        "input": {
+          "sql_query": "SHOW TABLES",
+          "limit": 50
+        }
+      },
+      {
+        "description": "Get customer summary",
+        "input": {
+          "sql_query": "SELECT customer_segment, COUNT(*) as count, customer_tier FROM customers GROUP BY customer_segment, customer_tier ORDER BY count DESC"
+        }
+      },
+      {
+        "description": "Revenue by region",
+        "input": {
+          "sql_query": "SELECT region, SUM(quantity * unit_price) as total_revenue FROM orders GROUP BY region ORDER BY total_revenue DESC"
+        }
+      },
+      {
+        "description": "Top customers by order value",
+        "input": {
+          "sql_query": "SELECT c.customer_name, c.customer_tier, SUM(o.quantity * o.unit_price) as total_spent FROM customers c JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.customer_id, c.customer_name, c.customer_tier ORDER BY total_spent DESC LIMIT 10"
+        }
+      },
+      {
+        "description": "Monthly sales trend",
+        "input": {
+          "sql_query": "SELECT strftime(order_date::DATE, '%Y-%m') as month, SUM(quantity * unit_price) as revenue, COUNT(*) as order_count FROM orders GROUP BY month ORDER BY month"
+        }
+      }
+    ],
+    "useCases": [
+      "Ad-hoc data analysis",
+      "Customer segmentation queries",
+      "Sales and revenue reporting",
+      "Order analysis",
+      "Product performance queries"
+    ]
+  }
+}
