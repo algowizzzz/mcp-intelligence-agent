@@ -110,17 +110,9 @@ async def get_var_contribution(counterparty: str,
                              {'counterparty': counterparty,
                               'confidence_level': confidence_level})
 
-@tool
-async def web_search(query: str) -> dict:
-    '''Searches the web for news, ratings actions, filings, and market intelligence.
-    Use for: recent news, credit rating changes, earnings, regulatory filings.
-    '''
-    return await _call_sajha('tavily_web_search', {'query': query})
-
-
 STATIC_TOOLS = [
     get_counterparty_exposure, get_trade_inventory, get_credit_limits,
-    get_historical_exposure, get_var_contribution, web_search
+    get_historical_exposure, get_var_contribution,
 ]
 STATIC_TOOL_NAMES = {t.name for t in STATIC_TOOLS}
 
@@ -205,9 +197,7 @@ def discover_sajha_tools() -> list:
             # Skip tools we already have static wrappers for
             if name in STATIC_TOOL_NAMES:
                 continue
-            # Skip tavily variants that overlap with web_search
-            if name == 'tavily_web_search':
-                continue
+            # (no Tavily tools are skipped — all 4 are exposed directly)
             desc = t.get('description', f'SAJHA tool: {name}')
             schema = t.get('inputSchema', {})
             try:

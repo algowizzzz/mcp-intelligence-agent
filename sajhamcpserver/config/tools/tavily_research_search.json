@@ -1,10 +1,11 @@
 {
   "name": "tavily_research_search",
   "implementation": "sajha.tools.impl.tavily_tool_refactored.TavilyResearchSearchTool",
-  "description": "Perform comprehensive research search with advanced depth, analysis, and higher result counts for academic and professional research",
+  "description": "Deep research search for comprehensive financial analysis, regulatory filings, academic/professional content requiring broad coverage. Use for: annual reports, industry studies, macro analysis, technical deep-dives. Prefer over web_search when depth matters.",
   "version": "2.9.8",
   "enabled": true,
   "api_key": "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",
+  "min_score": 0.4,
   "inputSchema": {
     "type": "object",
     "properties": {
@@ -21,7 +22,7 @@
       "max_results": {
         "type": "integer",
         "description": "Maximum number of results (higher for research)",
-        "default": 10,
+        "default": 7,
         "minimum": 5,
         "maximum": 20
       },

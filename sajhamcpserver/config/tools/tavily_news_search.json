@@ -1,7 +1,7 @@
 {
   "name": "tavily_news_search",
   "implementation": "sajha.tools.impl.tavily_tool_refactored.TavilyNewsSearchTool",
-  "description": "Search for recent news articles using Tavily with news-optimized results and recency prioritization",
+  "description": "Search for recent news articles from the last 7 days with recency prioritization. Use for: breaking news, earnings announcements, credit rating actions, market events, regulatory updates. Prefer over web_search for any time-sensitive query.",
   "version": "2.9.8",
   "enabled": true,
   "api_key": "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",

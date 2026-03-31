@@ -1,6 +1,21 @@
 {
   "users": [
     {
+      "user_id": "risk_agent",
+      "user_name": "Risk Agent",
+      "password": "RiskAgent2025!",
+      "roles": [
+        "admin"
+      ],
+      "tools": [
+        "*"
+      ],
+      "enabled": true,
+      "email": "risk_agent@example.com",
+      "created_at": "2025-10-26T18:45:05.776412Z",
+      "last_login": "2026-03-30T22:53:41.407980Z"
+    },
+    {
       "user_id": "admin",
       "user_name": "Administrator",
       "password": "admin123",

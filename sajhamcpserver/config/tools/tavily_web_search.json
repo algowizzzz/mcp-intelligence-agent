@@ -1,10 +1,11 @@
 {
   "name": "tavily_web_search",
   "implementation": "sajha.tools.impl.tavily_tool_refactored.TavilyWebSearchTool",
-  "description": "Perform general web search using Tavily AI-powered search engine for finding information across the internet",
+  "description": "Broad web search for general queries when no specific domain is known. Use as a last resort — prefer tavily_news_search for recent events, tavily_domain_search for financial/regulatory sources, tavily_research_search for deep analysis.",
   "version": "2.9.8",
   "enabled": true,
   "api_key": "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",
+  "min_score": 0.4,
   "inputSchema": {
     "type": "object",
     "properties": {
