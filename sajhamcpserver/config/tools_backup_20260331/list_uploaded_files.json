@@ -1,0 +1,33 @@
+{
+  "name": "list_uploaded_files",
+  "implementation": "sajha.tools.impl.upload_tools.ListUploadedFilesTool",
+  "description": "Lists all files uploaded to the SAJHA uploads folder. Returns filename, full path, file type, size, and upload time. Call this before any read_pdf / read_docx / read_excel call to get the correct file path. Also call when user mentions 'the file I uploaded' or asks to analyse an uploaded document.",
+  "version": "1.0.0",
+  "enabled": true,
+  "data_path": "${data.uploads_dir}",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "file_type": {
+        "type": "string",
+        "enum": ["pdf", "docx", "xlsx", "csv", "txt", "all"],
+        "description": "Filter by file type. Default: all."
+      },
+      "sort_by": {
+        "type": "string",
+        "enum": ["uploaded_at", "filename", "size"],
+        "description": "Sort order. Default: uploaded_at descending (newest first)."
+      }
+    },
+    "required": []
+  },
+  "metadata": {
+    "author": "Ashutosh Sinha",
+    "email": "ajsinha@gmail.com",
+    "category": "File Management",
+    "tags": ["upload", "files", "documents", "pdf", "docx", "excel"],
+    "rateLimit": 60,
+    "cacheTTL": 0,
+    "copyright": "Copyright All Rights Reserved 2025-2030"
+  }
+}

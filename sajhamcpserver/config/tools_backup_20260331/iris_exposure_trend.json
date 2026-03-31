@@ -1,0 +1,29 @@
+{
+  "name": "iris_exposure_trend",
+  "implementation": "sajha.tools.impl.iris_ccr_tools.IrisExposureTrendTool",
+  "description": "Track exposure changes for a counterparty across multiple snapshot dates. Use for trend and drift analysis. Queries each snapshot date independently — never interpolates.",
+  "version": "1.0.0",
+  "enabled": true,
+  "data_path": "${data.iris_combined_csv}",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "date_from": {"type": "string", "description": "Start date YYYY-MM-DD"},
+      "date_to": {"type": "string", "description": "End date YYYY-MM-DD. Defaults to latest."},
+      "counterparty_code": {"type": "string", "description": "Customer Code (exact match)"},
+      "legal_entity": {"type": "string", "enum": ["BCMC","HARRIS BANK","BMO","BNBI","BOMI","BHIC","BMN","BCML","BLAC","BMMC"]},
+      "product": {"type": "string", "description": "Product partial match"},
+      "level": {"type": "string", "enum": ["product","customer","connection"], "default": "product"}
+    },
+    "required": ["date_from", "counterparty_code"]
+  },
+  "metadata": {
+    "author": "Ashutosh Sinha",
+    "email": "ajsinha@gmail.com",
+    "category": "Risk Data",
+    "tags": ["iris", "ccr", "counterparty credit risk", "limits", "exposure"],
+    "rateLimit": 60,
+    "cacheTTL": 300,
+    "copyright": "Copyright All Rights Reserved 2025-2030"
+  }
+}

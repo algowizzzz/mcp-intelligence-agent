@@ -76,7 +76,6 @@ class ToolsRegistry:
         self.builtin_tools = {
             'wikipedia': 'sajha.tools.impl.wikipedia_tool.WikipediaTool',
             'yahoo_finance': 'sajha.tools.impl.yahoo_finance_tool.YahooFinanceTool',
-            'google_search': 'sajha.tools.impl.google_search_tool.GoogleSearchTool',
             'fed_reserve': 'sajha.tools.impl.fed_reserve_tool.FedReserveTool',
             'tavily': 'sajha.tools.impl.tavily_tool.TavilyTool'
         }

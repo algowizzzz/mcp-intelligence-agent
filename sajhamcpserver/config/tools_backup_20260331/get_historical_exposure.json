@@ -1,0 +1,21 @@
+{
+  "name": "get_historical_exposure",
+  "implementation": "sajha.tools.impl.historical_exposure_tool.HistoricalExposureTool",
+  "description": "Retrieve historical counterparty exposure data for a specific quarter-end date",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "date": {
+        "type": "string",
+        "description": "Quarter-end date in YYYY-MM-DD format (e.g. 2025-03-31, 2025-06-30, 2025-09-30, 2025-12-31)"
+      },
+      "counterparty": {
+        "type": "string",
+        "description": "Filter by counterparty name (optional). Returns all counterparties if omitted."
+      }
+    },
+    "required": ["date"]
+  }
+}

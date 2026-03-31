@@ -6,8 +6,7 @@ Copyright © 2025-2030, All Rights Reserved
 Ashutosh Sinha
 Email: ajsinha@gmail.com
 
-Example client for Search tools:
-- google_search: Google web search
+Example client for Tavily Search tools:
 - tavily_web_search: Tavily web search
 - tavily_news_search: Tavily news search
 - tavily_research_search: Tavily research search
@@ -22,26 +21,8 @@ from base_client import SajhaClient, SajhaAPIError, pretty_print, run_example
 
 
 class SearchClient(SajhaClient):
-    """Client for Search tools."""
-    
-    # ============= Google Search =============
-    def google_search(self, 
-                      query: str, 
-                      num_results: int = 10,
-                      site: str = None) -> dict:
-        """
-        Perform Google web search.
-        
-        Args:
-            query: Search query
-            num_results: Number of results (1-100)
-            site: Limit to specific site
-        """
-        args = {'query': query, 'num_results': num_results}
-        if site:
-            args['site'] = site
-        return self.execute_tool('google_search', args)
-    
+    """Client for Tavily Search tools."""
+
     # ============= Tavily Search =============
     def tavily_web_search(self,
                           query: str,
@@ -49,7 +30,7 @@ class SearchClient(SajhaClient):
                           include_answer: bool = True) -> dict:
         """
         Perform Tavily web search with AI-powered results.
-        
+
         Args:
             query: Search query
             max_results: Maximum results
@@ -60,14 +41,14 @@ class SearchClient(SajhaClient):
             'max_results': max_results,
             'include_answer': include_answer
         })
-    
+
     def tavily_news_search(self,
                            query: str,
                            max_results: int = 10,
                            days: int = 7) -> dict:
         """
         Search recent news with Tavily.
-        
+
         Args:
             query: Search query
             max_results: Maximum results
@@ -78,14 +59,14 @@ class SearchClient(SajhaClient):
             'max_results': max_results,
             'days': days
         })
-    
+
     def tavily_research_search(self,
                                query: str,
                                max_results: int = 10,
                                search_depth: str = 'advanced') -> dict:
         """
         Deep research search with Tavily.
-        
+
         Args:
             query: Research query
             max_results: Maximum results
@@ -96,14 +77,14 @@ class SearchClient(SajhaClient):
             'max_results': max_results,
             'search_depth': search_depth
         })
-    
+
     def tavily_domain_search(self,
                              query: str,
                              domains: list,
                              max_results: int = 10) -> dict:
         """
         Search within specific domains.
-        
+
         Args:
             query: Search query
             domains: List of domains to search
@@ -117,35 +98,11 @@ class SearchClient(SajhaClient):
 
 
 @run_example
-def example_google_search():
-    """Example: Google search"""
-    client = SearchClient()
-    
-    print("\n🔍 Google Search: 'Python programming tutorial'")
-    results = client.google_search("Python programming tutorial", num_results=5)
-    pretty_print(results, "Google Search Results")
-
-
-@run_example
-def example_google_site_search():
-    """Example: Google site-specific search"""
-    client = SearchClient()
-    
-    print("\n🔍 Google Site Search: 'machine learning' on arxiv.org")
-    results = client.google_search(
-        query="machine learning",
-        num_results=5,
-        site="arxiv.org"
-    )
-    pretty_print(results, "Arxiv Search Results")
-
-
-@run_example
 def example_tavily_web_search():
     """Example: Tavily web search"""
     client = SearchClient()
-    
-    print("\n🌐 Tavily Web Search: 'latest AI developments'")
+
+    print("\n Tavily Web Search: 'latest AI developments'")
     results = client.tavily_web_search(
         query="latest AI developments 2024",
         max_results=5,
@@ -158,8 +115,8 @@ def example_tavily_web_search():
 def example_tavily_news():
     """Example: Tavily news search"""
     client = SearchClient()
-    
-    print("\n📰 Tavily News Search: 'Federal Reserve interest rates'")
+
+    print("\n Tavily News Search: 'Federal Reserve interest rates'")
     results = client.tavily_news_search(
         query="Federal Reserve interest rates",
         max_results=5,
@@ -172,8 +129,8 @@ def example_tavily_news():
 def example_tavily_research():
     """Example: Tavily research search"""
     client = SearchClient()
-    
-    print("\n🔬 Tavily Research: 'quantum computing applications'")
+
+    print("\n Tavily Research: 'quantum computing applications'")
     results = client.tavily_research_search(
         query="quantum computing real-world applications",
         max_results=5,
@@ -186,8 +143,8 @@ def example_tavily_research():
 def example_tavily_domain():
     """Example: Tavily domain-specific search"""
     client = SearchClient()
-    
-    print("\n🎯 Tavily Domain Search: 'GPT-4' on tech sites")
+
+    print("\n Tavily Domain Search: 'GPT-4' on tech sites")
     results = client.tavily_domain_search(
         query="GPT-4 capabilities",
         domains=["techcrunch.com", "wired.com", "theverge.com"],
@@ -200,27 +157,27 @@ def example_tavily_domain():
 def example_research_workflow():
     """Example: Complete research workflow"""
     client = SearchClient()
-    
+
     topic = "Electric vehicles market trends"
-    print(f"\n📚 Research Workflow: {topic}")
+    print(f"\n Research Workflow: {topic}")
     print("=" * 60)
-    
+
     # Step 1: Web search
-    print("\n1️⃣ General web search:")
+    print("\n1. General web search:")
     web = client.tavily_web_search(topic, max_results=3)
     if web.get('results'):
         for r in web['results'][:3]:
-            print(f"   • {r.get('title', 'N/A')[:50]}")
-    
+            print(f"   - {r.get('title', 'N/A')[:50]}")
+
     # Step 2: Recent news
-    print("\n2️⃣ Recent news (7 days):")
+    print("\n2. Recent news (7 days):")
     news = client.tavily_news_search(topic, max_results=3, days=7)
     if news.get('results'):
         for r in news['results'][:3]:
-            print(f"   • {r.get('title', 'N/A')[:50]}")
-    
+            print(f"   - {r.get('title', 'N/A')[:50]}")
+
     # Step 3: Deep research
-    print("\n3️⃣ In-depth research:")
+    print("\n3. In-depth research:")
     research = client.tavily_research_search(topic, max_results=3)
     if research.get('answer'):
         print(f"   Summary: {research['answer'][:200]}...")
@@ -230,9 +187,7 @@ if __name__ == '__main__':
     print("=" * 60)
     print(" SAJHA MCP Server - Search Tools Examples v2.3.0")
     print("=" * 60)
-    
-    example_google_search()
-    example_google_site_search()
+
     example_tavily_web_search()
     example_tavily_news()
     example_tavily_research()

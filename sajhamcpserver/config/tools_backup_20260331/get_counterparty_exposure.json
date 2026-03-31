@@ -1,0 +1,16 @@
+{
+  "name": "get_counterparty_exposure",
+  "implementation": "sajha.tools.impl.counterparty_exposure_tool.CounterpartyExposureTool",
+  "description": "Retrieve counterparty credit exposure data including notional, MTM, PFE and net exposure",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "counterparty": {
+        "type": "string",
+        "description": "Filter by counterparty name (optional). Returns all counterparties if omitted."
+      }
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "yahoo_get_history",
+  "implementation": "sajha.tools.impl.tavily_yahoo_finance_tool.TavilyYahooGetHistoryTool",
+  "description": "Retrieve historical stock price summary via Tavily/Yahoo Finance",
+  "version": "2.0.0",
+  "enabled": true
+}

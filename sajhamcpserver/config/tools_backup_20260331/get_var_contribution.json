@@ -1,0 +1,16 @@
+{
+  "name": "get_var_contribution",
+  "implementation": "sajha.tools.impl.var_contribution_tool.VaRContributionTool",
+  "description": "Retrieve Value-at-Risk (VaR) contribution data including 95%, 99% and stress VaR per counterparty",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "counterparty": {
+        "type": "string",
+        "description": "Filter by counterparty name (optional). Returns all VaR records if omitted."
+      }
+    }
+  }
+}

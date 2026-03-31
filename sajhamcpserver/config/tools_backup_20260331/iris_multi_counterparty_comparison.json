@@ -1,0 +1,28 @@
+{
+  "name": "iris_multi_counterparty_comparison",
+  "implementation": "sajha.tools.impl.iris_ccr_tools.IrisMultiCounterpartyComparisonTool",
+  "description": "Compare two or more counterparties side by side on limits, exposure, and headroom. Use group_by to pivot by rating, country, legal_entity, or product.",
+  "version": "1.0.0",
+  "enabled": true,
+  "data_path": "${data.iris_combined_csv}",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "date": {"type": "string", "description": "Snapshot date YYYY-MM-DD. Defaults to latest."},
+      "counterparty_codes": {"type": "array", "items": {"type": "string"}, "description": "List of 2+ Customer Codes"},
+      "legal_entity": {"type": "string", "enum": ["BCMC","HARRIS BANK","BMO","BNBI","BOMI","BHIC","BMN","BCML","BLAC","BMMC"]},
+      "product": {"type": "string"},
+      "group_by": {"type": "string", "enum": ["rating","country","legal_entity","product"]}
+    },
+    "required": ["counterparty_codes"]
+  },
+  "metadata": {
+    "author": "Ashutosh Sinha",
+    "email": "ajsinha@gmail.com",
+    "category": "Risk Data",
+    "tags": ["iris", "ccr", "counterparty credit risk", "limits", "exposure"],
+    "rateLimit": 60,
+    "cacheTTL": 300,
+    "copyright": "Copyright All Rights Reserved 2025-2030"
+  }
+}
