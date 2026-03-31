@@ -570,7 +570,7 @@ class ApiRoutes(BaseRoutes):
 
             from sajha.core.properties_configurator import PropertiesConfigurator
             props = PropertiesConfigurator()
-            uploads_dir = props.get('data.uploads_dir', './CCR_data/uploads')
+            uploads_dir = props.get('data.uploads_dir', './data/uploads')
             max_size_mb = int(props.get('data.uploads_max_size_mb', '50'))
 
             os.makedirs(uploads_dir, exist_ok=True)

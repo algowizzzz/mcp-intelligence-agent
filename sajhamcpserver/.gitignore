@@ -54,5 +54,5 @@ instance/
 .DS_Store
 
 # --- Uploaded files (keep folder, ignore contents) ---
-CCR_data/uploads/*
-!CCR_data/uploads/.gitkeep
+data/uploads/*
+!data/uploads/.gitkeep

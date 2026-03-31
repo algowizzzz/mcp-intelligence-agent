@@ -43,7 +43,7 @@ class ListUploadedFilesTool(BaseMCPTool):
 
     def execute(self, params: Dict[str, Any]) -> Any:
         props = PropertiesConfigurator()
-        uploads_dir = props.get('data.uploads_dir', './CCR_data/uploads')
+        uploads_dir = props.get('data.uploads_dir', './data/uploads')
         file_type = params.get('file_type', 'all')
         sort_by = params.get('sort_by', 'uploaded_at')
 
