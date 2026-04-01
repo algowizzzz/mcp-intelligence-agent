@@ -36,7 +36,7 @@ class IrisBaseTool(BaseMCPTool):
     @classmethod
     def _get_df(cls):
         if cls._df is None:
-            path = cls._get_config('data.iris_combined_csv', './CCR_data/iris/iris_combined.csv')
+            path = cls._get_config('data.iris_combined_csv', './data/iris/iris_combined.csv')
             cls._df = pd.read_csv(path, encoding='latin1', low_memory=False)
             cls._df['Date'] = cls._df['Date'].astype(str)
         return cls._df
