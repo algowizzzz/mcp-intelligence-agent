@@ -2786,11 +2786,16 @@
       else if (type === 'hitl') {
         showHitl(evt);
       }
+      else if (type === 'replace_text') {
+        // Canvas was detected — replace the streamed raw JSON in the chat bubble with just the summary
+        _currentSynthesis = evt.text || '';
+        if (_currentAgentMsg) {
+          var sd = _currentAgentMsg.querySelector('.synthesis');
+          if (sd) sd.innerHTML = parseMarkdown(_currentSynthesis);
+        }
+      }
       else if (type === 'canvas') {
         openCanvas(evt.title, evt.content);
-      }
-      else if (type === 'summary') {
-        // summary is already rendered as text stream — no extra action needed
       }
       else if (type === 'error') {
         showErrorInChat(evt.message || 'Unknown error');
@@ -3100,7 +3105,8 @@
 
         tokens.forEach(function(token) {
           if (token.type === 'heading') {
-            var lvl = [docx.HeadingLevel.HEADING_1, docx.HeadingLevel.HEADING_2, docx.HeadingLevel.HEADING_3][Math.min(token.depth - 1, 2)];
+            var headingLevels = [docx.HeadingLevel.HEADING_1, docx.HeadingLevel.HEADING_2, docx.HeadingLevel.HEADING_3];
+            var lvl = headingLevels[Math.min(token.depth - 1, 2)];
             children.push(new docx.Paragraph({ text: token.text, heading: lvl }));
           } else if (token.type === 'paragraph') {
             children.push(new docx.Paragraph({ text: token.text }));
@@ -3110,19 +3116,22 @@
             });
           } else if (token.type === 'table') {
             var rows = [];
-            // header
-            rows.push(new docx.TableRow({ children: token.header.map(function(h) {
-              return new docx.TableCell({ children: [new docx.Paragraph({ children: [new docx.TextRun({ text: h.text, bold: true })] })] });
-            }), tableHeader: true }));
-            // body
+            rows.push(new docx.TableRow({
+              tableHeader: true,
+              children: token.header.map(function(h) {
+                return new docx.TableCell({ children: [new docx.Paragraph({ children: [new docx.TextRun({ text: h.text, bold: true })] })] });
+              })
+            }));
             token.rows.forEach(function(row) {
-              rows.push(new docx.TableRow({ children: row.map(function(cell) {
-                return new docx.TableCell({ children: [new docx.Paragraph(cell.text)] });
-              })}));
+              rows.push(new docx.TableRow({
+                children: row.map(function(cell) {
+                  return new docx.TableCell({ children: [new docx.Paragraph({ text: cell.text })] });
+                })
+              }));
             });
             children.push(new docx.Table({ rows: rows, width: { size: 100, type: docx.WidthType.PERCENTAGE } }));
           } else if (token.type === 'space') {
-            children.push(new docx.Paragraph(''));
+            children.push(new docx.Paragraph({ text: '' }));
           } else if (token.type === 'code') {
             children.push(new docx.Paragraph({ children: [new docx.TextRun({ text: token.text, font: 'Courier New', size: 18 })] }));
           }
@@ -3130,8 +3139,21 @@
 
         var doc = new docx.Document({
           sections: [{
-            headers: { default: new docx.Header({ children: [new docx.Paragraph({ children: [new docx.TextRun({ text: title, bold: true })] })] }) },
-            footers: { default: new docx.Footer({ children: [new docx.Paragraph({ children: [new docx.TextRun('Page '), new docx.TextRun({ children: [docx.PageNumber.CURRENT] })] })] }) },
+            headers: {
+              default: new docx.Header({
+                children: [new docx.Paragraph({ children: [new docx.TextRun({ text: title, bold: true })] })]
+              })
+            },
+            footers: {
+              default: new docx.Footer({
+                children: [new docx.Paragraph({
+                  alignment: docx.AlignmentType.RIGHT,
+                  children: [
+                    new docx.TextRun({ children: ['Page ', docx.PageNumber.CURRENT, ' of ', docx.PageNumber.TOTAL_PAGES] })
+                  ]
+                })]
+              })
+            },
             children: children
           }]
         });

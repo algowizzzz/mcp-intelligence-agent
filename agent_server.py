@@ -138,9 +138,8 @@ async def run_agent(req: RunRequest, _: None = Depends(require_api_key)):
                     envelope = _json.loads(assembled)
                     if 'summary' in envelope and 'canvas' in envelope:
                         canvas = envelope['canvas']
-                        # Re-emit as structured canvas events instead of raw text
-                        # (The text was already streamed — nothing to suppress now,
-                        #  but emit the structured events for the frontend router)
+                        # Replace the raw JSON that was streamed with just the summary sentence
+                        yield f"data: {_json.dumps({'type': 'replace_text', 'text': envelope.get('summary', '')})}\n\n"
                         yield f"data: {_json.dumps({'type': 'canvas', 'title': canvas.get('title','Document'), 'content': canvas.get('content',''), 'canvas_type': canvas.get('type','report')})}\n\n"
                 except Exception:
                     pass
