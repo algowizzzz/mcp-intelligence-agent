@@ -47,3 +47,6 @@ sajhamcpserver/.env
 .vscode/
 *.swp
 *.swo
+
+# Claude Code internals
+.claude/worktrees/
