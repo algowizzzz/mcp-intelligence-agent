@@ -4,7 +4,6 @@ __pycache__/
 *$py.class
 
 # --- Environments ---
-data/
 logs/
 .venv/
 venv/
@@ -53,6 +52,10 @@ instance/
 *.swo
 .DS_Store
 
-# --- Uploaded files (keep folder, ignore contents) ---
+# --- Runtime/binary data — ignore but keep structure ---
+data/duckdb/*.db
+data/duckdb/*.wal
+data/flask_session/
+data/msdocs/
 data/uploads/*
 !data/uploads/.gitkeep

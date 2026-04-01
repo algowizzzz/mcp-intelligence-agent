@@ -1,0 +1,12 @@
+[
+  {"counterparty": "Goldman Sachs", "date": "2025-09-30", "notional_usd": 4656000000, "mtm_usd": 302640000, "pfe_usd": 181390000, "net_exposure_usd": 259960000, "credit_rating": "A+", "collateral_posted_usd": 42680000, "currency": "USD"},
+  {"counterparty": "JPMorgan Chase", "date": "2025-09-30", "notional_usd": 5044000000, "mtm_usd": 366660000, "pfe_usd": 208550000, "net_exposure_usd": 300700000, "credit_rating": "A+", "collateral_posted_usd": 65960000, "currency": "USD"},
+  {"counterparty": "Morgan Stanley", "date": "2025-09-30", "notional_usd": 3783000000, "mtm_usd": 237650000, "pfe_usd": 153260000, "net_exposure_usd": 194970000, "credit_rating": "A", "collateral_posted_usd": 42680000, "currency": "USD"},
+  {"counterparty": "Citigroup", "date": "2025-09-30", "notional_usd": 3977000000, "mtm_usd": 258990000, "pfe_usd": 166840000, "net_exposure_usd": 212430000, "credit_rating": "A-", "collateral_posted_usd": 46560000, "currency": "USD"},
+  {"counterparty": "Bank of America", "date": "2025-09-30", "notional_usd": 4268000000, "mtm_usd": 282270000, "pfe_usd": 178480000, "net_exposure_usd": 233770000, "credit_rating": "A-", "collateral_posted_usd": 48500000, "currency": "USD"},
+  {"counterparty": "Deutsche Bank", "date": "2025-09-30", "notional_usd": 2716000000, "mtm_usd": 192060000, "pfe_usd": 129980000, "net_exposure_usd": 161990000, "credit_rating": "BBB+", "collateral_posted_usd": 30070000, "currency": "USD"},
+  {"counterparty": "BNP Paribas", "date": "2025-09-30", "notional_usd": 3104000000, "mtm_usd": 214370000, "pfe_usd": 142590000, "net_exposure_usd": 179450000, "credit_rating": "A", "collateral_posted_usd": 34920000, "currency": "USD"},
+  {"counterparty": "Barclays", "date": "2025-09-30", "notional_usd": 2910000000, "mtm_usd": 203700000, "pfe_usd": 134830000, "net_exposure_usd": 168780000, "credit_rating": "A-", "collateral_posted_usd": 34920000, "currency": "USD"},
+  {"counterparty": "Credit Suisse", "date": "2025-09-30", "notional_usd": 1843000000, "mtm_usd": 137740000, "pfe_usd": 95060000, "net_exposure_usd": 117370000, "credit_rating": "BBB", "collateral_posted_usd": 20370000, "currency": "USD"},
+  {"counterparty": "HSBC", "date": "2025-09-30", "notional_usd": 3492000000, "mtm_usd": 240560000, "pfe_usd": 157140000, "net_exposure_usd": 200790000, "credit_rating": "A", "collateral_posted_usd": 39770000, "currency": "USD"}
+]
