@@ -127,8 +127,12 @@ async def run_agent(req: RunRequest, _: None = Depends(require_api_key)):
                     if usage:
                         yield f"data: {json.dumps({'type': 'usage', 'usage': usage})}\n\n"
             # Canvas envelope detection
-            import json as _json
+            import json as _json, re as _re
             assembled = ''.join(full_text).strip()
+            # Extract JSON from markdown code fence if present (agent may prepend text + ```json...```)
+            _fence_match = _re.search(r'```(?:json)?\s*(\{[\s\S]*?\})\s*```', assembled)
+            if _fence_match:
+                assembled = _fence_match.group(1).strip()
             if assembled.startswith('{') and assembled.endswith('}'):
                 try:
                     envelope = _json.loads(assembled)
