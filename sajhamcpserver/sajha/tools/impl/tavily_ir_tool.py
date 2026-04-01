@@ -222,30 +222,48 @@ class IRFindDocumentsTool(BaseMCPTool):
         name_part = company_name if company_name else ticker
         doc_query = DOCUMENT_TYPE_QUERIES.get(document_type, DOCUMENT_TYPE_QUERIES['all'])
 
-        query_parts = [name_part, ticker, doc_query]
+        # Quote company name for precision; add year and doc type as modifiers
+        query_parts = [f'"{name_part}"', doc_query]
         if year:
             query_parts.append(str(year))
         query = ' '.join(query_parts)
 
-        # Prefer IR/investor domains and PDF file types
-        include_domains = ['ir.', 'investors.', 'investor.', 'sec.gov',
-                           'prnewswire.com', 'businesswire.com', 'globenewswire.com']
-
+        # No include_domains — partial substrings like 'ir.' don't work in Tavily.
+        # Use post-search filtering instead (see below).
         result = tavily_search(
             query=query,
-            include_domains=include_domains,
-            max_results=min(limit + 3, 15),
+            include_domains=[],
+            max_results=min(limit + 5, 20),
             include_answer=False,
             search_depth='advanced'
         )
 
         raw_results = result.get('results', [])
+
+        # Post-search relevance filter: drop results that don't mention the company
+        # by ticker or name fragment in title/URL (avoids completely unrelated hits)
+        name_tokens = set(name_part.lower().split())
+        ticker_lower = ticker.lower()
+
+        def _is_relevant(r: dict) -> bool:
+            combined = (r.get('title', '') + ' ' + r.get('url', '')).lower()
+            if ticker_lower in combined:
+                return True
+            # At least one word from the company name should appear
+            if any(tok in combined for tok in name_tokens if len(tok) > 3):
+                return True
+            return False
+
+        filtered = [r for r in raw_results if _is_relevant(r)]
+        # If filtering removes everything, fall back to unfiltered
+        if not filtered:
+            filtered = raw_results
+
         documents = []
-        for r in raw_results:
+        for r in filtered:
             url = r.get('url', '')
             title = r.get('title', '')
             published = r.get('published_date', '')
-            # Determine document type from URL/title
             detected_type = _detect_doc_type(url, title, document_type)
             documents.append({
                 'title': title,
@@ -255,10 +273,9 @@ class IRFindDocumentsTool(BaseMCPTool):
                 'score': r.get('score', 0)
             })
 
-        # Sort by score descending
+        # Sort by Tavily relevance score descending
         documents.sort(key=lambda x: x.get('score', 0), reverse=True)
         documents = documents[:limit]
-        # Remove internal score field
         for d in documents:
             d.pop('score', None)
 
