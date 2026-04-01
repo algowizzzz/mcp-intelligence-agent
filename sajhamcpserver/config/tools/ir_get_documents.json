@@ -1,8 +1,8 @@
 {
   "name": "ir_get_documents",
-  "implementation": "sajha.tools.impl.investor_relations_tool_refactored.IRGetDocumentsTool",
+  "implementation": "sajha.tools.impl.tavily_ir_tool.IRGetDocumentsTool",
   "description": "Get investor relations documents filtered by type and year",
-  "version": "2.9.8",
+  "version": "2.0.0",
   "enabled": true,
   "inputSchema": {
     "type": "object",
@@ -40,37 +40,73 @@
         "maximum": 50
       }
     },
-    "required": ["ticker"]
+    "required": [
+      "ticker"
+    ]
   },
   "outputSchema": {
     "type": "object",
     "properties": {
-      "ticker": {"type": "string"},
-      "document_type": {"type": "string"},
-      "year": {"type": ["integer", "null"]},
-      "count": {"type": "integer"},
+      "ticker": {
+        "type": "string"
+      },
+      "document_type": {
+        "type": "string"
+      },
+      "year": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "count": {
+        "type": "integer"
+      },
       "documents": {
         "type": "array",
         "items": {
           "type": "object",
           "properties": {
-            "title": {"type": "string"},
-            "url": {"type": "string"},
-            "date": {"type": "string"},
-            "type": {"type": "string"}
+            "title": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            },
+            "date": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            }
           }
         }
       },
-      "success": {"type": "boolean"}
+      "success": {
+        "type": "boolean"
+      }
     }
   },
   "metadata": {
     "author": "Ashutosh Sinha",
     "category": "Financial Analysis",
-    "tags": ["investor relations", "documents", "reports", "filings"],
+    "tags": [
+      "investor relations",
+      "documents",
+      "reports",
+      "filings"
+    ],
     "rateLimit": 30,
     "cacheTTL": 3600,
-    "supported_companies": ["TSLA", "MSFT", "C", "BMO", "RY", "JPM", "GS"],
+    "supported_companies": [
+      "TSLA",
+      "MSFT",
+      "C",
+      "BMO",
+      "RY",
+      "JPM",
+      "GS"
+    ],
     "examples": [
       {
         "description": "Get all Tesla annual reports",

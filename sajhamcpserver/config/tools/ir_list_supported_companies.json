@@ -1,8 +1,8 @@
 {
   "name": "ir_list_supported_companies",
-  "implementation": "sajha.tools.impl.investor_relations_tool_refactored.IRListSupportedCompaniesTool",
+  "implementation": "sajha.tools.impl.tavily_ir_tool.IRListSupportedCompaniesTool",
   "description": "List all companies with supported investor relations data access",
-  "version": "2.9.8",
+  "version": "2.0.0",
   "enabled": true,
   "inputSchema": {
     "type": "object",
@@ -17,19 +17,35 @@
         "items": {
           "type": "object",
           "properties": {
-            "ticker": {"type": "string", "description": "Stock ticker symbol"},
-            "name": {"type": "string", "description": "Company name"},
-            "ir_url": {"type": "string", "description": "Investor relations URL"}
+            "ticker": {
+              "type": "string",
+              "description": "Stock ticker symbol"
+            },
+            "name": {
+              "type": "string",
+              "description": "Company name"
+            },
+            "ir_url": {
+              "type": "string",
+              "description": "Investor relations URL"
+            }
           }
         }
       },
-      "count": {"type": "integer", "description": "Total number of supported companies"}
+      "count": {
+        "type": "integer",
+        "description": "Total number of supported companies"
+      }
     }
   },
   "metadata": {
     "author": "Ashutosh Sinha",
     "category": "Financial Analysis",
-    "tags": ["investor relations", "companies", "support"],
+    "tags": [
+      "investor relations",
+      "companies",
+      "support"
+    ],
     "rateLimit": 10,
     "cacheTTL": 86400,
     "examples": [

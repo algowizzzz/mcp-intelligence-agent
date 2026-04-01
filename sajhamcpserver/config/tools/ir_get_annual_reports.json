@@ -1,8 +1,8 @@
 {
   "name": "ir_get_annual_reports",
-  "implementation": "sajha.tools.impl.investor_relations_tool_refactored.IRGetAnnualReportsTool",
+  "implementation": "sajha.tools.impl.tavily_ir_tool.IRGetAnnualReportsTool",
   "description": "Get annual reports (10-K) for a company, with optional year filter",
-  "version": "2.9.8",
+  "version": "2.0.0",
   "enabled": true,
   "inputSchema": {
     "type": "object",
@@ -25,36 +25,69 @@
         "maximum": 20
       }
     },
-    "required": ["ticker"]
+    "required": [
+      "ticker"
+    ]
   },
   "outputSchema": {
     "type": "object",
     "properties": {
-      "ticker": {"type": "string"},
-      "year": {"type": ["integer", "null"]},
-      "count": {"type": "integer"},
+      "ticker": {
+        "type": "string"
+      },
+      "year": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "count": {
+        "type": "integer"
+      },
       "annual_reports": {
         "type": "array",
         "items": {
           "type": "object",
           "properties": {
-            "title": {"type": "string"},
-            "url": {"type": "string"},
-            "year": {"type": "integer"},
-            "date": {"type": "string"}
+            "title": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            },
+            "year": {
+              "type": "integer"
+            },
+            "date": {
+              "type": "string"
+            }
           }
         }
       },
-      "success": {"type": "boolean"}
+      "success": {
+        "type": "boolean"
+      }
     }
   },
   "metadata": {
     "author": "Ashutosh Sinha",
     "category": "Financial Analysis",
-    "tags": ["annual reports", "10-K", "financial statements"],
+    "tags": [
+      "annual reports",
+      "10-K",
+      "financial statements"
+    ],
     "rateLimit": 30,
     "cacheTTL": 86400,
-    "supported_companies": ["TSLA", "MSFT", "C", "BMO", "RY", "JPM", "GS"],
+    "supported_companies": [
+      "TSLA",
+      "MSFT",
+      "C",
+      "BMO",
+      "RY",
+      "JPM",
+      "GS"
+    ],
     "examples": [
       {
         "description": "Get Goldman Sachs annual reports",

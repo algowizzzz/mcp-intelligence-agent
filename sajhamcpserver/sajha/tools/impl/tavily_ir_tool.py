@@ -385,8 +385,128 @@ def _detect_doc_type(url: str, title: str, requested_type: str) -> str:
     return 'document'
 
 
+# ── Compatibility wrappers for legacy tool names ──────────────────────────────
+# The old scraper-based tools only supported ~10 hardcoded tickers.
+# These wrappers delegate to the Tavily-native implementations so all tickers work.
+
+class IRGetDocumentsTool(BaseMCPTool):
+    """Legacy name wrapper → IRFindDocumentsTool."""
+    def __init__(self, config=None):
+        default_config = {'name': 'ir_get_documents', 'description': 'Get investor relations documents by type and year for any publicly traded company.', 'version': '2.0.0', 'enabled': True}
+        if config: default_config.update(config)
+        super().__init__(default_config)
+        self._delegate = IRFindDocumentsTool()
+    def get_input_schema(self): return self._delegate.get_input_schema()
+    def get_output_schema(self): return self._delegate.get_output_schema()
+    def execute(self, arguments): return self._delegate.execute(arguments)
+
+
+class IRGetLatestEarningsTool(BaseMCPTool):
+    """Legacy name wrapper → IRFindDocumentsTool with earnings_presentation type."""
+    def __init__(self, config=None):
+        default_config = {'name': 'ir_get_latest_earnings', 'description': 'Get the latest earnings report and presentation for any publicly traded company.', 'version': '2.0.0', 'enabled': True}
+        if config: default_config.update(config)
+        super().__init__(default_config)
+        self._delegate = IRFindDocumentsTool()
+    def get_input_schema(self):
+        return {'type': 'object', 'properties': {'ticker': {'type': 'string', 'description': 'Stock ticker symbol'}}, 'required': ['ticker']}
+    def get_output_schema(self): return self._delegate.get_output_schema()
+    def execute(self, arguments):
+        args = dict(arguments, document_type='earnings_presentation', limit=5)
+        result = self._delegate.execute(args)
+        # Rename key to match legacy output shape
+        result['latest_earnings'] = result.get('documents', [])
+        return result
+
+
+class IRGetAnnualReportsTool(BaseMCPTool):
+    """Legacy name wrapper → IRFindDocumentsTool with annual_report type."""
+    def __init__(self, config=None):
+        default_config = {'name': 'ir_get_annual_reports', 'description': 'Get annual reports for any publicly traded company.', 'version': '2.0.0', 'enabled': True}
+        if config: default_config.update(config)
+        super().__init__(default_config)
+        self._delegate = IRFindDocumentsTool()
+    def get_input_schema(self):
+        return {'type': 'object', 'properties': {
+            'ticker': {'type': 'string'}, 'year': {'type': 'integer'}, 'limit': {'type': 'integer', 'default': 5}
+        }, 'required': ['ticker']}
+    def get_output_schema(self): return self._delegate.get_output_schema()
+    def execute(self, arguments):
+        args = dict(arguments, document_type='annual_report')
+        result = self._delegate.execute(args)
+        result['annual_reports'] = result.get('documents', [])
+        return result
+
+
+class IRGetPresentationsTool(BaseMCPTool):
+    """Legacy name wrapper → IRFindDocumentsTool with investor_presentation type."""
+    def __init__(self, config=None):
+        default_config = {'name': 'ir_get_presentations', 'description': 'Get investor and earnings presentations for any publicly traded company.', 'version': '2.0.0', 'enabled': True}
+        if config: default_config.update(config)
+        super().__init__(default_config)
+        self._delegate = IRFindDocumentsTool()
+    def get_input_schema(self):
+        return {'type': 'object', 'properties': {
+            'ticker': {'type': 'string'}, 'limit': {'type': 'integer', 'default': 10}
+        }, 'required': ['ticker']}
+    def get_output_schema(self): return self._delegate.get_output_schema()
+    def execute(self, arguments):
+        args = dict(arguments, document_type='earnings_presentation')
+        result = self._delegate.execute(args)
+        result['presentations'] = result.get('documents', [])
+        return result
+
+
+class IRGetAllResourcesTool(BaseMCPTool):
+    """Legacy name wrapper → IRFindPageTool + IRFindDocumentsTool."""
+    def __init__(self, config=None):
+        default_config = {'name': 'ir_get_all_resources', 'description': 'Get comprehensive investor relations resources for any publicly traded company.', 'version': '2.0.0', 'enabled': True}
+        if config: default_config.update(config)
+        super().__init__(default_config)
+        self._page = IRFindPageTool()
+        self._docs = IRFindDocumentsTool()
+    def get_input_schema(self):
+        return {'type': 'object', 'properties': {'ticker': {'type': 'string'}}, 'required': ['ticker']}
+    def get_output_schema(self): return {'type': 'object'}
+    def execute(self, arguments):
+        ticker = arguments['ticker']
+        page = self._page.execute(arguments)
+        docs = self._docs.execute({'ticker': ticker, 'document_type': 'all', 'limit': 15})
+        return {
+            'ticker': ticker,
+            'ir_page_url': page.get('ir_page_url', ''),
+            'company_name': page.get('company_name', ''),
+            'documents': docs.get('documents', []),
+            'count': docs.get('count', 0),
+            'success': page.get('success', False),
+        }
+
+
+class IRListSupportedCompaniesTool(BaseMCPTool):
+    """Returns message that all tickers are now supported via Tavily."""
+    def __init__(self, config=None):
+        default_config = {'name': 'ir_list_supported_companies', 'description': 'List supported companies for investor relations tools. All publicly traded companies are now supported.', 'version': '2.0.0', 'enabled': True}
+        if config: default_config.update(config)
+        super().__init__(default_config)
+    def get_input_schema(self): return {'type': 'object', 'properties': {}}
+    def get_output_schema(self): return {'type': 'object'}
+    def execute(self, arguments):
+        return {
+            'message': 'All publicly traded companies are supported via Tavily search. No ticker restrictions.',
+            'supported_companies': 'ALL',
+            'count': 'unlimited',
+            'note': 'Use ir_find_page, ir_find_documents, or ir_extract_content for any ticker.',
+        }
+
+
 TAVILY_IR_TOOLS = {
     'ir_find_page': IRFindPageTool,
     'ir_find_documents': IRFindDocumentsTool,
     'ir_extract_content': IRExtractContentTool,
+    'ir_get_documents': IRGetDocumentsTool,
+    'ir_get_latest_earnings': IRGetLatestEarningsTool,
+    'ir_get_annual_reports': IRGetAnnualReportsTool,
+    'ir_get_presentations': IRGetPresentationsTool,
+    'ir_get_all_resources': IRGetAllResourcesTool,
+    'ir_list_supported_companies': IRListSupportedCompaniesTool,
 }
