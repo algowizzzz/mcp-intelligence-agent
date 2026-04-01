@@ -1,0 +1,72 @@
+{
+  "name": "ir_find_documents",
+  "implementation": "sajha.tools.impl.tavily_ir_tool.IRFindDocumentsTool",
+  "description": "Find investor relations documents (annual reports, earnings presentations, proxy statements, ESG reports) for any publicly traded company. Universal coverage — not limited to pre-configured companies.",
+  "version": "2.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "ticker": {
+        "type": "string",
+        "description": "Stock ticker symbol (e.g., AAPL, BMO, JPM)"
+      },
+      "company_name": {
+        "type": "string",
+        "description": "Optional company name to improve search accuracy"
+      },
+      "document_type": {
+        "type": "string",
+        "description": "Type of document",
+        "enum": ["annual_report", "quarterly_report", "earnings_presentation", "investor_presentation", "proxy_statement", "press_release", "esg_report", "supplemental", "all"],
+        "default": "all"
+      },
+      "year": {
+        "type": "integer",
+        "description": "Year for documents (e.g., 2024)",
+        "minimum": 2000,
+        "maximum": 2030
+      },
+      "limit": {
+        "type": "integer",
+        "description": "Maximum documents to return",
+        "default": 8,
+        "minimum": 1,
+        "maximum": 20
+      }
+    },
+    "required": ["ticker"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "ticker": {"type": "string"},
+      "document_type": {"type": "string"},
+      "year": {"type": ["integer", "null"]},
+      "count": {"type": "integer"},
+      "documents": {"type": "array"},
+      "success": {"type": "boolean"}
+    }
+  },
+  "metadata": {
+    "author": "Ashutosh Sinha",
+    "category": "Financial Analysis",
+    "tags": ["investor relations", "IR documents", "annual report", "earnings", "universal"],
+    "rateLimit": 20,
+    "cacheTTL": 3600,
+    "examples": [
+      {
+        "description": "Find AAPL annual reports for 2024",
+        "input": {"ticker": "AAPL", "document_type": "annual_report", "year": 2024}
+      },
+      {
+        "description": "Find BMO earnings presentations",
+        "input": {"ticker": "BMO", "document_type": "earnings_presentation"}
+      },
+      {
+        "description": "Find JPM all IR documents",
+        "input": {"ticker": "JPM", "document_type": "all", "limit": 10}
+      }
+    ]
+  }
+}

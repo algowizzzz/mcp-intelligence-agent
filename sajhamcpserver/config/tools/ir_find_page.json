@@ -1,15 +1,19 @@
 {
   "name": "ir_find_page",
-  "implementation": "sajha.tools.impl.investor_relations_tool_refactored.IRFindPageTool",
-  "description": "Find the investor relations page URL for a specific company",
-  "version": "2.9.8",
+  "implementation": "sajha.tools.impl.tavily_ir_tool.IRFindPageTool",
+  "description": "Find the investor relations page URL for any publicly traded company. Universal coverage via Tavily search — not limited to pre-configured companies.",
+  "version": "2.0.0",
   "enabled": true,
   "inputSchema": {
     "type": "object",
     "properties": {
       "ticker": {
         "type": "string",
-        "description": "Stock ticker symbol (e.g., TSLA, MSFT, JPM)"
+        "description": "Stock ticker symbol (e.g., AAPL, BMO, JPM, TSLA)"
+      },
+      "company_name": {
+        "type": "string",
+        "description": "Optional company name to improve search accuracy"
       }
     },
     "required": ["ticker"]
@@ -18,31 +22,31 @@
     "type": "object",
     "properties": {
       "ticker": {"type": "string"},
-      "ir_page_url": {"type": "string", "description": "URL of the investor relations page"},
-      "success": {"type": "boolean"}
+      "company_name": {"type": "string"},
+      "ir_page_url": {"type": "string"},
+      "success": {"type": "boolean"},
+      "sources": {"type": "array"}
     }
   },
   "metadata": {
     "author": "Ashutosh Sinha",
     "category": "Financial Analysis",
-    "tags": ["investor relations", "IR page", "URL"],
+    "tags": ["investor relations", "IR page", "URL", "universal"],
     "rateLimit": 30,
     "cacheTTL": 86400,
-    "supported_companies": ["TSLA", "MSFT", "C", "BMO", "RY", "JPM", "GS"],
     "examples": [
       {
-        "description": "Find Tesla's IR page",
-        "input": {"ticker": "TSLA"}
+        "description": "Find Apple's IR page",
+        "input": {"ticker": "AAPL"}
       },
       {
-        "description": "Find Microsoft's IR page",
-        "input": {"ticker": "MSFT"}
+        "description": "Find Bank of Montreal's IR page",
+        "input": {"ticker": "BMO", "company_name": "Bank of Montreal"}
+      },
+      {
+        "description": "Find JPMorgan's IR page",
+        "input": {"ticker": "JPM"}
       }
-    ],
-    "useCases": [
-      "Get IR page URL for analysis",
-      "Direct access to company IR resources",
-      "Verify IR page availability"
     ]
   }
 }

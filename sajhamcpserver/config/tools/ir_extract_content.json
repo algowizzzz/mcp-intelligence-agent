@@ -1,0 +1,53 @@
+{
+  "name": "ir_extract_content",
+  "implementation": "sajha.tools.impl.tavily_ir_tool.IRExtractContentTool",
+  "description": "Extract readable content from any investor relations document URL. Handles SEC Archives HTML filings (up to 15 MB) via direct streaming. Supports optional query to focus content extraction.",
+  "version": "2.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "url": {
+        "type": "string",
+        "description": "URL of the IR document to extract content from"
+      },
+      "query": {
+        "type": "string",
+        "description": "Optional: focus the extracted content on this topic (e.g., 'revenue guidance', 'capital allocation')"
+      },
+      "section": {
+        "type": "string",
+        "description": "For SEC 10-K/10-Q filings: specific section to extract",
+        "enum": ["item 1", "item 1a", "item 7", "item 7a", "item 8", "item 9a"]
+      }
+    },
+    "required": ["url"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "url": {"type": "string"},
+      "content": {"type": "string"},
+      "content_length": {"type": "integer"},
+      "extraction_method": {"type": "string"},
+      "success": {"type": "boolean"}
+    }
+  },
+  "metadata": {
+    "author": "Ashutosh Sinha",
+    "category": "Financial Analysis",
+    "tags": ["extract", "content", "IR document", "SEC filing", "stream"],
+    "rateLimit": 10,
+    "cacheTTL": 1800,
+    "examples": [
+      {
+        "description": "Extract content from annual report URL",
+        "input": {"url": "https://example.com/annual-report.pdf", "query": "revenue growth"}
+      },
+      {
+        "description": "Extract MD&A section from SEC 10-K filing",
+        "input": {"url": "https://www.sec.gov/Archives/edgar/data/12345/...", "section": "item 7"}
+      }
+    ]
+  }
+}

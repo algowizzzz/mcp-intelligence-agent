@@ -28,16 +28,19 @@ def direct_sec_json(url: str) -> dict:
         return json.loads(r.read())
 
 
-def tavily_extract(urls: List[str]) -> List[Dict]:
+def tavily_extract(urls: List[str], query: str = None) -> List[Dict]:
     """
     Fetch specific URLs via Tavily /extract endpoint.
     Use for structured JSON endpoints (XBRL, submissions, company tickers).
     Returns list of {url, raw_content} dicts.
     """
-    payload = json.dumps({
+    payload_dict = {
         'api_key': _get_api_key(),
         'urls': urls,
-    }).encode('utf-8')
+    }
+    if query:
+        payload_dict['query'] = query
+    payload = json.dumps(payload_dict).encode('utf-8')
     req = urllib.request.Request(
         'https://api.tavily.com/extract',
         data=payload,
