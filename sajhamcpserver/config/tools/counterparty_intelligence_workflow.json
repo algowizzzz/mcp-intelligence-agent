@@ -1,6 +1,5 @@
 {
   "name": "counterparty_intelligence_workflow",
-  "type": "workflow",
   "implementation": "sajha.tools.impl.iris_ccr_tools.WorkflowTool",
   "version": "1.0.0",
   "enabled": true,
