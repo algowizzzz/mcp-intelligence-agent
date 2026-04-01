@@ -1,7 +1,7 @@
 """Human-to-XBRL concept mapping for edgar_get_metric and related tools."""
 import json
 from typing import List, Optional
-from .edgar_tavily_client import tavily_extract, fix_tavily_json
+from .edgar_tavily_client import direct_sec_json
 
 # Maps human-readable metric names to ordered list of XBRL concepts (try in order)
 HUMAN_TO_XBRL = {
@@ -79,14 +79,10 @@ def get_xbrl_concepts(human_term: str) -> List[str]:
     return []
 
 def fetch_xbrl_records(cik: str, concept: str) -> List[dict]:
-    """Fetch all records for a single XBRL concept via Tavily extract."""
+    """Fetch all records for a single XBRL concept via direct SEC API call."""
     url = f'https://data.sec.gov/api/xbrl/companyconcept/CIK{cik}/us-gaap/{concept}.json'
-    results = tavily_extract([url])
-    if not results:
-        return []
-    raw = fix_tavily_json(results[0].get('raw_content', ''))
     try:
-        data = json.loads(raw)
+        data = direct_sec_json(url)
     except Exception:
         return []
     units = data.get('units', {})

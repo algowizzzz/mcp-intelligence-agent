@@ -244,37 +244,22 @@ class OsfiFetchAnnouncementsTool(OsfiBaseTool):
         return {'results': results, 'total_fetched': len(results), 'failed': failed}
 
     def _fetch_url(self, url_entry: Dict) -> Dict:
-        """Attempt to fetch URL content via Tavily search; fall back to URL reference."""
-        content = f"[Direct URL: {url_entry['url']}]"
+        """Fetch URL content via Tavily /extract (exact URL); fall back to URL reference."""
+        target_url = url_entry['url']
+        content = f"[Direct URL: {target_url}]"
         try:
-            # Try tavily via direct HTTP if API key available
-            props = PropertiesConfigurator()
-            api_key = props.get('tavily.api.key', '')
-            if api_key:
-                import json
-                import urllib.request
-                payload = json.dumps({
-                    'api_key': api_key,
-                    'query': url_entry.get('description', url_entry['url']),
-                    'max_results': 3,
-                    'search_depth': 'basic',
-                    'include_answer': True
-                }).encode('utf-8')
-                req = urllib.request.Request(
-                    'https://api.tavily.com/search',
-                    data=payload,
-                    headers={'Content-Type': 'application/json'},
-                    method='POST'
-                )
-                with urllib.request.urlopen(req, timeout=15) as resp:
-                    data = json.loads(resp.read().decode('utf-8'))
-                    content = data.get('answer', '') or str(data.get('results', ''))
+            from .edgar_tavily_client import tavily_extract
+            results = tavily_extract([target_url])
+            if results:
+                raw = results[0].get('raw_content', '')
+                if raw and len(raw.strip()) > 100:
+                    content = raw
         except Exception:
             pass
 
         return {
             'url_name': url_entry.get('name', ''),
-            'url': url_entry.get('url', ''),
+            'url': target_url,
             'category': url_entry.get('category', ''),
             'content': content,
             'fetched_at': datetime.datetime.utcnow().isoformat() + 'Z',

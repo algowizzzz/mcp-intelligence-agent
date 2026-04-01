@@ -3,10 +3,56 @@ EDGAR Tavily-based tools — T-01, T-02, T-06, T-07, T-08, T-10
 Qualitative section extraction and filing discovery via Tavily.
 """
 import json
-from typing import Dict, Any
+import re
+from typing import Dict, Any, List
 from sajha.tools.base_mcp_tool import BaseMCPTool
-from .edgar_tavily_client import tavily_extract, tavily_search, llm_extract, fix_tavily_json
+from .edgar_tavily_client import tavily_extract, tavily_search, llm_extract, fix_tavily_json, efts_find_section_file, stream_sec_section, direct_sec_json
 from .edgar_cik_resolver import resolve_cik
+
+
+def _validate_sources(sources: List[Dict], ticker: str, period: str, expected_cik: str = None) -> List[str]:
+    """
+    Check each source URL for company/period mismatch.
+    Returns a list of human-readable warning strings (empty = all clear).
+    """
+    warnings = []
+
+    # Extract the 4-digit year the caller is asking about
+    period_year = None
+    m = re.search(r'(20\d{2})', period)
+    if m:
+        period_year = int(m.group(1))
+
+    for src in sources:
+        url = src.get('url', '')
+        title = src.get('title', '')
+
+        # ── 1. Wrong company: CIK in URL doesn't match expected ticker CIK ──
+        cik_m = re.search(r'/edgar/data/(\d+)/', url)
+        if cik_m and expected_cik:
+            src_cik = cik_m.group(1).lstrip('0')
+            exp_cik = str(expected_cik).lstrip('0')
+            if src_cik != exp_cik:
+                warnings.append(
+                    f"WRONG COMPANY: source CIK {src_cik} does not match {ticker} "
+                    f"(CIK {exp_cik}). Source: {url}"
+                )
+
+        # ── 2. Stale filing: accession number encodes filing year ──
+        # Accession format in URL: 18-digit string where digits [10:12] = 2-digit year filed
+        acc_m = re.search(r'/(\d{18})/', url)
+        if acc_m and period_year:
+            acc = acc_m.group(1)
+            filed_yy = int(acc[10:12])
+            filed_year = 2000 + filed_yy if filed_yy < 50 else 1900 + filed_yy
+            year_diff = abs(filed_year - period_year)
+            if year_diff > 1:
+                warnings.append(
+                    f"STALE FILING: source filed {filed_year} but requested period is "
+                    f"{period} (Δ{year_diff}y). Source: {url}"
+                )
+
+    return warnings
 
 
 class EdgarFindFilingTool(BaseMCPTool):
@@ -42,15 +88,10 @@ class EdgarFindFilingTool(BaseMCPTool):
             return {'success': False, 'error': str(e)}
 
         submissions_url = f'https://data.sec.gov/submissions/CIK{cik}.json'
-        results = tavily_extract([submissions_url])
-        if not results:
-            return {'success': False, 'error': 'Could not fetch EDGAR submissions'}
-
-        raw = fix_tavily_json(results[0].get('raw_content', ''))
         try:
-            data = json.loads(raw)
-        except Exception:
-            return {'success': False, 'error': 'Failed to parse EDGAR submissions response'}
+            data = direct_sec_json(submissions_url)
+        except Exception as e:
+            return {'success': False, 'error': f'Could not fetch EDGAR submissions: {e}'}
 
         recent = data.get('filings', {}).get('recent', {})
         forms = recent.get('form', [])
@@ -74,6 +115,145 @@ class EdgarFindFilingTool(BaseMCPTool):
                 break
 
         return {'success': True, 'ticker': ticker, 'form_type': form_type, 'filings': filings}
+
+
+def _resolve_filing_url(cik: str, period: str) -> tuple:
+    """
+    Use SEC submissions API to find the exact filing URL for a given period.
+    Returns (filing_url, filing_date, form_type, accession_no) or (None, None, None, None).
+    Period examples: 'Q4 2025', 'FY2024', 'annual 2024', 'latest'.
+    """
+    import datetime
+    padded_cik = str(cik).zfill(10)
+    submissions_url = f'https://data.sec.gov/submissions/CIK{padded_cik}.json'
+
+    try:
+        data = direct_sec_json(submissions_url)
+    except Exception:
+        return None, None, None, None
+
+    recent = data.get('filings', {}).get('recent', {})
+    forms      = recent.get('form', [])
+    dates      = recent.get('filingDate', [])
+    accessions = recent.get('accessionNumber', [])
+    primary    = recent.get('primaryDocument', [])
+
+    period_upper = period.upper()
+    annual = any(x in period_upper for x in ['FY', 'ANNUAL', '10-K'])
+
+    year_m = re.search(r'(20\d{2})', period)
+    target_year = int(year_m.group(1)) if year_m else None
+    q_m = re.search(r'Q([1-4])', period_upper)
+    target_q = int(q_m.group(1)) if q_m else None
+
+    # Q4 is always reported in the 10-K annual filing — no standalone Q4 10-Q exists
+    if target_q == 4:
+        annual = True
+        target_q = None  # Don't filter by quarter month for annual
+
+    target_form = '10-K' if annual else '10-Q'
+
+    candidates = []
+    for form, date, acc, doc in zip(forms, dates, accessions, primary):
+        if form != target_form:
+            continue
+        try:
+            dt = datetime.date.fromisoformat(date)
+        except Exception:
+            continue
+
+        if target_year and dt.year not in (target_year, target_year - 1, target_year + 1):
+            continue
+        if target_year and target_q:
+            q_months = {1: (1, 4), 2: (4, 7), 3: (7, 10), 4: (10, 13)}
+            lo, hi = q_months.get(target_q, (1, 13))
+            if not (lo <= dt.month < hi):
+                continue
+
+        acc_clean = acc.replace('-', '')
+        filing_url = f'https://www.sec.gov/Archives/edgar/data/{cik}/{acc_clean}/{doc}'
+        candidates.append((date, filing_url, form, acc))
+
+    if not candidates:
+        # Fall back to most recent matching form type
+        for form, date, acc, doc in zip(forms, dates, accessions, primary):
+            if form == target_form:
+                acc_clean = acc.replace('-', '')
+                filing_url = f'https://www.sec.gov/Archives/edgar/data/{cik}/{acc_clean}/{doc}'
+                return filing_url, date, form, acc
+        return None, None, None, None
+
+    candidates.sort(key=lambda x: x[0], reverse=True)
+    best = candidates[0]
+    return best[1], best[0], best[2], best[3]
+
+
+def _extract_from_filing_url(filing_url: str, filing_date: str, form_type: str,
+                              ticker: str, period: str, cik: str,
+                              prompt: str, fallback_query: str,
+                              fallback_domains: List[str] = None,
+                              accession_no: str = None,
+                              section_keywords: str = None) -> tuple:
+    """
+    Shared helper: extract filing content using a three-tier strategy:
+      1. EFTS full-text search API — JSON endpoint, Tavily-friendly, no large HTML download
+      2. tavily_extract on the filing URL — works for smaller filings
+      3. tavily_search fallback with _validate_sources gate
+    Returns (combined_text, sources, data_quality, warnings).
+    """
+    if fallback_domains is None:
+        fallback_domains = ['sec.gov']
+
+    sources = [{'title': f'{ticker} {form_type} filed {filing_date}', 'url': filing_url}] if filing_url else []
+
+    # ── Tier 1: Stream large SEC Archives HTML directly (most reliable for 10-K/10-Q) ──
+    if filing_url and 'sec.gov/Archives' in filing_url and section_keywords:
+        # Use first keyword phrase as the section marker to scan for
+        marker = section_keywords.split()[0:3]  # e.g. ['management', 'discussion', 'analysis']
+        # For MD&A use 'item 7', for risk use 'item 1a', etc.
+        section_map = {
+            'management': 'item 7',
+            'risk': 'item 1a',
+            'segment': 'item 7',
+            'earnings': 'item 7',
+            'guidance': 'item 7',
+            'business': 'item 1',
+            'audit': 'item 9a',
+        }
+        first_kw = section_keywords.split()[0].lower()
+        item_marker = section_map.get(first_kw, 'item 7')
+        try:
+            streamed = stream_sec_section(filing_url, item_marker, content_kb=120)
+            if streamed and len(streamed.strip()) > 200:
+                return streamed, sources, 'OK', []
+        except Exception:
+            pass
+
+    # ── Tier 2: tavily_extract on the verified filing URL (works for smaller filings) ──
+    if filing_url:
+        try:
+            extract_results = tavily_extract([filing_url])
+            content = extract_results[0].get('raw_content', '') if extract_results else ''
+        except Exception:
+            content = ''
+
+        if content and len(content.strip()) > 200:
+            return content, sources, 'OK', []
+
+    # ── Tier 3: keyword search with strict validation gate ──
+    raw = tavily_search(fallback_query, include_domains=fallback_domains, max_results=3, include_answer=True)
+    results = raw.get('results', [])[:3]
+    combined = raw.get('answer', '') + '\n\n' + '\n\n'.join(r.get('content', '') for r in results)
+    fallback_sources = [{'title': r.get('title', ''), 'url': r.get('url', '')} for r in results]
+
+    if not combined.strip():
+        return '', fallback_sources, 'FAILED', ['No content returned from any source']
+
+    warnings = _validate_sources(fallback_sources, ticker, period, cik)
+    if warnings:
+        return combined, fallback_sources, 'FAILED', warnings
+
+    return combined, fallback_sources, 'OK', []
 
 
 class EdgarExtractSectionTool(BaseMCPTool):
@@ -123,23 +303,51 @@ class EdgarExtractSectionTool(BaseMCPTool):
         section = arguments.get('section', 'MD&A')
         period = arguments.get('period') or 'latest'
 
-        keywords = self.SECTION_QUERIES.get(section, section.lower())
-        query = f'{ticker} {keywords} {period} 10-Q OR 10-K SEC annual quarterly report'
-
-        raw = tavily_search(query, include_domains=['sec.gov'], max_results=3, include_answer=True)
-        combined = (raw.get('answer', '') + '\n\n' + '\n\n'.join(r.get('content', '') for r in raw.get('results', [])[:3]))
-        sources = [{'title': r.get('title', ''), 'url': r.get('url', '')} for r in raw.get('results', [])[:3]]
-
-        if not combined.strip():
-            return {'success': False, 'error': f'No content retrieved for {ticker} {section}'}
-
-        prompt = self.EXTRACTION_PROMPTS.get(section, f'Extract key information from this {section} SEC filing section for {ticker}. Return concise JSON summary.')
         try:
-            extracted = llm_extract(combined, prompt)
+            cik = resolve_cik(ticker)
         except Exception as e:
-            extracted = {'raw_summary': combined[:1000]}
+            return {'success': False, 'error': f'Could not resolve CIK for {ticker}: {e}'}
 
-        extracted.update({'success': True, 'ticker': ticker, 'period': period, 'sources': sources})
+        filing_url, filing_date, form_type, accession_no = _resolve_filing_url(cik, period)
+
+        keywords = self.SECTION_QUERIES.get(section, section.lower())
+        fallback_query = f'"{ticker}" {keywords} {period} site:sec.gov 10-Q 10-K'
+        prompt = self.EXTRACTION_PROMPTS.get(
+            section,
+            f'Extract key information from this {section} SEC filing section for {ticker}. Return concise JSON summary.'
+        )
+
+        content, sources, data_quality, warnings = _extract_from_filing_url(
+            filing_url, filing_date, form_type, ticker, period, cik,
+            prompt, fallback_query,
+            accession_no=accession_no, section_keywords=keywords
+        )
+
+        if data_quality == 'FAILED':
+            if warnings and warnings[0] == 'No content returned from any source':
+                return {'success': False, 'error': f'No content found for {ticker} {section} {period}. Try edgar_find_filing first to locate the exact filing URL.'}
+            return {
+                'success': False, 'ticker': ticker, 'period': period,
+                'sources': sources, 'data_quality': 'FAILED',
+                'warnings': warnings,
+                'error': (
+                    f'Source validation failed for {ticker} {section} {period}. '
+                    f'Retrieved documents do not match the requested company or period. '
+                    f'Details: ' + ' | '.join(warnings)
+                )
+            }
+
+        try:
+            extracted = llm_extract(content, prompt)
+        except Exception:
+            extracted = {'raw_summary': content[:1000]}
+
+        extracted.update({
+            'success': True, 'ticker': ticker, 'period': period,
+            'filing_date': filing_date, 'form_type': form_type,
+            'sources': sources, 'data_quality': 'OK',
+            '_source': filing_url or (sources[0]['url'] if sources else '')
+        })
         return extracted
 
 
@@ -168,25 +376,54 @@ class EdgarEarningsBriefTool(BaseMCPTool):
         ticker = arguments.get('ticker', '').upper()
         period = arguments.get('period', 'latest')
 
-        # Search SEC for filing metrics
-        sec_query = f'{ticker} earnings {period} revenue EPS results 10-Q 8-K SEC filing'
-        sec_raw = tavily_search(sec_query, include_domains=['sec.gov'], max_results=3)
-        sec_text = (sec_raw.get('answer', '') + '\n\n' + '\n\n'.join(r.get('content', '') for r in sec_raw.get('results', [])[:3]))
+        try:
+            cik = resolve_cik(ticker)
+        except ValueError as e:
+            return {'success': False, 'error': str(e)}
 
-        # Search news for analyst reaction
+        # Step 1: Resolve exact filing URL from SEC submissions API
+        filing_url, filing_date, form_type, accession_no = _resolve_filing_url(cik, period)
+
+        fallback_query = f'{ticker} earnings {period} revenue EPS results 10-Q 8-K SEC filing'
+        prompt = f'Extract a complete earnings brief for {ticker} {period}. Return JSON: {{"ticker":"{ticker}","period":"{period}","key_metrics":{{"revenue":"...","eps":"...","net_income":"...","gross_margin":"..."}},"yoy_change":{{"revenue":"...","eps":"..."}},"management_commentary":"...","guidance":"...","analyst_reaction":"..."}}'
+
+        # Step 2: Extract SEC filing content (EFTS → extract → search fallback)
+        sec_text, sec_sources, data_quality, warnings = _extract_from_filing_url(
+            filing_url, filing_date, form_type, ticker, period, cik,
+            prompt, fallback_query,
+            accession_no=accession_no,
+            section_keywords='earnings revenue net income EPS management commentary guidance'
+        )
+
+        if data_quality == 'FAILED':
+            return {
+                'success': False, 'ticker': ticker, 'period': period,
+                'sources': sec_sources, 'data_quality': 'FAILED',
+                'warnings': warnings,
+                'error': (
+                    f'Source validation failed for {ticker} earnings {period}. '
+                    f'Retrieved documents do not match the requested company or period. '
+                    f'Details: ' + ' | '.join(warnings)
+                )
+            }
+
+        # Step 3: News/analyst reaction — /search on news domains is correct usage here
         news_query = f'{ticker} earnings {period} results analyst reaction guidance'
         news_raw = tavily_search(news_query, include_domains=['bloomberg.com', 'reuters.com', 'finance.yahoo.com', 'cnbc.com'], max_results=3)
-        news_text = (news_raw.get('answer', '') + '\n\n' + '\n\n'.join(r.get('content', '') for r in news_raw.get('results', [])[:3]))
+        news_text = news_raw.get('answer', '') + '\n\n' + '\n\n'.join(r.get('content', '') for r in news_raw.get('results', [])[:3])
+        news_sources = [{'title': r.get('title', ''), 'url': r.get('url', '')} for r in news_raw.get('results', [])[:2]]
 
         combined = f'SEC FILING DATA:\n{sec_text}\n\nNEWS & ANALYST COMMENTARY:\n{news_text}'
-        prompt = f'Extract a complete earnings brief for {ticker} {period}. Return JSON: {{"ticker":"{ticker}","period":"{period}","key_metrics":{{"revenue":"...","eps":"...","net_income":"...","gross_margin":"..."}},"yoy_change":{{"revenue":"...","eps":"..."}},"management_commentary":"...","guidance":"...","analyst_reaction":"..."}}'
         try:
             result = llm_extract(combined, prompt)
-        except Exception as e:
+        except Exception:
             result = {'raw_summary': sec_text[:800]}
 
         result['success'] = True
-        result['sources'] = [{'title': r.get('title', ''), 'url': r.get('url', '')} for r in sec_raw.get('results', [])[:2] + news_raw.get('results', [])[:2]]
+        result['data_quality'] = 'OK'
+        result['sources'] = sec_sources + news_sources
+        if filing_url:
+            result['_source'] = filing_url
         return result
 
 
@@ -215,19 +452,44 @@ class EdgarSegmentAnalysisTool(BaseMCPTool):
         ticker = arguments.get('ticker', '').upper()
         period = arguments.get('period') or 'latest'
 
-        query = f'{ticker} revenue by segment product category operating income {period} 10-Q 10-K SEC'
-        raw = tavily_search(query, include_domains=['sec.gov'], max_results=3, include_answer=True)
-        combined = raw.get('answer', '') + '\n\n' + '\n\n'.join(r.get('content', '') for r in raw.get('results', [])[:3])
-        sources = [{'title': r.get('title', ''), 'url': r.get('url', '')} for r in raw.get('results', [])[:3]]
-
-        prompt = f'Extract business segment data for {ticker} {period}. Return JSON: {{"ticker":"{ticker}","period":"{period}","segments":[{{"name":"...","revenue":"...","operating_income":"...","yoy_change":"..."}}]}}'
         try:
-            result = llm_extract(combined, prompt)
+            cik = resolve_cik(ticker)
+        except ValueError as e:
+            return {'success': False, 'error': str(e)}
+
+        filing_url, filing_date, form_type, accession_no = _resolve_filing_url(cik, period)
+
+        fallback_query = f'{ticker} revenue by segment product category operating income {period} 10-Q 10-K SEC'
+        prompt = f'Extract business segment data for {ticker} {period}. Return JSON: {{"ticker":"{ticker}","period":"{period}","segments":[{{"name":"...","revenue":"...","operating_income":"...","yoy_change":"..."}}]}}'
+
+        content, sources, data_quality, warnings = _extract_from_filing_url(
+            filing_url, filing_date, form_type, ticker, period, cik,
+            prompt, fallback_query,
+            accession_no=accession_no,
+            section_keywords='segment revenue operating income business unit geographic breakdown'
+        )
+
+        if data_quality == 'FAILED':
+            return {
+                'success': False, 'ticker': ticker, 'period': period,
+                'sources': sources, 'data_quality': 'FAILED',
+                'warnings': warnings,
+                'error': (
+                    f'Source validation failed for {ticker} segment analysis {period}. '
+                    f'Details: ' + ' | '.join(warnings)
+                )
+            }
+
+        try:
+            result = llm_extract(content, prompt)
         except Exception as e:
             result = {'segments': [], 'note': str(e)}
 
         result['success'] = True
+        result['data_quality'] = 'OK'
         result['sources'] = sources
+        if filing_url:
+            result['_source'] = filing_url
         return result
 
 
@@ -256,19 +518,47 @@ class EdgarRiskSummaryTool(BaseMCPTool):
         ticker = arguments.get('ticker', '').upper()
         fiscal_year = arguments.get('fiscal_year') or 'latest'
 
-        query = f'{ticker} risk factors material risks {fiscal_year} 10-K annual report SEC'
-        raw = tavily_search(query, include_domains=['sec.gov'], max_results=3, include_answer=True)
-        combined = raw.get('answer', '') + '\n\n' + '\n\n'.join(r.get('content', '') for r in raw.get('results', [])[:3])
-        sources = [{'title': r.get('title', ''), 'url': r.get('url', '')} for r in raw.get('results', [])[:3]]
-
-        prompt = f'Extract and categorise risk factors for {ticker} from this 10-K content. Return JSON: {{"ticker":"{ticker}","fiscal_year":"{fiscal_year}","risk_categories":[{{"category":"macro|competitive|regulatory|operational|financial|technology","risks":[{{"title":"...","summary":"..."}}]}}]}}'
         try:
-            result = llm_extract(combined, prompt)
+            cik = resolve_cik(ticker)
+        except ValueError as e:
+            return {'success': False, 'error': str(e)}
+
+        # 10-K is annual — prefix period with FY so _resolve_filing_url picks target_form='10-K'
+        fy_period = fiscal_year if fiscal_year.upper().startswith('FY') else f'FY{fiscal_year}'
+
+        filing_url, filing_date, form_type, accession_no = _resolve_filing_url(cik, fy_period)
+
+        fallback_query = f'{ticker} risk factors material risks {fiscal_year} 10-K annual report SEC'
+        prompt = f'Extract and categorise risk factors for {ticker} from this 10-K content. Return JSON: {{"ticker":"{ticker}","fiscal_year":"{fiscal_year}","risk_categories":[{{"category":"macro|competitive|regulatory|operational|financial|technology","risks":[{{"title":"...","summary":"..."}}]}}]}}'
+
+        content, sources, data_quality, warnings = _extract_from_filing_url(
+            filing_url, filing_date, form_type, ticker, fy_period, cik,
+            prompt, fallback_query,
+            accession_no=accession_no,
+            section_keywords='risk factors material risks regulatory competitive operational financial'
+        )
+
+        if data_quality == 'FAILED':
+            return {
+                'success': False, 'ticker': ticker, 'fiscal_year': fiscal_year,
+                'sources': sources, 'data_quality': 'FAILED',
+                'warnings': warnings,
+                'error': (
+                    f'Source validation failed for {ticker} risk summary {fiscal_year}. '
+                    f'Details: ' + ' | '.join(warnings)
+                )
+            }
+
+        try:
+            result = llm_extract(content, prompt)
         except Exception as e:
             result = {'risk_categories': [], 'note': str(e)}
 
         result['success'] = True
+        result['data_quality'] = 'OK'
         result['sources'] = sources
+        if filing_url:
+            result['_source'] = filing_url
         return result
 
 

@@ -129,20 +129,40 @@ async def run_agent(req: RunRequest, _: None = Depends(require_api_key)):
             # Canvas envelope detection
             import json as _json, re as _re
             assembled = ''.join(full_text).strip()
-            # Extract JSON from markdown code fence if present (agent may prepend text + ```json...```)
-            _fence_match = _re.search(r'```(?:json)?\s*(\{[\s\S]*?\})\s*```', assembled)
-            if _fence_match:
-                assembled = _fence_match.group(1).strip()
-            if assembled.startswith('{') and assembled.endswith('}'):
+
+            def _try_parse_envelope(s):
+                """Try to parse a canvas envelope JSON from string s."""
                 try:
-                    envelope = _json.loads(assembled)
-                    if 'summary' in envelope and 'canvas' in envelope:
-                        canvas = envelope['canvas']
-                        # Replace the raw JSON that was streamed with just the summary sentence
-                        yield f"data: {_json.dumps({'type': 'replace_text', 'text': envelope.get('summary', '')})}\n\n"
-                        yield f"data: {_json.dumps({'type': 'canvas', 'title': canvas.get('title','Document'), 'content': canvas.get('content',''), 'canvas_type': canvas.get('type','report')})}\n\n"
+                    obj = _json.loads(s)
+                    if 'summary' in obj and 'canvas' in obj:
+                        return obj
                 except Exception:
                     pass
+                return None
+
+            envelope = None
+
+            # 1. Code fence: ```json { ... } ```
+            _fence_match = _re.search(r'```(?:json)?\s*(\{[\s\S]*\})\s*```', assembled)
+            if _fence_match:
+                envelope = _try_parse_envelope(_fence_match.group(1).strip())
+
+            # 2. Bare JSON that is the entire response
+            if not envelope and assembled.startswith('{'):
+                envelope = _try_parse_envelope(assembled)
+
+            # 3. JSON envelope anywhere in the text (agent prepended prose before the JSON)
+            if not envelope:
+                _json_start = assembled.find('{\n  "summary"')
+                if _json_start == -1:
+                    _json_start = assembled.find('{"summary"')
+                if _json_start != -1:
+                    envelope = _try_parse_envelope(assembled[_json_start:])
+
+            if envelope:
+                canvas = envelope['canvas']
+                yield f"data: {_json.dumps({'type': 'replace_text', 'text': envelope.get('summary', '')})}\n\n"
+                yield f"data: {_json.dumps({'type': 'canvas', 'title': canvas.get('title','Document'), 'content': canvas.get('content',''), 'canvas_type': canvas.get('type','report')})}\n\n"
             yield 'data: [DONE]\n\n'
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
