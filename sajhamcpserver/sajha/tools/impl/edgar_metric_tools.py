@@ -37,14 +37,6 @@ class EdgarGetMetricTool(BaseMCPTool):
     def get_output_schema(self) -> Dict:
         return {'type': 'object', 'properties': {'ticker': {'type': 'string'}, 'metric': {'type': 'string'}, 'records': {'type': 'array'}}}
 
-    # Non-US filers that use IFRS/local GAAP and don't file US-GAAP XBRL with SEC
-    NON_US_XBRL_TICKERS = {
-        'TD', 'RY', 'BMO', 'BNS', 'CM', 'NA', 'CWB', 'EQB',  # Canadian banks
-        'HSBC', 'BARC', 'LLOY', 'NWG', 'STAN',                 # UK banks
-        'SAN', 'BBVA', 'BNP', 'ACA', 'DBK', 'UBS', 'CS',       # European banks
-        'MFG', 'SMFG', 'NMR',                                    # Japanese
-    }
-
     def execute(self, arguments: Dict[str, Any]) -> Dict:
         ticker = arguments.get('ticker', '').upper()
         metric = arguments.get('metric', '')
@@ -53,9 +45,6 @@ class EdgarGetMetricTool(BaseMCPTool):
 
         if not ticker or not metric:
             return {'success': False, 'error': 'ticker and metric are required'}
-
-        if ticker in self.NON_US_XBRL_TICKERS:
-            return {'success': False, 'error': f'{ticker} is not a US GAAP XBRL filer. Use edgar_extract_section or edgar_earnings_brief for qualitative data, or tavily_research_search for financial metrics from press releases.', 'suggestion': 'edgar_extract_section'}
 
         try:
             cik = resolve_cik(ticker)
@@ -112,9 +101,6 @@ class EdgarGetStatementsTool(BaseMCPTool):
 
         if not ticker:
             return {'success': False, 'error': 'ticker is required'}
-
-        if ticker in EdgarGetMetricTool.NON_US_XBRL_TICKERS:
-            return {'success': False, 'error': f'{ticker} is not a US GAAP XBRL filer. Use edgar_extract_section or edgar_earnings_brief instead.', 'suggestion': 'edgar_earnings_brief'}
 
         try:
             cik = resolve_cik(ticker)
@@ -186,10 +172,6 @@ class EdgarCalculateRatiosTool(BaseMCPTool):
 
         if not ticker or not ratios:
             return {'success': False, 'error': 'ticker and ratios are required'}
-
-        if ticker in EdgarGetMetricTool.NON_US_XBRL_TICKERS:
-            return {'success': False, 'error': f'{ticker} is not a US GAAP XBRL filer. Use edgar_extract_section or edgar_earnings_brief instead.', 'suggestion': 'edgar_earnings_brief'}
-
         try:
             cik = resolve_cik(ticker)
         except ValueError as e:
