@@ -31,10 +31,18 @@ class EdgarFindFilingTool(BaseMCPTool):
     def get_output_schema(self) -> Dict:
         return {'type': 'object', 'properties': {'ticker': {'type': 'string'}, 'filings': {'type': 'array'}}}
 
+    SEDAR_FILERS = {'TD', 'RY', 'BMO', 'BNS', 'CM', 'NA', 'CWB', 'EQB',
+                    'SU', 'CNQ', 'ABX', 'WPM', 'MFC', 'SLF', 'GWO', 'POW'}
+
     def execute(self, arguments: Dict[str, Any]) -> Dict:
         ticker = arguments.get('ticker', '').upper()
         form_type = arguments.get('form_type') or '10-K'
         limit = min(int(arguments.get('limit') or 5), 10)
+
+        if ticker in self.SEDAR_FILERS:
+            return {'success': False, 'filings': [],
+                    'error': f'{ticker} files with SEDAR (Canadian regulator), not SEC. Use edgar_extract_section or edgar_earnings_brief which support SEDAR/IR searches.',
+                    'suggestion': 'edgar_extract_section'}
 
         try:
             cik = resolve_cik(ticker)
@@ -118,28 +126,50 @@ class EdgarExtractSectionTool(BaseMCPTool):
     def get_output_schema(self) -> Dict:
         return {'type': 'object', 'properties': {'section': {'type': 'string'}, 'ticker': {'type': 'string'}, 'key_points': {'type': 'array'}}}
 
+    # Canadian bank tickers and their company names for better search queries
+    CANADIAN_BANKS = {
+        'TD': 'TD Bank Toronto-Dominion', 'RY': 'RBC Royal Bank Canada',
+        'BMO': 'BMO Bank of Montreal', 'BNS': 'Scotiabank Bank of Nova Scotia',
+        'CM': 'CIBC Canadian Imperial Bank', 'NA': 'National Bank Canada',
+        'CWB': 'Canadian Western Bank', 'EQB': 'EQ Bank Equitable',
+    }
+    # Other non-US filers by ticker prefix patterns
+    CANADIAN_TICKERS = set(CANADIAN_BANKS.keys())
+
     def execute(self, arguments: Dict[str, Any]) -> Dict:
         ticker = arguments.get('ticker', '').upper()
         section = arguments.get('section', 'MD&A')
         period = arguments.get('period') or 'latest'
 
         keywords = self.SECTION_QUERIES.get(section, section.lower())
-        query = f'{ticker} {keywords} {period} 10-Q OR 10-K SEC annual quarterly report'
+        is_canadian = ticker in self.CANADIAN_TICKERS
 
-        raw = tavily_search(query, include_domains=['sec.gov'], max_results=3, include_answer=True)
+        if is_canadian:
+            # Canadian banks file with SEDAR/SEDAR+, not SEC.
+            # Search their IR pages and sedarplus directly.
+            company_name = self.CANADIAN_BANKS.get(ticker, ticker)
+            query = f'{company_name} {keywords} {period} annual report quarterly results management discussion'
+            domains = ['sedarplus.ca', 'sedar.com', 'td.com', 'rbc.com', 'bmo.com',
+                       'scotiabank.com', 'cibc.com', 'nbc.ca', 'sec.gov']
+            raw = tavily_search(query, include_domains=domains, max_results=5, include_answer=True)
+        else:
+            query = f'{ticker} {keywords} {period} 10-Q OR 10-K SEC annual quarterly report'
+            raw = tavily_search(query, include_domains=['sec.gov'], max_results=3, include_answer=True)
+
         combined = (raw.get('answer', '') + '\n\n' + '\n\n'.join(r.get('content', '') for r in raw.get('results', [])[:3]))
-        sources = [{'title': r.get('title', ''), 'url': r.get('url', '')} for r in raw.get('results', [])[:3]]
+        sources = [{'title': r.get('title', ''), 'url': r.get('url', '')} for r in raw.get('results', [])[:5]]
 
         if not combined.strip():
             return {'success': False, 'error': f'No content retrieved for {ticker} {section}'}
 
-        prompt = self.EXTRACTION_PROMPTS.get(section, f'Extract key information from this {section} SEC filing section for {ticker}. Return concise JSON summary.')
+        prompt = self.EXTRACTION_PROMPTS.get(section, f'Extract key information from this {section} section for {ticker}. Return concise JSON summary.')
         try:
             extracted = llm_extract(combined, prompt)
         except Exception as e:
             extracted = {'raw_summary': combined[:1000]}
 
-        extracted.update({'success': True, 'ticker': ticker, 'period': period, 'sources': sources})
+        extracted.update({'success': True, 'ticker': ticker, 'period': period,
+                          'sources': sources, 'filing_regime': 'SEDAR' if is_canadian else 'SEC'})
         return extracted
 
 
