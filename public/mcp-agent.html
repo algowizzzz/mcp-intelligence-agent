@@ -36,12 +36,12 @@
       --text-primary: #e5e5e5;
       --text-secondary: #a1a1a1;
       --text-muted: #737373;
-      --green: #4CAF50;
-      --red: #ef4444;
-      --blue: #3b82f6;
-      --amber: #FFB300;
-      --amber-dim: #b37e00;
-      --amber-glow: rgba(255,179,0,0.15);
+      --green: #888888;
+      --red: #888888;
+      --blue: #cccccc;
+      --amber: #cccccc;
+      --amber-dim: #aaaaaa;
+      --amber-glow: rgba(255,255,255,0.08);
       --radius-sm: 8px;
       --radius-md: 12px;
       --radius-lg: 16px;
@@ -263,7 +263,7 @@
       flex: 1;
       background: transparent;
       border: none;
-      border-bottom: 1px solid var(--blue);
+      border-bottom: 1px solid rgba(255,255,255,0.18);
       color: var(--text-primary);
       font-family: inherit;
       font-size: 13px;
@@ -454,9 +454,9 @@
     }
 
     .ws-file-item.active {
-      background: rgba(59,130,246,0.12);
-      color: var(--blue);
-      border: 1px solid rgba(59,130,246,0.25);
+      background: rgba(255,255,255,0.10);
+      color: #ffffff;
+      border: 1px solid rgba(255,255,255,0.15);
     }
 
     .ws-file-icon {
@@ -520,9 +520,9 @@
     }
 
     .wf-item.active {
-      background: rgba(59,130,246,0.12);
-      color: var(--blue);
-      border: 1px solid rgba(59,130,246,0.25);
+      background: rgba(255,255,255,0.10);
+      color: #ffffff;
+      border: 1px solid rgba(255,255,255,0.15);
     }
 
     .wf-item-icon {
@@ -550,9 +550,9 @@
 
     .wf-select-btn {
       background: transparent;
-      border: 1px solid rgba(59,130,246,0.4);
+      border: 1px solid rgba(255,255,255,0.18);
       border-radius: 4px;
-      color: var(--blue);
+      color: #cccccc;
       font-size: 11px;
       font-weight: 500;
       padding: 2px 7px;
@@ -560,11 +560,11 @@
       line-height: 1.4;
       transition: background var(--transition);
     }
-    .wf-select-btn:hover { background: rgba(59,130,246,0.15); }
+    .wf-select-btn:hover { background: rgba(255,255,255,0.08); }
 
     .wf-item.active .wf-select-btn {
-      border-color: var(--blue);
-      background: rgba(59,130,246,0.15);
+      border-color: rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.08);
     }
 
     .wf-trash-btn {
@@ -587,14 +587,14 @@
       padding: 6px 8px;
       font-size: 12px;
       color: var(--text-secondary);
-      background: rgba(239,68,68,0.08);
+      background: rgba(200,200,200,0.06);
       border-radius: var(--radius-sm);
-      border: 1px solid rgba(239,68,68,0.2);
+      border: 1px solid rgba(200,200,200,0.14);
       margin-bottom: 1px;
     }
     .wf-delete-confirm-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .wf-delete-confirm-yes {
-      background: var(--red);
+      background: #444444;
       border: none;
       color: #fff;
       font-size: 11px;
@@ -645,16 +645,16 @@
       border-radius: 20px;
       font-size: 12px;
       font-weight: 500;
-      background: rgba(59,130,246,0.15);
-      color: var(--blue);
-      border: 1px solid rgba(59,130,246,0.3);
+      background: rgba(255,255,255,0.08);
+      color: #cccccc;
+      border: 1px solid rgba(255,255,255,0.15);
       cursor: default;
     }
 
     .ctx-chip.workflow-chip {
-      background: rgba(59,130,246,0.15);
-      color: #60a5fa;
-      border-color: rgba(96,165,250,0.3);
+      background: rgba(255,255,255,0.08);
+      color: #e0e0e0;
+      border-color: rgba(255,255,255,0.15);
     }
 
     .ctx-chip-remove {
@@ -1489,7 +1489,7 @@
        ================================================================ */
     .hitl-card {
       background: var(--bg-elevated);
-      border: 1px solid rgba(255,179,0,0.3);
+      border: 1px solid rgba(255,255,255,0.12);
       border-radius: var(--radius-md);
       padding: 16px 20px;
       max-width: 500px;
@@ -1775,9 +1775,9 @@
     }
 
     .delete-confirm-ok {
-      background: var(--red);
+      background: #444444;
       color: white;
-      border-color: var(--red);
+      border-color: #555555;
     }
 
     .delete-confirm-ok:hover {
@@ -1846,7 +1846,7 @@
       transition: background 0.15s;
       position: relative; z-index: 10;
     }
-    .drag-handle:hover, .drag-handle.dragging { background: var(--blue); }
+    .drag-handle:hover, .drag-handle.dragging { background: rgba(255,255,255,0.15); }
     #sidebar-drag { width: 4px; }
     #canvas-drag { display: none; width: 4px; }
     body.canvas-active #canvas-drag { display: flex; }
@@ -2042,10 +2042,10 @@
       user-select: none;
     }
     .ft-row:hover { background: var(--bg-hover); }
-    .ft-row.selected { background: rgba(255,179,0,0.12); }
-    .ft-row.admin-drop-target { background: rgba(91,139,223,0.18); outline: 1px solid #5B8BDF; border-radius: 4px; }
-    .ft-row.wf-active { background: rgba(59,130,246,0.12); }
-    .ft-row.drag-over { outline: 1px solid var(--blue); border-radius: 4px; }
+    .ft-row.selected { background: rgba(255,255,255,0.08); }
+    .ft-row.admin-drop-target { background: rgba(255,255,255,0.10); outline: 1px solid rgba(255,255,255,0.20); border-radius: 4px; }
+    .ft-row.wf-active { background: rgba(255,255,255,0.08); }
+    .ft-row.drag-over { outline: 1px solid rgba(255,255,255,0.18); border-radius: 4px; }
 
     .ft-indent { flex-shrink: 0; }
 
@@ -2113,7 +2113,7 @@
     .ft-inline-input input {
       flex: 1;
       background: var(--bg-input);
-      border: 1px solid var(--amber);
+      border: 1px solid rgba(255,255,255,0.18);
       border-radius: 4px;
       color: var(--text-primary);
       font-size: 12px;
@@ -2123,7 +2123,7 @@
 
     /* Upload drop zone highlight */
     .ft-body.drag-target {
-      outline: 1px dashed var(--blue);
+      outline: 1px dashed rgba(255,255,255,0.18);
       outline-offset: -2px;
     }
 
@@ -2271,7 +2271,7 @@
       cursor: pointer;
       white-space: nowrap;
     }
-    .sheet-tab.active { background: var(--amber); color: #000; font-weight: 600; }
+    .sheet-tab.active { background: #2a2a2a; color: #e0e0e0; font-weight: 600; }
     #sheet-table-container {
       flex: 1;
       overflow: auto;
@@ -2301,7 +2301,7 @@
     }
     #admin-tab-btn.active {
       background: var(--bg-hover);
-      color: var(--amber);
+      color: #cccccc;
     }
 
     #admin-zone {
@@ -2405,16 +2405,16 @@
       cursor: default;
     }
     .admin-toolbar-btn.primary {
-      background: var(--amber);
-      color: #000;
-      border-color: var(--amber);
+      background: #2a2a2a;
+      color: #e0e0e0;
+      border-color: rgba(255,255,255,0.15);
     }
     .admin-toolbar-btn.primary:hover {
-      background: var(--amber-dim);
+      background: #333333;
     }
     .admin-toolbar-btn.danger:hover {
-      color: var(--red);
-      border-color: var(--red);
+      color: #aaaaaa;
+      border-color: rgba(255,255,255,0.18);
     }
 
     #admin-upload-zone {
@@ -2430,13 +2430,13 @@
       flex-shrink: 0;
     }
     #admin-right-panel.drag-over #admin-upload-zone {
-      border-color: var(--amber);
-      background: rgba(255,179,0,0.08);
+      border-color: rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.05);
       display: block !important;
     }
     #admin-upload-zone:hover, #admin-upload-zone.drag-over {
-      border-color: var(--amber);
-      background: rgba(255,179,0,0.05);
+      border-color: rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.04);
       color: var(--text-secondary);
     }
     #admin-upload-zone.no-folder {
@@ -2481,7 +2481,7 @@
       opacity: 0.6;
     }
     .admin-queue-item.error {
-      border-color: var(--red);
+      border-color: rgba(255,255,255,0.15);
     }
 
     .admin-queue-item-header {
@@ -2514,9 +2514,9 @@
       flex-shrink: 0;
     }
     .admin-queue-badge.queued { background: rgba(255,255,255,0.08); color: var(--text-muted); }
-    .admin-queue-badge.uploading { background: rgba(59,130,246,0.2); color: var(--blue); }
-    .admin-queue-badge.done { background: rgba(76,175,80,0.2); color: var(--green); }
-    .admin-queue-badge.error { background: rgba(239,68,68,0.2); color: var(--red); }
+    .admin-queue-badge.uploading { background: rgba(255,255,255,0.10); color: #cccccc; }
+    .admin-queue-badge.done { background: rgba(255,255,255,0.08); color: #aaaaaa; }
+    .admin-queue-badge.error { background: rgba(200,200,200,0.10); color: #888888; }
 
     .admin-progress-bar {
       height: 3px;
@@ -2527,20 +2527,20 @@
     }
     .admin-progress-fill {
       height: 100%;
-      background: var(--blue);
+      background: #555555;
       border-radius: 2px;
       transition: width 0.1s linear;
       width: 0%;
     }
-    .admin-queue-item.done .admin-progress-fill { background: var(--green); width: 100%; }
-    .admin-queue-item.error .admin-progress-fill { background: var(--red); }
+    .admin-queue-item.done .admin-progress-fill { background: #777777; width: 100%; }
+    .admin-queue-item.error .admin-progress-fill { background: #444444; }
 
     .admin-retry-btn {
       margin-top: 6px;
       background: transparent;
-      border: 1px solid var(--red);
+      border: 1px solid rgba(255,255,255,0.15);
       border-radius: 4px;
-      color: var(--red);
+      color: #aaaaaa;
       font-size: 11px;
       padding: 2px 8px;
       cursor: pointer;
@@ -2627,7 +2627,7 @@
     }
     #admin-bulk-count { color: var(--text-primary); font-weight: 600; min-width: 80px; }
     .admin-bulk-checkbox {
-      width: 14px; height: 14px; cursor: pointer; accent-color: var(--amber);
+      width: 14px; height: 14px; cursor: pointer; accent-color: #888888;
       flex-shrink: 0; margin-right: 4px;
     }
 
@@ -2679,7 +2679,7 @@
     }
     .admin-confirm-delete {
       padding: 7px 16px;
-      background: var(--red);
+      background: #444444;
       border: none;
       border-radius: var(--radius-sm);
       color: #fff;
@@ -2886,11 +2886,11 @@
           </button>
           <span class="header-title" id="header-worker-name">Market Risk Digital Worker</span>
           <!-- Super-admin worker switcher (hidden until workers loaded) -->
-          <select id="worker-switcher-chat" style="display:none;margin-left:12px;background:#152035;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#e8edf5;font-size:12px;padding:4px 10px;cursor:pointer" onchange="switchChatWorker(this.value)"></select>
+          <select id="worker-switcher-chat" style="display:none;margin-left:12px;background:#1e1e1e;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#e0e0e0;font-size:12px;padding:4px 10px;cursor:pointer" onchange="switchChatWorker(this.value)"></select>
         </div>
         <div class="header-right">
           <div id="admin-console-banner" style="display:none;margin-right:8px">
-            <a href="admin.html" style="font-size:12px;color:#FFB300;text-decoration:none;padding:4px 10px;border:1px solid rgba(255,179,0,0.3);border-radius:6px">Admin Console →</a>
+            <a href="admin.html" style="font-size:12px;color:#cccccc;text-decoration:none;padding:4px 10px;border:1px solid rgba(255,255,255,0.15);border-radius:6px">Admin Console →</a>
           </div>
           <div id="user-display-badge" style="display:none;margin-right:8px;font-size:12px;color:var(--text-secondary)"></div>
           <button id="logout-btn" style="display:none;background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:12px;padding:4px 8px" onclick="doLogout()">Sign out</button>
@@ -2974,7 +2974,7 @@
       <div id="canvas-content"></div>
       <!-- Workflow preview select bar — pinned at bottom of canvas, hidden by default -->
       <div id="canvas-wf-select-bar" style="display:none;flex-shrink:0;padding:12px 16px;border-top:1px solid var(--border);background:var(--bg-sidebar);">
-        <button id="canvas-wf-select-btn" onclick="selectFromCanvas()" style="width:100%;padding:9px 16px;background:var(--blue);border:none;border-radius:var(--radius-sm);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s ease;">
+        <button id="canvas-wf-select-btn" onclick="selectFromCanvas()" style="width:100%;padding:9px 16px;background:#2a2a2a;border:1px solid rgba(255,255,255,0.15);border-radius:var(--radius-sm);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s ease;">
           Select this Workflow
         </button>
       </div>
@@ -3173,12 +3173,12 @@
        CONSTANTS & STATE
        ============================================================== */
     var TOOL_UI_META = {
-      get_counterparty_exposure: { icon: '\uD83D\uDCCA', color: '#4CAF50', category: 'Risk', label: 'Counterparty Exposure' },
-      get_trade_inventory:       { icon: '\uD83D\uDCCB', color: '#2196F3', category: 'Trading', label: 'Trade Inventory' },
-      get_credit_limits:         { icon: '\uD83D\uDD12', color: '#FF9800', category: 'Credit', label: 'Credit Limits' },
-      get_historical_exposure:   { icon: '\uD83D\uDCC8', color: '#9C27B0', category: 'Risk', label: 'Historical Exposure' },
-      get_var_contribution:      { icon: '\u26A1', color: '#F44336', category: 'Risk', label: 'VaR Contribution' },
-      web_search:                { icon: '\uD83C\uDF10', color: '#00BCD4', category: 'Search', label: 'Web Search' }
+      get_counterparty_exposure: { icon: '\uD83D\uDCCA', color: '#888888', category: 'Risk', label: 'Counterparty Exposure' },
+      get_trade_inventory:       { icon: '\uD83D\uDCCB', color: '#888888', category: 'Trading', label: 'Trade Inventory' },
+      get_credit_limits:         { icon: '\uD83D\uDD12', color: '#888888', category: 'Credit', label: 'Credit Limits' },
+      get_historical_exposure:   { icon: '\uD83D\uDCC8', color: '#888888', category: 'Risk', label: 'Historical Exposure' },
+      get_var_contribution:      { icon: '\u26A1', color: '#888888', category: 'Risk', label: 'VaR Contribution' },
+      web_search:                { icon: '\uD83C\uDF10', color: '#888888', category: 'Search', label: 'Web Search' }
     };
 
     var SAMPLE_QUERIES = [
@@ -4381,7 +4381,7 @@
         var synthDiv = _currentAgentMsg.querySelector('.synthesis');
         if (synthDiv) {
           synthDiv.style.display = '';
-          synthDiv.innerHTML = '<p style="color:var(--red)">\u26A0\uFE0F ' + esc(msg) + '</p>';
+          synthDiv.innerHTML = '<p style="color:#aaaaaa">\u26A0\uFE0F ' + esc(msg) + '</p>';
         }
       }
     }
@@ -4987,13 +4987,13 @@
     function ftFileIcon(name) {
       var ext = (name.split('.').pop() || '').toLowerCase();
       var icons = {
-        md:   { color: '#3b82f6', path: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8' },
-        pdf:  { color: '#ef4444', path: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6' },
-        xlsx: { color: '#4CAF50', path: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6' },
-        csv:  { color: '#4CAF50', path: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6' },
-        json: { color: '#FFB300', path: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6' },
-        docx: { color: '#3b82f6', path: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6' },
-        doc:  { color: '#3b82f6', path: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6' },
+        md:   { color: '#cccccc', path: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8' },
+        pdf:  { color: '#aaaaaa', path: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6' },
+        xlsx: { color: '#cccccc', path: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6' },
+        csv:  { color: '#cccccc', path: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6' },
+        json: { color: '#aaaaaa', path: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6' },
+        docx: { color: '#cccccc', path: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6' },
+        doc:  { color: '#cccccc', path: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6' },
         txt:  { color: '#a1a1a1', path: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6' },
       };
       var ic = icons[ext] || { color: '#a1a1a1', path: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6' };
@@ -5004,7 +5004,7 @@
       var d = open
         ? 'M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z'
         : 'M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z';
-      return '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#FFB300" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="' + d + '"></path></svg>';
+      return '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#888888" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="' + d + '"></path></svg>';
     }
 
     function ftRenderTree(section) {
@@ -5164,7 +5164,7 @@
             if (bar && btn) {
               var isActive = _activeWorkflow && _activeWorkflow.section === section && _activeWorkflow.path === path;
               btn.textContent = isActive ? 'Deselect Workflow' : 'Select this Workflow';
-              btn.style.background = isActive ? 'var(--text-muted)' : 'var(--blue)';
+              btn.style.background = isActive ? 'var(--text-muted)' : '#2a2a2a';
               bar.style.display = '';
             }
           }, 400);
@@ -5244,7 +5244,7 @@
         var cc = document.getElementById('canvas-content');
         cc.style.display = '';
         cc.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted)">Preview not available for this file type.<br><br>' +
-          '<a href="' + url + '" download="' + esc(name) + '" style="color:var(--amber)">Download ' + esc(name) + '</a></div>';
+          '<a href="' + url + '" download="' + esc(name) + '" style="color:#cccccc">Download ' + esc(name) + '</a></div>';
       }
     }
 
@@ -5734,7 +5734,7 @@
         Object.keys(_FT_SECTIONS).forEach(function(s) { if (_FT_SECTIONS[s].wfSection) ftRenderTree(s); });
         renderContextBar();
         var btn = document.getElementById('canvas-wf-select-btn');
-        if (btn) { btn.textContent = 'Select this Workflow'; btn.style.background = 'var(--blue)'; }
+        if (btn) { btn.textContent = 'Select this Workflow'; btn.style.background = '#2a2a2a'; }
       } else {
         // Fetch content for the workflow
         var url = _agentBase + '/api/fs/' + sec + '/file?path=' + encodeURIComponent(path);
@@ -6214,7 +6214,7 @@
             } else if (ext === 'docx' || ext === 'doc') {
               _adminPreviewDocx(blob, body);
             }
-          }).catch(function() { body.innerHTML = '<div style="color:var(--red);padding:20px">Preview failed</div>'; });
+          }).catch(function() { body.innerHTML = '<div style="color:#aaaaaa;padding:20px">Preview failed</div>'; });
         return;
       }
 
@@ -6237,7 +6237,7 @@
           } else {
             body.innerHTML = '<pre>' + esc(text) + '</pre>';
           }
-        }).catch(function() { body.innerHTML = '<div style="color:var(--red);padding:20px">Preview failed</div>'; });
+        }).catch(function() { body.innerHTML = '<div style="color:#aaaaaa;padding:20px">Preview failed</div>'; });
     }
 
     function adminClosePreview() {
@@ -6280,7 +6280,7 @@
         var sheetName = wb.SheetNames[0];
         var ws = wb.Sheets[sheetName];
         body.innerHTML = XLSX.utils.sheet_to_html(ws, {id:'xlsx-preview-table'});
-      }).catch(function() { body.innerHTML = '<div style="color:var(--red)">Excel parse failed</div>'; });
+      }).catch(function() { body.innerHTML = '<div style="color:#aaaaaa">Excel parse failed</div>'; });
     }
 
     function _adminPreviewDocx(blob, body) {
@@ -6292,7 +6292,7 @@
         return mammoth.convertToHtml({arrayBuffer: buf});
       }).then(function(result) {
         body.innerHTML = '<div style="font-size:12px;line-height:1.6">' + result.value + '</div>';
-      }).catch(function() { body.innerHTML = '<div style="color:var(--red)">Word parse failed</div>'; });
+      }).catch(function() { body.innerHTML = '<div style="color:#aaaaaa">Word parse failed</div>'; });
     }
 
     // ── Admin Folder Rename ───────────────────────────────────────────
@@ -6316,7 +6316,7 @@
       var inp = document.createElement('input');
       inp.type = 'text';
       inp.value = oldText;
-      inp.style.cssText = 'background:var(--bg-elevated);color:var(--text-primary);border:1px solid var(--amber);border-radius:3px;padding:1px 4px;font-size:12px;width:130px;outline:none';
+      inp.style.cssText = 'background:var(--bg-elevated);color:var(--text-primary);border:1px solid rgba(255,255,255,0.18);border-radius:3px;padding:1px 4px;font-size:12px;width:130px;outline:none';
       nameEl.replaceWith(inp);
       inp.focus(); inp.select();
       function commit() {
@@ -6479,7 +6479,7 @@
         var badge = '<span class="admin-queue-badge ' + item.status + '">' +
           (item.status === 'queued' ? 'Queued' : item.status === 'uploading' ? 'Uploading' : item.status === 'done' ? 'Done' : 'Error') + '</span>';
         var retry = item.status === 'error' ? '<button class="admin-retry-btn" onclick="adminRetry(\'' + item.id + '\')">Retry</button>' : '';
-        var errorMsg = item.error ? '<div style="font-size:11px;color:var(--red);margin-top:4px;">' + esc(item.error) + '</div>' : '';
+        var errorMsg = item.error ? '<div style="font-size:11px;color:#aaaaaa;margin-top:4px;">' + esc(item.error) + '</div>' : '';
         var replaceBtn = item.error === 'File already exists.' ? '<button class="admin-retry-btn" onclick="adminRetryOverwrite(\'' + item.id + '\')">Replace</button>' : '';
         return '<div class="admin-queue-item ' + item.status + '" id="aqitem-' + item.id + '">' +
           '<div class="admin-queue-item-header">' +

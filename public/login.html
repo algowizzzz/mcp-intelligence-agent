@@ -8,18 +8,17 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --navy: #0d1b2e;
-      --navy-light: #122540;
-      --blue: #1e6bff;
-      --blue-hover: #155edc;
-      --gold: #d4a843;
-      --text: #e8edf5;
-      --text-muted: #8b9ab0;
-      --border: rgba(255,255,255,0.1);
+      --navy: #0a0a0a;
+      --navy-light: #111111;
+      --accent: #d0d0d0;
+      --accent-h: #aaaaaa;
+      --text: #e0e0e0;
+      --text-muted: #888888;
+      --border: rgba(255,255,255,0.10);
       --input-bg: rgba(255,255,255,0.06);
-      --card-bg: #152035;
-      --error: #ef4444;
-      --green: #22c55e;
+      --card-bg: #161616;
+      --error: #888888;
+      --success: #888888;
       --radius: 12px;
     }
     html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--navy); color: var(--text); }
@@ -39,15 +38,15 @@
     .brand { text-align: center; margin-bottom: 36px; }
     .brand-mark {
       width: 56px; height: 56px;
-      background: linear-gradient(135deg, #1e6bff, #0a3fa8);
+      background: linear-gradient(135deg, #2a2a2a, #111111);
       border-radius: 16px;
       display: inline-flex; align-items: center; justify-content: center;
       margin-bottom: 16px;
-      box-shadow: 0 8px 32px rgba(30,107,255,0.4);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
     }
     .brand-mark svg { width: 28px; height: 28px; fill: #fff; }
     .brand h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
-    .brand h1 span { color: var(--gold); }
+    .brand h1 span { color: #e0e0e0; }
     .brand p { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
 
     /* ── Form ── */
@@ -62,21 +61,21 @@
       font-family: inherit; font-size: 14px;
       outline: none; transition: border-color 0.15s;
     }
-    input:focus { border-color: var(--blue); }
+    input:focus { border-color: var(--accent); }
     input::placeholder { color: var(--text-muted); }
 
     .btn {
       width: 100%; padding: 13px;
-      background: var(--blue); border: none; border-radius: var(--radius);
+      background: #2a2a2a; border: 1px solid rgba(255,255,255,0.15); border-radius: var(--radius);
       color: #fff; font-family: inherit; font-size: 14px; font-weight: 600;
       cursor: pointer; transition: background 0.15s;
       margin-top: 8px;
     }
-    .btn:hover { background: var(--blue-hover); }
+    .btn:hover { background: #333333; }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .error-msg {
-      background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+      background: rgba(200,200,200,0.08); border: 1px solid rgba(200,200,200,0.18);
       border-radius: 8px; padding: 10px 14px;
       color: var(--error); font-size: 13px;
       margin-bottom: 16px; display: none;
@@ -99,8 +98,8 @@
       font-size: 12px; font-weight: 600; color: var(--text-muted);
       transition: all 0.2s;
     }
-    .step-dot.active { background: var(--blue); border-color: var(--blue); color: #fff; }
-    .step-dot.done { background: var(--green); border-color: var(--green); color: #fff; }
+    .step-dot.active { background: #2a2a2a; border-color: #d0d0d0; color: #fff; }
+    .step-dot.done { background: #333333; border-color: #aaaaaa; color: #fff; }
     .step-line { flex: 1; height: 2px; background: var(--border); }
 
     .step-panel { display: none; }
@@ -110,12 +109,12 @@
     .step-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
 
     .welcome-worker {
-      background: rgba(30,107,255,0.08); border: 1px solid rgba(30,107,255,0.2);
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
       border-radius: 10px; padding: 16px;
       font-size: 14px; color: var(--text); margin-bottom: 24px;
       line-height: 1.5;
     }
-    .welcome-worker strong { color: var(--gold); }
+    .welcome-worker strong { color: #cccccc; }
 
     /* Password strength */
     .strength-bar { height: 4px; border-radius: 2px; background: var(--border); margin-top: 8px; overflow: hidden; }
@@ -124,7 +123,7 @@
     .initials-preview {
       display: inline-flex; align-items: center; justify-content: center;
       width: 40px; height: 40px; border-radius: 50%;
-      background: var(--blue); font-size: 14px; font-weight: 700;
+      background: #2a2a2a; font-size: 14px; font-weight: 700;
       margin-bottom: 8px;
     }
   </style>
@@ -321,10 +320,10 @@ function updateStrength(pw) {
   if (/[0-9]/.test(pw)) score++;
   if (/[^A-Za-z0-9]/.test(pw)) score++;
   var fill = document.getElementById('strength-fill');
-  var colors = ['#ef4444','#f97316','#eab308','#22c55e'];
+  var colors = ['#555555','#777777','#999999','#bbbbbb'];
   var widths = ['25%','50%','75%','100%'];
   fill.style.width = widths[score-1] || '0';
-  fill.style.background = colors[score-1] || '#ef4444';
+  fill.style.background = colors[score-1] || '#555555';
 }
 
 async function submitOnboarding() {
