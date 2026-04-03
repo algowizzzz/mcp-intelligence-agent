@@ -1,5 +1,0 @@
-{
-  "buildCommand": "node inject-config.js",
-  "outputDirectory": "public",
-  "framework": null
-}
