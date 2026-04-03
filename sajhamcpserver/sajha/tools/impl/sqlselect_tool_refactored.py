@@ -54,20 +54,20 @@ class SqlSelectBaseTool(BaseMCPTool):
                     self.logger.warning(f"Data file not found: {file_path}")
                     continue
                 
-                # Create table/view based on file type
+                # Load data into table (not VIEW) so it's always queryable
                 if file_type == 'csv':
                     self.connection.execute(
-                        f"CREATE OR REPLACE VIEW {source_name} AS "
+                        f"CREATE OR REPLACE TABLE {source_name} AS "
                         f"SELECT * FROM read_csv_auto('{file_path}')"
                     )
                 elif file_type == 'parquet':
                     self.connection.execute(
-                        f"CREATE OR REPLACE VIEW {source_name} AS "
+                        f"CREATE OR REPLACE TABLE {source_name} AS "
                         f"SELECT * FROM read_parquet('{file_path}')"
                     )
                 elif file_type == 'json':
                     self.connection.execute(
-                        f"CREATE OR REPLACE VIEW {source_name} AS "
+                        f"CREATE OR REPLACE TABLE {source_name} AS "
                         f"SELECT * FROM read_json_auto('{file_path}')"
                     )
                 

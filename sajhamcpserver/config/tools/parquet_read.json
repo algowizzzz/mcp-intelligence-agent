@@ -1,0 +1,8 @@
+{
+  "name": "parquet_read",
+  "implementation": "sajha.tools.impl.data_transform_tools.ParquetReadTool",
+  "description": "Inspect and preview a Parquet or CSV file: schema, row count, sample rows, and per-column statistics. Call before data_transform to confirm column names. Pass file_path from list_data_files.",
+  "version": "1.0.0",
+  "enabled": true,
+  "metadata": { "category": "Data Processing", "tags": ["parquet", "csv", "schema", "preview", "stats"] }
+}

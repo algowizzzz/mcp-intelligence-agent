@@ -1,0 +1,8 @@
+{
+  "name": "pdf_read",
+  "implementation": "sajha.tools.impl.operational_tools.PdfReadTool",
+  "description": "Extract text and tables from a local PDF file. Pass file_path from list_data_files or list_uploaded_files. Use pages='1-5' for large PDFs.",
+  "version": "1.0.0",
+  "enabled": true,
+  "metadata": { "category": "Document Processing", "tags": ["pdf", "extract", "text", "tables"] }
+}

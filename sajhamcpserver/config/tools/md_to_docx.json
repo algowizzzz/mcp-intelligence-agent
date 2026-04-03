@@ -1,0 +1,8 @@
+{
+  "name": "md_to_docx",
+  "implementation": "sajha.tools.impl.operational_tools.MdToDocxTool",
+  "description": "Convert a .md file to a formatted .docx Word document. Handles headings, tables, bullets, bold/italic, code blocks. YAML frontmatter is omitted.",
+  "version": "1.0.0",
+  "enabled": true,
+  "metadata": { "category": "Document Processing", "tags": ["docx", "word", "convert", "markdown"] }
+}

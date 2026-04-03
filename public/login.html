@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RiskGPT — Sign In</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0d1b2e;
+      --navy-light: #122540;
+      --blue: #1e6bff;
+      --blue-hover: #155edc;
+      --gold: #d4a843;
+      --text: #e8edf5;
+      --text-muted: #8b9ab0;
+      --border: rgba(255,255,255,0.1);
+      --input-bg: rgba(255,255,255,0.06);
+      --card-bg: #152035;
+      --error: #ef4444;
+      --green: #22c55e;
+      --radius: 12px;
+    }
+    html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--navy); color: var(--text); }
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+
+    /* ── Card ── */
+    .card {
+      width: 420px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 48px 40px 40px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+    }
+
+    /* ── Logo / Brand ── */
+    .brand { text-align: center; margin-bottom: 36px; }
+    .brand-mark {
+      width: 56px; height: 56px;
+      background: linear-gradient(135deg, #1e6bff, #0a3fa8);
+      border-radius: 16px;
+      display: inline-flex; align-items: center; justify-content: center;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 32px rgba(30,107,255,0.4);
+    }
+    .brand-mark svg { width: 28px; height: 28px; fill: #fff; }
+    .brand h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+    .brand h1 span { color: var(--gold); }
+    .brand p { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+    /* ── Form ── */
+    .form-group { margin-bottom: 18px; }
+    label { display: block; font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: 8px; }
+    input {
+      width: 100%; padding: 12px 14px;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: inherit; font-size: 14px;
+      outline: none; transition: border-color 0.15s;
+    }
+    input:focus { border-color: var(--blue); }
+    input::placeholder { color: var(--text-muted); }
+
+    .btn {
+      width: 100%; padding: 13px;
+      background: var(--blue); border: none; border-radius: var(--radius);
+      color: #fff; font-family: inherit; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: background 0.15s;
+      margin-top: 8px;
+    }
+    .btn:hover { background: var(--blue-hover); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .error-msg {
+      background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 8px; padding: 10px 14px;
+      color: var(--error); font-size: 13px;
+      margin-bottom: 16px; display: none;
+    }
+    .error-msg.show { display: block; }
+
+    .forgot { text-align: center; margin-top: 16px; font-size: 12px; color: var(--text-muted); }
+    .forgot a { color: var(--text-muted); text-decoration: underline; cursor: pointer; }
+
+    /* ── Onboarding Stepper ── */
+    #onboarding { display: none; }
+    .stepper {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 32px;
+    }
+    .step-dot {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--input-bg); border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 600; color: var(--text-muted);
+      transition: all 0.2s;
+    }
+    .step-dot.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .step-dot.done { background: var(--green); border-color: var(--green); color: #fff; }
+    .step-line { flex: 1; height: 2px; background: var(--border); }
+
+    .step-panel { display: none; }
+    .step-panel.active { display: block; }
+
+    .step-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .step-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
+
+    .welcome-worker {
+      background: rgba(30,107,255,0.08); border: 1px solid rgba(30,107,255,0.2);
+      border-radius: 10px; padding: 16px;
+      font-size: 14px; color: var(--text); margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .welcome-worker strong { color: var(--gold); }
+
+    /* Password strength */
+    .strength-bar { height: 4px; border-radius: 2px; background: var(--border); margin-top: 8px; overflow: hidden; }
+    .strength-fill { height: 100%; width: 0; transition: width 0.3s, background 0.3s; border-radius: 2px; }
+
+    .initials-preview {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--blue); font-size: 14px; font-weight: 700;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <!-- Brand -->
+  <div class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    </div>
+    <h1>Risk<span>GPT</span></h1>
+    <p>Digital Worker Platform</p>
+  </div>
+
+  <!-- Login Form -->
+  <div id="login">
+    <div class="error-msg" id="login-error"></div>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="username" placeholder="Enter your username" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password">
+    </div>
+    <button class="btn" id="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="forgot">
+      <a onclick="alert('Contact your administrator to reset your password.')">Forgot password?</a>
+    </div>
+  </div>
+
+  <!-- Onboarding Stepper -->
+  <div id="onboarding">
+    <div class="stepper">
+      <div class="step-dot active" id="dot-1">1</div>
+      <div class="step-line"></div>
+      <div class="step-dot" id="dot-2">2</div>
+      <div class="step-line"></div>
+      <div class="step-dot" id="dot-3">3</div>
+    </div>
+
+    <!-- Step 1: Welcome -->
+    <div class="step-panel active" id="step-1">
+      <div class="step-title">Welcome to RiskGPT</div>
+      <div class="step-subtitle">Let's set up your profile in a few quick steps.</div>
+      <div class="welcome-worker" id="worker-welcome">
+        You've been assigned to <strong id="worker-name-display">...</strong>.<br>
+        Complete setup to start working with your AI risk intelligence agent.
+      </div>
+      <button class="btn" onclick="gotoStep(2)">Get Started</button>
+    </div>
+
+    <!-- Step 2: Profile -->
+    <div class="step-panel" id="step-2">
+      <div class="step-title">Your Profile</div>
+      <div class="step-subtitle">Set your display name for the platform.</div>
+      <div style="margin-bottom:16px">
+        <div class="initials-preview" id="initials-preview">?</div>
+      </div>
+      <div class="form-group">
+        <label>Display Name</label>
+        <input type="text" id="ob-display-name" placeholder="Your full name" oninput="updateInitials(this.value)">
+      </div>
+      <div class="error-msg" id="ob-error-2"></div>
+      <button class="btn" onclick="gotoStep(3)">Continue</button>
+    </div>
+
+    <!-- Step 3: Password -->
+    <div class="step-panel" id="step-3">
+      <div class="step-title">Set Your Password</div>
+      <div class="step-subtitle">Choose a strong password (min. 10 characters).</div>
+      <div class="form-group">
+        <label>New Password</label>
+        <input type="password" id="ob-new-pass" placeholder="At least 10 characters" oninput="updateStrength(this.value)">
+        <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
+      </div>
+      <div class="form-group">
+        <label>Confirm Password</label>
+        <input type="password" id="ob-confirm-pass" placeholder="Repeat your password">
+      </div>
+      <div class="error-msg" id="ob-error-3"></div>
+      <button class="btn" id="ob-submit-btn" onclick="submitOnboarding()">Complete Setup</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:8000'
+  : '';
+
+var _jwt = null;
+var _loginPayload = null;
+var _failCount = 0;
+
+function showError(id, msg) {
+  var el = document.getElementById(id);
+  el.textContent = msg;
+  el.classList.add('show');
+}
+function hideError(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+async function doLogin() {
+  hideError('login-error');
+  var user = document.getElementById('username').value.trim();
+  var pass = document.getElementById('password').value;
+  if (!user || !pass) { showError('login-error', 'Please enter your username and password.'); return; }
+
+  var btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+
+  try {
+    var r = await fetch(API + '/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: user, password: pass })
+    });
+    if (r.status === 401) {
+      _failCount++;
+      if (_failCount >= 5) {
+        showError('login-error', 'Account locked. Contact your administrator.');
+      } else {
+        showError('login-error', 'Invalid username or password.');
+      }
+      btn.disabled = false; btn.textContent = 'Sign In';
+      return;
+    }
+    if (!r.ok) throw new Error('Server error');
+    var data = await r.json();
+    _jwt = data.token;
+    _loginPayload = data;
+    sessionStorage.setItem('rg_token', _jwt);
+    sessionStorage.setItem('rg_user', JSON.stringify(data));
+
+    if (!data.onboarding_complete) {
+      // Show onboarding
+      document.getElementById('login').style.display = 'none';
+      document.getElementById('onboarding').style.display = 'block';
+      document.getElementById('worker-name-display').textContent = data.worker_name || 'RiskGPT';
+      return;
+    }
+
+    // Redirect based on role
+    redirect(data.role);
+  } catch (e) {
+    showError('login-error', 'Unable to connect. Please try again.');
+    btn.disabled = false; btn.textContent = 'Sign In';
+  }
+}
+
+function redirect(role) {
+  if (role === 'super_admin' || role === 'admin') {
+    window.location.href = 'admin.html';
+  } else {
+    window.location.href = 'mcp-agent.html';
+  }
+}
+
+// ── Onboarding ──────────────────────────────────────────────────────────────
+var _currentStep = 1;
+
+function gotoStep(n) {
+  if (n === 2) {
+    // Validate step 1 → nothing to validate
+  }
+  if (n === 3) {
+    var name = document.getElementById('ob-display-name').value.trim();
+    if (name.length < 2) { showError('ob-error-2', 'Display name must be at least 2 characters.'); return; }
+    hideError('ob-error-2');
+  }
+  document.getElementById('step-' + _currentStep).classList.remove('active');
+  document.getElementById('dot-' + _currentStep).classList.remove('active');
+  document.getElementById('dot-' + _currentStep).classList.add('done');
+  _currentStep = n;
+  document.getElementById('step-' + n).classList.add('active');
+  document.getElementById('dot-' + n).classList.add('active');
+}
+
+function updateInitials(name) {
+  var parts = name.trim().split(/\s+/).filter(Boolean);
+  var initials = parts.map(p => p[0]).join('').substring(0, 3).toUpperCase() || '?';
+  document.getElementById('initials-preview').textContent = initials;
+}
+
+function updateStrength(pw) {
+  var score = 0;
+  if (pw.length >= 10) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  var fill = document.getElementById('strength-fill');
+  var colors = ['#ef4444','#f97316','#eab308','#22c55e'];
+  var widths = ['25%','50%','75%','100%'];
+  fill.style.width = widths[score-1] || '0';
+  fill.style.background = colors[score-1] || '#ef4444';
+}
+
+async function submitOnboarding() {
+  hideError('ob-error-3');
+  var name = document.getElementById('ob-display-name').value.trim();
+  var pw1 = document.getElementById('ob-new-pass').value;
+  var pw2 = document.getElementById('ob-confirm-pass').value;
+  if (pw1.length < 10) { showError('ob-error-3', 'Password must be at least 10 characters.'); return; }
+  if (pw1 !== pw2) { showError('ob-error-3', 'Passwords do not match.'); return; }
+
+  var btn = document.getElementById('ob-submit-btn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  try {
+    var r = await fetch(API + '/api/auth/onboarding', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _jwt },
+      body: JSON.stringify({ display_name: name, new_password: pw1, confirm_password: pw2 })
+    });
+    if (!r.ok) { var d = await r.json(); showError('ob-error-3', d.detail || 'Error'); btn.disabled=false; btn.textContent='Complete Setup'; return; }
+    redirect(_loginPayload.role);
+  } catch(e) {
+    showError('ob-error-3', 'Error saving. Please try again.');
+    btn.disabled = false; btn.textContent = 'Complete Setup';
+  }
+}
+
+// Enter key support
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && document.getElementById('login').style.display !== 'none') doLogin();
+});
+
+// Redirect if already logged in
+(function() {
+  var token = sessionStorage.getItem('rg_token');
+  var user = sessionStorage.getItem('rg_user');
+  if (token && user) {
+    try {
+      var u = JSON.parse(user);
+      redirect(u.role);
+    } catch(e) {}
+  }
+})();
+</script>
+</body>
+</html>

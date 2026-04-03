@@ -1,0 +1,8 @@
+{
+  "name": "search_files",
+  "implementation": "sajha.tools.impl.operational_tools.SearchFilesTool",
+  "description": "Full-text search across domain_data/ and my_data/ files (pdf, docx, xlsx, csv, md, txt, json). Returns file path and excerpts per match. Use to find documents containing a keyword before processing.",
+  "version": "1.0.0",
+  "enabled": true,
+  "metadata": { "category": "File Management", "tags": ["search", "full-text", "documents", "find"] }
+}

@@ -225,6 +225,131 @@
       color: var(--red);
     }
 
+    .sidebar-item-rename {
+      display: none;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 11px;
+      line-height: 1;
+      flex-shrink: 0;
+      transition: color var(--transition);
+    }
+
+    .sidebar-item:hover .sidebar-item-rename {
+      display: flex;
+    }
+
+    .sidebar-item-rename:hover {
+      color: var(--text-primary);
+    }
+
+    .sidebar-item-actions {
+      display: none;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .sidebar-item:hover .sidebar-item-actions {
+      display: flex;
+    }
+
+    /* Inline rename input for chat titles */
+    .sidebar-item-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--blue);
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 13px;
+      padding: 0 2px;
+      outline: none;
+      min-width: 0;
+    }
+
+    /* ================================================================
+       SIDEBAR TABS (Chats / Data & Workflows)
+       ================================================================ */
+
+    .sidebar-tabs {
+      display: flex;
+      padding: 0 10px 8px 10px;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .sidebar-tab {
+      flex: 1;
+      padding: 6px 8px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background var(--transition), color var(--transition), border-color var(--transition);
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .sidebar-tab:hover {
+      background: var(--bg-hover);
+      color: var(--text-secondary);
+    }
+
+    .sidebar-tab.active {
+      background: rgba(255,255,255,0.07);
+      color: var(--text-primary);
+      border-color: var(--border);
+    }
+
+    .sidebar-tab-panel {
+      flex: 1 1 0;
+      min-height: 0;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-tab-panel.active {
+      display: flex;
+    }
+
+    /* Group separators inside Data & Workflows tab */
+    .dw-group {
+      flex: 0 0 auto;
+    }
+
+    .dw-group-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px 4px 14px;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .dw-group-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    #dw-panel {
+      overflow-y: auto;
+    }
+
     /* ================================================================
        SIDEBAR SECTIONS (Chats / Workspace / Workflows)
        ================================================================ */
@@ -1715,6 +1840,17 @@
     body.canvas-active #chat-zone { flex: 0 0 45%; min-width: 320px; }
     body.canvas-active #canvas-zone { display: flex; }
 
+    /* Drag handles */
+    .drag-handle {
+      flex-shrink: 0; width: 4px; cursor: col-resize; background: transparent;
+      transition: background 0.15s;
+      position: relative; z-index: 10;
+    }
+    .drag-handle:hover, .drag-handle.dragging { background: var(--blue); }
+    #sidebar-drag { width: 4px; }
+    #canvas-drag { display: none; width: 4px; }
+    body.canvas-active #canvas-drag { display: flex; }
+
     #canvas-topbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); flex-shrink: 0; }
     #canvas-title { font-size: 14px; font-weight: 600; color: var(--text-primary); outline: none; border: none; background: transparent; cursor: text; min-width: 100px; }
     #canvas-title:focus { border-bottom: 1px solid var(--border); }
@@ -1907,6 +2043,7 @@
     }
     .ft-row:hover { background: var(--bg-hover); }
     .ft-row.selected { background: rgba(255,179,0,0.12); }
+    .ft-row.admin-drop-target { background: rgba(91,139,223,0.18); outline: 1px solid #5B8BDF; border-radius: 4px; }
     .ft-row.wf-active { background: rgba(59,130,246,0.12); }
     .ft-row.drag-over { outline: 1px solid var(--blue); border-radius: 4px; }
 
@@ -2292,6 +2429,11 @@
       transition: border-color var(--transition), background var(--transition);
       flex-shrink: 0;
     }
+    #admin-right-panel.drag-over #admin-upload-zone {
+      border-color: var(--amber);
+      background: rgba(255,179,0,0.08);
+      display: block !important;
+    }
     #admin-upload-zone:hover, #admin-upload-zone.drag-over {
       border-color: var(--amber);
       background: rgba(255,179,0,0.05);
@@ -2417,6 +2559,78 @@
     }
 
     /* Admin confirmation modal */
+    /* Preview panel */
+    #admin-preview-panel {
+      flex: 1;
+      min-width: 320px;
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg-chat);
+    }
+    #admin-preview-header {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    #admin-preview-filename {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 55%;
+    }
+    #admin-preview-body {
+      flex: 1;
+      overflow: auto;
+      padding: 14px;
+      font-size: 12px;
+      color: var(--text-primary);
+    }
+    #admin-preview-body iframe {
+      width: 100%; height: 100%; border: none; background: #fff;
+    }
+    #admin-preview-body pre {
+      white-space: pre-wrap; word-break: break-word;
+      font-size: 11px; color: var(--text-secondary);
+      font-family: 'SF Mono', monospace;
+    }
+    #admin-preview-body table {
+      border-collapse: collapse; width: 100%; font-size: 11px;
+    }
+    #admin-preview-body td, #admin-preview-body th {
+      border: 1px solid var(--border); padding: 4px 8px;
+    }
+    #admin-preview-body th { background: var(--bg-elevated); }
+    /* Bulk delete bar */
+    #admin-bulk-bar {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+      z-index: 300;
+      font-size: 12px;
+    }
+    #admin-bulk-count { color: var(--text-primary); font-weight: 600; min-width: 80px; }
+    .admin-bulk-checkbox {
+      width: 14px; height: 14px; cursor: pointer; accent-color: var(--amber);
+      flex-shrink: 0; margin-right: 4px;
+    }
+
     #admin-confirm-modal {
       display: none;
       position: fixed;
@@ -2495,108 +2709,130 @@
         </button>
       </div>
 
-      <!-- ── Chats ─────────────────────────────────── -->
-      <div id="chat-section" style="border-top:none;">
-        <div class="sidebar-section-header" onclick="toggleSection('chat')">
-          <span class="sidebar-section-label">Chats</span>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <button class="sidebar-section-new" onclick="event.stopPropagation();newConversation()" title="New chat">
+      <!-- ── Tab Bar ──────────────────────────────────────────── -->
+      <div class="sidebar-tabs">
+        <button class="sidebar-tab active" id="tab-btn-chats" onclick="switchSidebarTab('chats')">Chats</button>
+        <button class="sidebar-tab" id="tab-btn-dw" onclick="switchSidebarTab('dw')">Data &amp; Workflows</button>
+      </div>
+
+      <!-- ══════════ TAB 1: CHATS ═════════════════════════════════ -->
+      <div class="sidebar-tab-panel active" id="tab-panel-chats">
+        <div id="chat-section" style="border-top:none; flex:1 1 0; min-height:0; display:flex; flex-direction:column; overflow:hidden;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:0 14px 6px 14px;">
+            <span style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Conversations</span>
+            <button class="sidebar-section-new" onclick="newConversation()" title="New chat" style="color:var(--text-muted);">
               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             </button>
-            <svg class="sidebar-section-chevron open" id="chat-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
           </div>
-        </div>
-        <div id="chat-body">
-          <div id="sidebar-conversations"></div>
+          <div id="chat-body">
+            <div id="sidebar-conversations"></div>
+          </div>
         </div>
       </div>
 
-      <!-- ── Domain Data ─────────────────────────────────── -->
-      <div class="ft-section" id="ft-domain">
-        <div class="ft-header" onclick="ftToggle('domain_data')">
-          <div class="ft-header-left">
-            <svg class="ft-chevron" id="ft-chevron-domain_data" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-            <span class="ft-section-label">Domain Data</span>
-            <span class="ft-count-badge" id="ft-badge-domain_data">0</span>
-          </div>
-          <div class="ft-toolbar">
-            <button class="ft-tool-btn" title="Refresh" onclick="event.stopPropagation();ftLoad('domain_data')">
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-            </button>
-          </div>
-        </div>
-        <div class="ft-body" id="ft-body-domain_data">
-          <div class="ft-tree" id="ft-tree-domain_data"></div>
-        </div>
-      </div>
+      <!-- ══════════ TAB 2: DATA & WORKFLOWS ══════════════════════ -->
+      <div class="sidebar-tab-panel" id="tab-panel-dw">
+        <div id="dw-panel">
 
-      <!-- ── My Data ─────────────────────────────────── -->
-      <div class="ft-section" id="ft-mydata">
-        <div class="ft-header" onclick="ftToggle('uploads')">
-          <div class="ft-header-left">
-            <svg class="ft-chevron" id="ft-chevron-uploads" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-            <span class="ft-section-label">My Data</span>
-            <span class="ft-count-badge" id="ft-badge-uploads">0</span>
-          </div>
-          <div class="ft-toolbar" onclick="event.stopPropagation()">
-            <button class="ft-tool-btn" title="New Folder" onclick="ftNewFolder('uploads', '')">
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
-            </button>
-            <button class="ft-tool-btn" title="Upload File" onclick="document.getElementById('ftUploadInput-uploads').click()">
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            </button>
-          </div>
-        </div>
-        <div class="ft-body" id="ft-body-uploads">
-          <div class="ft-tree" id="ft-tree-uploads"></div>
-          <input type="file" id="ftUploadInput-uploads" multiple style="display:none" onchange="ftUploadFiles('uploads', '', this)">
-        </div>
-      </div>
+          <!-- ── DATA group ────────────────────────────────────── -->
+          <div class="dw-group">
+            <div class="dw-group-label">Data</div>
 
-      <!-- ── Verified Workflows ─────────────────────────────────── -->
-      <div class="ft-section" id="ft-verified">
-        <div class="ft-header" onclick="ftToggle('verified')">
-          <div class="ft-header-left">
-            <svg class="ft-chevron" id="ft-chevron-verified" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-            <span class="ft-section-label">Verified Workflows</span>
-            <span class="ft-count-badge" id="ft-badge-verified">0</span>
-          </div>
-          <div class="ft-toolbar">
-            <button class="ft-tool-btn" title="Refresh" onclick="event.stopPropagation();ftLoad('verified')">
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-            </button>
-          </div>
-        </div>
-        <div class="ft-body" id="ft-body-verified">
-          <div class="ft-tree" id="ft-tree-verified"></div>
-        </div>
-      </div>
+            <!-- Domain Data -->
+            <div class="ft-section" id="ft-domain">
+              <div class="ft-header" onclick="ftToggle('domain_data')">
+                <div class="ft-header-left">
+                  <svg class="ft-chevron" id="ft-chevron-domain_data" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  <span class="ft-section-label">Domain Data</span>
+                  <span class="ft-count-badge" id="ft-badge-domain_data">0</span>
+                </div>
+                <div class="ft-toolbar">
+                  <button class="ft-tool-btn" title="Refresh" onclick="event.stopPropagation();ftLoad('domain_data')">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="ft-body" id="ft-body-domain_data">
+                <div class="ft-tree" id="ft-tree-domain_data"></div>
+              </div>
+            </div>
 
-      <!-- ── My Workflows ─────────────────────────────────── -->
-      <div class="ft-section" id="ft-myworkflows">
-        <div class="ft-header" onclick="ftToggle('my_workflows')">
-          <div class="ft-header-left">
-            <svg class="ft-chevron" id="ft-chevron-my_workflows" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-            <span class="ft-section-label">My Workflows</span>
-            <span class="ft-count-badge" id="ft-badge-my_workflows">0</span>
-          </div>
-          <div class="ft-toolbar" onclick="event.stopPropagation()">
-            <button class="ft-tool-btn" title="New Folder" onclick="ftNewFolder('my_workflows', '')">
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
-            </button>
-            <button class="ft-tool-btn" title="New Workflow" onclick="ftNewFile('my_workflows', '')">
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
-            </button>
-            <button class="ft-tool-btn" title="Upload .md" onclick="document.getElementById('ftUploadInput-my_workflows').click()">
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            </button>
-          </div>
-        </div>
-        <div class="ft-body" id="ft-body-my_workflows">
-          <div class="ft-tree" id="ft-tree-my_workflows"></div>
-          <input type="file" id="ftUploadInput-my_workflows" accept=".md" style="display:none" onchange="ftUploadFiles('my_workflows', '', this)">
-        </div>
-      </div>
+            <!-- My Data -->
+            <div class="ft-section" id="ft-mydata">
+              <div class="ft-header" onclick="ftToggle('uploads')">
+                <div class="ft-header-left">
+                  <svg class="ft-chevron" id="ft-chevron-uploads" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  <span class="ft-section-label">My Data</span>
+                  <span class="ft-count-badge" id="ft-badge-uploads">0</span>
+                </div>
+                <div class="ft-toolbar" onclick="event.stopPropagation()">
+                  <button class="ft-tool-btn" title="New Folder" onclick="ftNewFolder('uploads', '')">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
+                  </button>
+                  <button class="ft-tool-btn" title="Upload File" onclick="document.getElementById('ftUploadInput-uploads').click()">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="ft-body" id="ft-body-uploads">
+                <div class="ft-tree" id="ft-tree-uploads"></div>
+                <input type="file" id="ftUploadInput-uploads" multiple style="display:none" onchange="ftUploadFiles('uploads', '', this)">
+              </div>
+            </div>
+          </div><!-- /DATA group -->
+
+          <!-- ── WORKFLOWS group ────────────────────────────────── -->
+          <div class="dw-group">
+            <div class="dw-group-label">Workflows</div>
+
+            <!-- Verified Workflows -->
+            <div class="ft-section" id="ft-verified">
+              <div class="ft-header" onclick="ftToggle('verified')">
+                <div class="ft-header-left">
+                  <svg class="ft-chevron" id="ft-chevron-verified" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  <span class="ft-section-label">Verified</span>
+                  <span class="ft-count-badge" id="ft-badge-verified">0</span>
+                </div>
+                <div class="ft-toolbar">
+                  <button class="ft-tool-btn" title="Refresh" onclick="event.stopPropagation();ftLoad('verified')">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="ft-body" id="ft-body-verified">
+                <div class="ft-tree" id="ft-tree-verified"></div>
+              </div>
+            </div>
+
+            <!-- My Workflows -->
+            <div class="ft-section" id="ft-myworkflows">
+              <div class="ft-header" onclick="ftToggle('my_workflows')">
+                <div class="ft-header-left">
+                  <svg class="ft-chevron" id="ft-chevron-my_workflows" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  <span class="ft-section-label">My Workflows</span>
+                  <span class="ft-count-badge" id="ft-badge-my_workflows">0</span>
+                </div>
+                <div class="ft-toolbar" onclick="event.stopPropagation()">
+                  <button class="ft-tool-btn" title="New Folder" onclick="ftNewFolder('my_workflows', '')">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
+                  </button>
+                  <button class="ft-tool-btn" title="New Workflow" onclick="ftNewFile('my_workflows', '')">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+                  </button>
+                  <button class="ft-tool-btn" title="Upload .md" onclick="document.getElementById('ftUploadInput-my_workflows').click()">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="ft-body" id="ft-body-my_workflows">
+                <div class="ft-tree" id="ft-tree-my_workflows"></div>
+                <input type="file" id="ftUploadInput-my_workflows" accept=".md" style="display:none" onchange="ftUploadFiles('my_workflows', '', this)">
+              </div>
+            </div>
+          </div><!-- /WORKFLOWS group -->
+
+        </div><!-- /dw-panel -->
+      </div><!-- /tab-panel-dw -->
 
       <div class="sidebar-bottom">
         <button class="sidebar-bottom-btn" id="admin-tab-btn" onclick="toggleAdminPanel()" title="Admin Panel">
@@ -2629,6 +2865,8 @@
       </div>
     </aside>
 
+    <div id="sidebar-drag" class="drag-handle" title="Drag to resize sidebar"></div>
+
     <!-- ============================================================
          MAIN CHAT AREA
          ============================================================ -->
@@ -2646,9 +2884,14 @@
               <line x1="3" y1="18" x2="21" y2="18"></line>
             </svg>
           </button>
-          <span class="header-title">Market Risk Digital Worker</span>
+          <span class="header-title" id="header-worker-name">Market Risk Digital Worker</span>
         </div>
         <div class="header-right">
+          <div id="admin-console-banner" style="display:none;margin-right:8px">
+            <a href="admin.html" style="font-size:12px;color:#FFB300;text-decoration:none;padding:4px 10px;border:1px solid rgba(255,179,0,0.3);border-radius:6px">Admin Console →</a>
+          </div>
+          <div id="user-display-badge" style="display:none;margin-right:8px;font-size:12px;color:var(--text-secondary)"></div>
+          <button id="logout-btn" style="display:none;background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:12px;padding:4px 8px" onclick="doLogout()">Sign out</button>
           <div class="cost-pill" id="cost-pill">
             <span id="token-display">0 tok</span>
             <div class="cost-tooltip" id="cost-tooltip">
@@ -2709,6 +2952,8 @@
 
     </div><!-- end #chat-zone -->
 
+    <div id="canvas-drag" class="drag-handle" title="Drag to resize canvas"></div>
+
     <!-- ============================================================
          CANVAS PANEL
          ============================================================ -->
@@ -2719,6 +2964,7 @@
           <span id="canvas-readonly-badge" style="display:none;font-size:10px;font-weight:600;color:var(--text-muted);background:var(--bg-elevated);border:1px solid var(--border);border-radius:4px;padding:2px 6px;flex-shrink:0;">READ ONLY</span>
         </div>
         <div id="canvas-topbar-actions">
+          <button id="canvas-save-btn" onclick="canvasSaveToMyData()" title="Save to My Data" style="background:var(--bg-hover);color:var(--text-secondary);border:1px solid var(--border);padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;display:none;">&#8659; Save</button>
           <button id="canvas-export-btn" onclick="exportCanvasAsWord()">Export as Word</button>
           <button id="canvas-close-btn" onclick="closeCanvas()" title="Close canvas">&#x2715;</button>
         </div>
@@ -2787,6 +3033,9 @@
                 <span class="ft-count-badge" id="admin-badge-domain_data">0</span>
               </div>
               <div class="ft-toolbar" onclick="event.stopPropagation()">
+                <button class="ft-tool-btn" title="Bulk Select" onclick="adminToggleBulkSelect('domain_data')" id="admin-bulk-btn-domain_data">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="4" height="4" rx="1"/><rect x="3" y="12" width="4" height="4" rx="1"/><rect x="3" y="19" width="4" height="4" rx="1"/><line x1="10" y1="7" x2="21" y2="7"/><line x1="10" y1="14" x2="21" y2="14"/><line x1="10" y1="21" x2="21" y2="21"/></svg>
+                </button>
                 <button class="ft-tool-btn" title="New Folder" onclick="adminNewFolder('domain_data', '')">
                   <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
                 </button>
@@ -2808,6 +3057,9 @@
                 <span class="ft-count-badge" id="admin-badge-verified_workflows">0</span>
               </div>
               <div class="ft-toolbar" onclick="event.stopPropagation()">
+                <button class="ft-tool-btn" title="Bulk Select" onclick="adminToggleBulkSelect('verified_workflows')" id="admin-bulk-btn-verified_workflows">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="4" height="4" rx="1"/><rect x="3" y="12" width="4" height="4" rx="1"/><rect x="3" y="19" width="4" height="4" rx="1"/><line x1="10" y1="7" x2="21" y2="7"/><line x1="10" y1="14" x2="21" y2="14"/><line x1="10" y1="21" x2="21" y2="21"/></svg>
+                </button>
                 <button class="ft-tool-btn" title="New Folder" onclick="adminNewFolder('verified_workflows', '')">
                   <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
                 </button>
@@ -2862,7 +3114,29 @@
         </div>
       </div>
 
+      <!-- Preview Panel -->
+      <div id="admin-preview-panel" style="display:none">
+        <div id="admin-preview-header">
+          <span id="admin-preview-filename"></span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span id="admin-preview-meta" style="font-size:11px;color:var(--text-muted)"></span>
+            <button class="admin-toolbar-btn" onclick="adminClosePreview()" style="padding:2px 8px">✕</button>
+          </div>
+        </div>
+        <div id="admin-preview-body"></div>
+      </div>
+
     </div><!-- end #admin-zone -->
+
+    <!-- Bulk delete bar (floats over admin panel) -->
+    <div id="admin-bulk-bar" style="display:none">
+      <span id="admin-bulk-count">0 selected</span>
+      <button class="admin-toolbar-btn danger" id="admin-bulk-delete-btn" onclick="adminBulkDelete()">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+        Delete selected
+      </button>
+      <button class="admin-toolbar-btn" onclick="adminCancelBulkSelect()">Cancel</button>
+    </div>
 
     <!-- Admin confirmation modal -->
     <div id="admin-confirm-modal">
@@ -3156,9 +3430,26 @@
           var titleSpan = document.createElement('span');
           titleSpan.className = 'sidebar-item-title';
           titleSpan.textContent = conv.title || 'New Chat';
+          titleSpan.ondblclick = (function(convId) {
+            return function(e) { e.stopPropagation(); startRenameConversation(convId); };
+          })(conv.id);
+
+          var actionsDiv = document.createElement('div');
+          actionsDiv.className = 'sidebar-item-actions';
+
+          var renameBtn = document.createElement('button');
+          renameBtn.className = 'sidebar-item-rename';
+          renameBtn.title = 'Rename';
+          renameBtn.innerHTML = '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>';
+          renameBtn.setAttribute('data-id', conv.id);
+          renameBtn.onclick = function(e) {
+            e.stopPropagation();
+            startRenameConversation(this.getAttribute('data-id'));
+          };
 
           var deleteBtn = document.createElement('button');
           deleteBtn.className = 'sidebar-item-delete';
+          deleteBtn.title = 'Delete';
           deleteBtn.innerHTML = '&times;';
           deleteBtn.setAttribute('data-id', conv.id);
           deleteBtn.onclick = function(e) {
@@ -3166,16 +3457,74 @@
             confirmDeleteConversation(this.getAttribute('data-id'));
           };
 
+          actionsDiv.appendChild(renameBtn);
+          actionsDiv.appendChild(deleteBtn);
+
           item.appendChild(titleSpan);
-          item.appendChild(deleteBtn);
+          item.appendChild(actionsDiv);
 
           item.onclick = (function(convId) {
-            return function() { switchConversation(convId); };
+            return function(e) {
+              if (e.target.closest('.sidebar-item-actions')) return;
+              switchConversation(convId);
+            };
           })(conv.id);
 
           container.appendChild(item);
         }
       }
+    }
+
+    /* ── Sidebar tab switching ────────────────────────────── */
+    var _activeSidebarTab = 'chats';
+
+    function switchSidebarTab(tab) {
+      _activeSidebarTab = tab;
+      document.getElementById('tab-btn-chats').classList.toggle('active', tab === 'chats');
+      document.getElementById('tab-btn-dw').classList.toggle('active', tab === 'dw');
+      document.getElementById('tab-panel-chats').classList.toggle('active', tab === 'chats');
+      document.getElementById('tab-panel-dw').classList.toggle('active', tab === 'dw');
+      // Lazy-load file trees when switching to Data & Workflows for the first time
+      if (tab === 'dw') ftLoadAll();
+    }
+
+    /* ── Chat rename ────────────────────────────────────── */
+    function startRenameConversation(convId) {
+      var item = document.querySelector('#sidebar-conversations .sidebar-item[data-id="' + convId + '"]');
+      if (!item) return;
+      var titleSpan = item.querySelector('.sidebar-item-title');
+      if (!titleSpan) return;
+      var current = titleSpan.textContent;
+
+      var input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'sidebar-item-input';
+      input.value = current;
+
+      titleSpan.replaceWith(input);
+      input.focus();
+      input.select();
+
+      function commit() {
+        var val = input.value.trim();
+        if (!val) val = current;
+        renameConversation(convId, val);
+      }
+
+      input.onblur = commit;
+      input.onkeydown = function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+        if (e.key === 'Escape') { input.value = current; input.blur(); }
+      };
+    }
+
+    function renameConversation(convId, newTitle) {
+      var conv = findConversation(convId);
+      if (!conv) return;
+      conv.title = newTitle || conv.title;
+      conv.updated = Date.now();
+      saveConversations();
+      renderSidebar();
     }
 
     function newConversation() {
@@ -4737,21 +5086,52 @@
 
     function ftFileClick(section, path, name, isWf, isEditable) {
       if (isWf) {
+        // Open in canvas AND select workflow for chat
         ftPreviewWorkflow(section, path, name, isEditable);
+        _ftSelectWorkflowForChat(section, path, name);
       } else {
-        ftToggleFileSelection(section, path, name);
+        // Open in canvas AND add to selected files for chat
+        ftPreviewFile(section, path, name);
+        _ftAddFileToChat(section, path, name);
       }
     }
 
-    function ftToggleFileSelection(section, path, name) {
+    function _ftSelectWorkflowForChat(section, path, name) {
+      // If already active, deselect; otherwise fetch content and set active
+      if (_activeWorkflow && _activeWorkflow.section === section && _activeWorkflow.path === path) {
+        _activeWorkflow = null;
+        Object.keys(_FT_SECTIONS).forEach(function(s) { ftRenderTree(s); });
+        renderContextBar();
+        return;
+      }
+      var url = _agentBase + '/api/fs/' + section + '/file?path=' + encodeURIComponent(path);
+      fetch(url, { headers: _ftHeaders() })
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(data) {
+          if (!data) return;
+          _activeWorkflow = { section: section, path: path, name: name, content: data.content || '' };
+          Object.keys(_FT_SECTIONS).forEach(function(s) { ftRenderTree(s); });
+          renderContextBar();
+          showToast('Workflow added: ' + name, 1800);
+        });
+    }
+
+    function _ftAddFileToChat(section, path, name) {
       var key = section + ':' + path;
       if (_selectedFiles[key]) {
+        // Already selected — clicking again deselects
         delete _selectedFiles[key];
       } else {
         _selectedFiles[key] = { section: section, path: path, name: name };
+        showToast(name + ' added to context', 1800);
       }
-      ftRenderTree(section);
+      // Re-render all sections so selected highlights update everywhere
+      Object.keys(_FT_SECTIONS).forEach(function(s) { if (_ftTrees[s]) ftRenderTree(s); });
       renderContextBar();
+    }
+
+    function ftToggleFileSelection(section, path, name) {
+      _ftAddFileToChat(section, path, name);
     }
 
     function ftPreviewWorkflow(section, path, name, isEditable) {
@@ -4773,14 +5153,19 @@
           var exportBtn = document.getElementById('canvas-export-btn');
           if (exportBtn) exportBtn.style.display = 'none';
           document.getElementById('canvas-content').scrollTop = 0;
-          var bar = document.getElementById('canvas-wf-select-bar');
-          var btn = document.getElementById('canvas-wf-select-btn');
-          if (bar && btn) {
-            var isActive = _activeWorkflow && _activeWorkflow.section === section && _activeWorkflow.path === path;
-            btn.textContent = isActive ? 'Deselect Workflow' : 'Select this Workflow';
-            btn.style.background = isActive ? 'var(--text-muted)' : 'var(--blue)';
-            bar.style.display = '';
-          }
+          var saveBtn = document.getElementById('canvas-save-btn');
+          if (saveBtn) saveBtn.style.display = '';
+          // Update select bar — workflow is being added to context in parallel, poll once
+          setTimeout(function() {
+            var bar = document.getElementById('canvas-wf-select-bar');
+            var btn = document.getElementById('canvas-wf-select-btn');
+            if (bar && btn) {
+              var isActive = _activeWorkflow && _activeWorkflow.section === section && _activeWorkflow.path === path;
+              btn.textContent = isActive ? 'Deselect Workflow' : 'Select this Workflow';
+              btn.style.background = isActive ? 'var(--text-muted)' : 'var(--blue)';
+              bar.style.display = '';
+            }
+          }, 400);
         })
         .catch(function() { showToast('Failed to load workflow', 2000); });
     }
@@ -4795,6 +5180,10 @@
       titleEl.contentEditable = 'false';
       var exportBtn = document.getElementById('canvas-export-btn');
       if (exportBtn) exportBtn.style.display = 'none';
+      var saveBtn = document.getElementById('canvas-save-btn');
+      if (saveBtn) saveBtn.style.display = '';
+      var wfBar = document.getElementById('canvas-wf-select-bar');
+      if (wfBar) wfBar.style.display = 'none';
       // Hide all preview panels first
       ['canvas-content', 'md-editor-panel', 'pdf-viewer-panel', 'sheet-viewer-panel'].forEach(function(id) {
         var el = document.getElementById(id);
@@ -4832,7 +5221,8 @@
         fetch(url, { headers: _ftHeaders() })
           .then(function(r) { return r.json(); })
           .then(function(data) {
-            renderCanvas(data.content || '');
+            _canvasMarkdown = data.content || '';
+            renderCanvas(_canvasMarkdown);
           });
       } else if (ext === 'json' || ext === 'txt') {
         var cc = document.getElementById('canvas-content');
@@ -5207,15 +5597,24 @@
       var deleteBtn  = $('ft-ctx-delete');
       if (previewBtn) previewBtn.onclick = function() {
         if (!_ctxTarget) return;
-        var isWf = _FT_SECTIONS[_ctxTarget.section] && _FT_SECTIONS[_ctxTarget.section].wfSection;
-        if (isWf) ftPreviewWorkflow(_ctxTarget.section, _ctxTarget.path, _ctxTarget.name, false);
-        else ftPreviewFile(_ctxTarget.section, _ctxTarget.path, _ctxTarget.name);
+        if (_ctxTarget.isAdmin) {
+          adminPreviewFile(_ctxTarget.section, _ctxTarget.path, _ctxTarget.name);
+        } else {
+          var isWf = _FT_SECTIONS[_ctxTarget.section] && _FT_SECTIONS[_ctxTarget.section].wfSection;
+          if (isWf) ftPreviewWorkflow(_ctxTarget.section, _ctxTarget.path, _ctxTarget.name, false);
+          else ftPreviewFile(_ctxTarget.section, _ctxTarget.path, _ctxTarget.name);
+        }
       };
       if (selectBtn) selectBtn.onclick = function() {
         if (_ctxTarget) ftToggleFileSelection(_ctxTarget.section, _ctxTarget.path, _ctxTarget.name);
       };
       if (renameBtn) renameBtn.onclick = function() {
         if (!_ctxTarget) return;
+        if (_ctxTarget.isAdmin) {
+          // Inline rename for admin (files and folders)
+          adminRenameItem(_ctxTarget.section, _ctxTarget.path, _ctxTarget.type, _ctxTarget.name);
+          return;
+        }
         var newName = prompt('Rename to:', _ctxTarget.name);
         if (!newName || newName === _ctxTarget.name) return;
         if (_ctxTarget.isAdmin) {
@@ -5251,27 +5650,38 @@
           }
         }
       };
-      // Admin confirm modal delete button
+      // Admin confirm modal delete button — save cb before closing (close nulls it)
       var adminConfirmDeleteBtn = $('admin-confirm-delete-btn');
       if (adminConfirmDeleteBtn) adminConfirmDeleteBtn.onclick = function() {
+        var cb = _adminConfirmCb;
         adminConfirmClose();
-        if (_adminConfirmCb) _adminConfirmCb();
+        if (cb) cb();
       };
 
-      // Admin upload zone drag-drop
-      var adminUploadZone = $('admin-upload-zone');
-      if (adminUploadZone) {
-        adminUploadZone.addEventListener('dragover', function(e) {
+      // Admin drag-drop — listen on the whole right panel so it works even before zone is visible
+      var adminRightPanel = $('admin-right-panel');
+      if (adminRightPanel) {
+        adminRightPanel.addEventListener('dragover', function(e) {
           e.preventDefault();
-          adminUploadZone.classList.add('drag-over');
+          adminRightPanel.classList.add('drag-over');
+          var zone = $('admin-upload-zone');
+          if (zone) zone.classList.add('drag-over');
         });
-        adminUploadZone.addEventListener('dragleave', function() { adminUploadZone.classList.remove('drag-over'); });
-        adminUploadZone.addEventListener('drop', function(e) {
+        adminRightPanel.addEventListener('dragleave', function(e) {
+          if (!adminRightPanel.contains(e.relatedTarget)) {
+            adminRightPanel.classList.remove('drag-over');
+            var zone = $('admin-upload-zone');
+            if (zone) zone.classList.remove('drag-over');
+          }
+        });
+        adminRightPanel.addEventListener('drop', function(e) {
           e.preventDefault();
-          adminUploadZone.classList.remove('drag-over');
-          if (!_adminSelectedSection) { showToast('Select a folder first', 2000); return; }
+          adminRightPanel.classList.remove('drag-over');
+          var zone = $('admin-upload-zone');
+          if (zone) zone.classList.remove('drag-over');
+          if (!_adminSelectedSection) { showToast('Select a folder in the tree first', 2500); return; }
           var files = Array.from(e.dataTransfer.files);
-          adminEnqueueFiles(files);
+          if (files.length) adminEnqueueFiles(files);
         });
       }
 
@@ -5279,6 +5689,37 @@
       var mdTextarea = $('md-editor-textarea');
       if (mdTextarea) mdTextarea.addEventListener('input', mdOnChange);
     });
+
+    // canvasSaveToMyData — Save canvas markdown content to my_data/ via md_save tool
+    function canvasSaveToMyData() {
+      var content = _canvasMarkdown || '';
+      if (!content.trim()) { showToast('Nothing to save', 2000); return; }
+      // Derive filename from first H1 heading or timestamp
+      var h1 = content.match(/^#\s+(.+)$/m);
+      var stem = h1 ? h1[1].replace(/[^a-zA-Z0-9_\-\s]/g, '').trim().replace(/\s+/g, '_').toLowerCase() : '';
+      if (!stem) stem = 'canvas_' + new Date().toISOString().slice(0, 10);
+      var filename = stem + '.md';
+      var saveBtn = document.getElementById('canvas-save-btn');
+      if (saveBtn) { saveBtn.textContent = 'Saving…'; saveBtn.disabled = true; }
+
+      fetch(_agentBase + '/api/agent', {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, _ftHeaders()),
+        body: JSON.stringify({
+          message: 'Save the following markdown content to my_data using md_save tool. ' +
+            'filename: "' + filename + '", subfolder: "canvas", versioning: true. ' +
+            'Content:\n\n' + content
+        })
+      }).then(function() {
+        showToast('Saved to my_data/canvas/' + filename, 3000);
+        // Refresh uploads tree so file appears
+        ftLoad('uploads');
+      }).catch(function() {
+        showToast('Save failed', 2000);
+      }).finally(function() {
+        if (saveBtn) { saveBtn.textContent = '↙ Save'; saveBtn.disabled = false; }
+      });
+    }
 
     // selectFromCanvas — called when "Select this Workflow" button clicked in canvas
     function selectFromCanvas() {
@@ -5462,20 +5903,32 @@
         if (node.type === 'folder') {
           var isOpen = !!_adminExpanded[section][node.path];
           var isSelected = _adminSelectedSection === section && _adminSelectedFolder === node.path;
-          html += '<div class="ft-row' + (isSelected ? ' selected' : '') + '" data-asection="' + esc(section) + '" data-apath="' + esc(node.path) + '" data-atype="folder"' +
+          function countDescendants(n) { return (n.children||[]).reduce(function(s,c){ return s + 1 + countDescendants(c); }, 0); }
+          var descCount = countDescendants(node);
+          var folderBulkCb = (_adminBulkSection === section)
+            ? '<input type="checkbox" class="admin-bulk-checkbox" ' + (_adminBulkSelected[node.path] ? 'checked' : '') + ' onclick="event.stopPropagation();adminBulkToggle(\'' + esc(node.path) + '\',this.checked)">'
+            : '';
+          var isDraggable = !_adminBulkSection;
+          html += '<div class="ft-row' + (isSelected ? ' selected' : '') + '" data-asection="' + esc(section) + '" data-apath="' + esc(node.path) + '" data-atype="folder" data-aname="' + esc(node.name) + '"' +
+            ' draggable="' + isDraggable + '"' +
+            ' ondragstart="' + (isDraggable ? 'adminDragStart(event)' : '') + '"' +
+            ' ondragover="adminDragOver(event)"' +
+            ' ondragleave="adminDragLeave(event)"' +
+            ' ondrop="adminDrop(event)"' +
             ' onclick="adminSelectFolder(\'' + esc(section) + '\',\'' + esc(node.path) + '\')"' +
             ' oncontextmenu="adminCtxMenu(event,\'' + esc(section) + '\',\'' + esc(node.path) + '\',\'folder\',\'' + esc(node.name) + '\')">' +
             '<div class="ft-indent" style="width:' + indent + 'px"></div>' +
+            folderBulkCb +
             '<div class="ft-row-chevron' + (isOpen ? ' open' : '') + '" onclick="event.stopPropagation();adminToggleFolder(\'' + esc(section) + '\',\'' + esc(node.path) + '\')">' +
               '<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>' +
             '</div>' +
             '<span class="ft-icon">' + ftFolderIcon(isOpen) + '</span>' +
             '<span class="ft-row-name">' + esc(node.name) + '</span>' +
             '<div class="ft-row-actions">' +
-              '<button class="ft-action-btn" title="Upload here" onclick="event.stopPropagation();adminSelectFolder(\'' + esc(section) + '\',\'' + esc(node.path) + '\');">' +
+              '<button class="ft-action-btn" title="Upload files here" onclick="event.stopPropagation();adminSelectFolder(\'' + esc(section) + '\',\'' + esc(node.path) + '\');document.getElementById(\'adminUploadInput\').click();">' +
                 '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>' +
               '</button>' +
-              '<button class="ft-action-btn danger" title="Delete" onclick="event.stopPropagation();adminDeleteItem(\'' + esc(section) + '\',\'' + esc(node.path) + '\',\'folder\',\'' + esc(node.name) + '\',' + (node.children ? node.children.filter(function(c){return c.type==='file';}).length : 0) + ')">' +
+              '<button class="ft-action-btn danger" title="Delete" onclick="event.stopPropagation();adminDeleteItem(\'' + esc(section) + '\',\'' + esc(node.path) + '\',\'folder\',\'' + esc(node.name) + '\',' + descCount + ')">' +
                 '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14H6L5 6"></path></svg>' +
               '</button>' +
             '</div>' +
@@ -5489,12 +5942,18 @@
           var isMd = ext === 'md';
           var validIcon = '';
           if (isMd) {
-            // Run frontmatter validation async and update icon
             validIcon = '<span class="admin-fm-icon" data-section="' + esc(section) + '" data-path="' + esc(node.path) + '" style="font-size:11px;margin-left:4px;" title="Checking frontmatter...">&#8987;</span>';
           }
-          html += '<div class="ft-row" data-asection="' + esc(section) + '" data-apath="' + esc(node.path) + '" data-atype="file"' +
+          var bulkCb = (_adminBulkSection === section)
+            ? '<input type="checkbox" class="admin-bulk-checkbox" ' + (_adminBulkSelected[node.path] ? 'checked' : '') + ' onclick="event.stopPropagation();adminBulkToggle(\'' + esc(node.path) + '\',this.checked)">'
+            : '';
+          html += '<div class="ft-row" data-asection="' + esc(section) + '" data-apath="' + esc(node.path) + '" data-atype="file" data-aname="' + esc(node.name) + '"' +
+            ' draggable="' + (_adminBulkSection ? 'false' : 'true') + '"' +
+            ' ondragstart="adminDragStart(event)"' +
+            ' onclick="' + (_adminBulkSection ? 'adminBulkToggle(\'' + esc(node.path) + '\',!_adminBulkSelected[\'' + esc(node.path) + '\']);adminRenderTree(\'' + esc(section) + '\')' : 'adminPreviewFile(\'' + esc(section) + '\',\'' + esc(node.path) + '\',\'' + esc(node.name) + '\')') + '"' +
             ' oncontextmenu="adminCtxMenu(event,\'' + esc(section) + '\',\'' + esc(node.path) + '\',\'file\',\'' + esc(node.name) + '\')">' +
             '<div class="ft-indent" style="width:' + (indent + 14) + 'px"></div>' +
+            bulkCb +
             '<div class="ft-row-chevron"></div>' +
             '<span class="ft-icon">' + ftFileIcon(node.name) + '</span>' +
             '<span class="ft-row-name">' + esc(node.name) + validIcon + '</span>' +
@@ -5535,6 +5994,71 @@
           .catch(function() { icon.textContent = ''; });
       });
     }
+
+    // ── Admin drag-to-move ────────────────────────────────────────────
+    var _adminDrag = null; // { section, path, type, name }
+
+    function adminDragStart(e) {
+      var el = e.currentTarget;
+      _adminDrag = {
+        section: el.getAttribute('data-asection'),
+        path:    el.getAttribute('data-apath'),
+        type:    el.getAttribute('data-atype'),
+        name:    el.getAttribute('data-aname')
+      };
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', _adminDrag.path);
+      el.style.opacity = '0.4';
+      setTimeout(function() { el.style.opacity = ''; }, 0);
+    }
+
+    function adminDragOver(e) {
+      if (!_adminDrag) return;
+      var el = e.currentTarget;
+      // Can't drop onto yourself or a child of yourself
+      var destPath = el.getAttribute('data-apath');
+      if (destPath === _adminDrag.path) return;
+      if (destPath.startsWith(_adminDrag.path + '/')) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      el.classList.add('admin-drop-target');
+    }
+
+    function adminDragLeave(e) {
+      if (!e.currentTarget.contains(e.relatedTarget)) {
+        e.currentTarget.classList.remove('admin-drop-target');
+      }
+    }
+
+    function adminDrop(e) {
+      e.preventDefault();
+      var el = e.currentTarget;
+      el.classList.remove('admin-drop-target');
+      if (!_adminDrag) return;
+      var destPath = el.getAttribute('data-apath');
+      var destSection = el.getAttribute('data-asection');
+      if (!destPath || destPath === _adminDrag.path) { _adminDrag = null; return; }
+      if (destPath.startsWith(_adminDrag.path + '/')) { _adminDrag = null; return; }
+      adminMoveItem(_adminDrag.section, _adminDrag.path, destSection, destPath, _adminDrag.name);
+      _adminDrag = null;
+    }
+
+    function adminMoveItem(srcSection, srcPath, destSection, destFolder, name) {
+      if (srcSection !== destSection) { showToast('Cannot move between sections', 2000); return; }
+      fetch(_agentBase + '/api/admin/move', {
+        method: 'POST',
+        headers: _adminJsonHeaders(),
+        body: JSON.stringify({ section: srcSection, src_path: srcPath, dest_folder: destFolder })
+      }).then(function(r) {
+        if (r.ok) {
+          adminLoad(srcSection);
+          showToast('"' + name + '" moved to ' + destFolder, 2000);
+        } else {
+          r.json().then(function(d) { showToast(d.detail || 'Move failed', 2000); });
+        }
+      }).catch(function() { showToast('Move failed', 2000); });
+    }
+    // ─────────────────────────────────────────────────────────────────
 
     function adminToggleFolder(section, path) {
       if (!_adminExpanded[section]) _adminExpanded[section] = {};
@@ -5647,14 +6171,249 @@
       _ctxTarget = { section: section, path: path, type: type, name: name, isAdmin: true };
       var menu = $('ft-ctx-menu');
       if (!menu) return;
-      $('ft-ctx-preview').style.display = 'none';
+      $('ft-ctx-preview').style.display = type === 'file' ? '' : 'none';
       $('ft-ctx-select').style.display = 'none';
-      $('ft-ctx-rename').style.display = type === 'file' ? '' : 'none';
+      $('ft-ctx-rename').style.display = '';   // files AND folders
       $('ft-ctx-download').style.display = type === 'file' ? '' : 'none';
       $('ft-ctx-delete').style.display = '';
       menu.style.left = e.clientX + 'px';
       menu.style.top = e.clientY + 'px';
       menu.classList.add('visible');
+    }
+
+    // ── Admin File Preview ────────────────────────────────────────────
+    function adminPreviewFile(section, path, name) {
+      var panel = $('admin-preview-panel');
+      var body  = $('admin-preview-body');
+      var fname = $('admin-preview-filename');
+      var meta  = $('admin-preview-meta');
+      if (!panel) return;
+      panel.style.display = 'flex';
+      fname.textContent = name;
+      meta.textContent = 'Loading…';
+      body.innerHTML = '<div style="color:var(--text-muted);padding:20px">Loading…</div>';
+
+      var url = _agentBase + '/api/admin/file?section=' + encodeURIComponent(section) + '&path=' + encodeURIComponent(path);
+      var ext = name.split('.').pop().toLowerCase();
+
+      if (['pdf','docx','doc','xlsx','xls'].indexOf(ext) >= 0) {
+        // Binary: fetch as blob and render in iframe
+        fetch(url, { headers: _adminHeaders() })
+          .then(function(r) {
+            meta.textContent = r.headers.get('X-File-Size') ? _fmtSize(+r.headers.get('X-File-Size')) : '';
+            return r.blob();
+          })
+          .then(function(blob) {
+            if (ext === 'pdf') {
+              var blobUrl = URL.createObjectURL(blob);
+              body.innerHTML = '<iframe src="' + blobUrl + '" style="width:100%;height:100%;min-height:500px;border:none"></iframe>';
+            } else if (ext === 'xlsx' || ext === 'xls') {
+              _adminPreviewExcel(blob, body);
+            } else if (ext === 'docx' || ext === 'doc') {
+              _adminPreviewDocx(blob, body);
+            }
+          }).catch(function() { body.innerHTML = '<div style="color:var(--red);padding:20px">Preview failed</div>'; });
+        return;
+      }
+
+      // Text-based
+      fetch(url, { headers: _adminHeaders() })
+        .then(function(r) {
+          var size = r.headers.get('X-File-Size');
+          var trunc = r.headers.get('X-Truncated');
+          meta.textContent = (size ? _fmtSize(+size) : '') + (trunc ? ' · truncated at 2MB' : '');
+          return r.text();
+        })
+        .then(function(text) {
+          if (ext === 'md') {
+            body.innerHTML = (typeof marked !== 'undefined') ? marked.parse(text) : '<pre>' + esc(text) + '</pre>';
+          } else if (ext === 'json') {
+            try { text = JSON.stringify(JSON.parse(text), null, 2); } catch(ex) {}
+            body.innerHTML = '<pre>' + esc(text) + '</pre>';
+          } else if (ext === 'csv' || ext === 'tsv') {
+            _adminPreviewCsv(text, ext, body);
+          } else {
+            body.innerHTML = '<pre>' + esc(text) + '</pre>';
+          }
+        }).catch(function() { body.innerHTML = '<div style="color:var(--red);padding:20px">Preview failed</div>'; });
+    }
+
+    function adminClosePreview() {
+      var p = $('admin-preview-panel');
+      if (p) p.style.display = 'none';
+    }
+
+    function _fmtSize(b) {
+      if (b > 1024*1024) return (b/1024/1024).toFixed(1) + ' MB';
+      if (b > 1024) return Math.round(b/1024) + ' KB';
+      return b + ' B';
+    }
+
+    function _adminPreviewCsv(text, ext, body) {
+      var sep = ext === 'tsv' ? '\t' : ',';
+      var lines = text.split('\n').slice(0, 51);
+      if (!lines.length) { body.innerHTML = '<pre>(empty)</pre>'; return; }
+      var html = '<table><thead><tr>';
+      var headers = lines[0].split(sep);
+      headers.forEach(function(h) { html += '<th>' + esc(h.trim()) + '</th>'; });
+      html += '</tr></thead><tbody>';
+      lines.slice(1).forEach(function(line) {
+        if (!line.trim()) return;
+        html += '<tr>';
+        line.split(sep).forEach(function(c) { html += '<td>' + esc(c.trim()) + '</td>'; });
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      if (text.split('\n').length > 51) html += '<div style="color:var(--text-muted);margin-top:8px;font-size:11px">Showing first 50 rows</div>';
+      body.innerHTML = html;
+    }
+
+    function _adminPreviewExcel(blob, body) {
+      if (typeof XLSX === 'undefined') {
+        body.innerHTML = '<div style="color:var(--text-muted);padding:20px">SheetJS not loaded — Excel preview unavailable</div>';
+        return;
+      }
+      blob.arrayBuffer().then(function(buf) {
+        var wb = XLSX.read(buf, {type:'array'});
+        var sheetName = wb.SheetNames[0];
+        var ws = wb.Sheets[sheetName];
+        body.innerHTML = XLSX.utils.sheet_to_html(ws, {id:'xlsx-preview-table'});
+      }).catch(function() { body.innerHTML = '<div style="color:var(--red)">Excel parse failed</div>'; });
+    }
+
+    function _adminPreviewDocx(blob, body) {
+      if (typeof mammoth === 'undefined') {
+        body.innerHTML = '<div style="color:var(--text-muted);padding:20px">Mammoth.js not loaded — Word preview unavailable</div>';
+        return;
+      }
+      blob.arrayBuffer().then(function(buf) {
+        return mammoth.convertToHtml({arrayBuffer: buf});
+      }).then(function(result) {
+        body.innerHTML = '<div style="font-size:12px;line-height:1.6">' + result.value + '</div>';
+      }).catch(function() { body.innerHTML = '<div style="color:var(--red)">Word parse failed</div>'; });
+    }
+
+    // ── Admin Folder Rename ───────────────────────────────────────────
+    function adminRenameItem(section, path, type, currentName) {
+      // Block renaming root nodes (no slash in path = root)
+      if (!path.includes('/') && type === 'folder') {
+        showToast('Root folders cannot be renamed', 2000); return;
+      }
+      var container = $('admin-tree-' + section);
+      if (!container) return;
+      // Find the row
+      var rows = container.querySelectorAll('.ft-row');
+      var targetRow = null;
+      rows.forEach(function(r) {
+        if (r.getAttribute('data-apath') === path) targetRow = r;
+      });
+      if (!targetRow) return;
+      var nameEl = targetRow.querySelector('.ft-row-name');
+      if (!nameEl) return;
+      var oldText = currentName;
+      var inp = document.createElement('input');
+      inp.type = 'text';
+      inp.value = oldText;
+      inp.style.cssText = 'background:var(--bg-elevated);color:var(--text-primary);border:1px solid var(--amber);border-radius:3px;padding:1px 4px;font-size:12px;width:130px;outline:none';
+      nameEl.replaceWith(inp);
+      inp.focus(); inp.select();
+      function commit() {
+        var newName = inp.value.trim();
+        if (!newName || newName === oldText || newName.includes('/') || newName.includes('\\')) {
+          inp.replaceWith(nameEl); return;
+        }
+        fetch(_agentBase + '/api/admin/rename', {
+          method: 'PATCH',
+          headers: _adminJsonHeaders(),
+          body: JSON.stringify({ section: section, path: path, new_name: newName })
+        }).then(function(r) {
+          if (r.ok) { adminLoad(section); showToast('Renamed to "' + newName + '"', 2000); }
+          else { r.json().then(function(d) { showToast(d.detail || 'Rename failed', 2000); }); inp.replaceWith(nameEl); }
+        }).catch(function() { inp.replaceWith(nameEl); showToast('Rename failed', 2000); });
+      }
+      inp.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') commit();
+        else if (e.key === 'Escape') inp.replaceWith(nameEl);
+      });
+      inp.addEventListener('blur', commit);
+    }
+
+    // ── Bulk Select & Delete ──────────────────────────────────────────
+    var _adminBulkSection = null;   // section currently in bulk mode
+    var _adminBulkSelected = {};    // { path: true }
+
+    function adminToggleBulkSelect(section) {
+      if (_adminBulkSection === section) {
+        adminCancelBulkSelect();
+      } else {
+        if (_adminBulkSection) adminCancelBulkSelect();
+        _adminBulkSection = section;
+        _adminBulkSelected = {};
+        adminRenderTree(section);
+        $('admin-bulk-bar').style.display = 'flex';
+        _adminBulkUpdateBar();
+        var btn = $('admin-bulk-btn-' + section);
+        if (btn) btn.style.color = 'var(--amber)';
+      }
+    }
+
+    function adminCancelBulkSelect() {
+      var sec = _adminBulkSection;
+      _adminBulkSection = null;
+      _adminBulkSelected = {};
+      if (sec) adminRenderTree(sec);
+      $('admin-bulk-bar').style.display = 'none';
+      ['domain_data','verified_workflows'].forEach(function(s) {
+        var btn = $('admin-bulk-btn-' + s);
+        if (btn) btn.style.color = '';
+      });
+    }
+
+    function adminBulkToggle(path, checked) {
+      if (checked) _adminBulkSelected[path] = true;
+      else delete _adminBulkSelected[path];
+      _adminBulkUpdateBar();
+    }
+
+    function _adminBulkUpdateBar() {
+      var count = Object.keys(_adminBulkSelected).length;
+      var countEl = $('admin-bulk-count');
+      if (countEl) countEl.textContent = count + ' selected';
+      var delBtn = $('admin-bulk-delete-btn');
+      if (delBtn) delBtn.disabled = count === 0;
+    }
+
+    function adminBulkDelete() {
+      var paths = Object.keys(_adminBulkSelected);
+      if (!paths.length) return;
+      var section = _adminBulkSection;
+      var titleEl = $('admin-confirm-title');
+      var bodyEl  = $('admin-confirm-body');
+      var modal   = $('admin-confirm-modal');
+      if (titleEl) titleEl.textContent = 'Delete ' + paths.length + ' items?';
+      if (bodyEl)  bodyEl.innerHTML = 'This will permanently delete <strong>' + paths.length + ' items</strong>. This cannot be undone.';
+      if (modal)   modal.classList.add('visible');
+      _adminConfirmCb = function() {
+        var total = paths.length, done = 0, failed = 0;
+        function next() {
+          if (!paths.length) {
+            adminLoad(section);
+            adminCancelBulkSelect();
+            showToast('Deleted ' + done + ' items' + (failed ? ', ' + failed + ' failed' : ''), 3000);
+            return;
+          }
+          var p = paths.shift();
+          fetch(_agentBase + '/api/admin/item', {
+            method: 'DELETE',
+            headers: _adminJsonHeaders(),
+            body: JSON.stringify({ section: section, path: p, recursive: true })
+          }).then(function(r) {
+            if (r.ok) done++; else failed++;
+            next();
+          }).catch(function() { failed++; next(); });
+        }
+        next();
+      };
     }
 
     // Upload queue
@@ -5902,7 +6661,40 @@
     /* ==============================================================
        INIT
        ============================================================== */
+    function doLogout() {
+      sessionStorage.removeItem('rg_token');
+      sessionStorage.removeItem('rg_user');
+      window.location.href = 'login.html';
+    }
+
+    function initAuth() {
+      var token = sessionStorage.getItem('rg_token');
+      var userJson = sessionStorage.getItem('rg_user');
+      if (!token || !userJson) return; // unauthenticated — continue without auth UI
+      try {
+        var u = JSON.parse(userJson);
+        // Show user name
+        var badge = document.getElementById('user-display-badge');
+        if (badge) { badge.textContent = u.display_name || u.user_id; badge.style.display = 'inline'; }
+        // Show logout
+        var lb = document.getElementById('logout-btn');
+        if (lb) lb.style.display = 'inline-block';
+        // Show admin console link for admin/super_admin
+        if (u.role === 'admin' || u.role === 'super_admin') {
+          var ab = document.getElementById('admin-console-banner');
+          if (ab) ab.style.display = 'inline-block';
+        }
+        // Show worker name
+        if (u.worker_name) {
+          var wn = document.getElementById('header-worker-name');
+          if (wn) wn.textContent = u.worker_name;
+          document.title = u.worker_name;
+        }
+      } catch(e) {}
+    }
+
     function init() {
+      initAuth();
       applyStoredTheme();
       renderSampleChips();
       setupKeyboard();
@@ -6056,6 +6848,8 @@
       _lastCanvasTitle = title || 'Document';
       _lastCanvasContent = content;
       document.getElementById('canvas-title').textContent = _lastCanvasTitle;
+      var saveBtn = document.getElementById('canvas-save-btn');
+      if (saveBtn) saveBtn.style.display = '';
       renderCanvas(content);
       document.body.classList.add('canvas-active');
       // Add/update "View Report" button in current agent message actions
@@ -6103,6 +6897,7 @@
       document.getElementById('canvas-title').contentEditable = 'true';
       document.getElementById('canvas-readonly-badge').style.display = 'none';
       document.getElementById('canvas-export-btn').style.display = '';
+      document.getElementById('canvas-save-btn').style.display = 'none';
       document.getElementById('canvas-wf-select-bar').style.display = 'none';
       // Hide file viewer panels
       ['md-editor-panel', 'pdf-viewer-panel', 'sheet-viewer-panel'].forEach(function(id) {
@@ -6229,6 +7024,63 @@
         addSystemNotice('Export failed: ' + e.message);
       }
     }
+
+    // ── Panel drag-to-resize ──────────────────────────────────────────
+    (function() {
+      function makeDraggable(handleId, getA, setA, minA, minB) {
+        var handle = document.getElementById(handleId);
+        if (!handle) return;
+        var dragging = false, startX, startW;
+        handle.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          dragging = true;
+          startX = e.clientX;
+          startW = getA();
+          handle.classList.add('dragging');
+          document.body.style.cursor = 'col-resize';
+          document.body.style.userSelect = 'none';
+        });
+        document.addEventListener('mousemove', function(e) {
+          if (!dragging) return;
+          var delta = e.clientX - startX;
+          var newW = Math.max(minA, startW + delta);
+          var totalW = document.getElementById('app').offsetWidth;
+          if (totalW - newW < minB) newW = totalW - minB;
+          setA(newW);
+        });
+        document.addEventListener('mouseup', function() {
+          if (!dragging) return;
+          dragging = false;
+          handle.classList.remove('dragging');
+          document.body.style.cursor = '';
+          document.body.style.userSelect = '';
+        });
+      }
+
+      // Sidebar ↔ main
+      makeDraggable(
+        'sidebar-drag',
+        function() { return document.getElementById('sidebar').offsetWidth; },
+        function(w) {
+          document.getElementById('sidebar').style.width = w + 'px';
+          document.getElementById('sidebar').style.minWidth = w + 'px';
+        },
+        160, 400
+      );
+
+      // Chat ↔ canvas
+      makeDraggable(
+        'canvas-drag',
+        function() { return document.getElementById('chat-zone').offsetWidth; },
+        function(w) {
+          var chatZone = document.getElementById('chat-zone');
+          chatZone.style.flex = '0 0 ' + w + 'px';
+        },
+        300, 300
+      );
+    })();
+    // ─────────────────────────────────────────────────────────────────
+
   </script>
 
   <!-- FileTree Context Menu -->

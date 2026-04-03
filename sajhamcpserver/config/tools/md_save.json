@@ -1,0 +1,36 @@
+{
+  "name": "md_save",
+  "implementation": "sajha.tools.impl.operational_tools.MdSaveTool",
+  "description": "Save a Markdown string to my_data/ as a .md file with automatic versioning. Archives any existing file with the same name before overwriting. Use at the end of workflows to persist fill_template output or canvas content.",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "content": {
+        "type": "string",
+        "description": "Markdown string to write. Pass the 'content' field returned by fill_template, or any markdown string."
+      },
+      "filename": {
+        "type": "string",
+        "description": "Target filename including .md extension. E.g. cpty_intel_Goldman_Sachs_2025-12-31.md. The .md extension is added automatically if omitted."
+      },
+      "subfolder": {
+        "type": "string",
+        "description": "Sub-folder within my_data/ to save into. Created automatically if it does not exist. Default: root of my_data/. E.g. counterparty_briefs"
+      }
+    },
+    "required": ["content","filename"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "path":     { "type": "string",  "description": "Absolute path of the saved file." },
+      "filename": { "type": "string" },
+      "subfolder":{ "type": "string" },
+      "archived": { "type": "boolean", "description": "True if a previous version was archived before saving." },
+      "archive_path": { "type": "string", "description": "Path to the archived version (only if archived=true)." }
+    }
+  },
+  "metadata": { "category": "Document Processing", "tags": ["save","markdown","versioning","output"] }
+}

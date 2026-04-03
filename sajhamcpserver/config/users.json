@@ -3,29 +3,33 @@
     {
       "user_id": "risk_agent",
       "user_name": "Risk Agent",
+      "display_name": "Saad Ahmed",
+      "avatar_initials": "SA",
       "password": "RiskAgent2025!",
-      "roles": [
-        "admin"
-      ],
-      "tools": [
-        "*"
-      ],
+      "password_hash": "",
+      "role": "super_admin",
+      "roles": ["admin"],
+      "worker_id": null,
+      "tools": ["*"],
       "enabled": true,
+      "onboarding_complete": true,
       "email": "risk_agent@example.com",
       "created_at": "2025-10-26T18:45:05.776412Z",
-      "last_login": "2026-04-02T23:10:29.280003Z"
+      "last_login": "2026-04-03T03:26:38.518864Z"
     },
     {
       "user_id": "admin",
       "user_name": "Administrator",
+      "display_name": "Admin User",
+      "avatar_initials": "AU",
       "password": "admin123",
-      "roles": [
-        "admin"
-      ],
-      "tools": [
-        "*"
-      ],
+      "password_hash": "",
+      "role": "admin",
+      "roles": ["admin"],
+      "worker_id": "w-market-risk",
+      "tools": ["*"],
       "enabled": true,
+      "onboarding_complete": true,
       "email": "admin@example.com",
       "created_at": "2025-10-26T18:45:05.776412Z",
       "last_login": "2026-04-02T11:24:24.784577Z"

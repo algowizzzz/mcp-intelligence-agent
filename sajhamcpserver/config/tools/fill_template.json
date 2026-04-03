@@ -1,0 +1,41 @@
+{
+  "name": "fill_template",
+  "implementation": "sajha.tools.impl.operational_tools.FillTemplateTool",
+  "description": "Read a .md template from domain_data/templates/, substitute {{placeholder}} tokens with a data dict, and return the filled content. Call md_save afterwards to persist the result. Discover available templates via search_files(folder='templates').",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "template_path": {
+        "type": "string",
+        "description": "Absolute path to a .md template file inside domain_data/templates/. E.g. /path/to/data/domain_data/templates/cpty_intel_brief.md"
+      },
+      "data": {
+        "type": "object",
+        "description": "Flat key-value dict of placeholder substitutions. Keys must match the {{placeholder}} tokens in the template exactly. Values must be strings or numbers."
+      },
+      "output_filename": {
+        "type": "string",
+        "description": "Output filename for the filled file including .md extension. Defaults to {template_stem}_filled_{timestamp}.md."
+      },
+      "output_subfolder": {
+        "type": "string",
+        "description": "Sub-folder within my_data/ where the filled file is saved. Default: reports."
+      }
+    },
+    "required": ["template_path","data"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "content":       { "type": "string",  "description": "The fully substituted markdown string. Pass to md_save to persist." },
+      "filename":      { "type": "string",  "description": "Suggested output filename." },
+      "subfolder":     { "type": "string",  "description": "Sub-folder used or suggested." },
+      "template_used": { "type": "string",  "description": "Template filename that was read." },
+      "placeholders_filled":   { "type": "integer" },
+      "placeholders_missing":  { "type": "array", "description": "List of {{tokens}} found in template but not supplied in data dict." }
+    }
+  },
+  "metadata": { "category": "Document Processing", "tags": ["template","fill","report","generate"] }
+}

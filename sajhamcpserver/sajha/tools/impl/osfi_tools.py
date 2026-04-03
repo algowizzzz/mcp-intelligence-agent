@@ -20,7 +20,7 @@ class OsfiBaseTool(BaseMCPTool):
         return {'type': 'object'}
 
     def _get_osfi_dir(self) -> str:
-        return PropertiesConfigurator().get('data.osfi_docs_dir', './data/osfi')
+        return PropertiesConfigurator().get('data.osfi_docs_dir', './data/domain_data/osfi')
 
     def _get_chunk_size(self) -> int:
         return int(PropertiesConfigurator().get('data.osfi_chunk_size_chars', '8000'))

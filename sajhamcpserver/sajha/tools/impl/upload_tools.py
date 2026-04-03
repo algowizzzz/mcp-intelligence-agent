@@ -19,13 +19,17 @@ class ListUploadedFilesTool(BaseMCPTool):
             'properties': {
                 'file_type': {
                     'type': 'string',
-                    'enum': ['pdf', 'docx', 'xlsx', 'csv', 'txt', 'all'],
+                    'enum': ['pdf', 'docx', 'xlsx', 'csv', 'txt', 'parquet', 'md', 'json', 'all'],
                     'description': 'Filter by file type. Default: all.'
                 },
                 'sort_by': {
                     'type': 'string',
                     'enum': ['uploaded_at', 'filename', 'size'],
                     'description': 'Sort order. Default: uploaded_at descending (newest first).'
+                },
+                'subfolder': {
+                    'type': 'string',
+                    'description': 'Optional subfolder path within uploads to list (e.g. "123", "exports"). Default: list all subfolders recursively.'
                 }
             },
             'required': []
@@ -46,29 +50,42 @@ class ListUploadedFilesTool(BaseMCPTool):
         uploads_dir = props.get('data.uploads_dir', './data/uploads')
         file_type = params.get('file_type', 'all')
         sort_by = params.get('sort_by', 'uploaded_at')
+        subfolder = params.get('subfolder', '').strip().strip('/')
 
-        if not os.path.exists(uploads_dir):
-            return {'files': [], 'count': 0, 'uploads_dir': uploads_dir}
+        root = os.path.normpath(uploads_dir)
+        if subfolder:
+            root = os.path.join(root, subfolder)
 
-        ALLOWED = {'pdf', 'docx', 'xlsx', 'csv', 'txt'}
+        if not os.path.exists(root):
+            return {'files': [], 'count': 0, 'uploads_dir': root}
+
+        ALLOWED = {'pdf', 'docx', 'xlsx', 'csv', 'txt', 'parquet', 'pq', 'md', 'json', 'png', 'jpg', 'jpeg'}
         files = []
-        for fname in os.listdir(uploads_dir):
-            if fname.startswith('.'):
-                continue
-            ext = fname.rsplit('.', 1)[-1].lower() if '.' in fname else ''
-            if ext not in ALLOWED:
-                continue
-            if file_type != 'all' and ext != file_type:
-                continue
-            fpath = os.path.join(uploads_dir, fname)
-            stat = os.stat(fpath)
-            files.append({
-                'filename': fname,
-                'path': fpath,
-                'file_type': ext,
-                'size_bytes': stat.st_size,
-                'uploaded_at': datetime.datetime.utcfromtimestamp(stat.st_mtime).isoformat() + 'Z'
-            })
+        for dirpath, dirnames, fnames in os.walk(root):
+            # Skip hidden dirs
+            dirnames[:] = [d for d in dirnames if not d.startswith('.')]
+            for fname in fnames:
+                if fname.startswith('.') or fname.startswith('_'):
+                    continue
+                ext = fname.rsplit('.', 1)[-1].lower() if '.' in fname else ''
+                if ext not in ALLOWED:
+                    continue
+                if file_type != 'all' and ext != file_type:
+                    continue
+                fpath = os.path.join(dirpath, fname)
+                # Relative path within uploads root for display
+                rel = os.path.relpath(fpath, os.path.normpath(uploads_dir))
+                stat = os.stat(fpath)
+                files.append({
+                    'filename': fname,
+                    'path': fpath,
+                    'relative_path': rel,
+                    'subfolder': os.path.dirname(rel) if os.path.dirname(rel) != '.' else '',
+                    'file_type': ext,
+                    'size_bytes': stat.st_size,
+                    'uploaded_at': datetime.datetime.utcfromtimestamp(stat.st_mtime).isoformat() + 'Z'
+                })
 
-        files.sort(key=lambda x: x[sort_by], reverse=(sort_by == 'uploaded_at'))
-        return {'files': files, 'count': len(files), 'uploads_dir': uploads_dir}
+        sort_key = 'uploaded_at' if sort_by == 'uploaded_at' else ('filename' if sort_by == 'filename' else 'size_bytes')
+        files.sort(key=lambda x: x[sort_key], reverse=(sort_by == 'uploaded_at'))
+        return {'files': files, 'count': len(files), 'uploads_dir': root}

@@ -65,11 +65,41 @@ HOW TO EXECUTE:
 - Pass the full output of each step as context into the next step.
 - Wrap the final output in canvas mode if it exceeds 400 words.
 
-KEY RULES:
-- Never skip steps or reorder them.
-- If a tool call in a step fails, note the failure and continue.
-- The ## Inputs: section in the MD defines what user parameters to extract.
-- workflow_list and workflow_get replace the old JSON WorkflowTool pattern entirely.
+MANDATORY COMPLIANCE RULES — these override all other instincts:
+
+1. EXACT TOOLS ONLY. Call the exact tools named in each step. Never substitute a
+   different tool (e.g. do not use duckdb_sql when the step says data_transform,
+   do not use sqlselect when the step says parquet_read). If a listed tool does not
+   exist or fails, note the gap and move on — never replace it with another tool.
+
+2. md_save IS ALWAYS THE LAST STEP. Every workflow ends with an md_save call.
+   This is not optional. Call it even if earlier steps had failures. Use the
+   filename and subfolder exactly as specified in the workflow. Never end a workflow
+   without calling md_save.
+
+3. INTER-STEP DATA. When a later step references "{result_from_step_1}", use the
+   actual field values returned by that tool — inspect the tool response to find
+   the correct field name. Do not guess field names. If the field is missing,
+   state "field not returned" in the output and skip that parameter.
+
+4. CONDITIONAL STEPS. If a step says "only if X", evaluate X against the actual
+   tool result. If the condition is false, skip that step entirely and say so.
+   Do not run a conditional step unconditionally.
+
+5. FAILED TOOL CALLS. If a tool returns an error, attempt it once more with
+   corrected parameters. If it fails again, write "[TOOL: {name} — FAILED: {error}]"
+   in the output and continue. Never retry more than once.
+
+6. NO EXTRA STEPS. Do not add tool calls that are not listed in the workflow.
+   Do not call additional search tools, verification tools, or enrichment tools
+   beyond what the workflow specifies.
+
+7. PARALLEL MEANS PARALLEL. When a step says "(parallel)", call all listed tools
+   in that step before processing any of their results. Do not call them one at a
+   time and react to each result.
+
+The ## Inputs: section in the MD defines what user parameters to extract.
+workflow_list and workflow_get replace the old JSON WorkflowTool pattern entirely.
 
 === OSFI DOCUMENT READING RULE ===
 OSFI guidelines are very large — never attempt to read a full document.

@@ -1,0 +1,88 @@
+{
+  "name": "data_transform",
+  "implementation": "sajha.tools.impl.data_transform_tools.DataTransformTool",
+  "description": "Filter, group-by/aggregate, pivot, and sort a CSV or Parquet file using declarative parameters. No Python code required. Result is a list of row dicts ready for generate_chart, fill_template, or data_export. Mutually exclusive: group_by vs pivot. Only works on CSV/TSV/Parquet files — not JSON.",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "file_path": {
+        "type": "string",
+        "description": "Absolute path to a .csv, .tsv, .parquet, or .pq file. Obtain from list_data_files or use a known path."
+      },
+      "filters": {
+        "type": "array",
+        "description": "List of filter conditions ANDed together. Each item: {\"column\": \"col\", \"operator\": \"==\", \"value\": \"val\"}. Operators: ==, !=, >, >=, <, <=, in, not_in, contains, not_null, is_null.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "column":   { "type": "string" },
+            "operator": { "type": "string", "enum": ["==","!=",">",">=","<","<=","in","not_in","contains","not_null","is_null"] },
+            "value":    { "description": "Scalar or array depending on operator. Omit for not_null/is_null." }
+          },
+          "required": ["column","operator"]
+        }
+      },
+      "group_by": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Columns to group by. Requires aggregations. Mutually exclusive with pivot."
+      },
+      "aggregations": {
+        "type": "array",
+        "description": "Aggregations to compute when using group_by. Each item: {\"column\": \"col\", \"function\": \"sum\", \"alias\": \"total_col\"}. Functions: sum, mean, median, min, max, count, count_distinct, std, first, last.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "column":   { "type": "string" },
+            "function": { "type": "string", "enum": ["sum","mean","median","min","max","count","count_distinct","std","first","last"] },
+            "alias":    { "type": "string", "description": "Output column name. Defaults to function_column." }
+          },
+          "required": ["column","function"]
+        }
+      },
+      "pivot": {
+        "type": "object",
+        "description": "Pivot spec. Mutually exclusive with group_by. Output columns named {values}_{column_value}.",
+        "properties": {
+          "index":      { "type": "string",  "description": "Row identifier column." },
+          "columns":    { "type": "string",  "description": "Column whose unique values become new column headers." },
+          "values":     { "type": "string",  "description": "Column to aggregate into cell values." },
+          "aggfunc":    { "type": "string",  "default": "sum" },
+          "fill_value": { "description": "Value for missing cells. Default: null." }
+        },
+        "required": ["index","columns","values"]
+      },
+      "sort_by": {
+        "type": "array",
+        "description": "Sort specification. Each item: {\"column\": \"col\", \"ascending\": true}.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "column":    { "type": "string" },
+            "ascending": { "type": "boolean", "default": true }
+          },
+          "required": ["column"]
+        }
+      },
+      "limit": {
+        "type": "integer",
+        "description": "Maximum rows to return. Default: no limit."
+      }
+    },
+    "required": ["file_path"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "data":            { "type": "array",   "description": "List of result row dicts. Pass directly to generate_chart or fill_template." },
+      "columns":         { "type": "array",   "description": "Column names in result." },
+      "row_count":       { "type": "integer" },
+      "operation":       { "type": "string",  "description": "Operation performed: filter_only, group_by, pivot, or none." },
+      "filters_applied": { "type": "integer" },
+      "file_path":       { "type": "string" }
+    }
+  },
+  "metadata": { "category": "Data Processing", "tags": ["transform","filter","aggregate","pivot","parquet","csv"] }
+}

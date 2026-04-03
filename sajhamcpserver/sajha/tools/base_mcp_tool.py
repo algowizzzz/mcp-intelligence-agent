@@ -155,16 +155,18 @@ class BaseMCPTool(ABC):
             import json as _json
             try:
                 size = len(_json.dumps(result))
-                if size > 100_000:
-                    result = {'success': False, 'error': f'Response too large ({size//1024}KB). Use a more specific query — specify a period, metric, or form_type to narrow the scope.', '_size_kb': size//1024}
-                elif size > 50_000:
-                    # Truncate array fields
+                if size > 50_000:
+                    # Truncate array fields to keep response under limit
                     for key, val in result.items():
                         if isinstance(val, list) and len(val) > 20:
                             original_count = len(val)
                             result[key] = val[:20]
                             result['_truncated'] = True
                             result['_original_count'] = original_count
+                    # Re-check after truncation; hard-fail only if still over 100KB
+                    size2 = len(_json.dumps(result))
+                    if size2 > 100_000:
+                        result = {'success': False, 'error': f'Response too large ({size2//1024}KB) even after truncation. Use output_columns, filters, or a smaller file to narrow the scope.', '_size_kb': size2//1024}
             except Exception:
                 pass
 

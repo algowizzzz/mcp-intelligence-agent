@@ -1,0 +1,8 @@
+{
+  "name": "data_export",
+  "implementation": "sajha.tools.impl.data_transform_tools.DataExportTool",
+  "description": "Save a data_transform result as CSV or Parquet in my_data/. Supports versioning. Exported files are immediately discoverable by list_data_files and queryable by data_transform or duckdb_sql.",
+  "version": "1.0.0",
+  "enabled": true,
+  "metadata": { "category": "Data Processing", "tags": ["export", "parquet", "csv", "save", "persist"] }
+}

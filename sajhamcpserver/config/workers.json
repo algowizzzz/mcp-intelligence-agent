@@ -1,0 +1,19 @@
+{
+  "workers": [
+    {
+      "worker_id": "w-market-risk",
+      "name": "Market Risk Worker",
+      "description": "Counterparty credit risk and market intelligence for capital markets analysts.",
+      "created_by": "risk_agent",
+      "created_at": "2026-04-03T00:00:00.000000Z",
+      "enabled": true,
+      "system_prompt": "",
+      "domain_data_path": "./data/domain_data",
+      "workflows_path": "./data/workflows/verified",
+      "my_data_path": "./data/uploads",
+      "enabled_tools": ["*"],
+      "assigned_admins": ["admin"],
+      "assigned_users": []
+    }
+  ]
+}

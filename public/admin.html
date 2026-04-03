@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RiskGPT Admin Console</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- PDF.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- SheetJS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- Mammoth.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <!-- marked.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+  <!-- DOMPurify -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0d1b2e; --navy-l: #122540; --navy-ll: #1a3050;
+      --blue: #1e6bff; --blue-h: #155edc; --gold: #d4a843;
+      --text: #e8edf5; --text-m: #8b9ab0; --text-d: #5a6a80;
+      --border: rgba(255,255,255,0.08); --border-m: rgba(255,255,255,0.12);
+      --bg-input: rgba(255,255,255,0.05);
+      --green: #22c55e; --amber: #f59e0b; --red: #ef4444;
+      --sidebar-w: 220px; --topbar-h: 56px;
+      --radius: 10px;
+    }
+    html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--navy); color: var(--text); overflow: hidden; }
+
+    /* ── Layout ── */
+    .layout { display: flex; height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: var(--sidebar-w); min-width: var(--sidebar-w);
+      background: var(--navy-l); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+    }
+    .sidebar-brand {
+      padding: 18px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .brand-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--blue), #0a3fa8);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .brand-icon svg { width: 16px; height: 16px; fill: #fff; }
+    .brand-text { font-size: 15px; font-weight: 700; }
+    .brand-text span { color: var(--gold); }
+    .brand-sub { font-size: 10px; color: var(--text-m); margin-top: 1px; }
+
+    .sidebar-nav { flex: 1; padding: 12px 8px; overflow-y: auto; }
+    .nav-section-label { font-size: 10px; font-weight: 600; color: var(--text-d); letter-spacing: 0.08em; text-transform: uppercase; padding: 8px 12px 4px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-radius: 8px;
+      font-size: 13px; font-weight: 500; color: var(--text-m);
+      cursor: pointer; transition: all 0.15s;
+      margin-bottom: 2px;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+    .nav-item.active { background: rgba(30,107,255,0.15); color: var(--blue); }
+    .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    .sidebar-footer {
+      border-top: 1px solid var(--border); padding: 12px 8px;
+    }
+    .user-chip {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px; border-radius: 8px;
+      font-size: 13px; cursor: pointer;
+    }
+    .user-chip:hover { background: rgba(255,255,255,0.06); }
+    .avatar {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--blue); display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
+    }
+    .user-name { font-size: 13px; font-weight: 500; }
+    .user-role { font-size: 11px; color: var(--text-m); }
+
+    /* ── Main ── */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    .topbar {
+      height: var(--topbar-h); min-height: var(--topbar-h);
+      background: var(--navy-l); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 24px; gap: 16px;
+    }
+    .topbar-title { font-size: 16px; font-weight: 600; }
+    .topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+    /* Worker switcher */
+    .worker-switcher {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border);
+      font-size: 13px; cursor: pointer; background: var(--bg-input);
+    }
+    .worker-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+
+    .content { flex: 1; overflow-y: auto; padding: 24px; }
+
+    /* ── Section panels ── */
+    .section-panel { display: none; }
+    .section-panel.active { display: block; }
+
+    /* ── Cards / Stats ── */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card {
+      background: var(--navy-l); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 20px; display: flex; flex-direction: column; gap: 8px;
+    }
+    .stat-label { font-size: 12px; color: var(--text-m); font-weight: 500; }
+    .stat-value { font-size: 28px; font-weight: 700; }
+    .stat-sub { font-size: 12px; color: var(--text-m); }
+
+    /* ── Workers grid ── */
+    .workers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .worker-card {
+      background: var(--navy-l); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 20px; cursor: pointer; transition: border-color 0.15s;
+    }
+    .worker-card:hover { border-color: var(--blue); }
+    .worker-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+    .worker-card-name { font-size: 15px; font-weight: 600; }
+    .status-badge {
+      font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 20px;
+    }
+    .status-badge.enabled { background: rgba(34,197,94,0.15); color: var(--green); }
+    .status-badge.disabled { background: rgba(239,68,68,0.15); color: var(--red); }
+    .worker-card-desc { font-size: 13px; color: var(--text-m); margin-bottom: 14px; }
+    .worker-card-meta { display: flex; gap: 16px; font-size: 12px; color: var(--text-m); }
+
+    /* ── Form elements ── */
+    .form-row { margin-bottom: 20px; }
+    .form-label { display: block; font-size: 13px; font-weight: 500; color: var(--text-m); margin-bottom: 8px; }
+    .form-input, .form-textarea, .form-select {
+      width: 100%; padding: 10px 14px;
+      background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text);
+      font-family: inherit; font-size: 13px; outline: none;
+      transition: border-color 0.15s;
+    }
+    .form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--blue); }
+    .form-textarea { resize: vertical; min-height: 120px; font-family: 'Courier New', monospace; font-size: 12px; }
+    .form-select option { background: var(--navy-l); }
+    .char-count { font-size: 11px; color: var(--text-m); margin-top: 4px; text-align: right; }
+
+    .btn { padding: 8px 16px; border-radius: 8px; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+    .btn-primary { background: var(--blue); color: #fff; }
+    .btn-primary:hover { background: var(--blue-h); }
+    .btn-secondary { background: var(--bg-input); border: 1px solid var(--border); color: var(--text); }
+    .btn-secondary:hover { background: rgba(255,255,255,0.08); }
+    .btn-danger { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: var(--red); }
+    .btn-danger:hover { background: rgba(239,68,68,0.25); }
+    .btn-sm { padding: 5px 12px; font-size: 12px; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Tools grid ── */
+    .tools-toolbar { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; }
+    .search-input { flex: 1; max-width: 280px; }
+    .tools-by-category { display: flex; flex-direction: column; gap: 16px; }
+    .tool-category-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px solid var(--border); margin-bottom: 10px;
+    }
+    .tool-category-name { font-size: 13px; font-weight: 600; color: var(--text-m); }
+    .tool-category-actions { display: flex; gap: 8px; }
+    .tool-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+    .tool-card {
+      background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px;
+      padding: 12px 14px; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+    }
+    .tool-card.disabled-tool { opacity: 0.4; }
+    .tool-info .tool-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; font-family: monospace; }
+    .tool-info .tool-desc { font-size: 11px; color: var(--text-m); line-height: 1.4; }
+    .toggle-switch { position: relative; width: 38px; height: 22px; flex-shrink: 0; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-track {
+      position: absolute; cursor: pointer; inset: 0;
+      background: var(--border); border-radius: 11px; transition: background 0.2s;
+    }
+    .toggle-track::before {
+      content: ''; position: absolute; width: 16px; height: 16px;
+      left: 3px; bottom: 3px; background: #fff; border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    input:checked + .toggle-track { background: var(--blue); }
+    input:checked + .toggle-track::before { transform: translateX(16px); }
+
+    /* ── File tree ── */
+    .filetree-layout { display: flex; gap: 16px; height: calc(100vh - 140px); }
+    .filetree-sidebar { width: 320px; min-width: 280px; background: var(--navy-l); border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-direction: column; overflow: hidden; }
+    .filetree-toolbar { padding: 10px 12px; border-bottom: 1px solid var(--border); display: flex; gap: 6px; flex-wrap: wrap; }
+    .filetree-body { flex: 1; overflow-y: auto; padding: 8px; }
+    .tree-item {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 13px;
+      user-select: none; position: relative;
+    }
+    .tree-item:hover { background: var(--bg-input); }
+    .tree-item.selected { background: rgba(30,107,255,0.12); color: var(--blue); }
+    .tree-item svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .tree-item .item-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tree-item .item-actions { display: none; gap: 4px; }
+    .tree-item:hover .item-actions { display: flex; }
+    .tree-item .item-actions button {
+      background: none; border: none; cursor: pointer; color: var(--text-m);
+      padding: 2px 4px; border-radius: 4px; font-size: 11px;
+    }
+    .tree-item .item-actions button:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+    .tree-indent { margin-left: 18px; }
+    .tree-rename-input {
+      background: var(--bg-input); border: 1px solid var(--blue); border-radius: 4px;
+      color: var(--text); font-size: 13px; padding: 1px 6px;
+      font-family: inherit; outline: none; width: 140px;
+    }
+
+    /* ── Preview panel ── */
+    .preview-panel {
+      flex: 1; background: var(--navy-l); border: 1px solid var(--border); border-radius: var(--radius);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .preview-header {
+      padding: 12px 16px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .preview-file-name { font-size: 13px; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .preview-meta { font-size: 11px; color: var(--text-m); }
+    .preview-body { flex: 1; overflow: auto; padding: 16px; }
+    .preview-empty {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100%; color: var(--text-m); gap: 8px;
+    }
+    .preview-empty svg { width: 40px; height: 40px; opacity: 0.3; }
+    .preview-empty p { font-size: 13px; }
+
+    /* Preview content */
+    .preview-text { font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.6; white-space: pre-wrap; }
+    .preview-md { font-size: 13px; line-height: 1.7; }
+    .preview-md h1, .preview-md h2, .preview-md h3 { margin: 16px 0 8px; }
+    .preview-md p { margin-bottom: 10px; }
+    .preview-md code { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 11px; }
+    .preview-md pre { background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; overflow-x: auto; margin-bottom: 12px; }
+    .preview-md pre code { background: none; padding: 0; }
+    .preview-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .preview-table th, .preview-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: left; }
+    .preview-table th { background: var(--bg-input); font-weight: 600; }
+    .sheet-tabs { display: flex; gap: 4px; padding: 8px 16px; border-bottom: 1px solid var(--border); }
+    .sheet-tab { padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; background: var(--bg-input); }
+    .sheet-tab.active { background: var(--blue); color: #fff; }
+
+    /* ── Users table ── */
+    .users-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .users-table th { padding: 10px 14px; text-align: left; font-size: 12px; color: var(--text-m); border-bottom: 1px solid var(--border); }
+    .users-table td { padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+    .users-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .user-row-name { font-weight: 500; }
+    .user-row-sub { font-size: 11px; color: var(--text-m); }
+    .pill {
+      display: inline-block; padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    }
+    .pill-green { background: rgba(34,197,94,0.12); color: var(--green); }
+    .pill-amber { background: rgba(245,158,11,0.12); color: var(--amber); }
+    .pill-grey { background: rgba(255,255,255,0.06); color: var(--text-m); }
+    .pill-blue { background: rgba(30,107,255,0.12); color: var(--blue); }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      display: flex; align-items: center; justify-content: center; z-index: 1000;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal {
+      background: var(--navy-l); border: 1px solid var(--border); border-radius: 16px;
+      padding: 28px; width: 480px; max-width: 90vw;
+    }
+    .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+    .modal-sub { font-size: 13px; color: var(--text-m); margin-bottom: 20px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--navy-ll); border: 1px solid var(--border); border-radius: 10px;
+      padding: 12px 18px; font-size: 13px; z-index: 2000;
+      transform: translateY(80px); opacity: 0; transition: all 0.3s;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { border-color: rgba(34,197,94,0.4); color: var(--green); }
+    .toast.error { border-color: rgba(239,68,68,0.4); color: var(--red); }
+
+    /* Bulk select */
+    .select-mode .tree-item { padding-left: 32px; }
+    .select-mode .tree-item::before {
+      content: ''; position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
+      width: 16px; height: 16px; border: 2px solid var(--border); border-radius: 4px;
+      background: var(--bg-input); cursor: pointer;
+    }
+    .select-mode .tree-item.selected::before { background: var(--blue); border-color: var(--blue); }
+
+    /* Prompt editor */
+    .prompt-editor-wrap { position: relative; }
+    .prompt-save-btn { position: absolute; bottom: 12px; right: 12px; }
+
+    /* Section headers */
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .section-title { font-size: 20px; font-weight: 700; }
+    .section-sub { font-size: 13px; color: var(--text-m); margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#fff" stroke-width="2" fill="none"/></svg>
+      </div>
+      <div>
+        <div class="brand-text">Risk<span>GPT</span></div>
+        <div class="brand-sub">Admin Console</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Overview</div>
+      <div class="nav-item active" onclick="showSection('dashboard')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </div>
+
+      <div class="nav-section-label" style="margin-top:8px">Configuration</div>
+      <div class="nav-item" onclick="showSection('worker-config')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a9 9 0 0 1 0 14.14M4.93 4.93a9 9 0 0 0 0 14.14"/></svg>
+        Worker Config
+      </div>
+      <div class="nav-item" onclick="showSection('tools')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        Tools
+      </div>
+
+      <div class="nav-section-label" style="margin-top:8px">Data & Workflows</div>
+      <div class="nav-item" onclick="showSection('domain-data')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        Domain Data
+      </div>
+      <div class="nav-item" onclick="showSection('workflows')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Workflows
+      </div>
+
+      <div class="nav-section-label" style="margin-top:8px">People</div>
+      <div class="nav-item" onclick="showSection('users')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Users
+      </div>
+
+      <!-- Super Admin only -->
+      <div id="super-nav" style="display:none">
+        <div class="nav-section-label" style="margin-top:8px">Super Admin</div>
+        <div class="nav-item" onclick="showSection('workers')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          Manage Workers
+        </div>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-chip" onclick="goToChat()">
+        <div class="avatar" id="sidebar-avatar">?</div>
+        <div>
+          <div class="user-name" id="sidebar-name">Loading…</div>
+          <div class="user-role" id="sidebar-role">—</div>
+        </div>
+      </div>
+      <div class="nav-item" onclick="logout()" style="margin-top:4px; color:var(--red)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign Out
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">Dashboard</div>
+      <div class="topbar-actions">
+        <!-- Worker switcher for super admin -->
+        <div id="worker-switcher-wrap" style="display:none">
+          <select class="form-select" style="width:200px;padding:6px 10px" id="worker-switcher" onchange="switchWorker(this.value)">
+          </select>
+        </div>
+        <div id="topbar-worker-badge" class="worker-switcher" style="cursor:default">
+          <div class="worker-dot"></div>
+          <span id="topbar-worker-name">Market Risk Worker</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ── Dashboard ── -->
+      <div class="section-panel active" id="section-dashboard">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Dashboard</div>
+            <div class="section-sub" id="dash-sub">Overview of your digital worker</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="showSection('workers')" id="create-worker-btn" style="display:none">+ New Worker</button>
+        </div>
+        <div class="stats-grid" id="dash-stats">
+          <div class="stat-card"><div class="stat-label">Assigned Users</div><div class="stat-value" id="stat-users">—</div></div>
+          <div class="stat-card"><div class="stat-label">Enabled Tools</div><div class="stat-value" id="stat-tools">—</div></div>
+          <div class="stat-card"><div class="stat-label">Workflows</div><div class="stat-value" id="stat-workflows">—</div></div>
+          <div class="stat-card"><div class="stat-label">Domain Files</div><div class="stat-value" id="stat-files">—</div></div>
+        </div>
+        <!-- Super admin: workers grid -->
+        <div id="dash-workers-section" style="display:none">
+          <div class="section-header" style="margin-top:16px">
+            <div class="section-title" style="font-size:16px">All Workers</div>
+            <button class="btn btn-primary btn-sm" onclick="openCreateWorkerModal()">+ New Worker</button>
+          </div>
+          <div class="workers-grid" id="dash-workers-grid"></div>
+        </div>
+      </div>
+
+      <!-- ── Worker Config ── -->
+      <div class="section-panel" id="section-worker-config">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Worker Configuration</div>
+            <div class="section-sub">Edit prompt, description, and worker settings</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-secondary btn-sm" id="worker-enable-toggle" onclick="toggleWorkerEnabled()">Disable Worker</button>
+            <button class="btn btn-primary btn-sm" onclick="saveWorkerConfig()">Save Changes</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px">
+          <div>
+            <div class="form-row">
+              <label class="form-label">Worker Name</label>
+              <input class="form-input" id="wc-name" placeholder="e.g. CCR Risk Agent">
+            </div>
+            <div class="form-row">
+              <label class="form-label">Description</label>
+              <input class="form-input" id="wc-desc" placeholder="Short description of this worker's purpose">
+            </div>
+          </div>
+          <div style="background:rgba(30,107,255,0.06);border:1px solid rgba(30,107,255,0.15);border-radius:10px;padding:16px;font-size:12px;color:var(--text-m)">
+            <strong style="color:var(--text);font-size:13px">Available tokens in prompt:</strong><br><br>
+            <code style="color:var(--gold)">{worker_name}</code> — this worker's name<br>
+            <code style="color:var(--gold)">{today_date}</code> — today's date<br>
+            <code style="color:var(--gold)">{user_name}</code> — logged-in user's name<br><br>
+            Prompt is injected at the start of every agent run. Max recommended: 8,000 characters.
+          </div>
+        </div>
+        <div class="form-row" style="max-width:900px">
+          <label class="form-label">System Prompt</label>
+          <div class="prompt-editor-wrap">
+            <textarea class="form-textarea" id="wc-prompt" rows="20" oninput="updateCharCount()" placeholder="Enter the system prompt for this digital worker…"></textarea>
+          </div>
+          <div class="char-count"><span id="prompt-chars">0</span> characters</div>
+        </div>
+      </div>
+
+      <!-- ── Tools ── -->
+      <div class="section-panel" id="section-tools">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Tools</div>
+            <div class="section-sub">Enable or disable tools for this worker</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <input class="form-input search-input" placeholder="Search tools…" oninput="filterTools(this.value)">
+            <button class="btn btn-primary btn-sm" onclick="saveTools()">Save Tools</button>
+          </div>
+        </div>
+        <div class="tools-by-category" id="tools-container">
+          <div style="color:var(--text-m);font-size:13px">Loading tools…</div>
+        </div>
+      </div>
+
+      <!-- ── Domain Data ── -->
+      <div class="section-panel" id="section-domain-data">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Domain Data</div>
+            <div class="section-sub">Reference data files for the worker's domain</div>
+          </div>
+        </div>
+        <div class="filetree-layout">
+          <div class="filetree-sidebar">
+            <div class="filetree-toolbar">
+              <button class="btn btn-secondary btn-sm" onclick="adminUpload('domain_data')" title="Upload files">↑ Upload</button>
+              <button class="btn btn-secondary btn-sm" onclick="adminNewFolder('domain_data')" title="New folder">+ Folder</button>
+              <button class="btn btn-secondary btn-sm" id="dd-select-btn" onclick="toggleSelectMode('domain_data')">Select</button>
+              <button class="btn btn-danger btn-sm" id="dd-bulk-delete-btn" style="display:none" onclick="bulkDelete('domain_data')">Delete 0</button>
+            </div>
+            <div class="filetree-body" id="tree-domain_data"></div>
+          </div>
+          <div class="preview-panel" id="preview-panel">
+            <div class="preview-header">
+              <div class="preview-file-name" id="preview-file-name">No file selected</div>
+              <div class="preview-meta" id="preview-file-meta"></div>
+              <button class="btn btn-secondary btn-sm" onclick="closePreview()">×</button>
+            </div>
+            <div id="preview-sheet-tabs" class="sheet-tabs" style="display:none"></div>
+            <div class="preview-body" id="preview-body">
+              <div class="preview-empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <p>Click a file to preview</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Workflows ── -->
+      <div class="section-panel" id="section-workflows">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Verified Workflows</div>
+            <div class="section-sub">Curated workflow library for this worker</div>
+          </div>
+        </div>
+        <div class="filetree-layout">
+          <div class="filetree-sidebar">
+            <div class="filetree-toolbar">
+              <button class="btn btn-secondary btn-sm" onclick="adminUpload('verified_workflows')">↑ Upload .md</button>
+              <button class="btn btn-secondary btn-sm" onclick="adminNewFile('verified_workflows')">+ New</button>
+              <button class="btn btn-secondary btn-sm" id="wf-select-btn" onclick="toggleSelectMode('verified_workflows')">Select</button>
+              <button class="btn btn-danger btn-sm" id="wf-bulk-delete-btn" style="display:none" onclick="bulkDelete('verified_workflows')">Delete 0</button>
+            </div>
+            <div class="filetree-body" id="tree-verified_workflows"></div>
+          </div>
+          <div class="preview-panel" id="preview-panel-wf">
+            <div class="preview-header">
+              <div class="preview-file-name" id="preview-file-name-wf">No file selected</div>
+              <div class="preview-meta" id="preview-file-meta-wf"></div>
+              <button class="btn btn-secondary btn-sm" onclick="closePreview('wf')">×</button>
+            </div>
+            <div class="preview-body" id="preview-body-wf">
+              <div class="preview-empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <p>Click a workflow to preview</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Users ── -->
+      <div class="section-panel" id="section-users">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Users</div>
+            <div class="section-sub" id="users-sub">Users assigned to this worker</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary btn-sm" onclick="openCreateUserModal()">+ Create User</button>
+          </div>
+        </div>
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Role</th>
+              <th>Worker</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- ── Manage Workers (Super Admin) ── -->
+      <div class="section-panel" id="section-workers">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Manage Workers</div>
+            <div class="section-sub">Create and configure digital workers</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openCreateWorkerModal()">+ New Worker</button>
+        </div>
+        <div class="workers-grid" id="workers-grid"></div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div>
+
+<!-- ── Modals ── -->
+<div class="modal-overlay hidden" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal-box">
+    <div class="modal-title" id="modal-title">Modal</div>
+    <div class="modal-sub" id="modal-sub"></div>
+    <div id="modal-body"></div>
+    <div class="modal-actions" id="modal-actions"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Hidden file input -->
+<input type="file" id="file-upload-input" multiple style="display:none" onchange="handleFileUpload(event)">
+
+<script>
+const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:8000'
+  : '';
+
+// ── Auth ─────────────────────────────────────────────────────────────────────
+var _token = sessionStorage.getItem('rg_token');
+var _user = null;
+try { _user = JSON.parse(sessionStorage.getItem('rg_user')); } catch(e) {}
+
+if (!_token || !_user) {
+  window.location.href = 'login.html';
+}
+
+// Role gate: users shouldn't be here
+if (_user && _user.role === 'user') {
+  window.location.href = 'mcp-agent.html';
+}
+
+// Set up sidebar
+document.getElementById('sidebar-avatar').textContent = (_user && _user.avatar_initials) || '?';
+document.getElementById('sidebar-name').textContent = (_user && _user.display_name) || _user.user_id;
+var roleLabel = _user.role === 'super_admin' ? 'Super Admin' : 'Admin';
+document.getElementById('sidebar-role').textContent = roleLabel;
+if (_user.role === 'super_admin') {
+  document.getElementById('super-nav').style.display = 'block';
+}
+
+function authHeaders() { return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _token }; }
+
+function logout() {
+  sessionStorage.clear();
+  window.location.href = 'login.html';
+}
+
+function goToChat() {
+  window.location.href = 'mcp-agent.html';
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+var _toastTimer = null;
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show ' + (type||'');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { t.classList.remove('show'); }, 3000);
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+var _currentSection = 'dashboard';
+var _currentWorker = null;
+var _allWorkers = [];
+
+function showSection(name) {
+  document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(i => {
+    if (i.getAttribute('onclick') && i.getAttribute('onclick').includes("'" + name + "'")) {
+      i.classList.add('active');
+    }
+  });
+  _currentSection = name;
+  var titles = {
+    dashboard: 'Dashboard', 'worker-config': 'Worker Configuration',
+    tools: 'Tools', 'domain-data': 'Domain Data', workflows: 'Workflows',
+    users: 'Users', workers: 'Manage Workers'
+  };
+  document.getElementById('topbar-title').textContent = titles[name] || name;
+
+  if (name === 'dashboard') loadDashboard();
+  else if (name === 'worker-config') loadWorkerConfig();
+  else if (name === 'tools') loadTools();
+  else if (name === 'domain-data') loadFileTree('domain_data');
+  else if (name === 'workflows') loadFileTree('verified_workflows');
+  else if (name === 'users') loadUsers();
+  else if (name === 'workers') loadWorkers();
+}
+
+// ── Worker switcher ───────────────────────────────────────────────────────────
+async function initWorkerContext() {
+  if (_user.role === 'super_admin') {
+    document.getElementById('worker-switcher-wrap').style.display = 'flex';
+    document.getElementById('topbar-worker-badge').style.display = 'none';
+    await loadSuperAdminWorkers();
+  } else {
+    // Load current worker info
+    try {
+      var r = await fetch(API + '/api/admin/worker', { headers: authHeaders() });
+      if (r.ok) {
+        _currentWorker = await r.json();
+        document.getElementById('topbar-worker-name').textContent = _currentWorker.name;
+      }
+    } catch(e) {}
+  }
+  loadDashboard();
+}
+
+async function loadSuperAdminWorkers() {
+  try {
+    var r = await fetch(API + '/api/super/workers', { headers: authHeaders() });
+    if (!r.ok) return;
+    var data = await r.json();
+    _allWorkers = data.workers;
+    var sel = document.getElementById('worker-switcher');
+    sel.innerHTML = _allWorkers.map(w =>
+      `<option value="${w.worker_id}">${w.name}</option>`
+    ).join('');
+    if (_allWorkers.length > 0) {
+      _currentWorker = _allWorkers[0];
+    }
+  } catch(e) {}
+}
+
+function switchWorker(wid) {
+  _currentWorker = _allWorkers.find(w => w.worker_id === wid);
+  // Reload current section for new worker context
+  showSection(_currentSection);
+}
+
+// ── Dashboard ──────────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  if (_user.role === 'super_admin') {
+    document.getElementById('dash-workers-section').style.display = 'block';
+    renderWorkersGrid(_allWorkers, 'dash-workers-grid');
+  }
+  if (_currentWorker) {
+    document.getElementById('dash-sub').textContent = `Worker: ${_currentWorker.name}`;
+    // User count
+    var users = await fetchUsers();
+    var wid = _currentWorker.worker_id;
+    var wUsers = users.filter(u => u.worker_id === wid && u.role !== 'admin');
+    document.getElementById('stat-users').textContent = wUsers.length;
+    // Tools
+    var et = _currentWorker.enabled_tools;
+    document.getElementById('stat-tools').textContent = (et && et[0] === '*') ? 'All' : (et ? et.length : 0);
+    // Stats placeholders
+    document.getElementById('stat-workflows').textContent = '—';
+    document.getElementById('stat-files').textContent = '—';
+  }
+}
+
+function renderWorkersGrid(workers, containerId) {
+  var html = workers.map(w => `
+    <div class="worker-card" onclick="selectWorkerCard('${w.worker_id}')">
+      <div class="worker-card-header">
+        <div class="worker-card-name">${w.name}</div>
+        <div class="status-badge ${w.enabled ? 'enabled' : 'disabled'}">${w.enabled ? 'Online' : 'Offline'}</div>
+      </div>
+      <div class="worker-card-desc">${w.description || 'No description'}</div>
+      <div class="worker-card-meta">
+        <span>${w.user_count || 0} users</span>
+        <span>${w.admin_count || 0} admins</span>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById(containerId).innerHTML = html || '<div style="color:var(--text-m);font-size:13px">No workers yet.</div>';
+}
+
+function selectWorkerCard(wid) {
+  if (_user.role === 'super_admin') {
+    _currentWorker = _allWorkers.find(w => w.worker_id === wid);
+    document.getElementById('worker-switcher').value = wid;
+  }
+  showSection('worker-config');
+}
+
+// ── Worker Config ──────────────────────────────────────────────────────────────
+async function loadWorkerConfig() {
+  if (!_currentWorker) return;
+  document.getElementById('wc-name').value = _currentWorker.name || '';
+  document.getElementById('wc-desc').value = _currentWorker.description || '';
+  document.getElementById('wc-prompt').value = _currentWorker.system_prompt || '';
+  updateCharCount();
+  var enableBtn = document.getElementById('worker-enable-toggle');
+  enableBtn.textContent = _currentWorker.enabled ? 'Disable Worker' : 'Enable Worker';
+  enableBtn.className = 'btn btn-sm ' + (_currentWorker.enabled ? 'btn-danger' : 'btn-primary');
+}
+
+function updateCharCount() {
+  var len = document.getElementById('wc-prompt').value.length;
+  document.getElementById('prompt-chars').textContent = len.toLocaleString();
+}
+
+async function saveWorkerConfig() {
+  if (!_currentWorker) return;
+  var body = {
+    name: document.getElementById('wc-name').value.trim(),
+    description: document.getElementById('wc-desc').value.trim(),
+    system_prompt: document.getElementById('wc-prompt').value,
+  };
+  try {
+    var r = await fetch(API + '/api/super/workers/' + _currentWorker.worker_id, {
+      method: 'PUT', headers: authHeaders(), body: JSON.stringify(body)
+    });
+    if (r.ok) {
+      var updated = await r.json();
+      _currentWorker = updated;
+      // Update in allWorkers
+      _allWorkers = _allWorkers.map(w => w.worker_id === updated.worker_id ? updated : w);
+      showToast('Worker configuration saved', 'success');
+    } else {
+      var d = await r.json();
+      showToast('Error: ' + (d.detail || 'Save failed'), 'error');
+    }
+  } catch(e) { showToast('Network error', 'error'); }
+}
+
+async function toggleWorkerEnabled() {
+  if (!_currentWorker) return;
+  var newEnabled = !_currentWorker.enabled;
+  if (newEnabled === false && !confirm(`Disable "${_currentWorker.name}"? Users will see "Worker offline".`)) return;
+  try {
+    var r = await fetch(API + '/api/super/workers/' + _currentWorker.worker_id, {
+      method: 'PUT', headers: authHeaders(), body: JSON.stringify({ enabled: newEnabled })
+    });
+    if (r.ok) {
+      _currentWorker.enabled = newEnabled;
+      loadWorkerConfig();
+      showToast(newEnabled ? 'Worker enabled' : 'Worker disabled', 'success');
+    }
+  } catch(e) { showToast('Error', 'error'); }
+}
+
+// ── Tools ──────────────────────────────────────────────────────────────────────
+var _allTools = [];
+var _enabledTools = [];
+
+async function loadTools() {
+  if (!_currentWorker) return;
+  _enabledTools = _currentWorker.enabled_tools || ['*'];
+  var allEnabled = _enabledTools[0] === '*';
+
+  // Fetch tool list from SAJHA via agent server proxy or direct
+  try {
+    // Load tools from SAJHA MCP tools endpoint
+    var resp = await fetch(API + '/api/mcp/tools', { headers: authHeaders() }).catch(() => null);
+    if (!resp || !resp.ok) {
+      // Fallback: show placeholder
+      document.getElementById('tools-container').innerHTML = '<div style="color:var(--text-m);font-size:13px">Tool list not available. SAJHA server must be running.</div>';
+      return;
+    }
+    var data = await resp.json();
+    _allTools = data.tools || [];
+  } catch(e) {
+    document.getElementById('tools-container').innerHTML = '<div style="color:var(--text-m);font-size:13px">Tool list not available.</div>';
+    return;
+  }
+
+  renderTools('');
+}
+
+function renderTools(filter) {
+  // Group by category
+  var byCategory = {};
+  _allTools.forEach(t => {
+    if (filter && !t.name.toLowerCase().includes(filter) && !(t.description||'').toLowerCase().includes(filter)) return;
+    var cat = t.category || 'General';
+    if (!byCategory[cat]) byCategory[cat] = [];
+    byCategory[cat].push(t);
+  });
+
+  var allEnabled = _enabledTools[0] === '*';
+  var html = Object.entries(byCategory).map(([cat, tools]) => `
+    <div>
+      <div class="tool-category-header">
+        <div class="tool-category-name">${cat}</div>
+        <div class="tool-category-actions">
+          <button class="btn btn-secondary btn-sm" onclick="toggleCategory('${cat}', true)">All on</button>
+          <button class="btn btn-secondary btn-sm" onclick="toggleCategory('${cat}', false)">All off</button>
+        </div>
+      </div>
+      <div class="tool-cards">
+        ${tools.map(t => {
+          var isEnabled = allEnabled || _enabledTools.includes(t.name);
+          var isAvail = t.enabled !== false;
+          return `
+          <div class="tool-card ${!isAvail ? 'disabled-tool' : ''}">
+            <div class="tool-info">
+              <div class="tool-name">${t.name}</div>
+              <div class="tool-desc">${(t.description||'').substring(0,100)}</div>
+              ${!isAvail ? '<span class="pill pill-grey" style="margin-top:4px;font-size:10px">Unavailable</span>' : ''}
+            </div>
+            ${isAvail ? `<label class="toggle-switch">
+              <input type="checkbox" ${isEnabled ? 'checked' : ''} data-tool="${t.name}" ${!isAvail ? 'disabled' : ''}>
+              <div class="toggle-track"></div>
+            </label>` : ''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('tools-container').innerHTML = html || '<div style="color:var(--text-m);font-size:13px">No tools match your search.</div>';
+}
+
+function filterTools(val) { renderTools(val.toLowerCase()); }
+
+function toggleCategory(cat, state) {
+  document.querySelectorAll('[data-tool]').forEach(cb => {
+    // Find tools in this category
+    var card = cb.closest('.tool-card');
+    var toolCat = card.closest('[class]');
+    cb.checked = state;
+  });
+}
+
+async function saveTools() {
+  var checkboxes = document.querySelectorAll('[data-tool]:checked');
+  var allCheckboxes = document.querySelectorAll('[data-tool]');
+  var enabled = Array.from(checkboxes).map(cb => cb.dataset.tool);
+  // Check if all are enabled
+  if (enabled.length === allCheckboxes.length) enabled = ['*'];
+  _enabledTools = enabled;
+
+  try {
+    var url = _user.role === 'super_admin'
+      ? API + '/api/super/workers/' + _currentWorker.worker_id
+      : API + '/api/admin/worker/tools';
+    var body = _user.role === 'super_admin'
+      ? JSON.stringify({ enabled_tools: enabled })
+      : JSON.stringify({ enabled_tools: enabled });
+    var method = _user.role === 'super_admin' ? 'PUT' : 'PUT';
+    var r = await fetch(url, { method, headers: authHeaders(), body });
+    if (r.ok) {
+      _currentWorker.enabled_tools = enabled;
+      showToast('Tools saved', 'success');
+    } else { showToast('Error saving tools', 'error'); }
+  } catch(e) { showToast('Network error', 'error'); }
+}
+
+// ── File tree ─────────────────────────────────────────────────────────────────
+var _treesData = {};
+var _selectedItems = {};
+var _selectModes = {};
+
+async function loadFileTree(section) {
+  var treeEl = document.getElementById('tree-' + section);
+  if (treeEl) treeEl.innerHTML = '<div style="color:var(--text-m);font-size:12px;padding:8px">Loading…</div>';
+  try {
+    var r = await fetch(API + '/api/admin/tree/' + section, { headers: authHeaders() });
+    if (!r.ok) { treeEl.innerHTML = '<div style="color:var(--red);font-size:12px;padding:8px">Error loading tree</div>'; return; }
+    var data = await r.json();
+    _treesData[section] = data;
+    renderTree(section, data, treeEl, '');
+  } catch(e) {
+    if (treeEl) treeEl.innerHTML = '<div style="color:var(--red);font-size:12px;padding:8px">Failed to load</div>';
+  }
+}
+
+function renderTree(section, node, container, path) {
+  container.innerHTML = '';
+  if (!node || !node.children) return;
+  renderChildren(section, node.children, container, path);
+}
+
+function renderChildren(section, children, container, parentPath) {
+  if (!children) return;
+  children.forEach(child => {
+    var itemPath = parentPath ? parentPath + '/' + child.name : child.name;
+    var isDir = child.type === 'directory';
+    var el = document.createElement('div');
+    el.className = 'tree-item';
+    el.dataset.path = itemPath;
+    el.dataset.type = isDir ? 'dir' : 'file';
+
+    var icon = isDir
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+
+    el.innerHTML = `${icon}<span class="item-name">${child.name}</span>
+      <div class="item-actions">
+        ${!isDir ? `<button onclick="previewFile(event, '${section}', '${itemPath}', '${child.name}')">preview</button>` : ''}
+        <button onclick="renameItem(event, '${section}', '${itemPath}', ${isDir})">rename</button>
+        <button onclick="deleteItem(event, '${section}', '${itemPath}', ${isDir}, '${child.name}')">delete</button>
+      </div>`;
+
+    if (!isDir) {
+      el.onclick = (e) => {
+        if (e.target.tagName === 'BUTTON') return;
+        previewFile(e, section, itemPath, child.name);
+      };
+    } else {
+      // Expandable folder
+      var childContainer = document.createElement('div');
+      childContainer.className = 'tree-indent';
+      var expanded = false;
+      el.onclick = (e) => {
+        if (e.target.tagName === 'BUTTON') return;
+        expanded = !expanded;
+        childContainer.style.display = expanded ? 'block' : 'none';
+        if (expanded && child.children) {
+          renderChildren(section, child.children, childContainer, itemPath);
+        }
+      };
+      childContainer.style.display = 'none';
+      container.appendChild(el);
+      container.appendChild(childContainer);
+      return;
+    }
+    container.appendChild(el);
+  });
+}
+
+// ── Preview ───────────────────────────────────────────────────────────────────
+var _currentPanelSuffix = '';
+
+function closePreview(suffix) {
+  var sfx = suffix || '';
+  var pb = document.getElementById('preview-body' + (sfx ? '-' + sfx : ''));
+  var pfn = document.getElementById('preview-file-name' + (sfx ? '-' + sfx : ''));
+  var pfm = document.getElementById('preview-file-meta' + (sfx ? '-' + sfx : ''));
+  if (pb) pb.innerHTML = '<div class="preview-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p>Click a file to preview</p></div>';
+  if (pfn) pfn.textContent = 'No file selected';
+  if (pfm) pfm.textContent = '';
+}
+
+async function previewFile(e, section, path, name) {
+  e.stopPropagation();
+  var suffix = section === 'verified_workflows' ? 'wf' : '';
+  var pbId = 'preview-body' + (suffix ? '-' + suffix : '');
+  var pfnId = 'preview-file-name' + (suffix ? '-' + suffix : '');
+  var pfmId = 'preview-file-meta' + (suffix ? '-' + suffix : '');
+  var tabsId = suffix ? null : 'preview-sheet-tabs';
+
+  var pb = document.getElementById(pbId);
+  var pfn = document.getElementById(pfnId);
+  var pfm = document.getElementById(pfmId);
+  if (!pb) return;
+
+  pfn.textContent = name;
+  pfm.textContent = 'Loading…';
+  pb.innerHTML = '<div style="color:var(--text-m);font-size:13px;padding:8px">Loading preview…</div>';
+
+  try {
+    var r = await fetch(API + '/api/admin/file?section=' + section + '&path=' + encodeURIComponent(path), {
+      headers: authHeaders()
+    });
+    if (!r.ok) { pb.innerHTML = '<div style="color:var(--red);font-size:13px">Error loading file</div>'; return; }
+
+    var ext = name.split('.').pop().toLowerCase();
+    var size = r.headers.get('X-File-Size');
+    var truncated = r.headers.get('X-Truncated');
+    pfm.textContent = (size ? (parseInt(size)/1024).toFixed(1) + ' KB' : '') + (truncated ? ' (truncated)' : '');
+
+    if (['txt','csv','tsv','json','html','xml','yaml','yml'].includes(ext)) {
+      var text = await r.text();
+      if (ext === 'csv' || ext === 'tsv') {
+        var sep = ext === 'tsv' ? '\t' : ',';
+        var lines = text.split('\n').slice(0, 51).filter(Boolean);
+        var rows = lines.map(l => l.split(sep));
+        var thead = rows[0].map(c => `<th>${c}</th>`).join('');
+        var tbody = rows.slice(1).map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('');
+        pb.innerHTML = `<div style="overflow:auto"><table class="preview-table"><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table></div>`;
+      } else if (ext === 'md') {
+        pb.innerHTML = `<div class="preview-md">${DOMPurify.sanitize(marked.parse(text))}</div>`;
+      } else {
+        pb.innerHTML = `<pre class="preview-text">${escHtml(text)}</pre>`;
+      }
+    } else if (ext === 'pdf') {
+      var blob = await r.blob();
+      var url = URL.createObjectURL(blob);
+      pb.innerHTML = `<iframe src="${url}" style="width:100%;height:100%;border:none;min-height:500px"></iframe>`;
+    } else if (['docx','doc'].includes(ext)) {
+      var ab = await r.arrayBuffer();
+      try {
+        var result = await mammoth.convertToHtml({arrayBuffer: ab});
+        pb.innerHTML = `<div class="preview-md">${DOMPurify.sanitize(result.value)}</div>`;
+      } catch(e) { pb.innerHTML = '<div style="color:var(--text-m)">Word preview not available</div>'; }
+    } else if (['xlsx','xls'].includes(ext)) {
+      var ab = await r.arrayBuffer();
+      var wb = XLSX.read(ab, {type: 'array'});
+      var sheetNames = wb.SheetNames;
+      // Tabs
+      if (tabsId) {
+        var tabsEl = document.getElementById(tabsId);
+        tabsEl.style.display = sheetNames.length > 1 ? 'flex' : 'none';
+        tabsEl.innerHTML = sheetNames.map((s,i) =>
+          `<div class="sheet-tab ${i===0?'active':''}" onclick="switchSheet(this,'${s}',${JSON.stringify(wb).replace(/"/g,"'")})">${s}</div>`
+        ).join('');
+      }
+      renderSheet(wb, sheetNames[0], pb);
+    } else {
+      pb.innerHTML = `<div class="preview-empty"><p>Binary file — preview not available</p><p style="font-size:11px;color:var(--text-d);margin-top:4px">${name}</p></div>`;
+    }
+  } catch(e) {
+    pb.innerHTML = `<div style="color:var(--red);font-size:13px">Preview error: ${e.message}</div>`;
+  }
+}
+
+function renderSheet(wb, sheetName, container) {
+  var ws = wb.Sheets[sheetName];
+  var html = XLSX.utils.sheet_to_html(ws, {editable: false});
+  container.innerHTML = `<div style="overflow:auto"><style>.preview-table-xl td,th{border:1px solid var(--border);padding:4px 8px;font-size:12px}</style><div class="preview-table-xl">${html}</div></div>`;
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── File operations ───────────────────────────────────────────────────────────
+var _uploadSection = '';
+
+function adminUpload(section) {
+  _uploadSection = section;
+  var input = document.getElementById('file-upload-input');
+  input.accept = section === 'verified_workflows' ? '.md' : '*';
+  input.click();
+}
+
+async function handleFileUpload(event) {
+  var files = Array.from(event.target.files);
+  var section = _uploadSection;
+  for (var f of files) {
+    var form = new FormData();
+    form.append('file', f);
+    try {
+      var r = await fetch(API + '/api/admin/upload?section=' + section, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + _token },
+        body: form
+      });
+      if (!r.ok) {
+        var d = await r.json().catch(() => ({}));
+        showToast('Error uploading ' + f.name + ': ' + (d.detail || r.status), 'error');
+      } else {
+        showToast('Uploaded ' + f.name, 'success');
+      }
+    } catch(e) { showToast('Upload failed: ' + f.name, 'error'); }
+  }
+  event.target.value = '';
+  loadFileTree(section);
+}
+
+async function adminNewFolder(section) {
+  var name = prompt('Folder name:');
+  if (!name || !name.trim()) return;
+  try {
+    var r = await fetch(API + '/api/admin/folder', {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ section, path: name.trim() })
+    });
+    if (r.ok) { showToast('Folder created', 'success'); loadFileTree(section); }
+    else { var d = await r.json(); showToast(d.detail || 'Error', 'error'); }
+  } catch(e) { showToast('Error', 'error'); }
+}
+
+async function adminNewFile(section) {
+  var name = prompt('Workflow filename (.md):');
+  if (!name) return;
+  if (!name.endsWith('.md')) name += '.md';
+  try {
+    var r = await fetch(API + '/api/admin/file', {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ section, filename: name })
+    });
+    if (r.ok) { showToast('File created', 'success'); loadFileTree(section); }
+    else { var d = await r.json(); showToast(d.detail || 'Error', 'error'); }
+  } catch(e) { showToast('Error', 'error'); }
+}
+
+async function renameItem(e, section, path, isDir) {
+  e.stopPropagation();
+  var name = path.split('/').pop();
+  var newName = prompt('New name:', name);
+  if (!newName || newName === name) return;
+  try {
+    var r = await fetch(API + '/api/admin/rename', {
+      method: 'PATCH', headers: authHeaders(),
+      body: JSON.stringify({ section, path, new_name: newName })
+    });
+    if (r.ok) { showToast('Renamed', 'success'); loadFileTree(section); }
+    else { var d = await r.json(); showToast(d.detail || 'Rename failed', 'error'); }
+  } catch(e) { showToast('Error', 'error'); }
+}
+
+async function deleteItem(e, section, path, isDir, name) {
+  e.stopPropagation();
+  var msg = isDir ? `Delete folder "${name}" and all its contents?` : `Delete "${name}"?`;
+  if (!confirm(msg)) return;
+  try {
+    var r = await fetch(API + '/api/admin/item', {
+      method: 'DELETE', headers: authHeaders(),
+      body: JSON.stringify({ section, path, recursive: isDir })
+    });
+    if (r.ok) { showToast('Deleted', 'success'); loadFileTree(section); }
+    else { var d = await r.json(); showToast(d.detail || 'Delete failed', 'error'); }
+  } catch(e) { showToast('Error', 'error'); }
+}
+
+// ── Bulk select ───────────────────────────────────────────────────────────────
+function toggleSelectMode(section) {
+  var isOn = _selectModes[section];
+  _selectModes[section] = !isOn;
+  _selectedItems[section] = new Set();
+  var btnId = section === 'domain_data' ? 'dd-select-btn' : 'wf-select-btn';
+  var delBtnId = section === 'domain_data' ? 'dd-bulk-delete-btn' : 'wf-bulk-delete-btn';
+  document.getElementById(btnId).textContent = isOn ? 'Select' : 'Cancel';
+  document.getElementById(delBtnId).style.display = isOn ? 'none' : 'inline-block';
+  // Re-render tree with checkboxes
+  loadFileTree(section);
+}
+
+async function bulkDelete(section) {
+  var items = _selectedItems[section];
+  if (!items || items.size === 0) return;
+  if (!confirm(`Delete ${items.size} items? This cannot be undone.`)) return;
+  var count = 0;
+  for (var path of items) {
+    var isDir = path.endsWith('/') || _treesData[section] && isPathDir(path, _treesData[section]);
+    try {
+      var r = await fetch(API + '/api/admin/item', {
+        method: 'DELETE', headers: authHeaders(),
+        body: JSON.stringify({ section, path, recursive: true })
+      });
+      if (r.ok) count++;
+    } catch(e) {}
+  }
+  showToast(`Deleted ${count} of ${items.size} items`, 'success');
+  _selectedItems[section] = new Set();
+  loadFileTree(section);
+}
+
+function isPathDir(path, node) {
+  if (!node.children) return false;
+  for (var c of node.children) {
+    if (c.name === path.split('/')[0]) {
+      return c.type === 'directory';
+    }
+  }
+  return false;
+}
+
+// ── Users ──────────────────────────────────────────────────────────────────────
+var _cachedUsers = [];
+
+async function fetchUsers() {
+  try {
+    var url = _user.role === 'super_admin' ? API + '/api/super/users' : API + '/api/admin/worker/users';
+    var r = await fetch(url, { headers: authHeaders() });
+    if (r.ok) { var d = await r.json(); _cachedUsers = d.users || []; return _cachedUsers; }
+  } catch(e) {}
+  return [];
+}
+
+async function loadUsers() {
+  var users = await fetchUsers();
+  if (_user.role !== 'super_admin') {
+    document.getElementById('users-sub').textContent = 'Users assigned to ' + (_currentWorker ? _currentWorker.name : 'this worker');
+  }
+  var workers = _allWorkers;
+  var workerMap = {};
+  workers.forEach(w => { workerMap[w.worker_id] = w.name; });
+
+  var html = users.map(u => {
+    var role = u.role || 'user';
+    var pillCls = role === 'super_admin' ? 'pill-blue' : role === 'admin' ? 'pill-amber' : 'pill-grey';
+    var roleLbl = role === 'super_admin' ? 'Super Admin' : role === 'admin' ? 'Admin' : 'User';
+    var statusCls = !u.enabled ? 'pill-grey' : !u.onboarding_complete ? 'pill-amber' : 'pill-green';
+    var statusLbl = !u.enabled ? 'Disabled' : !u.onboarding_complete ? 'Onboarding' : 'Active';
+    var workerName = workerMap[u.worker_id] || u.worker_id || '—';
+    return `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="avatar" style="width:28px;height:28px;font-size:10px">${u.avatar_initials || u.user_id.substring(0,2).toUpperCase()}</div>
+            <div>
+              <div class="user-row-name">${u.display_name || u.user_name || u.user_id}</div>
+              <div class="user-row-sub">@${u.user_id}${u.email ? ' · ' + u.email : ''}</div>
+            </div>
+          </div>
+        </td>
+        <td><span class="pill ${pillCls}">${roleLbl}</span></td>
+        <td>${workerName}</td>
+        <td><span class="pill ${statusCls}">${statusLbl}</span></td>
+        <td>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-secondary btn-sm" onclick="resetPassword('${u.user_id}')">Reset PW</button>
+            <button class="btn btn-secondary btn-sm" onclick="toggleUserEnabled('${u.user_id}', ${!u.enabled})">${u.enabled ? 'Disable' : 'Enable'}</button>
+            ${_user.role === 'super_admin' ? `<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.user_id}')">Delete</button>` : ''}
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+  document.getElementById('users-tbody').innerHTML = html || '<tr><td colspan="5" style="color:var(--text-m);text-align:center;padding:24px">No users</td></tr>';
+}
+
+async function resetPassword(userId) {
+  if (!confirm(`Reset password for ${userId}?`)) return;
+  try {
+    var r = await fetch(API + '/api/super/users/' + userId + '/reset-password', { method: 'POST', headers: authHeaders() });
+    if (r.ok) {
+      var d = await r.json();
+      showModal('Password Reset', `Temporary password for <strong>${userId}</strong>:`, `
+        <div style="background:rgba(255,255,255,0.06);border-radius:8px;padding:12px;font-family:monospace;font-size:16px;text-align:center;letter-spacing:2px">${d.temp_password}</div>
+        <div style="font-size:12px;color:var(--text-m);margin-top:8px">Share this with the user. They will be prompted to change it on next login.</div>
+      `, [{ label: 'Close', action: 'closeModal()' }]);
+    }
+  } catch(e) { showToast('Error', 'error'); }
+}
+
+async function toggleUserEnabled(userId, newState) {
+  try {
+    var r = await fetch(API + '/api/super/users/' + userId, {
+      method: 'PUT', headers: authHeaders(), body: JSON.stringify({ enabled: newState })
+    });
+    if (r.ok) { showToast(newState ? 'User enabled' : 'User disabled', 'success'); loadUsers(); }
+  } catch(e) { showToast('Error', 'error'); }
+}
+
+async function deleteUser(userId) {
+  if (!confirm(`Delete user "${userId}"? This cannot be undone.`)) return;
+  try {
+    var r = await fetch(API + '/api/super/users/' + userId, { method: 'DELETE', headers: authHeaders() });
+    if (r.ok) { showToast('User deleted', 'success'); loadUsers(); }
+  } catch(e) { showToast('Error', 'error'); }
+}
+
+function openCreateUserModal() {
+  showModal('Create User', 'Create a new user account', `
+    <div class="form-row"><label class="form-label">Username</label><input class="form-input" id="cu-uid" placeholder="username"></div>
+    <div class="form-row"><label class="form-label">Display Name</label><input class="form-input" id="cu-name" placeholder="Full Name"></div>
+    <div class="form-row"><label class="form-label">Email</label><input class="form-input" id="cu-email" placeholder="user@example.com"></div>
+    <div class="form-row"><label class="form-label">Temporary Password</label><input class="form-input" id="cu-pass" placeholder="Min. 10 characters"></div>
+    <div class="form-row"><label class="form-label">Role</label>
+      <select class="form-select" id="cu-role"><option value="user">User</option><option value="admin">Admin</option></select>
+    </div>
+    <div class="form-row"><label class="form-label">Assign to Worker</label>
+      <select class="form-select" id="cu-worker">
+        ${_allWorkers.map(w => `<option value="${w.worker_id}">${w.name}</option>`).join('')}
+      </select>
+    </div>
+  `, [
+    { label: 'Cancel', action: 'closeModalFn()' },
+    { label: 'Create User', action: 'createUser()', primary: true }
+  ]);
+}
+
+async function createUser() {
+  var body = {
+    user_id: document.getElementById('cu-uid').value.trim(),
+    display_name: document.getElementById('cu-name').value.trim(),
+    email: document.getElementById('cu-email').value.trim(),
+    password: document.getElementById('cu-pass').value,
+    role: document.getElementById('cu-role').value,
+    worker_id: document.getElementById('cu-worker') ? document.getElementById('cu-worker').value : null,
+  };
+  if (!body.user_id || !body.display_name || !body.password) { alert('Username, display name, and password are required.'); return; }
+  try {
+    var r = await fetch(API + '/api/super/users', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    if (r.ok) { closeModalFn(); showToast('User created', 'success'); loadUsers(); }
+    else { var d = await r.json(); alert(d.detail || 'Error creating user'); }
+  } catch(e) { alert('Network error'); }
+}
+
+// ── Workers management ─────────────────────────────────────────────────────────
+async function loadWorkers() {
+  await loadSuperAdminWorkers();
+  renderWorkersGrid(_allWorkers, 'workers-grid');
+}
+
+function openCreateWorkerModal() {
+  showModal('Create Digital Worker', 'Create a new AI agent instance', `
+    <div class="form-row"><label class="form-label">Worker Name</label><input class="form-input" id="nw-name" placeholder="e.g. CCR Risk Agent"></div>
+    <div class="form-row"><label class="form-label">Description</label><input class="form-input" id="nw-desc" placeholder="Short description"></div>
+    <div class="form-row"><label class="form-label">Clone from (optional)</label>
+      <select class="form-select" id="nw-clone"><option value="">— Start fresh —</option>${_allWorkers.map(w=>`<option value="${w.worker_id}">${w.name}</option>`).join('')}</select>
+    </div>
+  `, [
+    { label: 'Cancel', action: 'closeModalFn()' },
+    { label: 'Create Worker', action: 'createWorker()', primary: true }
+  ]);
+}
+
+async function createWorker() {
+  var body = {
+    name: document.getElementById('nw-name').value.trim(),
+    description: document.getElementById('nw-desc').value.trim(),
+    clone_from: document.getElementById('nw-clone').value || null,
+  };
+  if (!body.name) { alert('Worker name is required'); return; }
+  try {
+    var r = await fetch(API + '/api/super/workers', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    if (r.ok) {
+      var w = await r.json();
+      closeModalFn(); showToast('Worker created: ' + w.name, 'success');
+      await loadSuperAdminWorkers(); loadWorkers();
+    } else { var d = await r.json(); alert(d.detail || 'Error'); }
+  } catch(e) { alert('Network error'); }
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function showModal(title, sub, bodyHtml, actions) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-sub').innerHTML = sub;
+  document.getElementById('modal-body').innerHTML = bodyHtml;
+  document.getElementById('modal-actions').innerHTML = actions.map(a =>
+    `<button class="btn ${a.primary ? 'btn-primary' : 'btn-secondary'}" onclick="${a.action}">${a.label}</button>`
+  ).join('');
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modal-overlay')) return;
+  closeModalFn();
+}
+function closeModalFn() { document.getElementById('modal-overlay').classList.add('hidden'); }
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+initWorkerContext();
+</script>
+</body>
+</html>

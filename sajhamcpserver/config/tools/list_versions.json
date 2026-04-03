@@ -1,0 +1,8 @@
+{
+  "name": "list_versions",
+  "implementation": "sajha.tools.impl.operational_tools.ListVersionsTool",
+  "description": "List all versioned copies of a file stem in my_data/, sorted newest first. Returns canonical (latest) file and archived versions. Use to inspect save history or reference a previous version.",
+  "version": "1.0.0",
+  "enabled": true,
+  "metadata": { "category": "File Management", "tags": ["versions", "history", "archive", "files"] }
+}

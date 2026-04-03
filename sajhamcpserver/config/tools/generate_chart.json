@@ -1,0 +1,72 @@
+{
+  "name": "generate_chart",
+  "implementation": "sajha.tools.impl.visualisation_tools.GenerateChartTool",
+  "description": "Generate an interactive Plotly chart (12 types) from any row-dict data. Returns self-contained HTML for canvas and optionally saves a PNG. Chain after data_transform or parquet_read, or pass rows from any tool result.",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "data": {
+        "description": "List of row dicts, e.g. [{\"month\":\"Jan\",\"revenue\":5000},{...}]. Also accepts a data_transform result object directly (tool extracts .data key automatically)."
+      },
+      "chart_type": {
+        "type": "string",
+        "enum": ["bar","bar_horizontal","line","area","scatter","histogram","pie","donut","heatmap","box","treemap","waterfall"],
+        "description": "Type of chart to generate."
+      },
+      "x": {
+        "type": "string",
+        "description": "Column name to use for the x-axis or category labels."
+      },
+      "y": {
+        "description": "Column name (string) or list of column names (array) for the y-axis / values. Use an array for multi-series line/bar charts."
+      },
+      "title": {
+        "type": "string",
+        "description": "Chart title displayed at the top."
+      },
+      "x_label": { "type": "string", "description": "X-axis label text." },
+      "y_label": { "type": "string", "description": "Y-axis label text." },
+      "color": {
+        "type": "string",
+        "description": "Column name to split data into colour-coded series (one trace per unique value)."
+      },
+      "theme": {
+        "type": "string",
+        "enum": ["riskgpt","minimal","dark"],
+        "default": "riskgpt",
+        "description": "Visual theme. riskgpt = navy/blue palette (default)."
+      },
+      "bar_mode": {
+        "type": "string",
+        "enum": ["group","stack","relative"],
+        "default": "group",
+        "description": "Bar grouping mode. Only applies to bar/bar_horizontal charts."
+      },
+      "line_shape": {
+        "type": "string",
+        "enum": ["linear","spline","hv"],
+        "default": "linear",
+        "description": "Line interpolation. Only applies to line/area charts."
+      },
+      "width":     { "type": "integer", "default": 900, "description": "Chart width in pixels." },
+      "height":    { "type": "integer", "default": 500, "description": "Chart height in pixels." },
+      "save_html": { "type": "boolean", "default": false, "description": "Save chart as standalone .html file to my_data/ and return html_file path." },
+      "save_png":  { "type": "boolean", "default": false, "description": "Export PNG at 2x resolution via Kaleido. Returns png_path." },
+      "filename":  { "type": "string", "description": "Output filename (no extension). Defaults to chart_{type}_{timestamp}." }
+    },
+    "required": ["data","chart_type","x","y"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "html":              { "type": "string",  "description": "Self-contained HTML string with embedded Plotly.js. Render directly in canvas." },
+      "chart_type":        { "type": "string" },
+      "data_rows_plotted": { "type": "integer" },
+      "png_path":          { "type": "string",  "description": "Absolute path to saved PNG (only if save_png=true)." },
+      "html_file":         { "type": "string",  "description": "Absolute path to saved HTML (only if save_html=true)." }
+    }
+  },
+  "metadata": { "category": "Visualisation", "tags": ["chart","plot","plotly","bar","line","scatter","pie","heatmap","visualisation","riskgpt"] }
+}
