@@ -1,4 +1,4 @@
-import os, json, uuid
+import os, json, uuid, pathlib
 from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +9,10 @@ import httpx
 from agent.agent import agent
 from agent.tools import _get_token, SAJHA_BASE
 
+_WORKFLOWS_DIR = pathlib.Path('sajhamcpserver/data/workflows')
+_UPLOADS_DIR   = pathlib.Path('sajhamcpserver/data/uploads')
+_METADATA_FILE = _WORKFLOWS_DIR / '.metadata.json'
+
 load_dotenv()
 
 app = FastAPI(title='MCP Intelligence Agent')
@@ -16,7 +20,7 @@ _cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:8080,http://127.0.0.
 app.add_middleware(CORSMiddleware,
     allow_origins=_cors_origins,
     allow_origin_regex=r'https://.*\.vercel\.app',
-    allow_methods=['GET', 'POST', 'OPTIONS'],
+    allow_methods=['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allow_headers=['Content-Type', 'Authorization'],
 )
 
@@ -69,6 +73,103 @@ async def upload_file(file: UploadFile = File(...), _: None = Depends(require_ap
                             content={'success': False, 'error': f'SAJHA returned {e.response.status_code}'})
     except Exception as e:
         return JSONResponse(status_code=500, content={'success': False, 'error': str(e)})
+
+
+def _read_metadata() -> dict:
+    try:
+        return json.loads(_METADATA_FILE.read_text()) if _METADATA_FILE.exists() else {}
+    except Exception:
+        return {}
+
+def _write_metadata(data: dict):
+    _METADATA_FILE.parent.mkdir(parents=True, exist_ok=True)
+    _METADATA_FILE.write_text(json.dumps(data, indent=2))
+
+def _safe_filename(filename: str) -> str:
+    """Reject filenames with path traversal or non-.md files."""
+    name = pathlib.Path(filename).name
+    if not name.endswith('.md') or '/' in filename or '..' in filename:
+        raise HTTPException(status_code=400, detail='filename must be a plain .md filename')
+    return name
+
+
+# ── Workspace files ────────────────────────────────────────────────────────────
+
+@app.get('/api/workspace/files')
+async def list_workspace_files(_: None = Depends(require_api_key)):
+    """List files in the uploads directory."""
+    files = []
+    if _UPLOADS_DIR.exists():
+        for f in sorted(_UPLOADS_DIR.iterdir()):
+            if f.is_file() and not f.name.startswith('.'):
+                files.append({'name': f.name, 'size': f.stat().st_size,
+                               'modified': f.stat().st_mtime})
+    return {'files': files}
+
+
+# ── Workflows ──────────────────────────────────────────────────────────────────
+
+@app.get('/api/workflows')
+async def list_workflows(_: None = Depends(require_api_key)):
+    """List all workflow MD files with metadata."""
+    _WORKFLOWS_DIR.mkdir(parents=True, exist_ok=True)
+    meta = _read_metadata()
+    workflows = []
+    for f in sorted(_WORKFLOWS_DIR.iterdir()):
+        if f.is_file() and f.suffix == '.md':
+            workflows.append({
+                'filename': f.name,
+                'name': f.stem.replace('_', ' ').title(),
+                'size': f.stat().st_size,
+                'last_used': meta.get(f.name),
+            })
+    # Sort by last_used desc (None last)
+    workflows.sort(key=lambda w: w['last_used'] or '', reverse=True)
+    return {'workflows': workflows}
+
+
+@app.get('/api/workflows/{filename}')
+async def get_workflow(filename: str, _: None = Depends(require_api_key)):
+    name = _safe_filename(filename)
+    path = _WORKFLOWS_DIR / name
+    if not path.exists():
+        raise HTTPException(status_code=404, detail='Workflow not found')
+    return {'filename': name, 'content': path.read_text()}
+
+
+class WorkflowCreate(BaseModel):
+    filename: str
+    content: str
+
+@app.post('/api/workflows', status_code=201)
+async def create_workflow(req: WorkflowCreate, _: None = Depends(require_api_key)):
+    name = _safe_filename(req.filename)
+    _WORKFLOWS_DIR.mkdir(parents=True, exist_ok=True)
+    (_WORKFLOWS_DIR / name).write_text(req.content)
+    return {'filename': name, 'ok': True}
+
+
+@app.delete('/api/workflows/{filename}')
+async def delete_workflow(filename: str, _: None = Depends(require_api_key)):
+    name = _safe_filename(filename)
+    path = _WORKFLOWS_DIR / name
+    if not path.exists():
+        raise HTTPException(status_code=404, detail='Workflow not found')
+    path.unlink()
+    meta = _read_metadata()
+    meta.pop(name, None)
+    _write_metadata(meta)
+    return {'ok': True}
+
+
+@app.patch('/api/workflows/{filename}/used')
+async def mark_workflow_used(filename: str, _: None = Depends(require_api_key)):
+    name = _safe_filename(filename)
+    from datetime import datetime, timezone
+    meta = _read_metadata()
+    meta[name] = {"last_used": datetime.now(timezone.utc).isoformat()}
+    _write_metadata(meta)
+    return {'ok': True}
 
 
 class RunRequest(BaseModel):

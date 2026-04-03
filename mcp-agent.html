@@ -157,9 +157,7 @@
     }
 
     .sidebar-conversations {
-      flex: 1;
-      overflow-y: auto;
-      padding: 0 8px;
+      /* scroll/flex handled by parent #chat-body */
     }
 
     .sidebar-group-label {
@@ -223,6 +221,239 @@
     .sidebar-item-delete:hover {
       color: var(--red);
     }
+
+    /* ================================================================
+       SIDEBAR SECTIONS (Chats / Workspace / Workflows)
+       ================================================================ */
+
+    /* Chat section fills remaining sidebar height; collapses cleanly */
+    #chat-section {
+      flex: 1 1 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #chat-body {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 0 8px 8px 8px;
+    }
+
+    #chat-body.collapsed {
+      display: none;
+    }
+
+    /* My Files + Workflows: fixed-shrink sections with capped body height */
+    .sidebar-section {
+      flex: 0 0 auto;
+      border-top: 1px solid var(--border);
+    }
+
+    .sidebar-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px 8px 14px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .sidebar-section-header:hover {
+      background: var(--bg-hover);
+    }
+
+    .sidebar-section-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .sidebar-section-chevron {
+      color: var(--text-muted);
+      transition: transform 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .sidebar-section-chevron.open {
+      transform: rotate(90deg);
+    }
+
+    .sidebar-section-new {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 2px 3px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      transition: color var(--transition);
+    }
+
+    .sidebar-section-new:hover { color: var(--text-primary); }
+
+    .sidebar-section-body {
+      padding: 0 8px 8px 8px;
+      overflow-y: auto;
+      max-height: 180px;
+    }
+
+    .sidebar-section-body.collapsed {
+      display: none;
+    }
+
+    /* File list items */
+    .ws-file-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    .ws-file-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .ws-file-item.active {
+      background: rgba(59,130,246,0.12);
+      color: var(--blue);
+      border: 1px solid rgba(59,130,246,0.25);
+    }
+
+    .ws-file-icon {
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .ws-file-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .ws-empty {
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 4px 8px 8px 8px;
+      font-style: italic;
+    }
+
+    .ws-upload-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      padding: 7px 10px;
+      margin-top: 4px;
+      background: transparent;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background var(--transition), border-color var(--transition);
+    }
+
+    .ws-upload-btn:hover {
+      background: var(--bg-hover);
+      border-color: var(--text-muted);
+    }
+
+    /* Workflow list items */
+    .wf-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: background var(--transition), color var(--transition);
+      margin-bottom: 1px;
+    }
+
+    .wf-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .wf-item.active {
+      background: rgba(59,130,246,0.12);
+      color: var(--blue);
+      border: 1px solid rgba(59,130,246,0.25);
+    }
+
+    .wf-item-icon {
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .wf-item-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Context bar above input */
+    #context-bar {
+      display: none;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 6px 12px 2px 12px;
+    }
+
+    #context-bar.visible {
+      display: flex;
+    }
+
+    .ctx-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      background: rgba(59,130,246,0.15);
+      color: var(--blue);
+      border: 1px solid rgba(59,130,246,0.3);
+      cursor: default;
+    }
+
+    .ctx-chip.workflow-chip {
+      background: rgba(59,130,246,0.15);
+      color: #60a5fa;
+      border-color: rgba(96,165,250,0.3);
+    }
+
+    .ctx-chip-remove {
+      background: none;
+      border: none;
+      color: inherit;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      font-size: 14px;
+      opacity: 0.7;
+    }
+
+    .ctx-chip-remove:hover { opacity: 1; }
 
     .sidebar-bottom {
       flex-shrink: 0;
@@ -1499,15 +1730,52 @@
         </button>
       </div>
 
-      <button class="btn-new-chat" onclick="newConversation()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-        New Chat
-      </button>
+      <!-- ── Chats ─────────────────────────────────── -->
+      <div id="chat-section" style="border-top:none;">
+        <div class="sidebar-section-header" onclick="toggleSection('chat')">
+          <span class="sidebar-section-label">Chats</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <button class="sidebar-section-new" onclick="event.stopPropagation();newConversation()" title="New chat">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+            <svg class="sidebar-section-chevron open" id="chat-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </div>
+        </div>
+        <div id="chat-body">
+          <div id="sidebar-conversations"></div>
+        </div>
+      </div>
 
-      <div class="sidebar-conversations" id="sidebar-conversations"></div>
+      <!-- ── My Files ─────────────────────────────────── -->
+      <div class="sidebar-section" id="ws-section">
+        <div class="sidebar-section-header" onclick="toggleSection('ws')">
+          <span class="sidebar-section-label">My Files</span>
+          <svg class="sidebar-section-chevron open" id="ws-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </div>
+        <div class="sidebar-section-body" id="ws-body">
+          <div id="ws-file-list"></div>
+          <button class="ws-upload-btn" onclick="document.getElementById('fileInput').click()">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Upload file
+          </button>
+        </div>
+      </div>
+
+      <!-- ── Workflows ─────────────────────────────────── -->
+      <div class="sidebar-section" id="wf-section">
+        <div class="sidebar-section-header" onclick="toggleSection('wf')">
+          <span class="sidebar-section-label">Workflows</span>
+          <svg class="sidebar-section-chevron open" id="wf-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </div>
+        <div class="sidebar-section-body" id="wf-body">
+          <div id="wf-list"></div>
+          <input type="file" id="wfFileInput" accept=".md" style="display:none">
+          <button class="ws-upload-btn" onclick="document.getElementById('wfFileInput').click()">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Upload workflow
+          </button>
+        </div>
+      </div>
 
       <div class="sidebar-bottom">
         <button class="sidebar-bottom-btn" onclick="toggleTheme()">
@@ -1585,6 +1853,8 @@
       <!-- Input bar -->
       <div id="input-bar">
         <div id="input-inner">
+          <!-- Context bar: active workflow + file chips -->
+          <div id="context-bar"></div>
           <!-- Upload banner — sits just above input box, auto-hides -->
           <div id="uploadBanner" style="display:none"></div>
           <div class="input-container">
@@ -1701,6 +1971,15 @@
     var _conversations = [];
     var _activeConvId  = null;
     var _sidebarOpen   = true;
+
+    // Workspace / Workflow state
+    var _activeWorkflow  = null;  // { filename, name, content }
+    var _allWsFiles      = [];    // all uploaded files [{name, size}]
+    var _selectedFiles   = {};    // { filename: true } — selected for context
+    var _workflows       = [];    // [{filename, name}]
+    var _wsSectionOpen   = true;
+    var _wfSectionOpen   = true;
+    var _agentBase       = window.AGENT_BASE_URL || 'http://localhost:8000';
 
     /* ==============================================================
        UTILITIES
@@ -3118,6 +3397,24 @@
     /* ==============================================================
        RUN AGENT
        ============================================================== */
+    /* ==============================================================
+       COMPOSE MESSAGE — prepend active workflow / file context
+       ============================================================== */
+    function composeMessage(userText) {
+      var parts = [];
+      if (_activeWorkflow) {
+        parts.push('[Workflow: ' + _activeWorkflow.name + ']\n' + _activeWorkflow.content);
+      }
+      var selectedNames = Object.keys(_selectedFiles);
+      if (selectedNames.length) {
+        parts.push('[Context Documents: ' + selectedNames.join(', ') + ']\nPlease call list_uploaded_files to get the exact paths, then read the selected file(s) before answering.');
+      }
+      if (parts.length) {
+        return parts.join('\n\n') + '\n\n---\n' + userText;
+      }
+      return userText;
+    }
+
     function runAgent(query) {
       if (_isRunning) return;
 
@@ -3127,6 +3424,7 @@
         return;
       }
 
+      var composed = composeMessage(q);
       _lastQuery = q;
       $('query-input').value = '';
       autoResizeTextarea();
@@ -3170,10 +3468,18 @@
       $('restore-banner').classList.remove('visible');
       setRunningState(true);
 
-      var body = JSON.stringify({ query: q, thread_id: _threadId || '' });
+      var body = JSON.stringify({ query: composed, thread_id: _threadId || '' });
 
       var reqHeaders = { 'Content-Type': 'application/json' };
       if (FRONTEND_API_KEY) reqHeaders['Authorization'] = 'Bearer ' + FRONTEND_API_KEY;
+
+      // Mark active workflow as used
+      if (_activeWorkflow) {
+        fetch(_agentBase + '/api/workflows/' + encodeURIComponent(_activeWorkflow.filename) + '/used', {
+          method: 'PATCH',
+          headers: reqHeaders
+        }).catch(function() {});
+      }
 
       fetch(API_URL, {
         method: 'POST',
@@ -3249,6 +3555,171 @@
     }
 
     /* ==============================================================
+       SIDEBAR SECTIONS — toggle collapse
+       ============================================================== */
+    var _chatSectionOpen = true;
+
+    function toggleSection(key) {
+      if (key === 'chat') {
+        _chatSectionOpen = !_chatSectionOpen;
+        $('chat-body').classList.toggle('collapsed', !_chatSectionOpen);
+        $('chat-chevron').classList.toggle('open', _chatSectionOpen);
+      } else if (key === 'ws') {
+        _wsSectionOpen = !_wsSectionOpen;
+        $('ws-body').classList.toggle('collapsed', !_wsSectionOpen);
+        $('ws-chevron').classList.toggle('open', _wsSectionOpen);
+      } else {
+        _wfSectionOpen = !_wfSectionOpen;
+        $('wf-body').classList.toggle('collapsed', !_wfSectionOpen);
+        $('wf-chevron').classList.toggle('open', _wfSectionOpen);
+      }
+    }
+
+    /* ==============================================================
+       MY FILES — load & render
+       ============================================================== */
+    function loadWorkspaceFiles() {
+      var headers = { 'Content-Type': 'application/json' };
+      if (FRONTEND_API_KEY) headers['Authorization'] = 'Bearer ' + FRONTEND_API_KEY;
+      fetch(_agentBase + '/api/workspace/files', { headers: headers })
+        .then(function(r) { return r.ok ? r.json() : { files: [] }; })
+        .then(function(data) {
+          _allWsFiles = data.files || [];
+          renderWorkspaceFiles();
+        })
+        .catch(function() { _allWsFiles = []; });
+    }
+
+    function fileIcon(name) {
+      var ext = (name.split('.').pop() || '').toLowerCase();
+      var icons = { pdf: 'PDF', docx: 'DOC', xlsx: 'XLS', csv: 'CSV', txt: 'TXT' };
+      return icons[ext] || 'FILE';
+    }
+
+    function toggleFileSelection(name) {
+      if (_selectedFiles[name]) {
+        delete _selectedFiles[name];
+      } else {
+        _selectedFiles[name] = true;
+      }
+      renderWorkspaceFiles();
+      renderContextBar();
+    }
+
+    function deselectFile(name) {
+      delete _selectedFiles[name];
+      renderWorkspaceFiles();
+      renderContextBar();
+    }
+
+    function renderWorkspaceFiles() {
+      var list = $('ws-file-list');
+      if (!list) return;
+      if (!_allWsFiles.length) {
+        list.innerHTML = '<div class="ws-empty">No files uploaded yet</div>';
+        return;
+      }
+      list.innerHTML = _allWsFiles.map(function(f) {
+        var active = !!_selectedFiles[f.name];
+        return '<div class="ws-file-item' + (active ? ' active' : '') + '" ' +
+          'data-fname="' + esc(f.name) + '" title="' + esc(f.name) + '">' +
+          '<span class="ws-file-icon">' + fileIcon(f.name) + '</span>' +
+          '<span class="ws-file-name">' + esc(f.name) + '</span>' +
+          '</div>';
+      }).join('');
+    }
+
+    /* ==============================================================
+       WORKFLOWS — load, render, activate
+       ============================================================== */
+    function loadWorkflows() {
+      var headers = { 'Content-Type': 'application/json' };
+      if (FRONTEND_API_KEY) headers['Authorization'] = 'Bearer ' + FRONTEND_API_KEY;
+      fetch(_agentBase + '/api/workflows', { headers: headers })
+        .then(function(r) { return r.ok ? r.json() : { workflows: [] }; })
+        .then(function(data) {
+          _workflows = data.workflows || [];
+          renderWorkflows();
+        })
+        .catch(function() { _workflows = []; });
+    }
+
+    function renderWorkflows() {
+      var list = $('wf-list');
+      if (!list) return;
+      if (!_workflows.length) {
+        list.innerHTML = '<div class="ws-empty">No workflows available</div>';
+        return;
+      }
+      list.innerHTML = _workflows.map(function(w) {
+        var isActive = _activeWorkflow && _activeWorkflow.filename === w.filename;
+        return '<div class="wf-item' + (isActive ? ' active' : '') + '" ' +
+          'data-wfname="' + esc(w.filename) + '" title="' + esc(w.name) + '">' +
+          '<span class="wf-item-icon">&#9654;</span>' +
+          '<span class="wf-item-name">' + esc(w.name) + '</span>' +
+          '</div>';
+      }).join('');
+    }
+
+    function activateWorkflow(filename) {
+      // Toggle off if already active
+      if (_activeWorkflow && _activeWorkflow.filename === filename) {
+        _activeWorkflow = null;
+        renderWorkflows();
+        renderContextBar();
+        return;
+      }
+
+      var headers = { 'Content-Type': 'application/json' };
+      if (FRONTEND_API_KEY) headers['Authorization'] = 'Bearer ' + FRONTEND_API_KEY;
+      fetch(_agentBase + '/api/workflows/' + encodeURIComponent(filename), { headers: headers })
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(data) {
+          if (!data) { showToast('Could not load workflow', 2000); return; }
+          _activeWorkflow = {
+            filename: data.filename,
+            name: data.filename.replace(/\.md$/, '').replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); }),
+            content: data.content
+          };
+          renderWorkflows();
+          renderContextBar();
+          showToast('Workflow: ' + _activeWorkflow.name, 2000);
+        })
+        .catch(function() { showToast('Failed to load workflow', 2000); });
+    }
+
+    function clearWorkflow() {
+      _activeWorkflow = null;
+      renderWorkflows();
+      renderContextBar();
+    }
+
+    /* ==============================================================
+       CONTEXT BAR
+       ============================================================== */
+    function renderContextBar() {
+      var bar = $('context-bar');
+      if (!bar) return;
+      var chips = '';
+      if (_activeWorkflow) {
+        chips += '<span class="ctx-chip workflow-chip">' +
+          '&#9654; ' + esc(_activeWorkflow.name) +
+          '<button class="ctx-chip-remove" onclick="clearWorkflow()" title="Remove workflow">&times;</button>' +
+          '</span>';
+      }
+      var selectedNames = Object.keys(_selectedFiles);
+      for (var i = 0; i < selectedNames.length; i++) {
+        var fname = selectedNames[i];
+        chips += '<span class="ctx-chip">' +
+          esc(fname) +
+          '<button class="ctx-chip-remove" onclick="deselectFile(\'' + esc(fname) + '\')" title="Remove">&times;</button>' +
+          '</span>';
+      }
+      bar.innerHTML = chips;
+      bar.classList.toggle('visible', !!chips);
+    }
+
+    /* ==============================================================
        INIT
        ============================================================== */
     function init() {
@@ -3256,6 +3727,8 @@
       renderSampleChips();
       setupKeyboard();
       restoreSession();
+      loadWorkspaceFiles();
+      loadWorkflows();
       $('query-input').focus();
     }
 
@@ -3290,6 +3763,8 @@
               showUploadBanner('\u2705 ' + data.filename + ' uploaded', 'success');
               // Inject a system notice into the chat thread so the agent knows the file is available
               addSystemNotice('\uD83D\uDCCE File uploaded: <strong>' + esc(data.filename) + '</strong> — you can now ask me to analyse it.');
+              // Refresh the My Files sidebar list
+              loadWorkspaceFiles();
             } else {
               showUploadBanner('\u274C Upload failed: ' + (data.message || data.error || 'Unknown error'), 'error');
             }
@@ -3297,6 +3772,54 @@
             showUploadBanner('\u274C Upload error: ' + err.message, 'error');
           }
           e.target.value = '';
+        });
+      }
+
+      // Workflow file upload
+      var wfFileInput = document.getElementById('wfFileInput');
+      if (wfFileInput) {
+        wfFileInput.addEventListener('change', function(e) {
+          var file = e.target.files[0];
+          if (!file) return;
+          if (!file.name.endsWith('.md')) { showToast('Only .md files allowed', 2000); return; }
+          var reader = new FileReader();
+          reader.onload = function(ev) {
+            var content = ev.target.result;
+            var headers = { 'Content-Type': 'application/json' };
+            if (FRONTEND_API_KEY) headers['Authorization'] = 'Bearer ' + FRONTEND_API_KEY;
+            fetch(_agentBase + '/api/workflows', {
+              method: 'POST',
+              headers: headers,
+              body: JSON.stringify({ filename: file.name, content: content })
+            }).then(function(r) {
+              if (r.ok) {
+                showToast('Workflow uploaded: ' + file.name, 2500);
+                loadWorkflows();
+              } else {
+                showToast('Upload failed', 2000);
+              }
+            }).catch(function() { showToast('Upload failed', 2000); });
+          };
+          reader.readAsText(file);
+          e.target.value = '';
+        });
+      }
+
+      // Event delegation for file selection (avoids inline onclick escaping issues)
+      var wsFileList = document.getElementById('ws-file-list');
+      if (wsFileList) {
+        wsFileList.addEventListener('click', function(e) {
+          var item = e.target.closest('[data-fname]');
+          if (item) toggleFileSelection(item.getAttribute('data-fname'));
+        });
+      }
+
+      // Event delegation for workflow activation
+      var wfList = document.getElementById('wf-list');
+      if (wfList) {
+        wfList.addEventListener('click', function(e) {
+          var item = e.target.closest('[data-wfname]');
+          if (item) activateWorkflow(item.getAttribute('data-wfname'));
         });
       }
     });

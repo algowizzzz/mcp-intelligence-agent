@@ -1,0 +1,22 @@
+{
+  "name": "saad_fib",
+  "implementation": "sajha.tools.impl.studio_saad_fib.SaadFibTool",
+  "description": "Calculate the factorial of a number",
+  "version": "2.9.8",
+  "enabled": true,
+  "metadata": {
+    "author": "MCP Studio User",
+    "category": "Mathematics",
+    "tags": [
+      "math",
+      "factorial",
+      "calculation",
+      "mcp-studio",
+      "generated"
+    ],
+    "rateLimit": 60,
+    "cacheTTL": 300,
+    "createdAt": "2026-04-02T11:28:34.886550",
+    "source": "MCP Studio"
+  }
+}

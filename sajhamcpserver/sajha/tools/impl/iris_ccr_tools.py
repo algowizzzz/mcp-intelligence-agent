@@ -516,24 +516,3 @@ class IrisRatingScreenTool(IrisBaseTool):
 
         return {'counterparties': results, 'count': len(results), 'date_used': date}
 
-
-class WorkflowTool(IrisBaseTool):
-    """Base class for workflow tools — returns workflow_steps definition."""
-
-    def get_input_schema(self):
-        return self._input_schema or {}
-
-    def get_output_schema(self):
-        return self._output_schema or {}
-
-    def execute(self, params):
-        # Return the workflow definition from the config
-        # BaseMCPTool stores config as self.config (not self._config)
-        cfg = getattr(self, 'config', None) or {}
-        steps = cfg.get('workflow_steps', [])
-        input_context = {k: v for k, v in params.items()}
-        return {
-            'workflow_name': cfg.get('name', ''),
-            'workflow_steps': steps,
-            'input_context': input_context,
-        }

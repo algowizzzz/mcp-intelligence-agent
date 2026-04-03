@@ -1,0 +1,16 @@
+{
+  "name": "workflow_list",
+  "implementation": "sajha.tools.impl.workflow_tools.WorkflowListTool",
+  "version": "1.0.0",
+  "enabled": true,
+  "category": "Workflow",
+  "description": "List all available agent workflows with names, descriptions, and required inputs.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {}
+  },
+  "metadata": {
+    "category": "Workflow",
+    "tags": ["workflow", "list", "discovery"]
+  }
+}

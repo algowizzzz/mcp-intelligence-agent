@@ -1,0 +1,22 @@
+{
+  "name": "workflow_get",
+  "implementation": "sajha.tools.impl.workflow_tools.WorkflowGetTool",
+  "version": "1.0.0",
+  "enabled": true,
+  "category": "Workflow",
+  "description": "Retrieve full markdown instructions for a workflow by filename. Execute the returned steps in order.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "filename": {
+        "type": "string",
+        "description": "MD filename from workflow_list e.g. counterparty_intelligence.md"
+      }
+    },
+    "required": ["filename"]
+  },
+  "metadata": {
+    "category": "Workflow",
+    "tags": ["workflow", "get", "fetch"]
+  }
+}
