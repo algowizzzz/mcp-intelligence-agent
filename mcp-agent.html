@@ -409,6 +409,93 @@
       white-space: nowrap;
     }
 
+    .wf-item-actions {
+      display: none;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .wf-item:hover .wf-item-actions {
+      display: flex;
+    }
+
+    .wf-select-btn {
+      background: transparent;
+      border: 1px solid rgba(59,130,246,0.4);
+      border-radius: 4px;
+      color: var(--blue);
+      font-size: 11px;
+      font-weight: 500;
+      padding: 2px 7px;
+      cursor: pointer;
+      line-height: 1.4;
+      transition: background var(--transition);
+    }
+    .wf-select-btn:hover { background: rgba(59,130,246,0.15); }
+
+    .wf-item.active .wf-select-btn {
+      border-color: var(--blue);
+      background: rgba(59,130,246,0.15);
+    }
+
+    .wf-trash-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      transition: color var(--transition);
+    }
+    .wf-trash-btn:hover { color: var(--red); }
+
+    .wf-delete-confirm {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      background: rgba(239,68,68,0.08);
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(239,68,68,0.2);
+      margin-bottom: 1px;
+    }
+    .wf-delete-confirm-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .wf-delete-confirm-yes {
+      background: var(--red);
+      border: none;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .wf-delete-confirm-no {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    @keyframes wf-fadeout {
+      from { opacity: 1; max-height: 40px; }
+      to   { opacity: 0; max-height: 0; padding: 0; margin: 0; }
+    }
+    .wf-item-removing {
+      animation: wf-fadeout 0.25s ease forwards;
+      overflow: hidden;
+    }
+
     /* Context bar above input */
     #context-bar {
       display: none;
@@ -1633,6 +1720,7 @@
     #canvas-export-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
     #canvas-close-btn { background: transparent; color: var(--text-muted); border: 1px solid var(--border); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: color var(--transition); }
     #canvas-close-btn:hover { color: var(--text-primary); }
+    #canvas-wf-select-bar button:hover { opacity: 0.88; }
 
     #canvas-content { flex: 1; overflow-y: auto; padding: 24px; color: var(--text-primary); font-size: 14px; line-height: 1.7; }
     #canvas-content h1 { font-size: 22px; color: var(--text-primary); border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 16px; font-weight: 600; }
@@ -1887,13 +1975,22 @@
          ============================================================ -->
     <div id="canvas-zone">
       <div id="canvas-topbar">
-        <span id="canvas-title" contenteditable="true">Document</span>
+        <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+          <span id="canvas-title" contenteditable="true">Document</span>
+          <span id="canvas-readonly-badge" style="display:none;font-size:10px;font-weight:600;color:var(--text-muted);background:var(--bg-elevated);border:1px solid var(--border);border-radius:4px;padding:2px 6px;flex-shrink:0;">READ ONLY</span>
+        </div>
         <div id="canvas-topbar-actions">
           <button id="canvas-export-btn" onclick="exportCanvasAsWord()">Export as Word</button>
           <button id="canvas-close-btn" onclick="closeCanvas()" title="Close canvas">&#x2715;</button>
         </div>
       </div>
       <div id="canvas-content"></div>
+      <!-- Workflow preview select bar — pinned at bottom of canvas, hidden by default -->
+      <div id="canvas-wf-select-bar" style="display:none;flex-shrink:0;padding:12px 16px;border-top:1px solid var(--border);background:var(--bg-sidebar);">
+        <button id="canvas-wf-select-btn" onclick="selectFromCanvas()" style="width:100%;padding:9px 16px;background:var(--blue);border:none;border-radius:var(--radius-sm);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s ease;">
+          Select this Workflow
+        </button>
+      </div>
     </div><!-- end #canvas-zone -->
 
     </div><!-- end #main -->
@@ -3653,12 +3750,131 @@
       }
       list.innerHTML = _workflows.map(function(w) {
         var isActive = _activeWorkflow && _activeWorkflow.filename === w.filename;
-        return '<div class="wf-item' + (isActive ? ' active' : '') + '" ' +
-          'data-wfname="' + esc(w.filename) + '" title="' + esc(w.name) + '">' +
-          '<span class="wf-item-icon">&#9654;</span>' +
-          '<span class="wf-item-name">' + esc(w.name) + '</span>' +
-          '</div>';
+        return '<div class="wf-item' + (isActive ? ' active' : '') + '" data-wfname="' + esc(w.filename) + '">' +
+          '<div class="wf-item-body" data-wf-preview="' + esc(w.filename) + '" style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;cursor:pointer;">' +
+            '<span class="wf-item-icon">&#9654;</span>' +
+            '<span class="wf-item-name">' + esc(w.name) + '</span>' +
+          '</div>' +
+          '<div class="wf-item-actions">' +
+            '<button class="wf-select-btn" data-wf-select="' + esc(w.filename) + '">' +
+              (isActive ? 'Active' : 'Select') +
+            '</button>' +
+            '<button class="wf-trash-btn" data-wf-delete="' + esc(w.filename) + '" title="Delete workflow">' +
+              '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                '<polyline points="3 6 5 6 21 6"></polyline>' +
+                '<path d="M19 6l-1 14H6L5 6"></path>' +
+                '<path d="M10 11v6M14 11v6"></path>' +
+                '<path d="M9 6V4h6v2"></path>' +
+              '</svg>' +
+            '</button>' +
+          '</div>' +
+        '</div>';
       }).join('');
+    }
+
+    function deleteWorkflow(filename) {
+      var list = $('wf-list');
+      if (!list) return;
+      // Find the row
+      var row = list.querySelector('[data-wfname="' + filename + '"]');
+      if (!row) return;
+      // Find display name
+      var wf = _workflows.filter(function(w) { return w.filename === filename; })[0];
+      var displayName = wf ? wf.name : filename;
+      // Replace row content with inline confirmation
+      var confirmEl = document.createElement('div');
+      confirmEl.className = 'wf-delete-confirm';
+      confirmEl.innerHTML =
+        '<span class="wf-delete-confirm-text">Delete \u201c' + esc(displayName) + '\u201d?</span>' +
+        '<button class="wf-delete-confirm-yes">Delete</button>' +
+        '<button class="wf-delete-confirm-no">Cancel</button>';
+      confirmEl.querySelector('.wf-delete-confirm-yes').onclick = function() {
+        // Clear active workflow if it's the one being deleted
+        if (_activeWorkflow && _activeWorkflow.filename === filename) {
+          _activeWorkflow = null;
+          renderContextBar();
+        }
+        var headers = { 'Content-Type': 'application/json' };
+        if (FRONTEND_API_KEY) headers['Authorization'] = 'Bearer ' + FRONTEND_API_KEY;
+        fetch(_agentBase + '/api/workflows/' + encodeURIComponent(filename), {
+          method: 'DELETE', headers: headers
+        }).then(function(r) {
+          if (r.ok) {
+            row.className += ' wf-item-removing';
+            setTimeout(function() {
+              _workflows = _workflows.filter(function(w) { return w.filename !== filename; });
+              renderWorkflows();
+            }, 260);
+          } else {
+            showToast('Delete failed', 2000);
+            row.replaceWith(row); // restore — re-render
+            renderWorkflows();
+          }
+        }).catch(function() {
+          showToast('Delete failed', 2000);
+          renderWorkflows();
+        });
+      };
+      confirmEl.querySelector('.wf-delete-confirm-no').onclick = function() {
+        renderWorkflows();
+      };
+      row.replaceWith(confirmEl);
+    }
+
+    var _canvasPreviewWorkflow = null; // filename of workflow currently previewed in canvas
+
+    function previewWorkflow(filename) {
+      var headers = { 'Content-Type': 'application/json' };
+      if (FRONTEND_API_KEY) headers['Authorization'] = 'Bearer ' + FRONTEND_API_KEY;
+      fetch(_agentBase + '/api/workflows/' + encodeURIComponent(filename), { headers: headers })
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(data) {
+          if (!data) { showToast('Could not load workflow', 2000); return; }
+          _canvasPreviewWorkflow = data.filename;
+          // Show read-only canvas
+          _canvasMarkdown = data.content;
+          document.getElementById('canvas-title').textContent = data.name + ' \u2014 Preview';
+          document.getElementById('canvas-title').contentEditable = 'false';
+          document.getElementById('canvas-readonly-badge').style.display = '';
+          renderCanvas(data.content);
+          document.body.classList.add('canvas-active');
+          document.getElementById('canvas-export-btn').style.display = 'none';
+          document.getElementById('canvas-content').scrollTop = 0;
+          // Show "Select this Workflow" bar — update button label based on active state
+          var bar = document.getElementById('canvas-wf-select-bar');
+          var btn = document.getElementById('canvas-wf-select-btn');
+          if (_activeWorkflow && _activeWorkflow.filename === filename) {
+            btn.textContent = 'Deselect Workflow';
+            btn.style.background = 'var(--text-muted)';
+          } else {
+            btn.textContent = 'Select this Workflow';
+            btn.style.background = 'var(--blue)';
+          }
+          bar.style.display = '';
+        })
+        .catch(function() { showToast('Failed to load workflow', 2000); });
+    }
+
+    function selectFromCanvas() {
+      if (!_canvasPreviewWorkflow) return;
+      if (_activeWorkflow && _activeWorkflow.filename === _canvasPreviewWorkflow) {
+        // Already active — deselect
+        _activeWorkflow = null;
+        renderWorkflows();
+        renderContextBar();
+        var btn = document.getElementById('canvas-wf-select-btn');
+        if (btn) { btn.textContent = 'Select this Workflow'; btn.style.background = 'var(--blue)'; }
+      } else {
+        activateWorkflow(_canvasPreviewWorkflow);
+        // Update button label after activation (activateWorkflow is async — update after short delay)
+        setTimeout(function() {
+          var btn = document.getElementById('canvas-wf-select-btn');
+          if (btn && _activeWorkflow && _activeWorkflow.filename === _canvasPreviewWorkflow) {
+            btn.textContent = 'Deselect Workflow';
+            btn.style.background = 'var(--text-muted)';
+          }
+        }, 800);
+      }
     }
 
     function activateWorkflow(filename) {
@@ -3814,12 +4030,16 @@
         });
       }
 
-      // Event delegation for workflow activation
+      // Event delegation for workflow list (preview, select, delete)
       var wfList = document.getElementById('wf-list');
       if (wfList) {
         wfList.addEventListener('click', function(e) {
-          var item = e.target.closest('[data-wfname]');
-          if (item) activateWorkflow(item.getAttribute('data-wfname'));
+          var previewTarget = e.target.closest('[data-wf-preview]');
+          var selectTarget  = e.target.closest('[data-wf-select]');
+          var deleteTarget  = e.target.closest('[data-wf-delete]');
+          if (deleteTarget) { deleteWorkflow(deleteTarget.getAttribute('data-wf-delete')); }
+          else if (selectTarget) { activateWorkflow(selectTarget.getAttribute('data-wf-select')); }
+          else if (previewTarget) { previewWorkflow(previewTarget.getAttribute('data-wf-preview')); }
         });
       }
     });
@@ -3905,6 +4125,12 @@
 
     function closeCanvas() {
       document.body.classList.remove('canvas-active');
+      // Restore canvas to normal (non-preview) state
+      _canvasPreviewWorkflow = null;
+      document.getElementById('canvas-title').contentEditable = 'true';
+      document.getElementById('canvas-readonly-badge').style.display = 'none';
+      document.getElementById('canvas-export-btn').style.display = '';
+      document.getElementById('canvas-wf-select-bar').style.display = 'none';
     }
 
     /* ==============================================================
