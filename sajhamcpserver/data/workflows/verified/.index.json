@@ -1,0 +1,22 @@
+{
+  "root": "sajhamcpserver/data/workflows/verified",
+  "built_at": "2026-04-03T05:10:53.763276+00:00",
+  "tree": [
+    {
+      "type": "file",
+      "name": "counterparty_intelligence.md",
+      "path": "counterparty_intelligence.md",
+      "size_bytes": 3716,
+      "modified_at": "2026-04-03T03:57:53.788962+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "op_risk_controls.md",
+      "path": "op_risk_controls.md",
+      "size_bytes": 3097,
+      "modified_at": "2026-04-03T04:10:05.914292+00:00",
+      "mime": "text/markdown"
+    }
+  ]
+}

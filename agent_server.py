@@ -1,4 +1,4 @@
-import os, json, uuid, pathlib
+import os, json, uuid, pathlib, base64, sys as _sys
 from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,7 +13,36 @@ _WORKFLOWS_DIR = pathlib.Path('sajhamcpserver/data/workflows')
 _UPLOADS_DIR   = pathlib.Path('sajhamcpserver/data/uploads')
 _METADATA_FILE = _WORKFLOWS_DIR / '.metadata.json'
 
+_sys.path.insert(0, str(pathlib.Path(__file__).parent / 'sajhamcpserver'))
+from sajha.tools.impl.fs_index import build_index, get_index
+
 load_dotenv()
+
+_DATA_ROOT     = pathlib.Path('sajhamcpserver/data')
+_DOMAIN_DATA   = _DATA_ROOT / 'domain_data'
+_MY_DATA       = _DATA_ROOT / 'uploads'
+_VERIFIED_WF   = _DATA_ROOT / 'workflows' / 'verified'
+_MY_WF         = _DATA_ROOT / 'workflows' / 'my'
+
+_SECTION_ROOTS = {
+    'domain_data':   _DOMAIN_DATA,
+    'uploads':       _MY_DATA,
+    'verified':      _VERIFIED_WF,
+    'my_workflows':  _MY_WF,
+}
+_WRITABLE_SECTIONS = {'uploads', 'my_workflows'}
+
+
+# Build indexes on startup
+def _build_all_indexes():
+    for root in [_DOMAIN_DATA, _MY_DATA, _VERIFIED_WF, _MY_WF]:
+        root.mkdir(parents=True, exist_ok=True)
+        try:
+            build_index(str(root))
+        except Exception:
+            pass
+
+_build_all_indexes()
 
 app = FastAPI(title='MCP Intelligence Agent')
 _cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:8080,http://127.0.0.1:8080').split(',')
@@ -169,6 +198,160 @@ async def mark_workflow_used(filename: str, _: None = Depends(require_api_key)):
     meta = _read_metadata()
     meta[name] = {"last_used": datetime.now(timezone.utc).isoformat()}
     _write_metadata(meta)
+    return {'ok': True}
+
+
+def _resolve_section_path(section: str, rel: str = '') -> pathlib.Path:
+    root = _SECTION_ROOTS.get(section)
+    if root is None:
+        raise HTTPException(status_code=400, detail=f'Unknown section: {section}')
+    if rel:
+        # Safety: resolve and confirm it stays inside root
+        full = (root / rel).resolve()
+        if not str(full).startswith(str(root.resolve())):
+            raise HTTPException(status_code=400, detail='Path traversal not allowed')
+        return full
+    return root
+
+
+# ── FileTree API ───────────────────────────────────────────────────────────────
+
+@app.get('/api/fs/{section}/tree')
+async def fs_tree(section: str, _: None = Depends(require_api_key)):
+    root = _resolve_section_path(section)
+    root.mkdir(parents=True, exist_ok=True)
+    idx = get_index(str(root))
+    return idx
+
+
+@app.get('/api/fs/{section}/file')
+async def fs_file(section: str, path: str = '', _: None = Depends(require_api_key)):
+    root = _resolve_section_path(section)
+    if not path:
+        raise HTTPException(status_code=400, detail='path required')
+    full = _resolve_section_path(section, path)
+    if not full.exists() or not full.is_file():
+        raise HTTPException(status_code=404, detail='File not found')
+    content_bytes = full.read_bytes()
+    # Detect if text
+    try:
+        text = content_bytes.decode('utf-8')
+        return {'path': path, 'encoding': 'utf-8', 'content': text}
+    except UnicodeDecodeError:
+        return {'path': path, 'encoding': 'base64', 'content': base64.b64encode(content_bytes).decode('ascii')}
+
+
+@app.post('/api/fs/{section}/upload')
+async def fs_upload(
+    section: str,
+    path: str = '',
+    file: UploadFile = File(...),
+    _: None = Depends(require_api_key)
+):
+    if section not in _WRITABLE_SECTIONS:
+        raise HTTPException(status_code=403, detail='Section is read-only')
+    root = _resolve_section_path(section)
+    folder = _resolve_section_path(section, path) if path else root
+    folder.mkdir(parents=True, exist_ok=True)
+    dest = folder / pathlib.Path(file.filename).name
+    dest.write_bytes(await file.read())
+    build_index(str(root))
+    return {'ok': True, 'path': str(dest.relative_to(root)).replace('\\', '/')}
+
+
+class FsUpdateRequest(BaseModel):
+    path: str
+    content: str
+
+@app.patch('/api/fs/{section}/file')
+async def fs_update_file(section: str, req: FsUpdateRequest, _: None = Depends(require_api_key)):
+    if section not in _WRITABLE_SECTIONS:
+        raise HTTPException(status_code=403, detail='Section is read-only')
+    root = _resolve_section_path(section)
+    full = _resolve_section_path(section, req.path)
+    full.write_text(req.content, encoding='utf-8')
+    build_index(str(root))
+    return {'ok': True}
+
+
+class FsMkdirRequest(BaseModel):
+    path: str
+
+@app.post('/api/fs/{section}/folder')
+async def fs_mkdir(section: str, req: FsMkdirRequest, _: None = Depends(require_api_key)):
+    if section not in _WRITABLE_SECTIONS:
+        raise HTTPException(status_code=403, detail='Section is read-only')
+    root = _resolve_section_path(section)
+    full = _resolve_section_path(section, req.path)
+    full.mkdir(parents=True, exist_ok=True)
+    build_index(str(root))
+    return {'ok': True}
+
+
+class FsMoveRequest(BaseModel):
+    src: str
+    dst: str
+
+@app.post('/api/fs/{section}/move')
+async def fs_move(section: str, req: FsMoveRequest, _: None = Depends(require_api_key)):
+    if section not in _WRITABLE_SECTIONS:
+        raise HTTPException(status_code=403, detail='Section is read-only')
+    root = _resolve_section_path(section)
+    src_full = _resolve_section_path(section, req.src)
+    dst_full = _resolve_section_path(section, req.dst)
+    if not src_full.exists():
+        raise HTTPException(status_code=404, detail='Source not found')
+    dst_full.parent.mkdir(parents=True, exist_ok=True)
+    src_full.rename(dst_full)
+    build_index(str(root))
+    return {'ok': True}
+
+
+class FsRenameRequest(BaseModel):
+    path: str
+    new_name: str
+
+@app.post('/api/fs/{section}/rename')
+async def fs_rename(section: str, req: FsRenameRequest, _: None = Depends(require_api_key)):
+    if section not in _WRITABLE_SECTIONS:
+        raise HTTPException(status_code=403, detail='Section is read-only')
+    root = _resolve_section_path(section)
+    full = _resolve_section_path(section, req.path)
+    if not full.exists():
+        raise HTTPException(status_code=404, detail='Not found')
+    new_name = pathlib.Path(req.new_name).name  # safety: basename only
+    new_full = full.parent / new_name
+    full.rename(new_full)
+    build_index(str(root))
+    return {'ok': True}
+
+
+@app.delete('/api/fs/{section}/file')
+async def fs_delete_file(section: str, path: str = '', _: None = Depends(require_api_key)):
+    if section not in _WRITABLE_SECTIONS:
+        raise HTTPException(status_code=403, detail='Section is read-only')
+    root = _resolve_section_path(section)
+    full = _resolve_section_path(section, path)
+    if not full.exists():
+        raise HTTPException(status_code=404, detail='File not found')
+    full.unlink()
+    build_index(str(root))
+    return {'ok': True}
+
+
+@app.delete('/api/fs/{section}/folder')
+async def fs_delete_folder(section: str, path: str = '', _: None = Depends(require_api_key)):
+    if section not in _WRITABLE_SECTIONS:
+        raise HTTPException(status_code=403, detail='Section is read-only')
+    root = _resolve_section_path(section)
+    full = _resolve_section_path(section, path)
+    if not full.exists():
+        raise HTTPException(status_code=404, detail='Folder not found')
+    try:
+        full.rmdir()  # only succeeds if empty
+    except OSError:
+        raise HTTPException(status_code=400, detail='Folder is not empty')
+    build_index(str(root))
     return {'ok': True}
 
 

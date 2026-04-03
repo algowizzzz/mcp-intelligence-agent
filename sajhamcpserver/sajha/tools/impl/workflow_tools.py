@@ -15,6 +15,11 @@ def _workflows_dir():
     return "./data/workflows"
 
 
+def _workflows_base():
+    """Return the base workflows directory (parent of verified/ and my/)."""
+    return _workflows_dir()
+
+
 def _metadata():
     """Load .metadata.json sidecar if present."""
     d = _workflows_dir()
@@ -83,29 +88,34 @@ class WorkflowListTool(BaseMCPTool):
         return {"type": "object"}
 
     def execute(self, arguments):
-        d = _workflows_dir()
-        meta = _metadata()
+        base = _workflows_base()
+        roots = {
+            "verified": os.path.join(base, "verified"),
+            "my": os.path.join(base, "my"),
+        }
         workflows = []
-        try:
-            files = sorted(f for f in os.listdir(d) if f.endswith(".md") and not f.startswith("."))
-        except Exception as e:
-            return {"error": str(e), "workflows": []}
-        for filename in files:
-            try:
-                with open(os.path.join(d, filename)) as f:
-                    content = f.read()
-                name, description, inputs = _parse_workflow_meta(filename, content)
-                file_meta = meta.get(filename, {})
-                last_used = file_meta.get("last_used") if isinstance(file_meta, dict) else file_meta
-                workflows.append({
-                    "filename": filename,
-                    "name": name,
-                    "description": description,
-                    "inputs": inputs,
-                    "last_used": last_used,
-                })
-            except Exception as e:
-                workflows.append({"filename": filename, "error": str(e)})
+        for source, root in roots.items():
+            if not os.path.exists(root):
+                continue
+            for dirpath, _, files in os.walk(root):
+                for fname in sorted(files):
+                    if not fname.endswith(".md") or fname.startswith("."):
+                        continue
+                    full_path = os.path.join(dirpath, fname)
+                    rel_path = os.path.relpath(full_path, base).replace("\\", "/")
+                    try:
+                        with open(full_path) as f:
+                            content = f.read()
+                        name, description, inputs = _parse_workflow_meta(fname, content)
+                        workflows.append({
+                            "filename": rel_path,
+                            "name": name,
+                            "description": description,
+                            "inputs": inputs,
+                            "source": source,
+                        })
+                    except Exception as e:
+                        workflows.append({"filename": rel_path, "error": str(e)})
         return {"workflows": workflows, "count": len(workflows)}
 
 
@@ -147,16 +157,30 @@ class WorkflowGetTool(BaseMCPTool):
 
     def execute(self, arguments):
         filename = arguments.get("filename", "")
+        base = _workflows_base()
+        # Normalise
+        filename = filename.lstrip("/").lstrip("./")
         if not filename.endswith(".md"):
             filename += ".md"
-        # Safety: no path traversal
-        filename = os.path.basename(filename)
-        filepath = os.path.join(_workflows_dir(), filename)
-        if not os.path.exists(filepath):
-            return {"error": f"Workflow not found: {filename}"}
-        with open(filepath) as f:
+        # Safety: resolve and confirm inside base
+        full_path = os.path.realpath(os.path.join(base, filename))
+        if not full_path.startswith(os.path.realpath(base)):
+            return {"error": "Access denied"}
+        if not os.path.exists(full_path):
+            # Fallback: try searching verified/ and my/ by basename
+            basename = os.path.basename(filename)
+            for sub in ["verified", "my"]:
+                candidate = os.path.join(base, sub, basename)
+                if os.path.exists(candidate):
+                    full_path = candidate
+                    filename = os.path.join(sub, basename).replace("\\", "/")
+                    break
+            else:
+                return {"error": f"Workflow not found: {filename}"}
+        with open(full_path) as f:
             content = f.read()
-        name, description, inputs = _parse_workflow_meta(filename, content)
+        fname = os.path.basename(full_path)
+        name, description, inputs = _parse_workflow_meta(fname, content)
         return {
             "filename": filename,
             "name": name,

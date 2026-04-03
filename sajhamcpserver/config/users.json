@@ -13,7 +13,7 @@
       "enabled": true,
       "email": "risk_agent@example.com",
       "created_at": "2025-10-26T18:45:05.776412Z",
-      "last_login": "2026-04-01T01:17:59.115126Z"
+      "last_login": "2026-04-02T23:10:29.280003Z"
     },
     {
       "user_id": "admin",
@@ -28,7 +28,7 @@
       "enabled": true,
       "email": "admin@example.com",
       "created_at": "2025-10-26T18:45:05.776412Z",
-      "last_login": "2026-03-31T23:00:40.000904Z"
+      "last_login": "2026-04-02T11:24:24.784577Z"
     }
   ]
 }

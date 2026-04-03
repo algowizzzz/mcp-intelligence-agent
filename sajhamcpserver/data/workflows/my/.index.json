@@ -1,0 +1,22 @@
+{
+  "root": "sajhamcpserver/data/workflows/my",
+  "built_at": "2026-04-03T05:10:53.765990+00:00",
+  "tree": [
+    {
+      "type": "file",
+      "name": "BMO_Market_Credit_Risk_Intelligence_Brief_Workflow.md",
+      "path": "BMO_Market_Credit_Risk_Intelligence_Brief_Workflow.md",
+      "size_bytes": 9846,
+      "modified_at": "2026-04-02T05:36:17.494646+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "market_credit_risk_intelligence_brief.md",
+      "path": "market_credit_risk_intelligence_brief.md",
+      "size_bytes": 8579,
+      "modified_at": "2026-04-03T04:21:37.902002+00:00",
+      "mime": "text/markdown"
+    }
+  ]
+}
