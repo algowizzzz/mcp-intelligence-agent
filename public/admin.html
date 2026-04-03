@@ -964,15 +964,16 @@ async function loadFileTree(section) {
 
 function renderTree(section, node, container, path) {
   container.innerHTML = '';
-  if (!node || !node.children) return;
-  renderChildren(section, node.children, container, path);
+  var topLevel = node.tree || node.children || [];
+  if (!topLevel.length) return;
+  renderChildren(section, topLevel, container, path);
 }
 
 function renderChildren(section, children, container, parentPath) {
   if (!children) return;
   children.forEach(child => {
     var itemPath = parentPath ? parentPath + '/' + child.name : child.name;
-    var isDir = child.type === 'directory';
+    var isDir = child.type === 'directory' || child.type === 'folder';
     var el = document.createElement('div');
     el.className = 'tree-item';
     el.dataset.path = itemPath;
@@ -1234,10 +1235,10 @@ async function bulkDelete(section) {
 }
 
 function isPathDir(path, node) {
-  if (!node.children) return false;
-  for (var c of node.children) {
+  var topLevel = node.tree || node.children || [];
+  for (var c of topLevel) {
     if (c.name === path.split('/')[0]) {
-      return c.type === 'directory';
+      return c.type === 'directory' || c.type === 'folder';
     }
   }
   return false;

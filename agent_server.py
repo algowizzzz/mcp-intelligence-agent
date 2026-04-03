@@ -685,6 +685,51 @@ def _get_admin_worker(payload: dict) -> dict:
         raise HTTPException(status_code=403, detail='Admin access required')
 
 
+@app.get('/api/mcp/tools')
+async def mcp_tools_list(_: dict = Depends(require_admin)):
+    """Return tool list built from SAJHA config/tools JSON files — no live SAJHA needed."""
+    tools_dir = pathlib.Path('sajhamcpserver/config/tools')
+    tools = []
+    for f in sorted(tools_dir.glob('*.json')):
+        try:
+            cfg = json.loads(f.read_text())
+        except Exception:
+            continue
+        name = cfg.get('name') or f.stem
+        meta = cfg.get('metadata', {})
+        tools.append({
+            'name': name,
+            'description': cfg.get('description', ''),
+            'category': meta.get('category', _infer_category(name)),
+            'enabled': cfg.get('enabled', True),
+            'tags': meta.get('tags', []),
+        })
+    return {'tools': tools}
+
+
+def _infer_category(name: str) -> str:
+    prefixes = {
+        'edgar_': 'SEC / EDGAR',
+        'iris_': 'IRIS CCR',
+        'osfi_': 'OSFI Regulatory',
+        'tavily_': 'Web Search',
+        'ir_': 'Investor Relations',
+        'duckdb_': 'DuckDB Analytics',
+        'sqlselect_': 'SQL / Data',
+        'msdoc_': 'Documents',
+        'olap_': 'OLAP Analytics',
+        'sharepoint_': 'SharePoint',
+        'get_': 'Market Risk',
+        'iris_': 'IRIS CCR',
+        'workflow_': 'Workflows',
+        'md_': 'Markdown / Docs',
+    }
+    for prefix, cat in prefixes.items():
+        if name.startswith(prefix):
+            return cat
+    return 'General'
+
+
 @app.get('/api/admin/worker')
 async def admin_get_worker(payload: dict = Depends(require_admin)):
     w = _get_admin_worker(payload)
