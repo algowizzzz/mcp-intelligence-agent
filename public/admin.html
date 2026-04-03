@@ -294,13 +294,15 @@
     .toast.error { border-color: rgba(255,255,255,0.12); color: #aaaaaa; }
 
     /* Bulk select */
-    .select-mode .tree-item { padding-left: 32px; }
+    .select-mode .tree-item { padding-left: 32px; cursor: pointer; }
     .select-mode .tree-item::before {
       content: ''; position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
       width: 16px; height: 16px; border: 2px solid var(--border); border-radius: 4px;
       background: var(--bg-input); cursor: pointer;
     }
     .select-mode .tree-item.selected::before { background: #333333; border-color: #aaaaaa; }
+    .tree-item[draggable="true"] { cursor: grab; }
+    .tree-item[draggable="true"]:active { cursor: grabbing; }
 
     /* Prompt editor */
     .prompt-editor-wrap { position: relative; }
@@ -973,15 +975,35 @@ function renderTree(section, node, container, path) {
   renderChildren(section, topLevel, container, path);
 }
 
+// ── Drag state ────────────────────────────────────────────────────────────────
+var _drag = null; // { section, path, isDir }
+
 function renderChildren(section, children, container, parentPath) {
   if (!children) return;
+  var selectMode = !!_selectModes[section];
+  if (selectMode) container.classList.add('select-mode');
+
   children.forEach(child => {
     var itemPath = parentPath ? parentPath + '/' + child.name : child.name;
     var isDir = child.type === 'directory' || child.type === 'folder';
     var el = document.createElement('div');
-    el.className = 'tree-item';
+    var isSelected = _selectedItems[section] && _selectedItems[section].has(itemPath);
+    el.className = 'tree-item' + (isSelected ? ' selected' : '');
     el.dataset.path = itemPath;
     el.dataset.type = isDir ? 'dir' : 'file';
+    el.dataset.section = section;
+
+    // Drag source — always enabled (not in select mode)
+    if (!selectMode) {
+      el.draggable = true;
+      el.addEventListener('dragstart', (e) => {
+        _drag = { section, path: itemPath, isDir };
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', itemPath);
+        el.style.opacity = '0.5';
+      });
+      el.addEventListener('dragend', () => { el.style.opacity = ''; });
+    }
 
     var icon = isDir
       ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'
@@ -989,34 +1011,78 @@ function renderChildren(section, children, container, parentPath) {
 
     el.innerHTML = `${icon}<span class="item-name">${child.name}</span>
       <div class="item-actions">
-        ${!isDir ? `<button onclick="previewFile(event, '${section}', '${itemPath}', '${child.name}')">preview</button>` : ''}
-        <button onclick="renameItem(event, '${section}', '${itemPath}', ${isDir})">rename</button>
-        <button onclick="deleteItem(event, '${section}', '${itemPath}', ${isDir}, '${child.name}')">delete</button>
+        ${!isDir && !selectMode ? `<button onclick="previewFile(event, '${section}', '${itemPath}', '${child.name}')">preview</button>` : ''}
+        ${!selectMode ? `<button onclick="renameItem(event, '${section}', '${itemPath}', ${isDir})">rename</button>
+        <button onclick="deleteItem(event, '${section}', '${itemPath}', ${isDir}, '${child.name}')">delete</button>` : ''}
       </div>`;
 
-    if (!isDir) {
+    if (selectMode) {
+      // Click toggles selection
+      el.onclick = (e) => {
+        if (!_selectedItems[section]) _selectedItems[section] = new Set();
+        if (_selectedItems[section].has(itemPath)) {
+          _selectedItems[section].delete(itemPath);
+          el.classList.remove('selected');
+        } else {
+          _selectedItems[section].add(itemPath);
+          el.classList.add('selected');
+        }
+        // Update delete button count
+        var delBtnId = section === 'domain_data' ? 'dd-bulk-delete-btn' : 'wf-bulk-delete-btn';
+        var cnt = _selectedItems[section].size;
+        var delBtn = document.getElementById(delBtnId);
+        if (delBtn) delBtn.textContent = 'Delete ' + cnt;
+      };
+    } else if (!isDir) {
       el.onclick = (e) => {
         if (e.target.tagName === 'BUTTON') return;
         previewFile(e, section, itemPath, child.name);
       };
-    } else {
-      // Expandable folder
-      var childContainer = document.createElement('div');
-      childContainer.className = 'tree-indent';
-      var expanded = false;
-      el.onclick = (e) => {
-        if (e.target.tagName === 'BUTTON') return;
-        expanded = !expanded;
-        childContainer.style.display = expanded ? 'block' : 'none';
-        if (expanded && child.children) {
-          renderChildren(section, child.children, childContainer, itemPath);
-        }
-      };
-      childContainer.style.display = 'none';
-      container.appendChild(el);
-      container.appendChild(childContainer);
-      return;
     }
+
+    if (isDir) {
+      // Drop target — folders accept dragged items
+      el.addEventListener('dragover', (e) => {
+        if (_drag && _drag.section === section && _drag.path !== itemPath && !_drag.path.startsWith(itemPath + '/')) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          el.style.background = 'rgba(255,255,255,0.12)';
+        }
+      });
+      el.addEventListener('dragleave', () => { el.style.background = ''; });
+      el.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        el.style.background = '';
+        if (!_drag || _drag.section !== section || _drag.path === itemPath || _drag.path.startsWith(itemPath + '/')) return;
+        var r = await fetch(API + '/api/admin/move', {
+          method: 'POST', headers: authHeaders(),
+          body: JSON.stringify({ section, src_path: _drag.path, dest_folder: itemPath })
+        });
+        _drag = null;
+        if (r.ok) { showToast('Moved', 'success'); loadFileTree(section); }
+        else { var d = await r.json().catch(()=>{}); showToast(d && d.detail ? d.detail : 'Move failed', 'error'); }
+      });
+
+      // Expand/collapse on click (not in select mode)
+      if (!selectMode) {
+        var childContainer = document.createElement('div');
+        childContainer.className = 'tree-indent';
+        var expanded = false;
+        el.onclick = (e) => {
+          if (e.target.tagName === 'BUTTON') return;
+          expanded = !expanded;
+          childContainer.style.display = expanded ? 'block' : 'none';
+          if (expanded && child.children) {
+            renderChildren(section, child.children, childContainer, itemPath);
+          }
+        };
+        childContainer.style.display = 'none';
+        container.appendChild(el);
+        container.appendChild(childContainer);
+        return;
+      }
+    }
+
     container.appendChild(el);
   });
 }
@@ -1222,8 +1288,13 @@ function toggleSelectMode(section) {
   var btnId = section === 'domain_data' ? 'dd-select-btn' : 'wf-select-btn';
   var delBtnId = section === 'domain_data' ? 'dd-bulk-delete-btn' : 'wf-bulk-delete-btn';
   document.getElementById(btnId).textContent = isOn ? 'Select' : 'Cancel';
-  document.getElementById(delBtnId).style.display = isOn ? 'none' : 'inline-block';
-  // Re-render tree with checkboxes
+  var delBtn = document.getElementById(delBtnId);
+  delBtn.style.display = isOn ? 'none' : 'inline-block';
+  delBtn.textContent = 'Delete 0';
+  // Remove select-mode class from tree container before re-render
+  var treeId = 'tree-' + section;
+  var treeEl = document.getElementById(treeId);
+  if (treeEl) treeEl.classList.remove('select-mode');
   loadFileTree(section);
 }
 
