@@ -1161,7 +1161,7 @@ async function previewFile(e, section, path, name) {
     var truncated = r.headers.get('X-Truncated');
     pfm.textContent = (size ? (parseInt(size)/1024).toFixed(1) + ' KB' : '') + (truncated ? ' (truncated)' : '');
 
-    if (['txt','csv','tsv','json','html','xml','yaml','yml'].includes(ext)) {
+    if (['txt','csv','tsv','json','html','xml','yaml','yml','md'].includes(ext)) {
       var text = await r.text();
       if (ext === 'csv' || ext === 'tsv') {
         var sep = ext === 'tsv' ? '\t' : ',';
