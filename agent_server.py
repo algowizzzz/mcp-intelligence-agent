@@ -3,6 +3,7 @@ from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, R
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional, List
 from dotenv import load_dotenv
@@ -1384,3 +1385,9 @@ async def run_agent(req: RunRequest, _: dict = Depends(require_admin)):
 
     return StreamingResponse(stream(), media_type='text/event-stream',
                              headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
+
+
+# ── Static frontend (dev: one port; Docker: nginx serves this instead) ─────────
+_PUBLIC = pathlib.Path(__file__).parent / 'public'
+if _PUBLIC.is_dir():
+    app.mount('/', StaticFiles(directory=str(_PUBLIC), html=True), name='static')
