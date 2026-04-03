@@ -214,7 +214,8 @@
 </div>
 
 <script>
-const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+// file:// hostname is '' — always use localhost:8000 for local dev
+const API = (window.location.hostname === '' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   ? 'http://localhost:8000'
   : '';
 

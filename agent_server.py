@@ -222,6 +222,8 @@ _build_all_indexes()
 
 app = FastAPI(title='MCP Intelligence Agent')
 _cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:8080,http://127.0.0.1:8080').split(',')
+# 'null' allows file:// origins in local dev (browser sends Origin: null for file:// pages)
+_cors_origins = list({*_cors_origins, 'null', 'http://localhost:8000', 'http://127.0.0.1:8000'})
 app.add_middleware(CORSMiddleware,
     allow_origins=_cors_origins,
     allow_origin_regex=r'https://.*\.vercel\.app',
