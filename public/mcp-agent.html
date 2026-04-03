@@ -3196,7 +3196,7 @@
     var COST_PER_M_INPUT  = 3.00;
     var COST_PER_M_OUTPUT = 15.00;
     var API_URL = window.MCP_API_URL || 'http://localhost:8000/api/agent/run';
-    var FRONTEND_API_KEY = window.FRONTEND_API_KEY || '';
+    var FRONTEND_API_KEY = ''; // deprecated — JWT used instead
 
     var _threadId      = null;
     var _activeReader  = null;
@@ -4819,7 +4819,8 @@
       var body = JSON.stringify({ query: composed, thread_id: _threadId || '', worker_id: _activeWorkerId || undefined });
 
       var reqHeaders = { 'Content-Type': 'application/json' };
-      if (FRONTEND_API_KEY) reqHeaders['Authorization'] = 'Bearer ' + FRONTEND_API_KEY;
+      var _runTok = sessionStorage.getItem('rg_token');
+      if (_runTok) reqHeaders['Authorization'] = 'Bearer ' + _runTok;
 
       // Mark active workflow as used (best-effort, ignored if endpoint unavailable)
       if (_activeWorkflow && _activeWorkflow.path) {
@@ -4932,7 +4933,8 @@
 
     function _ftHeaders() {
       var h = { 'Content-Type': 'application/json' };
-      if (FRONTEND_API_KEY) h['Authorization'] = 'Bearer ' + FRONTEND_API_KEY;
+      var _tok = sessionStorage.getItem('rg_token');
+      if (_tok) h['Authorization'] = 'Bearer ' + _tok;
       return h;
     }
 
@@ -5791,7 +5793,8 @@
 
     function _adminHeaders() {
       var h = {};
-      if (_adminToken) h['Authorization'] = 'Bearer ' + _adminToken;
+      var tok = _adminToken || sessionStorage.getItem('rg_token');
+      if (tok) h['Authorization'] = 'Bearer ' + tok;
       return h;
     }
 
@@ -5812,26 +5815,8 @@
     }
 
     function adminInit() {
-      // Auto-login with default credentials
-      var userId = (window.SAJHA_USER_ID) || 'risk_agent';
-      var password = (window.SAJHA_PASSWORD) || 'RiskAgent2025!';
-      fetch(_agentBase + '/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, password: password })
-      })
-      .then(function(r) { return r.ok ? r.json() : null; })
-      .then(function(data) {
-        if (!data) return;
-        _adminToken = data.token;
-        var payload = _decodeJwt(data.token);
-        _isAdmin = payload ? (payload.is_admin === true) : false;
-        if (_isAdmin) {
-          var btn = $('admin-tab-btn');
-          if (btn) btn.classList.add('visible');
-        }
-      })
-      .catch(function() {});
+      // Set admin token from sessionStorage JWT (no hardcoded credentials)
+      _adminToken = sessionStorage.getItem('rg_token') || null;
     }
 
     function toggleAdminPanel() {

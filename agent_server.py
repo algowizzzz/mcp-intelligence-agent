@@ -391,7 +391,7 @@ async def auth_onboarding(req: OnboardingRequest, payload: dict = Depends(requir
             # Auto-derive initials
             parts = req.display_name.strip().split()
             u['avatar_initials'] = ''.join(p[0].upper() for p in parts[:3])
-            u['password'] = req.new_password  # plaintext during transition
+            u['password'] = ''
             ph = _hash_password(req.new_password)
             if ph:
                 u['password_hash'] = ph
@@ -415,7 +415,7 @@ async def auth_change_password(req: ChangePasswordRequest, payload: dict = Depen
         if u.get('user_id') == user_id:
             if not _verify_password(req.current_password, u):
                 raise HTTPException(status_code=401, detail='Current password is incorrect')
-            u['password'] = req.new_password
+            u['password'] = ''
             ph = _hash_password(req.new_password)
             if ph:
                 u['password_hash'] = ph
@@ -597,7 +597,7 @@ async def super_create_user(req: UserCreateRequest, _: dict = Depends(require_su
         'user_name': req.display_name,
         'display_name': req.display_name,
         'avatar_initials': initials,
-        'password': req.password,
+        'password': '',
         'password_hash': ph,
         'role': req.role,
         'roles': [req.role],
@@ -1287,7 +1287,7 @@ class RunRequest(BaseModel):
     worker_id: Optional[str] = None
 
 @app.post('/api/agent/run')
-async def run_agent(req: RunRequest, _: None = Depends(require_api_key)):
+async def run_agent(req: RunRequest, _: dict = Depends(require_admin)):
     thread_id = req.thread_id or str(uuid.uuid4())
     config = {'configurable': {'thread_id': thread_id}}
 
