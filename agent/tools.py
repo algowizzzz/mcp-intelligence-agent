@@ -4,19 +4,37 @@ load_dotenv()
 import httpx
 import os
 import json
+import time
+import pathlib
+from contextvars import ContextVar
 from langchain_core.tools import tool, StructuredTool
 from pydantic import BaseModel, Field, create_model
 from typing import Any, Optional
 
 SAJHA_BASE = os.getenv('SAJHA_BASE_URL', 'http://localhost:3002')
-# Service key for SAJHA — uses X-API-Key header, no password login required.
+# Service key for SAJHA — uses direct Authorization header (no "Bearer" prefix).
 # Set SAJHA_API_KEY in .env to the full-access API key from sajhamcpserver/config/apikeys.json.
 _SAJHA_API_KEY = os.getenv('SAJHA_API_KEY', 'sja_full_access_admin')
 
+# Per-request worker context — set by agent_server before each agent invocation.
+# Carries user_id, worker_id, domain_data_path, common_data_path for SAJHA headers + audit.
+_worker_ctx: ContextVar[dict] = ContextVar('worker_ctx', default={})
+
+_AUDIT_FILE = pathlib.Path('sajhamcpserver/data/audit/tool_calls.jsonl')
+
 
 def _service_headers() -> dict:
-    # SAJHA accepts API keys directly in Authorization header (no "Bearer" prefix)
-    return {'Authorization': _SAJHA_API_KEY}
+    """Build SAJHA request headers, injecting worker context for path scoping and audit."""
+    ctx = _worker_ctx.get()
+    headers = {'Authorization': _SAJHA_API_KEY}
+    if ctx:
+        if ctx.get('worker_id'):
+            headers['X-Worker-Id'] = ctx['worker_id']
+        if ctx.get('domain_data_path'):
+            headers['X-Worker-Data-Root'] = ctx['domain_data_path']
+        if ctx.get('common_data_path'):
+            headers['X-Worker-Common-Root'] = ctx['common_data_path']
+    return headers
 
 
 # Keep _get_token for any legacy callers — delegates to API key path
@@ -32,9 +50,7 @@ def _truncate_result(result: dict, tool_name: str) -> dict:
     serialised = json.dumps(result)
     if len(serialised) <= _MAX_TOOL_OUTPUT_CHARS:
         return result
-    # Return a trimmed JSON string with a clear truncation notice
     truncated = serialised[:_MAX_TOOL_OUTPUT_CHARS]
-    # Close the JSON cleanly enough for the LLM to parse what's there
     return {
         '_truncated': True,
         '_tool': tool_name,
@@ -43,7 +59,29 @@ def _truncate_result(result: dict, tool_name: str) -> dict:
     }
 
 
+def _log_audit(tool_name: str, duration_ms: float, status: str):
+    """Append one structured JSONL audit log line. Non-blocking best-effort."""
+    try:
+        import datetime
+        ctx = _worker_ctx.get()
+        _AUDIT_FILE.parent.mkdir(parents=True, exist_ok=True)
+        line = json.dumps({
+            'timestamp': datetime.datetime.utcnow().isoformat() + 'Z',
+            'user_id': ctx.get('user_id', ''),
+            'worker_id': ctx.get('worker_id', ''),
+            'tool_name': tool_name,
+            'duration_ms': round(duration_ms, 1),
+            'status': status,
+        })
+        with open(_AUDIT_FILE, 'a') as f:
+            f.write(line + '\n')
+    except Exception:
+        pass
+
+
 async def _call_sajha(tool_name: str, args: dict) -> dict:
+    t0 = time.time()
+    status = 'success'
     try:
         async with httpx.AsyncClient(timeout=30.0) as c:
             r = await c.post(f'{SAJHA_BASE}/api/tools/execute',
@@ -53,11 +91,16 @@ async def _call_sajha(tool_name: str, args: dict) -> dict:
             result = r.json()['result']
             return _truncate_result(result, tool_name)
     except httpx.TimeoutException:
+        status = 'timeout'
         return {'error': f'{tool_name} timed out after 30s'}
     except httpx.HTTPStatusError as e:
+        status = f'http_{e.response.status_code}'
         return {'error': f'{tool_name} returned HTTP {e.response.status_code}'}
     except Exception as e:
+        status = 'error'
         return {'error': f'{tool_name} failed: {str(e)}'}
+    finally:
+        _log_audit(tool_name, (time.time() - t0) * 1000, status)
 
 
 # ================================================================
@@ -139,10 +182,6 @@ def _build_pydantic_model(tool_name: str, schema: dict):
             fields[name] = (ptype, Field(description=desc))
         else:
             ptype = Optional[ptype]
-            # Always default to None for optional fields so _run can safely
-            # filter them out — avoids numeric defaults (0, 0.0) being sent
-            # to tools that treat 0 as a real filter value (e.g. internal_rating=0
-            # would incorrectly exclude all rows in breach scan tools).
             prop_default = prop.get('default', None)
             fields[name] = (ptype, Field(default=prop_default, description=desc))
     if not fields:
@@ -157,7 +196,6 @@ def _make_dynamic_tool(name: str, description: str, schema: dict):
     sajha_name = name  # capture in closure
 
     async def _run(**kwargs) -> dict:
-        # Remove None values
         args = {k: v for k, v in kwargs.items() if v is not None}
         return await _call_sajha(sajha_name, args)
 
@@ -174,7 +212,6 @@ def discover_sajha_tools() -> list:
     import httpx as _httpx
 
     try:
-        # List all tools via MCP protocol using service API key
         list_r = _httpx.post(
             f'{SAJHA_BASE}/api/mcp',
             headers={'Authorization': _SAJHA_API_KEY},
@@ -186,10 +223,8 @@ def discover_sajha_tools() -> list:
         dynamic_tools = []
         for t in tools_data:
             name = t.get('name', '')
-            # Skip tools we already have static wrappers for
             if name in STATIC_TOOL_NAMES:
                 continue
-            # (no Tavily tools are skipped — all 4 are exposed directly)
             desc = t.get('description', f'SAJHA tool: {name}')
             schema = t.get('inputSchema', {})
             try:
@@ -213,3 +248,18 @@ def discover_sajha_tools() -> list:
 
 DYNAMIC_TOOLS = discover_sajha_tools()
 AGENT_TOOLS = STATIC_TOOLS + DYNAMIC_TOOLS
+
+# Tool name → tool object index for fast lookup
+_TOOL_INDEX: dict = {t.name: t for t in AGENT_TOOLS}
+
+
+def get_tools_for_worker(enabled_tools: list) -> list:
+    """Return the subset of AGENT_TOOLS permitted for a worker's enabled_tools list.
+
+    enabled_tools=['*'] or empty list → all tools (backward compatible).
+    Otherwise returns only tools whose name is in the allowlist.
+    """
+    if not enabled_tools or enabled_tools == ['*']:
+        return AGENT_TOOLS
+    allowed = set(enabled_tools)
+    return [t for t in AGENT_TOOLS if t.name in allowed]

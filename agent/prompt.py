@@ -14,7 +14,6 @@ def _load_prompt_from_workers() -> str:
     try:
         data = json.loads(_WORKERS_FILE.read_text())
         workers = data.get('workers', [])
-        # Prefer the default worker, then fall back to the first enabled one
         for w in workers:
             if w.get('worker_id') == _DEFAULT_WORKER_ID and w.get('enabled', True):
                 prompt = w.get('system_prompt', '').strip()
@@ -28,6 +27,23 @@ def _load_prompt_from_workers() -> str:
     except Exception:
         pass
     return _FALLBACK_PROMPT
+
+
+def get_system_prompt(worker_id: str) -> str:
+    """Load the system_prompt for a specific worker at call time (not cached).
+    Called per-request so admin prompt updates take effect immediately.
+    Falls back to the default worker prompt if not found.
+    """
+    try:
+        data = json.loads(_WORKERS_FILE.read_text())
+        for w in data.get('workers', []):
+            if w.get('worker_id') == worker_id and w.get('enabled', True):
+                prompt = w.get('system_prompt', '').strip()
+                if prompt:
+                    return prompt
+    except Exception:
+        pass
+    return _load_prompt_from_workers()
 
 
 SYSTEM_PROMPT = _load_prompt_from_workers()

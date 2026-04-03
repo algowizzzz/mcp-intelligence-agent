@@ -5,12 +5,8 @@
       "user_name": "Risk Agent",
       "display_name": "Saad Ahmed",
       "avatar_initials": "SA",
-      "password": "",
       "password_hash": "$2b$12$u.7ugrXTz03cQ6BrVigUg.kZLFLzOW/uC2VwfdLZ5rhUmXe/IN7Ni",
       "role": "super_admin",
-      "roles": [
-        "admin"
-      ],
       "worker_id": null,
       "tools": [
         "*"
@@ -26,12 +22,8 @@
       "user_name": "Administrator",
       "display_name": "Admin User",
       "avatar_initials": "AU",
-      "password": "",
-      "password_hash": "$2b$12$NKfpPU6lcjQc/hQN6mKJQeOfFSCbtbUSxE3HpcEDeIOxa2PAcMZ/O",
+      "password_hash": "$2b$12$FYLrBkbXFo9sA0ByNosXwer8k53djv74h6qq5TVU27z7VwMRskLlq",
       "role": "admin",
-      "roles": [
-        "admin"
-      ],
       "worker_id": "w-market-risk",
       "tools": [
         "*"
@@ -47,12 +39,8 @@
       "user_name": "Test User",
       "display_name": "Test User",
       "avatar_initials": "TU",
-      "password": "",
-      "password_hash": "$2b$12$VfczZrz1MlWoNtRWbA7VEOVZu3eF5OQQhWUILvqJuK7me.Wf4BgrS",
+      "password_hash": "$2b$12$mFqPc/z5EFQwnmnrnrlNQOwLBEgsGiDq9smKVEmnk3g6KpsC1CLzS",
       "role": "user",
-      "roles": [
-        "user"
-      ],
       "worker_id": "w-market-risk",
       "tools": [
         "*"

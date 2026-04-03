@@ -27,20 +27,17 @@ class MessageTrimmer(AgentMiddleware):
     def _trim(self, messages):
         total = sum(len(str(getattr(m, 'content', ''))) for m in messages)
         while total > _MAX_HISTORY_CHARS and len(messages) > 2:
-            # Find the first safe cut point: an AI message with no tool_use blocks.
-            # Cutting after such a message avoids orphaned tool_result blocks.
             cut_at = None
-            for i, msg in enumerate(messages[:-2]):  # leave at least 2 messages
+            for i, msg in enumerate(messages[:-2]):
                 msg_type = getattr(msg, 'type', '')
                 if msg_type == 'ai' and not self._has_tool_use(msg):
-                    cut_at = i + 1  # safe to discard everything before this index
+                    cut_at = i + 1
                     break
             if cut_at:
                 removed = messages[:cut_at]
                 del messages[:cut_at]
                 total -= sum(len(str(getattr(m, 'content', ''))) for m in removed)
             else:
-                # No safe boundary found — remove oldest single message as fallback
                 removed = messages.pop(0)
                 total -= len(str(getattr(removed, 'content', '')))
         return messages
@@ -54,13 +51,27 @@ class MessageTrimmer(AgentMiddleware):
         return await handler(request.override(messages=trimmed))
 
 
+# Shared across all per-request agent instances — preserves thread history
 llm = create_llm()
 checkpointer = MemorySaver()
 
-agent = create_agent(
-    model=llm,
-    tools=AGENT_TOOLS,
-    checkpointer=checkpointer,
-    system_prompt=SYSTEM_PROMPT,
-    middleware=[SummarisationMiddleware(), MessageTrimmer()],
-)
+
+def create_agent_for_worker(system_prompt: str, tools: list = None):
+    """Create an agent instance with a specific system prompt and tool allowlist.
+
+    Uses the shared checkpointer so all thread state is preserved across
+    requests regardless of which per-request agent instance is created.
+    Each request gets a fresh agent with the worker's current prompt + tools.
+    """
+    return create_agent(
+        model=llm,
+        tools=tools if tools is not None else AGENT_TOOLS,
+        checkpointer=checkpointer,
+        system_prompt=system_prompt,
+        middleware=[SummarisationMiddleware(), MessageTrimmer()],
+    )
+
+
+# Default agent — used only for backward compatibility with direct imports.
+# agent_server.py creates per-request instances via create_agent_for_worker().
+agent = create_agent_for_worker(SYSTEM_PROMPT)

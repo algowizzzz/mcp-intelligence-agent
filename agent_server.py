@@ -1,4 +1,5 @@
 import os, json, uuid, pathlib, base64, sys as _sys, hmac, hashlib, time, shutil
+from contextvars import ContextVar
 from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,8 +9,9 @@ from pydantic import BaseModel
 from typing import Optional, List
 from dotenv import load_dotenv
 import httpx
-from agent.agent import agent
-from agent.tools import _service_headers, SAJHA_BASE
+from agent.agent import create_agent_for_worker, checkpointer
+from agent.prompt import get_system_prompt, SYSTEM_PROMPT
+from agent.tools import _service_headers, _worker_ctx, SAJHA_BASE, get_tools_for_worker, AGENT_TOOLS
 
 _WORKFLOWS_DIR = pathlib.Path('sajhamcpserver/data/workflows')
 _UPLOADS_DIR   = pathlib.Path('sajhamcpserver/data/uploads')
@@ -70,6 +72,10 @@ def _load_users() -> list:
 
 
 def _save_users(users: list):
+    """Persist users list. Strips deprecated plaintext password and roles[] on every write (G-10, G-11)."""
+    for u in users:
+        u.pop('password', None)
+        u.pop('roles', None)
     _SAJHA_USERS_FILE.write_text(json.dumps({'users': users}, indent=2))
 
 
@@ -99,7 +105,7 @@ def _find_worker(worker_id: str) -> Optional[dict]:
 
 
 def _verify_password(plain: str, user: dict) -> bool:
-    """Check password against hash (bcrypt if available) or plaintext fallback."""
+    """Check password against bcrypt hash. Plaintext fallback removed (G-11)."""
     stored_hash = user.get('password_hash', '')
     if stored_hash:
         try:
@@ -107,8 +113,7 @@ def _verify_password(plain: str, user: dict) -> bool:
             return bcrypt.checkpw(plain.encode(), stored_hash.encode())
         except Exception:
             pass
-    # Plaintext fallback (migration period)
-    return plain == user.get('password', '')
+    return False
 
 
 def _hash_password(plain: str) -> str:
@@ -120,15 +125,8 @@ def _hash_password(plain: str) -> str:
 
 
 def _get_user_role(user: dict) -> str:
-    """Return canonical role string from user record."""
-    if user.get('role'):
-        return user['role']
-    roles = user.get('roles', [])
-    if 'super_admin' in roles:
-        return 'super_admin'
-    if 'admin' in roles:
-        return 'admin'
-    return 'user'
+    """Return canonical role string. Reads role field only (G-10 — roles[] array removed)."""
+    return user.get('role', 'user')
 
 
 def _resolve_worker_for_user(user: dict, requested_worker_id: str = None) -> Optional[dict]:
@@ -147,12 +145,27 @@ def _resolve_worker_for_user(user: dict, requested_worker_id: str = None) -> Opt
 
 
 def _seed_worker_folders(worker_id: str):
-    """Create the folder structure for a new worker."""
+    """Create the full scoped folder tree for a new worker (G-07)."""
     base = pathlib.Path(f'sajhamcpserver/data/workers/{worker_id}')
-    for sub in ['domain_data/iris', 'domain_data/osfi', 'domain_data/counterparties',
-                'domain_data/analytics', 'domain_data/templates',
-                'workflows/verified', 'my_data']:
+    for sub in [
+        'domain_data/iris', 'domain_data/counterparties', 'domain_data/market_data',
+        'domain_data/uploads', 'domain_data/analytics',
+        'workflows/verified', 'workflows/my',
+        'templates', 'my_data',
+    ]:
         (base / sub).mkdir(parents=True, exist_ok=True)
+
+
+def _clone_worker_folder(src_id: str, dst_id: str):
+    """Clone source worker's folder to destination, excluding my_data contents (G-06)."""
+    src = pathlib.Path(f'sajhamcpserver/data/workers/{src_id}')
+    dst = pathlib.Path(f'sajhamcpserver/data/workers/{dst_id}')
+    if src.exists():
+        shutil.copytree(str(src), str(dst),
+                        ignore=shutil.ignore_patterns('my_data/*'),
+                        dirs_exist_ok=True)
+    # Ensure my_data exists but is empty
+    (dst / 'my_data').mkdir(parents=True, exist_ok=True)
 
 
 load_dotenv()
@@ -162,19 +175,85 @@ _DOMAIN_DATA   = _DATA_ROOT / 'domain_data'
 _MY_DATA       = _DATA_ROOT / 'uploads'
 _VERIFIED_WF   = _DATA_ROOT / 'workflows' / 'verified'
 _MY_WF         = _DATA_ROOT / 'workflows' / 'my'
+_COMMON_DATA   = _DATA_ROOT / 'common'
+_AUDIT_LOG     = _DATA_ROOT / 'audit' / 'tool_calls.jsonl'
 
-_SECTION_ROOTS = {
-    'domain_data':   _DOMAIN_DATA,
-    'uploads':       _MY_DATA,
-    'verified':      _VERIFIED_WF,
-    'my_workflows':  _MY_WF,
-}
-_WRITABLE_SECTIONS = {'uploads', 'my_workflows'}
+# Sections that users may write to (uploads, my-docs, personal workflows)
+_WRITABLE_SECTIONS = {'uploads', 'my_workflows', 'my_data'}
 
 _ADMIN_SECTION_ROOTS = {
     'domain_data':        _DOMAIN_DATA,
     'verified_workflows': _VERIFIED_WF,
 }
+
+# Thread ownership registry — maps thread_id → {user_id, worker_id, created_at}
+_thread_registry: dict = {}
+
+
+def _resolve_worker_path(worker: dict, section: str, rel: str = '') -> pathlib.Path:
+    """Resolve a worker-scoped filesystem path for a given section (G-03).
+
+    All paths are relative to sajhamcpserver/ as the base directory.
+    Creates the root if it doesn't exist (lazy mkdir on first access).
+    """
+    base = pathlib.Path('sajhamcpserver')
+    dd = worker.get('domain_data_path', './data/domain_data')
+    mapping = {
+        'domain_data':  dd,
+        'uploads':      dd.rstrip('/') + '/uploads',
+        'verified':     worker.get('workflows_path',    './data/workflows/verified'),
+        'my_workflows': worker.get('my_workflows_path', './data/workflows/my'),
+        'templates':    worker.get('templates_path',    './data/domain_data/templates'),
+        'my_data':      worker.get('my_data_path',      './data/uploads'),
+        'common':       worker.get('common_data_path',  './data/common'),
+    }
+    raw = mapping.get(section)
+    if raw is None:
+        raise HTTPException(status_code=400, detail=f'Unknown section: {section}')
+    root = (base / raw.lstrip('./')).resolve()
+    root.mkdir(parents=True, exist_ok=True)
+    if rel:
+        full = (root / rel).resolve()
+        if not str(full).startswith(str(root)):
+            raise HTTPException(status_code=400, detail='Path traversal not allowed')
+        return full
+    return root
+
+
+def _assign_user_to_worker(user_id: str, worker_id: str | None, role: str | None = None):
+    """Atomically update both users.json and workers.json when assigning a user (G-09)."""
+    import datetime
+    users = _load_users()
+    workers = _load_workers()
+
+    old_worker_id = None
+    for u in users:
+        if u.get('user_id') == user_id:
+            old_worker_id = u.get('worker_id')
+            u['worker_id'] = worker_id
+            if role:
+                u['role'] = role
+            break
+
+    # Remove from old worker's assigned_users
+    if old_worker_id and old_worker_id != worker_id:
+        for w in workers:
+            if w['worker_id'] == old_worker_id:
+                w['assigned_users'] = [uid for uid in w.get('assigned_users', []) if uid != user_id]
+                break
+
+    # Add to new worker's assigned_users
+    if worker_id:
+        for w in workers:
+            if w['worker_id'] == worker_id:
+                assigned = w.get('assigned_users', [])
+                if user_id not in assigned:
+                    assigned.append(user_id)
+                w['assigned_users'] = assigned
+                break
+
+    _save_users(users)
+    _save_workers(workers)
 
 
 def _resolve_admin_path(section: str, rel: str = '') -> pathlib.Path:
@@ -210,16 +289,9 @@ def _resolve_admin_path_for_worker(worker: dict, section: str, rel: str = '') ->
     return root
 
 
-# Build indexes on startup
-def _build_all_indexes():
-    for root in [_DOMAIN_DATA, _MY_DATA, _VERIFIED_WF, _MY_WF]:
-        root.mkdir(parents=True, exist_ok=True)
-        try:
-            build_index(str(root))
-        except Exception:
-            pass
-
-_build_all_indexes()
+# Ensure common data directory exists
+_COMMON_DATA.mkdir(parents=True, exist_ok=True)
+_AUDIT_LOG.parent.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(title='MCP Intelligence Agent')
 _cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:8080,http://127.0.0.1:8080').split(',')
@@ -389,10 +461,9 @@ async def auth_onboarding(req: OnboardingRequest, payload: dict = Depends(requir
     for u in users:
         if u.get('user_id') == user_id:
             u['display_name'] = req.display_name.strip()
-            # Auto-derive initials
             parts = req.display_name.strip().split()
             u['avatar_initials'] = ''.join(p[0].upper() for p in parts[:3])
-            u['password'] = ''
+            u.pop('password', None)
             ph = _hash_password(req.new_password)
             if ph:
                 u['password_hash'] = ph
@@ -416,7 +487,7 @@ async def auth_change_password(req: ChangePasswordRequest, payload: dict = Depen
         if u.get('user_id') == user_id:
             if not _verify_password(req.current_password, u):
                 raise HTTPException(status_code=401, detail='Current password is incorrect')
-            u['password'] = ''
+            u.pop('password', None)
             ph = _hash_password(req.new_password)
             if ph:
                 u['password_hash'] = ph
@@ -458,9 +529,12 @@ async def super_create_worker(req: WorkerCreateRequest, payload: dict = Depends(
         'created_at': __import__('datetime').datetime.utcnow().isoformat() + 'Z',
         'enabled': True,
         'system_prompt': req.system_prompt,
-        'domain_data_path': f'./data/workers/{wid}/domain_data',
-        'workflows_path': f'./data/workers/{wid}/workflows/verified',
-        'my_data_path': f'./data/workers/{wid}/my_data',
+        'domain_data_path':  f'./data/workers/{wid}/domain_data',
+        'workflows_path':    f'./data/workers/{wid}/workflows/verified',
+        'my_workflows_path': f'./data/workers/{wid}/workflows/my',
+        'templates_path':    f'./data/workers/{wid}/templates',
+        'my_data_path':      f'./data/workers/{wid}/my_data',
+        'common_data_path':  './data/common',
         'enabled_tools': req.enabled_tools,
         'assigned_admins': [],
         'assigned_users': [],
@@ -474,7 +548,12 @@ async def super_create_worker(req: WorkerCreateRequest, payload: dict = Depends(
     workers = _load_workers()
     workers.append(new_worker)
     _save_workers(workers)
-    _seed_worker_folders(wid)
+
+    if req.clone_from:
+        _clone_worker_folder(req.clone_from, wid)
+    else:
+        _seed_worker_folders(wid)
+
     return new_worker
 
 
@@ -542,27 +621,17 @@ class AssignRequest(BaseModel):
 async def super_assign_user(worker_id: str, req: AssignRequest, _: dict = Depends(require_super_admin)):
     if req.role not in ('admin', 'user'):
         raise HTTPException(status_code=400, detail='role must be admin or user')
-    w = _find_worker(worker_id)
-    if not w:
+    if not _find_worker(worker_id):
         raise HTTPException(status_code=404, detail='Worker not found')
-    users = _load_users()
-    for u in users:
-        if u.get('user_id') == req.user_id:
-            u['worker_id'] = worker_id
-            u['role'] = req.role
-            break
-    _save_users(users)
+    if not _find_user(req.user_id):
+        raise HTTPException(status_code=404, detail='User not found')
+    _assign_user_to_worker(req.user_id, worker_id, role=req.role)
     return {'ok': True}
 
 
 @app.delete('/api/super/workers/{worker_id}/assign/{user_id}')
 async def super_unassign_user(worker_id: str, user_id: str, _: dict = Depends(require_super_admin)):
-    users = _load_users()
-    for u in users:
-        if u.get('user_id') == user_id and u.get('worker_id') == worker_id:
-            u['worker_id'] = None
-            break
-    _save_users(users)
+    _assign_user_to_worker(user_id, None)
     return {'ok': True}
 
 
@@ -598,10 +667,8 @@ async def super_create_user(req: UserCreateRequest, _: dict = Depends(require_su
         'user_name': req.display_name,
         'display_name': req.display_name,
         'avatar_initials': initials,
-        'password': '',
         'password_hash': ph,
         'role': req.role,
-        'roles': [req.role],
         'worker_id': req.worker_id,
         'tools': ['*'],
         'enabled': True,
@@ -612,6 +679,9 @@ async def super_create_user(req: UserCreateRequest, _: dict = Depends(require_su
     }
     users.append(new_user)
     _save_users(users)
+    # Sync worker's assigned_users if worker_id is set
+    if req.worker_id:
+        _assign_user_to_worker(req.user_id, req.worker_id, role=req.role)
     return new_user
 
 
@@ -632,10 +702,12 @@ async def super_update_user(user_id: str, req: UserUpdateRequest, _: dict = Depe
                 parts = req.display_name.strip().split()
                 u['avatar_initials'] = ''.join(p[0].upper() for p in parts[:3])
             if req.email is not None: u['email'] = req.email
-            if req.role is not None:
-                u['role'] = req.role
-                u['roles'] = [req.role]
-            if req.worker_id is not None: u['worker_id'] = req.worker_id
+            if req.role is not None: u['role'] = req.role
+            if req.worker_id is not None:
+                _assign_user_to_worker(user_id, req.worker_id, role=req.role)
+                # reload since _assign_user_to_worker saved
+                users = _load_users()
+                u = next((x for x in users if x['user_id'] == user_id), u)
             if req.enabled is not None: u['enabled'] = req.enabled
             _save_users(users)
             return u
@@ -644,6 +716,8 @@ async def super_update_user(user_id: str, req: UserUpdateRequest, _: dict = Depe
 
 @app.delete('/api/super/users/{user_id}')
 async def super_delete_user(user_id: str, _: dict = Depends(require_super_admin)):
+    # Remove from worker's assigned_users before deleting (G-09)
+    _assign_user_to_worker(user_id, None)
     users = [u for u in _load_users() if u['user_id'] != user_id]
     _save_users(users)
     return {'ok': True}
@@ -659,9 +733,9 @@ async def super_reset_password(user_id: str, _: dict = Depends(require_super_adm
     users = _load_users()
     for u in users:
         if u['user_id'] == user_id:
-            u['password'] = tmp
             ph = _hash_password(tmp)
             if ph: u['password_hash'] = ph
+            u.pop('password', None)
             u['onboarding_complete'] = False
             break
     _save_users(users)
@@ -902,34 +976,31 @@ async def mark_workflow_used(filename: str, _: None = Depends(require_api_key)):
     return {'ok': True}
 
 
-def _resolve_section_path(section: str, rel: str = '') -> pathlib.Path:
-    root = _SECTION_ROOTS.get(section)
-    if root is None:
-        raise HTTPException(status_code=400, detail=f'Unknown section: {section}')
-    if rel:
-        full = (root / rel).resolve()
-        if not str(full).startswith(str(root.resolve())):
-            raise HTTPException(status_code=400, detail='Path traversal not allowed')
-        return full
-    return root
+# ── FileTree API — worker-scoped (G-03) ────────────────────────────────────────
 
+def _fs_worker(payload: dict) -> dict:
+    """Resolve the worker for an fs endpoint caller. Any authenticated user allowed."""
+    user = _find_user(payload['user_id'])
+    worker = _resolve_worker_for_user(user) if user else None
+    if not worker:
+        raise HTTPException(status_code=404, detail='No worker assigned to this user')
+    return worker
 
-# ── FileTree API ───────────────────────────────────────────────────────────────
 
 @app.get('/api/fs/{section}/tree')
-async def fs_tree(section: str, _: None = Depends(require_api_key)):
-    root = _resolve_section_path(section)
-    root.mkdir(parents=True, exist_ok=True)
+async def fs_tree(section: str, payload: dict = Depends(require_jwt)):
+    worker = _fs_worker(payload)
+    root = _resolve_worker_path(worker, section)
     idx = get_index(str(root))
     return idx
 
 
 @app.get('/api/fs/{section}/file')
-async def fs_file(section: str, path: str = '', _: None = Depends(require_api_key)):
-    root = _resolve_section_path(section)
+async def fs_file(section: str, path: str = '', payload: dict = Depends(require_jwt)):
+    worker = _fs_worker(payload)
     if not path:
         raise HTTPException(status_code=400, detail='path required')
-    full = _resolve_section_path(section, path)
+    full = _resolve_worker_path(worker, section, path)
     if not full.exists() or not full.is_file():
         raise HTTPException(status_code=404, detail='File not found')
     content_bytes = full.read_bytes()
@@ -945,12 +1016,13 @@ async def fs_upload(
     section: str,
     path: str = '',
     file: UploadFile = File(...),
-    _: None = Depends(require_api_key)
+    payload: dict = Depends(require_jwt),
 ):
     if section not in _WRITABLE_SECTIONS:
         raise HTTPException(status_code=403, detail='Section is read-only')
-    root = _resolve_section_path(section)
-    folder = _resolve_section_path(section, path) if path else root
+    worker = _fs_worker(payload)
+    root = _resolve_worker_path(worker, section)
+    folder = _resolve_worker_path(worker, section, path) if path else root
     folder.mkdir(parents=True, exist_ok=True)
     dest = folder / pathlib.Path(file.filename).name
     dest.write_bytes(await file.read())
@@ -963,11 +1035,12 @@ class FsUpdateRequest(BaseModel):
     content: str
 
 @app.patch('/api/fs/{section}/file')
-async def fs_update_file(section: str, req: FsUpdateRequest, _: None = Depends(require_api_key)):
+async def fs_update_file(section: str, req: FsUpdateRequest, payload: dict = Depends(require_jwt)):
     if section not in _WRITABLE_SECTIONS:
         raise HTTPException(status_code=403, detail='Section is read-only')
-    root = _resolve_section_path(section)
-    full = _resolve_section_path(section, req.path)
+    worker = _fs_worker(payload)
+    root = _resolve_worker_path(worker, section)
+    full = _resolve_worker_path(worker, section, req.path)
     full.write_text(req.content, encoding='utf-8')
     build_index(str(root))
     return {'ok': True}
@@ -977,11 +1050,12 @@ class FsMkdirRequest(BaseModel):
     path: str
 
 @app.post('/api/fs/{section}/folder')
-async def fs_mkdir(section: str, req: FsMkdirRequest, _: None = Depends(require_api_key)):
+async def fs_mkdir(section: str, req: FsMkdirRequest, payload: dict = Depends(require_jwt)):
     if section not in _WRITABLE_SECTIONS:
         raise HTTPException(status_code=403, detail='Section is read-only')
-    root = _resolve_section_path(section)
-    full = _resolve_section_path(section, req.path)
+    worker = _fs_worker(payload)
+    root = _resolve_worker_path(worker, section)
+    full = _resolve_worker_path(worker, section, req.path)
     full.mkdir(parents=True, exist_ok=True)
     build_index(str(root))
     return {'ok': True}
@@ -992,12 +1066,13 @@ class FsMoveRequest(BaseModel):
     dst: str
 
 @app.post('/api/fs/{section}/move')
-async def fs_move(section: str, req: FsMoveRequest, _: None = Depends(require_api_key)):
+async def fs_move(section: str, req: FsMoveRequest, payload: dict = Depends(require_jwt)):
     if section not in _WRITABLE_SECTIONS:
         raise HTTPException(status_code=403, detail='Section is read-only')
-    root = _resolve_section_path(section)
-    src_full = _resolve_section_path(section, req.src)
-    dst_full = _resolve_section_path(section, req.dst)
+    worker = _fs_worker(payload)
+    root = _resolve_worker_path(worker, section)
+    src_full = _resolve_worker_path(worker, section, req.src)
+    dst_full = _resolve_worker_path(worker, section, req.dst)
     if not src_full.exists():
         raise HTTPException(status_code=404, detail='Source not found')
     dst_full.parent.mkdir(parents=True, exist_ok=True)
@@ -1011,11 +1086,12 @@ class FsRenameRequest(BaseModel):
     new_name: str
 
 @app.post('/api/fs/{section}/rename')
-async def fs_rename(section: str, req: FsRenameRequest, _: None = Depends(require_api_key)):
+async def fs_rename(section: str, req: FsRenameRequest, payload: dict = Depends(require_jwt)):
     if section not in _WRITABLE_SECTIONS:
         raise HTTPException(status_code=403, detail='Section is read-only')
-    root = _resolve_section_path(section)
-    full = _resolve_section_path(section, req.path)
+    worker = _fs_worker(payload)
+    root = _resolve_worker_path(worker, section)
+    full = _resolve_worker_path(worker, section, req.path)
     if not full.exists():
         raise HTTPException(status_code=404, detail='Not found')
     new_name = pathlib.Path(req.new_name).name
@@ -1026,11 +1102,12 @@ async def fs_rename(section: str, req: FsRenameRequest, _: None = Depends(requir
 
 
 @app.delete('/api/fs/{section}/file')
-async def fs_delete_file(section: str, path: str = '', _: None = Depends(require_api_key)):
+async def fs_delete_file(section: str, path: str = '', payload: dict = Depends(require_jwt)):
     if section not in _WRITABLE_SECTIONS:
         raise HTTPException(status_code=403, detail='Section is read-only')
-    root = _resolve_section_path(section)
-    full = _resolve_section_path(section, path)
+    worker = _fs_worker(payload)
+    root = _resolve_worker_path(worker, section)
+    full = _resolve_worker_path(worker, section, path)
     if not full.exists():
         raise HTTPException(status_code=404, detail='File not found')
     full.unlink()
@@ -1039,11 +1116,12 @@ async def fs_delete_file(section: str, path: str = '', _: None = Depends(require
 
 
 @app.delete('/api/fs/{section}/folder')
-async def fs_delete_folder(section: str, path: str = '', _: None = Depends(require_api_key)):
+async def fs_delete_folder(section: str, path: str = '', payload: dict = Depends(require_jwt)):
     if section not in _WRITABLE_SECTIONS:
         raise HTTPException(status_code=403, detail='Section is read-only')
-    root = _resolve_section_path(section)
-    full = _resolve_section_path(section, path)
+    worker = _fs_worker(payload)
+    root = _resolve_worker_path(worker, section)
+    full = _resolve_worker_path(worker, section, path)
     if not full.exists():
         raise HTTPException(status_code=404, detail='Folder not found')
     try:
@@ -1282,31 +1360,49 @@ class RunRequest(BaseModel):
     worker_id: Optional[str] = None
 
 @app.post('/api/agent/run')
-async def run_agent(req: RunRequest, _: dict = Depends(require_admin)):
+async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
+    """Run the agent for the calling user's worker.
+    - Builds a per-request agent with the worker's current system_prompt + enabled_tools (G-01, G-02).
+    - Sets _worker_ctx so tool calls carry X-Worker-Id / X-Worker-Data-Root headers (G-04).
+    - Validates thread ownership on resume (G-08).
+    - All roles (user, admin, super_admin) may call this endpoint.
+    """
+    user = _find_user(payload['user_id'])
+    worker = _resolve_worker_for_user(user, req.worker_id) if user else None
+    if not worker:
+        raise HTTPException(status_code=404, detail='No worker assigned to this user')
+
+    # Per-request agent: fresh system prompt + filtered tools on every call (G-01 + G-02)
+    system_prompt = get_system_prompt(worker['worker_id'])
+    tools = get_tools_for_worker(worker.get('enabled_tools', ['*']))
+    agent_instance = create_agent_for_worker(system_prompt, tools)
+
     thread_id = req.thread_id or str(uuid.uuid4())
     config = {'configurable': {'thread_id': thread_id}}
 
-    # If a specific worker is requested, prepend its system_prompt as context
-    # when starting a NEW thread (no thread_id means fresh conversation)
-    _worker_ctx_prefix = ''
-    if req.worker_id and not req.thread_id and not req.resume:
-        w = _find_worker(req.worker_id)
-        if w:
-            sp = w.get('system_prompt', '').strip()
-            default_sp = _find_worker(_load_workers()[0]['worker_id'] if _load_workers() else '')
-            default_sp = (default_sp or {}).get('system_prompt', '').strip() if default_sp else ''
-            # Only inject if this worker's prompt differs from the default loaded at startup
-            if sp and sp != default_sp:
-                _worker_ctx_prefix = f'[System context for {w["name"]}]\n{sp}\n[End system context]\n\n'
+    # Thread ownership — validate on resume, register on new thread (G-08)
+    if req.thread_id or req.resume:
+        owner = _thread_registry.get(thread_id)
+        if owner:
+            if owner['user_id'] != payload['user_id'] or owner['worker_id'] != worker['worker_id']:
+                raise HTTPException(status_code=403, detail='Thread belongs to a different user or worker')
+    if not (req.thread_id or req.resume):
+        import datetime
+        _thread_registry[thread_id] = {
+            'user_id': payload['user_id'],
+            'worker_id': worker['worker_id'],
+            'created_at': datetime.datetime.utcnow().isoformat() + 'Z',
+        }
 
     async def stream():
-        yield f"data: {json.dumps({'type': 'session', 'thread_id': thread_id})}\n\n"
+        # Inject worker context into ContextVar for this async task (G-04 + G-13)
+        ctx_token = _worker_ctx.set({**worker, 'user_id': payload['user_id']})
         try:
-            query_with_ctx = (_worker_ctx_prefix + req.query) if _worker_ctx_prefix else req.query
-            inp = ({'messages': [{'role': 'user', 'content': query_with_ctx}]}
+            yield f"data: {json.dumps({'type': 'session', 'thread_id': thread_id})}\n\n"
+            inp = ({'messages': [{'role': 'user', 'content': req.query}]}
                    if not req.resume else {'resume': req.resume})
             full_text = []
-            async for event in agent.astream_events(inp, config=config, version='v2'):
+            async for event in agent_instance.astream_events(inp, config=config, version='v2'):
                 t = event['event']
                 if t == 'on_chat_model_stream':
                     chunk = event['data']['chunk']
@@ -1376,9 +1472,55 @@ async def run_agent(req: RunRequest, _: dict = Depends(require_admin)):
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
             yield 'data: [DONE]\n\n'
+        finally:
+            _worker_ctx.reset(ctx_token)
 
     return StreamingResponse(stream(), media_type='text/event-stream',
                              headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
+
+
+# ── Thread listing (G-08) ──────────────────────────────────────────────────────
+
+@app.get('/api/agent/threads')
+async def list_threads(payload: dict = Depends(require_jwt)):
+    """List thread IDs owned by the calling user + worker."""
+    user_id = payload['user_id']
+    worker_id = payload.get('worker_id')
+    threads = [
+        {'thread_id': tid, **meta}
+        for tid, meta in _thread_registry.items()
+        if meta['user_id'] == user_id and meta.get('worker_id') == worker_id
+    ]
+    return {'threads': threads}
+
+
+# ── Audit log (G-13) ───────────────────────────────────────────────────────────
+
+@app.get('/api/super/audit')
+async def super_audit_log(
+    worker_id: str = '',
+    user_id: str = '',
+    limit: int = 100,
+    _: dict = Depends(require_super_admin),
+):
+    """Return recent tool-call audit log lines, optionally filtered."""
+    if not _AUDIT_LOG.exists():
+        return {'entries': []}
+    lines = _AUDIT_LOG.read_text().splitlines()
+    entries = []
+    for line in reversed(lines):
+        try:
+            entry = json.loads(line)
+        except Exception:
+            continue
+        if worker_id and entry.get('worker_id') != worker_id:
+            continue
+        if user_id and entry.get('user_id') != user_id:
+            continue
+        entries.append(entry)
+        if len(entries) >= limit:
+            break
+    return {'entries': entries, 'total_returned': len(entries)}
 
 
 # ── Static frontend (dev: one port; Docker: nginx serves this instead) ─────────
