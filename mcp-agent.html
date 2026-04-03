@@ -2153,6 +2153,328 @@
     }
     #sheet-table-container th { background: var(--bg-elevated); color: var(--text-primary); font-weight: 600; }
 
+    /* ================================================================
+       ADMIN PANEL
+       ================================================================ */
+    #admin-tab-btn {
+      display: none; /* shown only for admins via JS */
+    }
+    #admin-tab-btn.visible {
+      display: flex;
+    }
+    #admin-tab-btn.active {
+      background: var(--bg-hover);
+      color: var(--amber);
+    }
+
+    #admin-zone {
+      display: none;
+      flex: 1;
+      overflow: hidden;
+      flex-direction: row;
+    }
+    #admin-zone.active {
+      display: flex;
+    }
+
+    /* Admin left tree panel */
+    #admin-tree-panel {
+      width: 400px;
+      min-width: 400px;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg-sidebar);
+    }
+
+    #admin-tree-header {
+      padding: 12px 16px 8px 16px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    #admin-tree-header h3 {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 0;
+    }
+
+    #admin-tree-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 0;
+    }
+
+    /* Admin tree reuses ft-* classes from FileTree */
+    .admin-ft-section {
+      margin-bottom: 4px;
+    }
+
+    /* Admin right panel */
+    #admin-right-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg-chat);
+    }
+
+    #admin-right-header {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    #admin-selected-folder {
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .admin-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .admin-toolbar-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background var(--transition), color var(--transition);
+      font-family: inherit;
+    }
+    .admin-toolbar-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+    .admin-toolbar-btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+    .admin-toolbar-btn.primary {
+      background: var(--amber);
+      color: #000;
+      border-color: var(--amber);
+    }
+    .admin-toolbar-btn.primary:hover {
+      background: var(--amber-dim);
+    }
+    .admin-toolbar-btn.danger:hover {
+      color: var(--red);
+      border-color: var(--red);
+    }
+
+    #admin-upload-zone {
+      margin: 16px 20px 0 20px;
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-md);
+      padding: 32px 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: border-color var(--transition), background var(--transition);
+      flex-shrink: 0;
+    }
+    #admin-upload-zone:hover, #admin-upload-zone.drag-over {
+      border-color: var(--amber);
+      background: rgba(255,179,0,0.05);
+      color: var(--text-secondary);
+    }
+    #admin-upload-zone.no-folder {
+      pointer-events: none;
+      opacity: 0.5;
+    }
+
+    #admin-upload-zone-text {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+    #admin-upload-zone-sub {
+      font-size: 12px;
+    }
+
+    #admin-queue-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 20px 20px 20px;
+    }
+
+    #admin-queue-summary {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .admin-queue-item {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      font-size: 12px;
+      animation: msgFadeIn 0.2s ease;
+    }
+    .admin-queue-item.done {
+      opacity: 0.6;
+    }
+    .admin-queue-item.error {
+      border-color: var(--red);
+    }
+
+    .admin-queue-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      gap: 8px;
+    }
+
+    .admin-queue-item-name {
+      color: var(--text-primary);
+      font-weight: 500;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .admin-queue-item-size {
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .admin-queue-badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 10px;
+      flex-shrink: 0;
+    }
+    .admin-queue-badge.queued { background: rgba(255,255,255,0.08); color: var(--text-muted); }
+    .admin-queue-badge.uploading { background: rgba(59,130,246,0.2); color: var(--blue); }
+    .admin-queue-badge.done { background: rgba(76,175,80,0.2); color: var(--green); }
+    .admin-queue-badge.error { background: rgba(239,68,68,0.2); color: var(--red); }
+
+    .admin-progress-bar {
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .admin-progress-fill {
+      height: 100%;
+      background: var(--blue);
+      border-radius: 2px;
+      transition: width 0.1s linear;
+      width: 0%;
+    }
+    .admin-queue-item.done .admin-progress-fill { background: var(--green); width: 100%; }
+    .admin-queue-item.error .admin-progress-fill { background: var(--red); }
+
+    .admin-retry-btn {
+      margin-top: 6px;
+      background: transparent;
+      border: 1px solid var(--red);
+      border-radius: 4px;
+      color: var(--red);
+      font-size: 11px;
+      padding: 2px 8px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    #admin-placeholder {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 14px;
+      gap: 12px;
+    }
+
+    /* Admin confirmation modal */
+    #admin-confirm-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    #admin-confirm-modal.visible { display: flex; }
+    .admin-confirm-box {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+    }
+    .admin-confirm-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+    }
+    .admin-confirm-body {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+    .admin-confirm-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .admin-confirm-cancel {
+      padding: 7px 16px;
+      background: var(--bg-hover);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .admin-confirm-delete {
+      padding: 7px 16px;
+      background: var(--red);
+      border: none;
+      border-radius: var(--radius-sm);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
   </style>
 </head>
 <body>
@@ -2277,6 +2599,12 @@
       </div>
 
       <div class="sidebar-bottom">
+        <button class="sidebar-bottom-btn" id="admin-tab-btn" onclick="toggleAdminPanel()" title="Admin Panel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+          Admin
+        </button>
         <button class="sidebar-bottom-btn" onclick="toggleTheme()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="5"></circle>
@@ -2438,6 +2766,115 @@
         <div id="sheet-table-container"></div>
       </div>
     </div><!-- end #canvas-zone -->
+
+    <!-- ============================================================
+         ADMIN PANEL ZONE
+         ============================================================ -->
+    <div id="admin-zone">
+
+      <!-- Left: File Tree -->
+      <div id="admin-tree-panel">
+        <div id="admin-tree-header">
+          <h3>Admin — Shared Assets</h3>
+        </div>
+        <div id="admin-tree-scroll">
+          <!-- Domain Data section -->
+          <div class="admin-ft-section">
+            <div class="ft-header" onclick="adminFtToggle('domain_data')" style="padding-left:8px;">
+              <div class="ft-header-left">
+                <svg class="ft-chevron" id="admin-chevron-domain_data" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                <span class="ft-section-label">Domain Data</span>
+                <span class="ft-count-badge" id="admin-badge-domain_data">0</span>
+              </div>
+              <div class="ft-toolbar" onclick="event.stopPropagation()">
+                <button class="ft-tool-btn" title="New Folder" onclick="adminNewFolder('domain_data', '')">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
+                </button>
+                <button class="ft-tool-btn" title="Upload Files" onclick="adminSelectFolder('domain_data','');document.getElementById('adminUploadInput').click()">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
+              </div>
+            </div>
+            <div class="ft-body" id="admin-body-domain_data">
+              <div class="ft-tree" id="admin-tree-domain_data"></div>
+            </div>
+          </div>
+          <!-- Verified Workflows section -->
+          <div class="admin-ft-section">
+            <div class="ft-header" onclick="adminFtToggle('verified_workflows')" style="padding-left:8px;">
+              <div class="ft-header-left">
+                <svg class="ft-chevron" id="admin-chevron-verified_workflows" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                <span class="ft-section-label">Verified Workflows</span>
+                <span class="ft-count-badge" id="admin-badge-verified_workflows">0</span>
+              </div>
+              <div class="ft-toolbar" onclick="event.stopPropagation()">
+                <button class="ft-tool-btn" title="New Folder" onclick="adminNewFolder('verified_workflows', '')">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
+                </button>
+                <button class="ft-tool-btn" title="Upload .md" onclick="adminSelectFolder('verified_workflows','');document.getElementById('adminUploadInputMd').click()">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
+              </div>
+            </div>
+            <div class="ft-body" id="admin-body-verified_workflows">
+              <div class="ft-tree" id="admin-tree-verified_workflows"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hidden file inputs -->
+      <input type="file" id="adminUploadInput" multiple style="display:none" onchange="adminQueueFiles(this)">
+      <input type="file" id="adminUploadInputMd" multiple accept=".md" style="display:none" onchange="adminQueueFiles(this)">
+
+      <!-- Right: Upload Zone + Queue -->
+      <div id="admin-right-panel">
+        <div id="admin-right-header">
+          <span id="admin-selected-folder">Select a folder in the tree to upload files</span>
+          <div class="admin-toolbar">
+            <button class="admin-toolbar-btn" id="admin-new-folder-btn" onclick="adminNewFolderActive()" title="New Folder">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
+              New Folder
+            </button>
+            <button class="admin-toolbar-btn primary" id="admin-upload-btn" onclick="document.getElementById('adminUploadInput').click()">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+              Upload Files
+            </button>
+          </div>
+        </div>
+
+        <div id="admin-upload-zone" style="display:none" onclick="document.getElementById('adminUploadInput').click()">
+          <div id="admin-upload-zone-text">Drop files here or click to upload</div>
+          <div id="admin-upload-zone-sub">Max 20 MB per file · Up to 200 files per session</div>
+        </div>
+
+        <div id="admin-queue-container" style="display:none">
+          <div id="admin-queue-summary" style="display:none">
+            <span id="admin-queue-progress-text"></span>
+            <button class="admin-toolbar-btn danger" id="admin-cancel-btn" onclick="adminCancelQueue()" style="display:none">Cancel All</button>
+          </div>
+          <div id="admin-queue-list"></div>
+        </div>
+
+        <div id="admin-placeholder">
+          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          <span>Select a folder in the tree to upload files or manage contents.</span>
+        </div>
+      </div>
+
+    </div><!-- end #admin-zone -->
+
+    <!-- Admin confirmation modal -->
+    <div id="admin-confirm-modal">
+      <div class="admin-confirm-box">
+        <div class="admin-confirm-title" id="admin-confirm-title">Confirm Delete</div>
+        <div class="admin-confirm-body" id="admin-confirm-body"></div>
+        <div class="admin-confirm-actions">
+          <button class="admin-confirm-cancel" onclick="adminConfirmClose()">Cancel</button>
+          <button class="admin-confirm-delete" id="admin-confirm-delete-btn">Delete</button>
+        </div>
+      </div>
+    </div>
 
     </div><!-- end #main -->
   </div><!-- end #app -->
@@ -4781,12 +5218,23 @@
         if (!_ctxTarget) return;
         var newName = prompt('Rename to:', _ctxTarget.name);
         if (!newName || newName === _ctxTarget.name) return;
-        var h = { 'Content-Type': 'application/json' };
-        if (FRONTEND_API_KEY) h['Authorization'] = 'Bearer ' + FRONTEND_API_KEY;
-        fetch(_agentBase + '/api/fs/' + _ctxTarget.section + '/rename', {
-          method: 'POST', headers: h,
-          body: JSON.stringify({ path: _ctxTarget.path, new_name: newName })
-        }).then(function(r) { if (r.ok) ftLoad(_ctxTarget.section); else showToast('Rename failed', 2000); });
+        if (_ctxTarget.isAdmin) {
+          fetch(_agentBase + '/api/admin/rename', {
+            method: 'PATCH',
+            headers: _adminJsonHeaders(),
+            body: JSON.stringify({ section: _ctxTarget.section, path: _ctxTarget.path, new_name: newName })
+          }).then(function(r) {
+            if (r.ok) { adminLoad(_ctxTarget.section); showToast('Renamed to ' + newName, 2000); }
+            else { showToast('Rename failed', 2000); }
+          });
+        } else {
+          var h = { 'Content-Type': 'application/json' };
+          if (FRONTEND_API_KEY) h['Authorization'] = 'Bearer ' + FRONTEND_API_KEY;
+          fetch(_agentBase + '/api/fs/' + _ctxTarget.section + '/rename', {
+            method: 'POST', headers: h,
+            body: JSON.stringify({ path: _ctxTarget.path, new_name: newName })
+          }).then(function(r) { if (r.ok) ftLoad(_ctxTarget.section); else showToast('Rename failed', 2000); });
+        }
       };
       if (downloadBtn) downloadBtn.onclick = function() {
         if (!_ctxTarget) return;
@@ -4794,10 +5242,39 @@
         var a = document.createElement('a'); a.href = url; a.download = _ctxTarget.name; a.click();
       };
       if (deleteBtn) deleteBtn.onclick = function() {
-        if (!_ctxTarget) return;
-        if (_ctxTarget.type === 'file') ftDeleteFile(_ctxTarget.section, _ctxTarget.path);
-        else ftDeleteFolder(_ctxTarget.section, _ctxTarget.path);
+        if (_ctxTarget) {
+          if (_ctxTarget.isAdmin) {
+            adminDeleteItem(_ctxTarget.section, _ctxTarget.path, _ctxTarget.type, _ctxTarget.name, 0);
+          } else {
+            if (_ctxTarget.type === 'file') ftDeleteFile(_ctxTarget.section, _ctxTarget.path);
+            else ftDeleteFolder(_ctxTarget.section, _ctxTarget.path);
+          }
+        }
       };
+      // Admin confirm modal delete button
+      var adminConfirmDeleteBtn = $('admin-confirm-delete-btn');
+      if (adminConfirmDeleteBtn) adminConfirmDeleteBtn.onclick = function() {
+        adminConfirmClose();
+        if (_adminConfirmCb) _adminConfirmCb();
+      };
+
+      // Admin upload zone drag-drop
+      var adminUploadZone = $('admin-upload-zone');
+      if (adminUploadZone) {
+        adminUploadZone.addEventListener('dragover', function(e) {
+          e.preventDefault();
+          adminUploadZone.classList.add('drag-over');
+        });
+        adminUploadZone.addEventListener('dragleave', function() { adminUploadZone.classList.remove('drag-over'); });
+        adminUploadZone.addEventListener('drop', function(e) {
+          e.preventDefault();
+          adminUploadZone.classList.remove('drag-over');
+          if (!_adminSelectedSection) { showToast('Select a folder first', 2000); return; }
+          var files = Array.from(e.dataTransfer.files);
+          adminEnqueueFiles(files);
+        });
+      }
+
       // MD editor events
       var mdTextarea = $('md-editor-textarea');
       if (mdTextarea) mdTextarea.addEventListener('input', mdOnChange);
@@ -4845,6 +5322,545 @@
       // re-render any open section
       Object.keys(_FT_SECTIONS).forEach(function(s) { if (_ftTrees[s]) ftRenderTree(s); });
       renderContextBar();
+    }
+
+    /* ==============================================================
+       ADMIN PANEL
+       ============================================================== */
+
+    var _adminToken       = null;   // JWT from /api/auth/login
+    var _isAdmin          = false;
+    var _adminTrees       = {};     // { section: tree_data }
+    var _adminExpanded    = {};     // { section: { path: bool } }
+    var _adminSectionOpen = { domain_data: false, verified_workflows: false };
+    var _adminSelectedSection = null;
+    var _adminSelectedFolder  = '';  // relative path of selected folder
+    var _adminQueue       = [];     // upload queue items
+    var _adminUploading   = false;
+    var _adminXhr         = null;   // current upload XHR
+    var _adminQueueDone   = 0;
+    var _adminConfirmCb   = null;
+
+    var _ADMIN_SECTIONS = {
+      domain_data:        { label: 'Domain Data',       acceptAll: true },
+      verified_workflows: { label: 'Verified Workflows', acceptMdOnly: true },
+    };
+
+    function _adminHeaders() {
+      var h = {};
+      if (_adminToken) h['Authorization'] = 'Bearer ' + _adminToken;
+      return h;
+    }
+
+    function _adminJsonHeaders() {
+      var h = { 'Content-Type': 'application/json' };
+      if (_adminToken) h['Authorization'] = 'Bearer ' + _adminToken;
+      return h;
+    }
+
+    function _decodeJwt(token) {
+      try {
+        var parts = token.split('.');
+        if (parts.length !== 3) return null;
+        var payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (payload.length % 4) payload += '=';
+        return JSON.parse(atob(payload));
+      } catch(e) { return null; }
+    }
+
+    function adminInit() {
+      // Auto-login with default credentials
+      var userId = (window.SAJHA_USER_ID) || 'risk_agent';
+      var password = (window.SAJHA_PASSWORD) || 'RiskAgent2025!';
+      fetch(_agentBase + '/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, password: password })
+      })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(data) {
+        if (!data) return;
+        _adminToken = data.token;
+        var payload = _decodeJwt(data.token);
+        _isAdmin = payload ? (payload.is_admin === true) : false;
+        if (_isAdmin) {
+          var btn = $('admin-tab-btn');
+          if (btn) btn.classList.add('visible');
+        }
+      })
+      .catch(function() {});
+    }
+
+    function toggleAdminPanel() {
+      var zone = $('admin-zone');
+      var chatZone = $('chat-zone');
+      var btn = $('admin-tab-btn');
+      if (!zone) return;
+      var isActive = zone.classList.contains('active');
+      if (isActive) {
+        zone.classList.remove('active');
+        if (chatZone) chatZone.style.display = '';
+        if (btn) btn.classList.remove('active');
+      } else {
+        if (chatZone) chatZone.style.display = 'none';
+        zone.classList.add('active');
+        if (btn) btn.classList.add('active');
+        adminLoadAll();
+      }
+    }
+
+    function adminLoadAll() {
+      Object.keys(_ADMIN_SECTIONS).forEach(function(s) { adminLoad(s); });
+    }
+
+    function adminLoad(section) {
+      fetch(_agentBase + '/api/admin/tree/' + section, { headers: _adminHeaders() })
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(data) {
+          if (!data) return;
+          _adminTrees[section] = data;
+          adminRenderTree(section);
+          // Update badge
+          var badge = $('admin-badge-' + section);
+          if (badge) badge.textContent = ftCountFiles(data.tree);
+        })
+        .catch(function() {});
+    }
+
+    function adminFtToggle(section) {
+      _adminSectionOpen[section] = !_adminSectionOpen[section];
+      var body = $('admin-body-' + section);
+      var chevron = $('admin-chevron-' + section);
+      if (!body || !chevron) return;
+      if (_adminSectionOpen[section]) {
+        body.classList.add('open');
+        chevron.classList.add('open');
+        if (!_adminTrees[section]) adminLoad(section);
+      } else {
+        body.classList.remove('open');
+        chevron.classList.remove('open');
+      }
+    }
+
+    function adminRenderTree(section) {
+      var container = $('admin-tree-' + section);
+      if (!container) return;
+      var tree = _adminTrees[section];
+      if (!tree || !tree.tree) {
+        container.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--text-muted)">Empty</div>';
+        return;
+      }
+      if (!_adminExpanded[section]) _adminExpanded[section] = {};
+      container.innerHTML = adminRenderNodes(section, tree.tree, 0);
+    }
+
+    function adminRenderNodes(section, nodes, depth) {
+      if (!nodes || !nodes.length) return '';
+      var html = '';
+      nodes.forEach(function(node) {
+        var indent = depth * 14;
+        if (node.type === 'folder') {
+          var isOpen = !!_adminExpanded[section][node.path];
+          var isSelected = _adminSelectedSection === section && _adminSelectedFolder === node.path;
+          html += '<div class="ft-row' + (isSelected ? ' selected' : '') + '" data-asection="' + esc(section) + '" data-apath="' + esc(node.path) + '" data-atype="folder"' +
+            ' onclick="adminSelectFolder(\'' + esc(section) + '\',\'' + esc(node.path) + '\')"' +
+            ' oncontextmenu="adminCtxMenu(event,\'' + esc(section) + '\',\'' + esc(node.path) + '\',\'folder\',\'' + esc(node.name) + '\')">' +
+            '<div class="ft-indent" style="width:' + indent + 'px"></div>' +
+            '<div class="ft-row-chevron' + (isOpen ? ' open' : '') + '" onclick="event.stopPropagation();adminToggleFolder(\'' + esc(section) + '\',\'' + esc(node.path) + '\')">' +
+              '<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>' +
+            '</div>' +
+            '<span class="ft-icon">' + ftFolderIcon(isOpen) + '</span>' +
+            '<span class="ft-row-name">' + esc(node.name) + '</span>' +
+            '<div class="ft-row-actions">' +
+              '<button class="ft-action-btn" title="Upload here" onclick="event.stopPropagation();adminSelectFolder(\'' + esc(section) + '\',\'' + esc(node.path) + '\');">' +
+                '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>' +
+              '</button>' +
+              '<button class="ft-action-btn danger" title="Delete" onclick="event.stopPropagation();adminDeleteItem(\'' + esc(section) + '\',\'' + esc(node.path) + '\',\'folder\',\'' + esc(node.name) + '\',' + (node.children ? node.children.filter(function(c){return c.type==='file';}).length : 0) + ')">' +
+                '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14H6L5 6"></path></svg>' +
+              '</button>' +
+            '</div>' +
+          '</div>';
+          if (isOpen && node.children && node.children.length) {
+            html += adminRenderNodes(section, node.children, depth + 1);
+          }
+        } else {
+          // File row
+          var ext = (node.name.split('.').pop() || '').toLowerCase();
+          var isMd = ext === 'md';
+          var validIcon = '';
+          if (isMd) {
+            // Run frontmatter validation async and update icon
+            validIcon = '<span class="admin-fm-icon" data-section="' + esc(section) + '" data-path="' + esc(node.path) + '" style="font-size:11px;margin-left:4px;" title="Checking frontmatter...">&#8987;</span>';
+          }
+          html += '<div class="ft-row" data-asection="' + esc(section) + '" data-apath="' + esc(node.path) + '" data-atype="file"' +
+            ' oncontextmenu="adminCtxMenu(event,\'' + esc(section) + '\',\'' + esc(node.path) + '\',\'file\',\'' + esc(node.name) + '\')">' +
+            '<div class="ft-indent" style="width:' + (indent + 14) + 'px"></div>' +
+            '<div class="ft-row-chevron"></div>' +
+            '<span class="ft-icon">' + ftFileIcon(node.name) + '</span>' +
+            '<span class="ft-row-name">' + esc(node.name) + validIcon + '</span>' +
+            '<div class="ft-row-actions">' +
+              '<button class="ft-action-btn danger" title="Delete" onclick="event.stopPropagation();adminDeleteItem(\'' + esc(section) + '\',\'' + esc(node.path) + '\',\'file\',\'' + esc(node.name) + '\',0)">' +
+                '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14H6L5 6"></path></svg>' +
+              '</button>' +
+            '</div>' +
+          '</div>';
+        }
+      });
+      // After render, validate MD files async
+      setTimeout(function() { adminValidateMdIcons(section); }, 50);
+      return html;
+    }
+
+    function adminValidateMdIcons(section) {
+      var container = $('admin-tree-' + section);
+      if (!container) return;
+      var icons = container.querySelectorAll('.admin-fm-icon');
+      icons.forEach(function(icon) {
+        var s = icon.getAttribute('data-section');
+        var p = icon.getAttribute('data-path');
+        fetch(_agentBase + '/api/admin/validate/' + s + '/' + encodeURIComponent(p), { headers: _adminHeaders() })
+          .then(function(r) { return r.ok ? r.json() : null; })
+          .then(function(data) {
+            if (!data) return;
+            if (data.valid) {
+              icon.textContent = '✓';
+              icon.style.color = 'var(--green)';
+              icon.title = 'Frontmatter valid';
+            } else {
+              icon.textContent = '⚠';
+              icon.style.color = 'var(--amber)';
+              icon.title = 'Missing frontmatter: ' + data.missing.join(', ');
+            }
+          })
+          .catch(function() { icon.textContent = ''; });
+      });
+    }
+
+    function adminToggleFolder(section, path) {
+      if (!_adminExpanded[section]) _adminExpanded[section] = {};
+      _adminExpanded[section][path] = !_adminExpanded[section][path];
+      adminRenderTree(section);
+    }
+
+    function adminSelectFolder(section, path) {
+      _adminSelectedSection = section;
+      _adminSelectedFolder = path;
+      // Update header text
+      var label = _ADMIN_SECTIONS[section] ? _ADMIN_SECTIONS[section].label : section;
+      var displayPath = path ? label + ' / ' + path.replace(/\//g, ' / ') : label + ' (root)';
+      var el = $('admin-selected-folder');
+      if (el) el.textContent = 'Uploading to: ' + displayPath;
+      // Show/hide placeholder vs queue
+      var placeholder = $('admin-placeholder');
+      var zone = $('admin-upload-zone');
+      var queue = $('admin-queue-container');
+      if (placeholder) placeholder.style.display = 'none';
+      if (zone) { zone.classList.remove('no-folder'); zone.style.display = ''; }
+      if (queue) queue.style.display = '';
+      // Update upload zone text
+      var zoneSub = $('admin-upload-zone-sub');
+      if (zoneSub) {
+        var isMdOnly = _ADMIN_SECTIONS[section] && _ADMIN_SECTIONS[section].acceptMdOnly;
+        zoneSub.textContent = isMdOnly ? 'Only .md files · Max 20 MB per file' : 'All file types · Max 20 MB per file';
+      }
+      // Re-render tree to update selected state
+      adminRenderTree(section);
+    }
+
+    function adminNewFolder(section, parentPath) {
+      var container = $('admin-tree-' + section);
+      if (!container) return;
+      if (!_adminSectionOpen[section]) adminFtToggle(section);
+      var inputRow = document.createElement('div');
+      inputRow.className = 'ft-inline-input';
+      inputRow.innerHTML = '<span>' + ftFolderIcon(false) + '</span><input type="text" placeholder="folder name">';
+      container.prepend(inputRow);
+      var inp = inputRow.querySelector('input');
+      inp.focus();
+      inp.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          var name = inp.value.trim();
+          if (!name) { inputRow.remove(); return; }
+          var fullPath = parentPath ? parentPath + '/' + name : name;
+          inputRow.remove();
+          fetch(_agentBase + '/api/admin/folder', {
+            method: 'POST',
+            headers: _adminJsonHeaders(),
+            body: JSON.stringify({ section: section, path: fullPath })
+          }).then(function(r) {
+            if (r.ok) { adminLoad(section); showToast('Folder "' + name + '" created', 2000); }
+            else { showToast('Create folder failed', 2000); }
+          });
+        } else if (e.key === 'Escape') { inputRow.remove(); }
+      });
+    }
+
+    function adminNewFolderActive() {
+      if (_adminSelectedSection) adminNewFolder(_adminSelectedSection, _adminSelectedFolder);
+      else showToast('Select a folder first', 2000);
+    }
+
+    function adminDeleteItem(section, path, type, name, childCount) {
+      var title, body;
+      if (type === 'file') {
+        title = 'Delete file?';
+        body = 'Delete <strong>' + esc(name) + '</strong>? This cannot be undone.';
+      } else if (childCount > 0) {
+        title = 'Delete non-empty folder?';
+        body = 'Delete <strong>' + esc(name) + '</strong> and all ' + childCount + ' items inside? This cannot be undone.';
+      } else {
+        title = 'Delete empty folder?';
+        body = 'Delete empty folder <strong>' + esc(name) + '</strong>?';
+      }
+      var titleEl = $('admin-confirm-title');
+      var bodyEl = $('admin-confirm-body');
+      var modal = $('admin-confirm-modal');
+      if (titleEl) titleEl.textContent = title;
+      if (bodyEl) bodyEl.innerHTML = body;
+      if (modal) modal.classList.add('visible');
+      _adminConfirmCb = function() {
+        fetch(_agentBase + '/api/admin/item', {
+          method: 'DELETE',
+          headers: _adminJsonHeaders(),
+          body: JSON.stringify({ section: section, path: path, recursive: childCount > 0 })
+        }).then(function(r) {
+          if (r.ok) {
+            adminLoad(section);
+            showToast(esc(name) + ' deleted', 2000);
+          } else {
+            r.json().then(function(d) { showToast(d.detail || 'Delete failed', 2000); });
+          }
+        });
+      };
+    }
+
+    function adminConfirmClose() {
+      var modal = $('admin-confirm-modal');
+      if (modal) modal.classList.remove('visible');
+      _adminConfirmCb = null;
+    }
+
+    // Context menu for admin tree
+    function adminCtxMenu(e, section, path, type, name) {
+      e.preventDefault();
+      e.stopPropagation();
+      _ctxTarget = { section: section, path: path, type: type, name: name, isAdmin: true };
+      var menu = $('ft-ctx-menu');
+      if (!menu) return;
+      $('ft-ctx-preview').style.display = 'none';
+      $('ft-ctx-select').style.display = 'none';
+      $('ft-ctx-rename').style.display = type === 'file' ? '' : 'none';
+      $('ft-ctx-download').style.display = type === 'file' ? '' : 'none';
+      $('ft-ctx-delete').style.display = '';
+      menu.style.left = e.clientX + 'px';
+      menu.style.top = e.clientY + 'px';
+      menu.classList.add('visible');
+    }
+
+    // Upload queue
+    function adminQueueFiles(input) {
+      var files = Array.from(input.files);
+      input.value = '';
+      if (!_adminSelectedSection) { showToast('Select a folder first', 2000); return; }
+      adminEnqueueFiles(files);
+    }
+
+    function adminEnqueueFiles(files) {
+      if (files.length > 200) {
+        showToast('Max 200 files per session — extra files dropped', 3000);
+        files = files.slice(0, 200);
+      }
+      var isMdOnly = _ADMIN_SECTIONS[_adminSelectedSection] && _ADMIN_SECTIONS[_adminSelectedSection].acceptMdOnly;
+      var skipped = 0;
+      files.forEach(function(f) {
+        if (f.size > 20 * 1024 * 1024) {
+          showToast('"' + f.name + '" exceeds 20 MB — skipped', 3000);
+          skipped++;
+          return;
+        }
+        if (isMdOnly && !f.name.endsWith('.md')) {
+          showToast('Verified Workflows only accepts .md files — "' + f.name + '" skipped', 3000);
+          skipped++;
+          return;
+        }
+        _adminQueue.push({
+          file: f,
+          section: _adminSelectedSection,
+          folder: _adminSelectedFolder,
+          status: 'queued',
+          progress: 0,
+          error: null,
+          id: Math.random().toString(36).slice(2),
+        });
+      });
+      adminUpdateQueueUI();
+      adminProcessQueue();
+    }
+
+    function adminUpdateQueueUI() {
+      var list = $('admin-queue-list');
+      var summary = $('admin-queue-summary');
+      var progressText = $('admin-queue-progress-text');
+      var cancelBtn = $('admin-cancel-btn');
+      if (!list) return;
+      if (!_adminQueue.length) {
+        list.innerHTML = '';
+        if (summary) summary.style.display = 'none';
+        return;
+      }
+      if (summary) summary.style.display = 'flex';
+      var done = _adminQueue.filter(function(i) { return i.status === 'done'; }).length;
+      var total = _adminQueue.length;
+      if (progressText) progressText.textContent = done + ' of ' + total + ' files uploaded';
+      var inProgress = _adminQueue.some(function(i) { return i.status === 'uploading'; });
+      if (cancelBtn) cancelBtn.style.display = inProgress ? '' : 'none';
+      list.innerHTML = _adminQueue.map(function(item) {
+        var badge = '<span class="admin-queue-badge ' + item.status + '">' +
+          (item.status === 'queued' ? 'Queued' : item.status === 'uploading' ? 'Uploading' : item.status === 'done' ? 'Done' : 'Error') + '</span>';
+        var retry = item.status === 'error' ? '<button class="admin-retry-btn" onclick="adminRetry(\'' + item.id + '\')">Retry</button>' : '';
+        var errorMsg = item.error ? '<div style="font-size:11px;color:var(--red);margin-top:4px;">' + esc(item.error) + '</div>' : '';
+        var replaceBtn = item.error === 'File already exists.' ? '<button class="admin-retry-btn" onclick="adminRetryOverwrite(\'' + item.id + '\')">Replace</button>' : '';
+        return '<div class="admin-queue-item ' + item.status + '" id="aqitem-' + item.id + '">' +
+          '<div class="admin-queue-item-header">' +
+            '<span class="admin-queue-item-name" title="' + esc(item.file.name) + '">' + esc(item.file.name) + '</span>' +
+            '<span class="admin-queue-item-size">' + (item.file.size > 1024*1024 ? (item.file.size/1024/1024).toFixed(1)+'MB' : Math.round(item.file.size/1024)+'KB') + '</span>' +
+            badge +
+          '</div>' +
+          '<div class="admin-progress-bar"><div class="admin-progress-fill" style="width:' + item.progress + '%"></div></div>' +
+          errorMsg + retry + replaceBtn +
+        '</div>';
+      }).join('');
+    }
+
+    function adminProcessQueue() {
+      if (_adminUploading) return;
+      var next = null;
+      for (var i = 0; i < _adminQueue.length; i++) {
+        if (_adminQueue[i].status === 'queued') { next = _adminQueue[i]; break; }
+      }
+      if (!next) return;
+      _adminUploading = true;
+      next.status = 'uploading';
+      adminUpdateQueueUI();
+      var fd = new FormData();
+      fd.append('file', next.file);
+      fd.append('section', next.section);
+      fd.append('path', next.folder);
+      var xhr = new XMLHttpRequest();
+      _adminXhr = xhr;
+      xhr.open('POST', _agentBase + '/api/admin/upload?section=' + encodeURIComponent(next.section) + '&path=' + encodeURIComponent(next.folder));
+      if (_adminToken) xhr.setRequestHeader('Authorization', 'Bearer ' + _adminToken);
+      xhr.upload.onprogress = function(e) {
+        if (e.lengthComputable) {
+          next.progress = Math.round(e.loaded / e.total * 100);
+          var el = document.getElementById('aqitem-' + next.id);
+          if (el) {
+            var fill = el.querySelector('.admin-progress-fill');
+            if (fill) fill.style.width = next.progress + '%';
+          }
+        }
+      };
+      xhr.onload = function() {
+        _adminUploading = false;
+        _adminXhr = null;
+        if (xhr.status === 200 || xhr.status === 201) {
+          next.status = 'done';
+          next.progress = 100;
+          adminLoad(next.section);
+          // Fade out after 3 seconds
+          setTimeout(function() {
+            _adminQueue = _adminQueue.filter(function(i) { return i !== next; });
+            adminUpdateQueueUI();
+          }, 3000);
+        } else if (xhr.status === 409) {
+          next.status = 'error';
+          next.error = 'File already exists.';
+        } else {
+          next.status = 'error';
+          try {
+            var resp = JSON.parse(xhr.responseText);
+            next.error = resp.detail || resp.error || ('Upload failed: HTTP ' + xhr.status);
+          } catch(ex) {
+            next.error = 'Upload failed: HTTP ' + xhr.status;
+          }
+        }
+        adminUpdateQueueUI();
+        adminProcessQueue(); // process next
+      };
+      xhr.onerror = function() {
+        _adminUploading = false;
+        _adminXhr = null;
+        next.status = 'error';
+        next.error = 'Network error';
+        adminUpdateQueueUI();
+        adminProcessQueue();
+      };
+      xhr.send(fd);
+    }
+
+    function adminRetry(id) {
+      var item = _adminQueue.filter(function(i) { return i.id === id; })[0];
+      if (!item) return;
+      item.status = 'queued';
+      item.error = null;
+      item.progress = 0;
+      adminUpdateQueueUI();
+      adminProcessQueue();
+    }
+
+    function adminRetryOverwrite(id) {
+      var item = _adminQueue.filter(function(i) { return i.id === id; })[0];
+      if (!item) return;
+      item.status = 'uploading';
+      item.error = null;
+      item.progress = 0;
+      adminUpdateQueueUI();
+      _adminUploading = true;
+      var fd = new FormData();
+      fd.append('file', item.file);
+      var xhr = new XMLHttpRequest();
+      _adminXhr = xhr;
+      xhr.open('POST', _agentBase + '/api/admin/upload?section=' + encodeURIComponent(item.section) + '&path=' + encodeURIComponent(item.folder) + '&overwrite=true');
+      if (_adminToken) xhr.setRequestHeader('Authorization', 'Bearer ' + _adminToken);
+      xhr.upload.onprogress = function(e) {
+        if (e.lengthComputable) {
+          item.progress = Math.round(e.loaded / e.total * 100);
+          adminUpdateQueueUI();
+        }
+      };
+      xhr.onload = function() {
+        _adminUploading = false;
+        _adminXhr = null;
+        if (xhr.status === 200 || xhr.status === 201) {
+          item.status = 'done';
+          item.progress = 100;
+          adminLoad(item.section);
+          setTimeout(function() {
+            _adminQueue = _adminQueue.filter(function(i) { return i.id !== id; });
+            adminUpdateQueueUI();
+          }, 3000);
+        } else {
+          item.status = 'error';
+          item.error = 'Replace failed: HTTP ' + xhr.status;
+        }
+        adminUpdateQueueUI();
+        adminProcessQueue();
+      };
+      xhr.onerror = function() {
+        _adminUploading = false;
+        _adminXhr = null;
+        item.status = 'error';
+        item.error = 'Network error';
+        adminUpdateQueueUI();
+      };
+      xhr.send(fd);
+    }
+
+    function adminCancelQueue() {
+      if (_adminXhr) { _adminXhr.abort(); _adminXhr = null; _adminUploading = false; }
+      _adminQueue = _adminQueue.filter(function(i) { return i.status === 'done'; });
+      adminUpdateQueueUI();
+      showToast('Upload queue cancelled', 2000);
     }
 
     // Backward-compat stubs
@@ -4901,6 +5917,7 @@
         }
       });
       ftLoadAll();
+      adminInit();
       $('query-input').focus();
     }
 

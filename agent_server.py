@@ -1,4 +1,4 @@
-import os, json, uuid, pathlib, base64, sys as _sys
+import os, json, uuid, pathlib, base64, sys as _sys, hmac, hashlib, time
 from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,6 +16,56 @@ _METADATA_FILE = _WORKFLOWS_DIR / '.metadata.json'
 _sys.path.insert(0, str(pathlib.Path(__file__).parent / 'sajhamcpserver'))
 from sajha.tools.impl.fs_index import build_index, get_index
 
+_JWT_SECRET = os.getenv('JWT_SECRET', 'sajha-dev-secret-change-in-prod')
+_SAJHA_USERS_FILE = pathlib.Path('sajhamcpserver/config/users.json')
+
+
+def _b64url_encode(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).rstrip(b'=').decode()
+
+
+def _b64url_decode(s: str) -> bytes:
+    pad = 4 - len(s) % 4
+    if pad != 4:
+        s += '=' * pad
+    return base64.urlsafe_b64decode(s)
+
+
+def _jwt_encode(payload: dict) -> str:
+    header = _b64url_encode(b'{"alg":"HS256","typ":"JWT"}')
+    body = _b64url_encode(json.dumps(payload).encode())
+    sig_input = f"{header}.{body}".encode()
+    sig = hmac.new(_JWT_SECRET.encode(), sig_input, hashlib.sha256).digest()
+    return f"{header}.{body}.{_b64url_encode(sig)}"
+
+
+def _jwt_decode(token: str) -> dict:
+    parts = token.split('.')
+    if len(parts) != 3:
+        raise ValueError("Invalid JWT format")
+    header, body, sig = parts
+    sig_input = f"{header}.{body}".encode()
+    expected = hmac.new(_JWT_SECRET.encode(), sig_input, hashlib.sha256).digest()
+    provided = _b64url_decode(sig)
+    if not hmac.compare_digest(expected, provided):
+        raise ValueError("Invalid JWT signature")
+    payload = json.loads(_b64url_decode(body))
+    if payload.get('exp', float('inf')) < time.time():
+        raise ValueError("JWT expired")
+    return payload
+
+
+def _get_user_is_admin(user_id: str) -> bool:
+    try:
+        data = json.loads(_SAJHA_USERS_FILE.read_text())
+        for u in data.get('users', []):
+            if u.get('user_id') == user_id:
+                return 'admin' in u.get('roles', [])
+    except Exception:
+        pass
+    return False
+
+
 load_dotenv()
 
 _DATA_ROOT     = pathlib.Path('sajhamcpserver/data')
@@ -31,6 +81,23 @@ _SECTION_ROOTS = {
     'my_workflows':  _MY_WF,
 }
 _WRITABLE_SECTIONS = {'uploads', 'my_workflows'}
+
+_ADMIN_SECTION_ROOTS = {
+    'domain_data':        _DOMAIN_DATA,
+    'verified_workflows': _VERIFIED_WF,
+}
+
+
+def _resolve_admin_path(section: str, rel: str = '') -> pathlib.Path:
+    root = _ADMIN_SECTION_ROOTS.get(section)
+    if root is None:
+        raise HTTPException(status_code=400, detail=f'Unknown admin section: {section}')
+    if rel:
+        full = (root / rel).resolve()
+        if not str(full).startswith(str(root.resolve())):
+            raise HTTPException(status_code=400, detail='Path traversal not allowed')
+        return full
+    return root
 
 
 # Build indexes on startup
@@ -67,9 +134,52 @@ def require_api_key(creds: HTTPAuthorizationCredentials | None = Depends(_bearer
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid or missing API key')
 
 
+def require_admin(creds: HTTPAuthorizationCredentials | None = Depends(_bearer)):
+    if creds is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Missing token')
+    try:
+        payload = _jwt_decode(creds.credentials)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    if not payload.get('is_admin'):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Admin access required')
+    return payload
+
+
 @app.get('/health')
 async def health():
     return {'status': 'ok'}
+
+
+class LoginRequest(BaseModel):
+    user_id: str
+    password: str
+
+@app.post('/api/auth/login')
+async def auth_login(req: LoginRequest):
+    """Proxy login to SAJHA, return a JWT with is_admin claim."""
+    if not req.user_id or not req.password:
+        raise HTTPException(status_code=400, detail='user_id and password required')
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as c:
+            r = await c.post(
+                f'{SAJHA_BASE}/api/auth/login',
+                json={'user_id': req.user_id, 'password': req.password},
+            )
+            if r.status_code == 401:
+                raise HTTPException(status_code=401, detail='Invalid credentials')
+            r.raise_for_status()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f'SAJHA unreachable: {e}')
+    is_admin = _get_user_is_admin(req.user_id)
+    token = _jwt_encode({
+        'user_id': req.user_id,
+        'is_admin': is_admin,
+        'exp': time.time() + 86400 * 7,  # 7 days
+    })
+    return {'token': token, 'is_admin': is_admin, 'user_id': req.user_id}
 
 
 @app.post('/api/files/upload')
@@ -354,6 +464,179 @@ async def fs_delete_folder(section: str, path: str = '', _: None = Depends(requi
     build_index(str(root))
     return {'ok': True}
 
+
+# ── Admin API ─────────────────────────────────────────────────────────────────
+
+class AdminFolderRequest(BaseModel):
+    section: str
+    path: str
+
+class AdminDeleteRequest(BaseModel):
+    section: str
+    path: str
+    recursive: bool = False
+
+class AdminRenameRequest(BaseModel):
+    section: str
+    path: str
+    new_name: str
+
+class AdminMoveRequest(BaseModel):
+    section: str
+    src_path: str
+    dest_folder: str
+
+class AdminFileRequest(BaseModel):
+    section: str
+    folder: str = ''
+    filename: str
+
+_MD_STUB = '''---
+name:
+description:
+inputs:
+tags: []
+version: "1.0"
+---
+
+## Step 1
+'''
+
+
+@app.get('/api/admin/tree/{section}')
+async def admin_tree(section: str, _: dict = Depends(require_admin)):
+    root = _resolve_admin_path(section)
+    root.mkdir(parents=True, exist_ok=True)
+    idx = get_index(str(root))
+    return idx
+
+
+@app.post('/api/admin/upload')
+async def admin_upload(
+    section: str,
+    path: str = '',
+    overwrite: bool = False,
+    file: UploadFile = File(...),
+    _: dict = Depends(require_admin),
+):
+    root = _resolve_admin_path(section)
+    folder = _resolve_admin_path(section, path) if path else root
+    folder.mkdir(parents=True, exist_ok=True)
+    dest = folder / pathlib.Path(file.filename).name
+    if dest.exists() and not overwrite:
+        raise HTTPException(status_code=409, detail='File already exists')
+    content = await file.read()
+    if len(content) > 20 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail='File exceeds 20 MB limit')
+    dest.write_bytes(content)
+    build_index(str(root))
+    stat = dest.stat()
+    from datetime import datetime, timezone
+    return {
+        'path': str(dest.relative_to(root)).replace('\\', '/'),
+        'size_bytes': stat.st_size,
+        'modified_at': datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+    }
+
+
+@app.post('/api/admin/folder')
+async def admin_folder(req: AdminFolderRequest, _: dict = Depends(require_admin)):
+    root = _resolve_admin_path(req.section)
+    full = _resolve_admin_path(req.section, req.path)
+    full.mkdir(parents=True, exist_ok=True)
+    build_index(str(root))
+    return {'created': True, 'path': req.path}
+
+
+@app.delete('/api/admin/item')
+async def admin_delete(req: AdminDeleteRequest, _: dict = Depends(require_admin)):
+    root = _resolve_admin_path(req.section)
+    full = _resolve_admin_path(req.section, req.path)
+    if not full.exists():
+        raise HTTPException(status_code=404, detail='Not found')
+    if full.is_dir():
+        import shutil
+        items = list(full.rglob('*'))
+        count = len([x for x in items if x.is_file()])
+        if count > 0 and not req.recursive:
+            raise HTTPException(status_code=409, detail=f'Folder contains {count} items. Use recursive=true to delete.')
+        shutil.rmtree(full)
+    else:
+        full.unlink()
+    build_index(str(root))
+    return {'ok': True}
+
+
+@app.patch('/api/admin/rename')
+async def admin_rename(req: AdminRenameRequest, _: dict = Depends(require_admin)):
+    root = _resolve_admin_path(req.section)
+    full = _resolve_admin_path(req.section, req.path)
+    if not full.exists():
+        raise HTTPException(status_code=404, detail='Not found')
+    new_name = pathlib.Path(req.new_name).name
+    new_full = full.parent / new_name
+    full.rename(new_full)
+    build_index(str(root))
+    new_path = str(new_full.relative_to(root)).replace('\\', '/')
+    return {'new_path': new_path}
+
+
+@app.post('/api/admin/move')
+async def admin_move(req: AdminMoveRequest, _: dict = Depends(require_admin)):
+    root = _resolve_admin_path(req.section)
+    src_full = _resolve_admin_path(req.section, req.src_path)
+    dst_full = _resolve_admin_path(req.section, req.dest_folder) / src_full.name
+    if not src_full.exists():
+        raise HTTPException(status_code=404, detail='Source not found')
+    dst_full.parent.mkdir(parents=True, exist_ok=True)
+    src_full.rename(dst_full)
+    build_index(str(root))
+    return {'ok': True, 'new_path': str(dst_full.relative_to(root)).replace('\\', '/')}
+
+
+@app.post('/api/admin/file')
+async def admin_new_file(req: AdminFileRequest, _: dict = Depends(require_admin)):
+    root = _resolve_admin_path(req.section)
+    folder_path = req.folder if req.folder else ''
+    folder_full = _resolve_admin_path(req.section, folder_path) if folder_path else root
+    folder_full.mkdir(parents=True, exist_ok=True)
+    name = pathlib.Path(req.filename).name
+    dest = folder_full / name
+    dest.write_text(_MD_STUB, encoding='utf-8')
+    build_index(str(root))
+    rel_path = str(dest.relative_to(root)).replace('\\', '/')
+    return {'path': rel_path}
+
+
+@app.get('/api/admin/validate/{section}/{path:path}')
+async def admin_validate(section: str, path: str, _: dict = Depends(require_admin)):
+    full = _resolve_admin_path(section, path)
+    if not full.exists() or not full.is_file():
+        raise HTTPException(status_code=404, detail='File not found')
+    content = full.read_text(encoding='utf-8', errors='replace')
+    # Parse YAML frontmatter
+    valid = False
+    missing = []
+    if content.startswith('---'):
+        end = content.find('---', 3)
+        if end != -1:
+            fm_block = content[3:end].strip()
+            required = ['name', 'description', 'inputs']
+            found = {k: False for k in required}
+            for line in fm_block.splitlines():
+                for k in required:
+                    if line.strip().startswith(k + ':'):
+                        val = line.split(':', 1)[1].strip()
+                        if val:
+                            found[k] = True
+            missing = [k for k, v in found.items() if not v]
+            valid = len(missing) == 0
+    else:
+        missing = ['name', 'description', 'inputs']
+    return {'valid': valid, 'missing': missing}
+
+
+# ── Agent run ──────────────────────────────────────────────────────────────────
 
 class RunRequest(BaseModel):
     query: str
