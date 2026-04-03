@@ -9,18 +9,19 @@ from pydantic import BaseModel, Field, create_model
 from typing import Any, Optional
 
 SAJHA_BASE = os.getenv('SAJHA_BASE_URL', 'http://localhost:3002')
-_sajha_token: str | None = None
+# Service key for SAJHA — uses X-API-Key header, no password login required.
+# Set SAJHA_API_KEY in .env to the full-access API key from sajhamcpserver/config/apikeys.json.
+_SAJHA_API_KEY = os.getenv('SAJHA_API_KEY', 'sja_full_access_admin')
 
 
+def _service_headers() -> dict:
+    # SAJHA accepts API keys directly in Authorization header (no "Bearer" prefix)
+    return {'Authorization': _SAJHA_API_KEY}
+
+
+# Keep _get_token for any legacy callers — delegates to API key path
 async def _get_token() -> str:
-    global _sajha_token
-    if _sajha_token:
-        return _sajha_token
-    async with httpx.AsyncClient() as c:
-        r = await c.post(f'{SAJHA_BASE}/api/auth/login',
-            json={'user_id': 'risk_agent', 'password': os.getenv('SAJHA_PASSWORD')})
-        _sajha_token = r.json()['token']
-        return _sajha_token
+    return _SAJHA_API_KEY
 
 
 _MAX_TOOL_OUTPUT_CHARS = 12_000  # ~3k tokens per tool — keeps accumulated results well within context
@@ -43,16 +44,11 @@ def _truncate_result(result: dict, tool_name: str) -> dict:
 
 
 async def _call_sajha(tool_name: str, args: dict) -> dict:
-    global _sajha_token
-    token = await _get_token()
     try:
         async with httpx.AsyncClient(timeout=30.0) as c:
             r = await c.post(f'{SAJHA_BASE}/api/tools/execute',
-                headers={'Authorization': f'Bearer {token}'},
+                headers=_service_headers(),
                 json={'tool': tool_name, 'arguments': args})
-            if r.status_code == 401:
-                _sajha_token = None
-                return await _call_sajha(tool_name, args)
             r.raise_for_status()
             result = r.json()['result']
             return _truncate_result(result, tool_name)
@@ -178,18 +174,10 @@ def discover_sajha_tools() -> list:
     import httpx as _httpx
 
     try:
-        # Login synchronously at import time
-        login_r = _httpx.post(
-            f'{SAJHA_BASE}/api/auth/login',
-            json={'user_id': 'risk_agent', 'password': os.getenv('SAJHA_PASSWORD')},
-            timeout=10.0
-        )
-        token = login_r.json()['token']
-
-        # List all tools via MCP protocol
+        # List all tools via MCP protocol using service API key
         list_r = _httpx.post(
             f'{SAJHA_BASE}/api/mcp',
-            headers={'Authorization': f'Bearer {token}'},
+            headers={'Authorization': _SAJHA_API_KEY},
             json={'jsonrpc': '2.0', 'id': '1', 'method': 'tools/list', 'params': {}},
             timeout=10.0
         )

@@ -9,7 +9,7 @@ from typing import Optional, List
 from dotenv import load_dotenv
 import httpx
 from agent.agent import agent
-from agent.tools import _get_token, SAJHA_BASE
+from agent.tools import _service_headers, SAJHA_BASE
 
 _WORKFLOWS_DIR = pathlib.Path('sajhamcpserver/data/workflows')
 _UPLOADS_DIR   = pathlib.Path('sajhamcpserver/data/uploads')
@@ -787,23 +787,17 @@ async def admin_list_worker_users(payload: dict = Depends(require_admin)):
 
 @app.post('/api/files/upload')
 async def upload_file(file: UploadFile = File(...), _: None = Depends(require_api_key)):
-    from agent.tools import _sajha_token as _tok
-    import agent.tools as _agent_tools
     try:
         content = await file.read()
 
-        async def _do_upload(retry: bool = True):
-            token = await _get_token()
+        async def _do_upload():
             async with httpx.AsyncClient(timeout=30.0) as c:
                 r = await c.post(
                     f'{SAJHA_BASE}/api/files/upload',
-                    headers={'Authorization': f'Bearer {token}'},
+                    headers=_service_headers(),
                     files={'file': (file.filename, content,
                                     file.content_type or 'application/octet-stream')},
                 )
-                if r.status_code == 401 and retry:
-                    _agent_tools._sajha_token = None
-                    return await _do_upload(retry=False)
                 r.raise_for_status()
                 return JSONResponse(content=r.json())
 

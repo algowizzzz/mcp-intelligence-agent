@@ -5706,11 +5706,11 @@
       var saveBtn = document.getElementById('canvas-save-btn');
       if (saveBtn) { saveBtn.textContent = 'Saving…'; saveBtn.disabled = true; }
 
-      fetch(_agentBase + '/api/agent', {
+      fetch(_agentBase + '/api/agent/run', {
         method: 'POST',
         headers: Object.assign({ 'Content-Type': 'application/json' }, _ftHeaders()),
         body: JSON.stringify({
-          message: 'Save the following markdown content to my_data using md_save tool. ' +
+          query: 'Save the following markdown content to my_data using md_save tool. ' +
             'filename: "' + filename + '", subfolder: "canvas", versioning: true. ' +
             'Content:\n\n' + content
         })
