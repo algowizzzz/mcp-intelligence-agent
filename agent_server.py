@@ -295,7 +295,15 @@ async def auth_login(req: LoginRequest):
     if not req.user_id or not req.password:
         raise HTTPException(status_code=400, detail='user_id and password required')
 
-    # Validate against SAJHA first (keeps SAJHA as source of truth)
+    # Look up user from users.json first
+    user = _find_user(req.user_id)
+    if not user:
+        raise HTTPException(status_code=401, detail='Invalid credentials')
+
+    # Validate against SAJHA (keeps SAJHA as source of truth for its known users)
+    # If SAJHA returns 401, fall back to local users.json verification
+    # (covers users created via API that aren't in SAJHA's in-memory cache yet)
+    sajha_auth_ok = False
     try:
         async with httpx.AsyncClient(timeout=10.0) as c:
             r = await c.post(
@@ -303,16 +311,19 @@ async def auth_login(req: LoginRequest):
                 json={'user_id': req.user_id, 'password': req.password},
             )
             if r.status_code == 401:
-                raise HTTPException(status_code=401, detail='Invalid credentials')
-            r.raise_for_status()
+                # SAJHA doesn't know this user — fall back to local verification
+                if not _verify_password(req.password, user):
+                    raise HTTPException(status_code=401, detail='Invalid credentials')
+            elif not r.is_success:
+                r.raise_for_status()
+            else:
+                sajha_auth_ok = True
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f'SAJHA unreachable: {e}')
-
-    user = _find_user(req.user_id)
-    if not user:
-        raise HTTPException(status_code=401, detail='Invalid credentials')
+        # SAJHA unreachable — fall back to local verification
+        if not _verify_password(req.password, user):
+            raise HTTPException(status_code=502, detail=f'SAJHA unreachable: {e}')
 
     if not user.get('enabled', True):
         raise HTTPException(status_code=403, detail='Account disabled. Contact your administrator.')
