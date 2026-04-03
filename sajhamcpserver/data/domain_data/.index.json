@@ -1,7 +1,38 @@
 {
   "root": "sajhamcpserver/data/domain_data",
-  "built_at": "2026-04-03T08:26:20.904967+00:00",
+  "built_at": "2026-04-03T17:41:33.902842+00:00",
   "tree": [
+    {
+      "type": "folder",
+      "name": "Test",
+      "path": "Test",
+      "children": [
+        {
+          "type": "file",
+          "name": "test_results_2026-04-03.md",
+          "path": "Test/test_results_2026-04-03.md",
+          "size_bytes": 13889,
+          "modified_at": "2026-04-03T16:18:23.550701+00:00",
+          "mime": "text/markdown"
+        },
+        {
+          "type": "file",
+          "name": "test_trades.csv",
+          "path": "Test/test_trades.csv",
+          "size_bytes": 254,
+          "modified_at": "2026-04-03T06:38:16.300397+00:00",
+          "mime": "text/csv"
+        },
+        {
+          "type": "file",
+          "name": "test_trades.parquet",
+          "path": "Test/test_trades.parquet",
+          "size_bytes": 1886,
+          "modified_at": "2026-04-03T06:38:16.303274+00:00",
+          "mime": "application/octet-stream"
+        }
+      ]
+    },
     {
       "type": "folder",
       "name": "counterparties",
@@ -296,20 +327,10 @@
       ]
     },
     {
-      "type": "file",
-      "name": "test_trades.csv",
-      "path": "test_trades.csv",
-      "size_bytes": 254,
-      "modified_at": "2026-04-03T06:38:16.300397+00:00",
-      "mime": "text/csv"
-    },
-    {
-      "type": "file",
-      "name": "test_trades.parquet",
-      "path": "test_trades.parquet",
-      "size_bytes": 1886,
-      "modified_at": "2026-04-03T06:38:16.303274+00:00",
-      "mime": "application/octet-stream"
+      "type": "folder",
+      "name": "test_ccr",
+      "path": "test_ccr",
+      "children": []
     }
   ]
 }

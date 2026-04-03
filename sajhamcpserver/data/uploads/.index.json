@@ -1,6 +1,6 @@
 {
   "root": "sajhamcpserver/data/uploads",
-  "built_at": "2026-04-03T08:26:20.908358+00:00",
+  "built_at": "2026-04-03T17:39:45.580038+00:00",
   "tree": [
     {
       "type": "folder",
@@ -311,6 +311,14 @@
           "type": "file",
           "name": "ccr_portfolio_2026-03-27.md",
           "path": "reports/ccr_portfolio_2026-03-27.md",
+          "size_bytes": 2808,
+          "modified_at": "2026-04-03T08:27:01.558964+00:00",
+          "mime": "text/markdown"
+        },
+        {
+          "type": "file",
+          "name": "ccr_portfolio_2026-03-27_2026-04-03_081545.md",
+          "path": "reports/ccr_portfolio_2026-03-27_2026-04-03_081545.md",
           "size_bytes": 2322,
           "modified_at": "2026-04-03T08:15:45.520662+00:00",
           "mime": "text/markdown"
