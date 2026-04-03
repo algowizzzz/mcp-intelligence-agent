@@ -2885,6 +2885,8 @@
             </svg>
           </button>
           <span class="header-title" id="header-worker-name">Market Risk Digital Worker</span>
+          <!-- Super-admin worker switcher (hidden until workers loaded) -->
+          <select id="worker-switcher-chat" style="display:none;margin-left:12px;background:#152035;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#e8edf5;font-size:12px;padding:4px 10px;cursor:pointer" onchange="switchChatWorker(this.value)"></select>
         </div>
         <div class="header-right">
           <div id="admin-console-banner" style="display:none;margin-right:8px">
@@ -4814,7 +4816,7 @@
       $('restore-banner').classList.remove('visible');
       setRunningState(true);
 
-      var body = JSON.stringify({ query: composed, thread_id: _threadId || '' });
+      var body = JSON.stringify({ query: composed, thread_id: _threadId || '', worker_id: _activeWorkerId || undefined });
 
       var reqHeaders = { 'Content-Type': 'application/json' };
       if (FRONTEND_API_KEY) reqHeaders['Authorization'] = 'Bearer ' + FRONTEND_API_KEY;
@@ -6667,12 +6669,16 @@
       window.location.href = 'login.html';
     }
 
+    var _authUser = null;
+    var _activeWorkerId = null;
+
     function initAuth() {
       var token = sessionStorage.getItem('rg_token');
       var userJson = sessionStorage.getItem('rg_user');
-      if (!token || !userJson) return; // unauthenticated — continue without auth UI
+      if (!token || !userJson) return;
       try {
-        var u = JSON.parse(userJson);
+        _authUser = JSON.parse(userJson);
+        var u = _authUser;
         // Show user name
         var badge = document.getElementById('user-display-badge');
         if (badge) { badge.textContent = u.display_name || u.user_id; badge.style.display = 'inline'; }
@@ -6684,13 +6690,60 @@
           var ab = document.getElementById('admin-console-banner');
           if (ab) ab.style.display = 'inline-block';
         }
-        // Show worker name
+        // Set initial worker name
+        _activeWorkerId = u.worker_id || null;
         if (u.worker_name) {
           var wn = document.getElementById('header-worker-name');
           if (wn) wn.textContent = u.worker_name;
           document.title = u.worker_name;
         }
+        // Super admin: load all workers and show switcher
+        if (u.role === 'super_admin') {
+          _loadChatWorkers(token, u.worker_id);
+        }
       } catch(e) {}
+    }
+
+    function _loadChatWorkers(token, currentWorkerId) {
+      var agentBase = window.AGENT_BASE_URL || 'http://localhost:8000';
+      fetch(agentBase + '/api/super/workers', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      }).then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(data) {
+          if (!data || !data.workers || data.workers.length < 1) return;
+          var sel = document.getElementById('worker-switcher-chat');
+          if (!sel) return;
+          data.workers.forEach(function(w) {
+            var opt = document.createElement('option');
+            opt.value = w.worker_id;
+            opt.textContent = w.name;
+            if (w.worker_id === currentWorkerId) opt.selected = true;
+            sel.appendChild(opt);
+          });
+          if (data.workers.length > 0) sel.style.display = 'inline-block';
+        }).catch(function() {});
+    }
+
+    function switchChatWorker(workerId) {
+      var agentBase = window.AGENT_BASE_URL || 'http://localhost:8000';
+      var token = sessionStorage.getItem('rg_token');
+      fetch(agentBase + '/api/super/workers/' + workerId, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      }).then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(w) {
+          if (!w) return;
+          _activeWorkerId = workerId;
+          var wn = document.getElementById('header-worker-name');
+          if (wn) wn.textContent = w.name;
+          document.title = w.name;
+          // Update sessionStorage so the worker persists if page refreshes
+          try {
+            var u = JSON.parse(sessionStorage.getItem('rg_user') || '{}');
+            u.worker_id = workerId;
+            u.worker_name = w.name;
+            sessionStorage.setItem('rg_user', JSON.stringify(u));
+          } catch(e) {}
+        }).catch(function() {});
     }
 
     function init() {

@@ -1284,16 +1284,31 @@ class RunRequest(BaseModel):
     query: str
     thread_id: str = ''
     resume: str | None = None
+    worker_id: Optional[str] = None
 
 @app.post('/api/agent/run')
 async def run_agent(req: RunRequest, _: None = Depends(require_api_key)):
     thread_id = req.thread_id or str(uuid.uuid4())
     config = {'configurable': {'thread_id': thread_id}}
 
+    # If a specific worker is requested, prepend its system_prompt as context
+    # when starting a NEW thread (no thread_id means fresh conversation)
+    _worker_ctx_prefix = ''
+    if req.worker_id and not req.thread_id and not req.resume:
+        w = _find_worker(req.worker_id)
+        if w:
+            sp = w.get('system_prompt', '').strip()
+            default_sp = _find_worker(_load_workers()[0]['worker_id'] if _load_workers() else '')
+            default_sp = (default_sp or {}).get('system_prompt', '').strip() if default_sp else ''
+            # Only inject if this worker's prompt differs from the default loaded at startup
+            if sp and sp != default_sp:
+                _worker_ctx_prefix = f'[System context for {w["name"]}]\n{sp}\n[End system context]\n\n'
+
     async def stream():
         yield f"data: {json.dumps({'type': 'session', 'thread_id': thread_id})}\n\n"
         try:
-            inp = ({'messages': [{'role': 'user', 'content': req.query}]}
+            query_with_ctx = (_worker_ctx_prefix + req.query) if _worker_ctx_prefix else req.query
+            inp = ({'messages': [{'role': 'user', 'content': query_with_ctx}]}
                    if not req.resume else {'resume': req.resume})
             full_text = []
             async for event in agent.astream_events(inp, config=config, version='v2'):
