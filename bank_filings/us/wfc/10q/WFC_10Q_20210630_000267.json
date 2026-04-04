@@ -1,0 +1,17 @@
+{
+  "bank": "Wells Fargo",
+  "ticker": "wfc",
+  "region": "us",
+  "cik": "0000072971",
+  "form": "10-Q",
+  "period": "2021-06-30",
+  "filed": "2021-07-28",
+  "accession": "0000072971-21-000267",
+  "description": "10-Q",
+  "source_url": "https://www.sec.gov/Archives/edgar/data/72971/000007297121000267/wfc-20210630.htm",
+  "raw_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/wfc/10q/WFC_10Q_20210630_000267.htm",
+  "md_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/wfc/10q/WFC_10Q_20210630_000267.md",
+  "meta_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/wfc/10q/WFC_10Q_20210630_000267.json",
+  "size_kb": 17553,
+  "downloaded_at": "2026-04-03T20:42:22.202305Z"
+}

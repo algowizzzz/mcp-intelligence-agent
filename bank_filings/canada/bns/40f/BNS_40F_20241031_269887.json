@@ -1,0 +1,17 @@
+{
+  "bank": "Scotiabank",
+  "ticker": "bns",
+  "region": "canada",
+  "cik": "0000009631",
+  "form": "40-F",
+  "period": "2024-10-31",
+  "filed": "2024-12-03",
+  "accession": "0001193125-24-269887",
+  "description": "40-F",
+  "source_url": "https://www.sec.gov/Archives/edgar/data/9631/000119312524269887/d843410d40f.htm",
+  "raw_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/bns/40f/BNS_40F_20241031_269887.htm",
+  "md_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/bns/40f/BNS_40F_20241031_269887.md",
+  "meta_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/bns/40f/BNS_40F_20241031_269887.json",
+  "size_kb": 408,
+  "downloaded_at": "2026-04-03T20:50:23.609025+00:00"
+}

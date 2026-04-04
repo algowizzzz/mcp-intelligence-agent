@@ -1,0 +1,898 @@
+{
+  "generated": "2026-04-03T22:42:38.326375+00:00",
+  "summary": {
+    "ok": 0,
+    "failed": 148,
+    "skipped": 0
+  },
+  "files": [
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q1release.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q1release.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q2release.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q2release.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q3release.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q3release.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q4release.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q4release.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q1speech.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q1speech.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q2speech.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q2speech.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q3speech.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q3speech.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q4speech.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q4speech.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q1_report.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q1_report.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q2_report.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q2_report.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q3_report.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q3_report.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View Annual Report (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/ar_2025_e.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View_Annual_Report__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/ar_2025_e.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q1slides.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q1slides.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q2slides.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q2slides.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q3slides.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q3slides.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q4slides.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q4slides.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View Strategic Update (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q4strategicupdate.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View_Strategic_Update__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q4strategicupdate.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q1pillar3.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q1pillar3.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q2pillar3.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q2pillar3.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q3pillar3.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q3pillar3.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q4pillar3.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q4pillar3.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q1release.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q1release.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q2release.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q2release.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q3release.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q3release.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q4release.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q4release.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q1speech.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q1speech.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q2speech.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q2speech.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q3speech.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q3speech.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q4speech.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q4speech.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q1_report.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q1_report.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q2_report.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q2_report.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q3_report.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q3_report.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View Annual Report (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/ar_2024_e.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View_Annual_Report__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/ar_2024_e.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q1slides.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q1slides.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q2slides.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q2slides.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q3slides.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q3slides.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q4slides.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q4slides.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q1pillar3.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q1pillar3.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q2pillar3.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q2pillar3.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q3pillar3.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q3pillar3.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q4pillar3.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2024q4pillar3.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q1release.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q1release.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q2release.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q2release.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q3release.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q3release.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q4release.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q4release.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q1speech.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q1speech.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q2speech.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q2speech.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q3speech.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q3speech.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q4speech.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q4speech.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q1_report.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q1_report.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q2_report.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q2_report.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q3_report.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q3_report.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View Annual Report (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/ar_2023_e.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View_Annual_Report__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/ar_2023_e.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q1slides.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q1slides.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q2slides.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q2slides.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q3slides.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q3slides.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q4slides.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q4slides.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q1pillar3.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q1pillar3.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q2pillar3.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q2pillar3.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q3pillar3.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q3pillar3.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q4pillar3.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2023q4pillar3.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q1release.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q1release.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q2release.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q2release.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q3release.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q3release.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q4release.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q4release.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q1speech.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q1speech.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q2speech.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q2speech.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q3speech.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q3speech.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q4speech.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q4speech.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q1_report.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q1_report.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q2_report.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q2_report.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q3_report.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q3_report.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View Annual Report (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/ar_2022_e.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View_Annual_Report__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/ar_2022_e.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q1slides.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q1slides.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q2slides.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q2slides.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q3slides.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q3slides.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q4slides.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q4slides.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q1pillar3.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q1pillar3.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q2pillar3.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q2pillar3.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q3pillar3.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q3pillar3.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q4pillar3.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2022q4pillar3.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q1release.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q1release.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q2release.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q2release.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q3release.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q3release.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q4release.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q4release.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q1speech.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q1speech.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q2speech.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q2speech.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q3speech.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q3speech.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q4speech.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q4speech.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q1_report.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q1_report.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q2_report.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q2_report.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q3_report.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q3_report.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View Annual Report (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/ar_2021_e.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View_Annual_Report__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/ar_2021_e.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q1slides.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q1slides.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q2slides.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q2slides.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q3slides.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q3slides.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q4slides.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q4slides.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q1pillar3.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q1pillar3.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q2pillar3.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q2pillar3.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q3pillar3.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q3pillar3.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q4pillar3.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2021q4pillar3.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q1release.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q1release.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q2release.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q2release.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q3release.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q3release.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q4release.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q4release.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q1speech.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q1speech.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q2speech.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q2speech.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q3speech.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q3speech.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q4speech.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q4speech.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q1_report.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q1_report.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q2_report.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q2_report.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q3_report.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q3_report.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View Annual Report(PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/ar_2020_e.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View_Annual_Report_PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/ar_2020_e.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q1slides.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q1slides.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q2slides.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q2slides.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q3slides.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q3slides.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q4slides.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q4slides.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q1pillar3.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q1pillar3.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q2pillar3.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q2pillar3.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q3pillar3.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q3pillar3.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View (PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q4pillar3.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2020q4pillar3.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | View Strategic Update \n(PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q4strategicupdate.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/View_Strategic_Update___PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/2025q4strategicupdate.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "RBC Annual | 2024 Sustainability Report\n(PDF opens in new window)",
+      "url": "https://www.rbc.com/investor-relations/_assets-custom/pdf/RBC-2024-sustainability-report.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/ir/annual/2024_Sustainability_Report__PDF_opens_in_new_window.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.rbc.com/investor-relations/_assets-custom/pdf/RBC-2024-sustainability-report.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "TD Annual | Complete Report",
+      "url": "https://www.td.com/content/dam/tdcom/canada/about-td/pdf/quarterly-results/2025/q4/2025-annual-report-en.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/td/ir/annual/Complete_Report.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.td.com/content/dam/tdcom/canada/about-td/pdf/quarterly-results/2025/q4/2025-annual-report-en.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "TD Annual | Management's Discussion And Analysis",
+      "url": "https://www.td.com/content/dam/tdcom/canada/about-td/pdf/investor/investor-relations/financial-information/financial-reports/annual-reports/annual-report-2025/ar2025-managements-discussion-and-analysis-en.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/td/ir/annual/Management_s_Discussion_And_Analysis.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.td.com/content/dam/tdcom/canada/about-td/pdf/investor/investor-relations/financial-information/financial-reports/annual-reports/annual-report-2025/ar2025-managements-discussion-and-analysis-en.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "TD Annual | Consolidated Financial Statements",
+      "url": "https://www.td.com/content/dam/tdcom/canada/about-td/pdf/investor/investor-relations/financial-information/financial-reports/annual-reports/annual-report-2025/ar2025-consolidated-financial-statements-en.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/td/ir/annual/Consolidated_Financial_Statements.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.td.com/content/dam/tdcom/canada/about-td/pdf/investor/investor-relations/financial-information/financial-reports/annual-reports/annual-report-2025/ar2025-consolidated-financial-statements-en.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "TD Annual | Ten-year Statistical Review",
+      "url": "https://www.td.com/content/dam/tdcom/canada/about-td/pdf/investor/investor-relations/financial-information/financial-reports/annual-reports/annual-report-2025/ar2025-ten-year-statistical-review-en.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/td/ir/annual/Ten-year_Statistical_Review.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.td.com/content/dam/tdcom/canada/about-td/pdf/investor/investor-relations/financial-information/financial-reports/annual-reports/annual-report-2025/ar2025-ten-year-statistical-review-en.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "TD Annual | Principal Subsidiaries",
+      "url": "https://www.td.com/content/dam/tdcom/canada/about-td/pdf/investor/investor-relations/financial-information/financial-reports/annual-reports/annual-report-2025/ar2025-principal-subsidiaries-en.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/td/ir/annual/Principal_Subsidiaries.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.td.com/content/dam/tdcom/canada/about-td/pdf/investor/investor-relations/financial-information/financial-reports/annual-reports/annual-report-2025/ar2025-principal-subsidiaries-en.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "BNS Annual | PDF",
+      "url": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2025/q4/Annual_Report_2025_EN.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/bns/ir/annual/PDF.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2025/q4/Annual_Report_2025_EN.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "BNS Annual | PDF",
+      "url": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2025/q4/BNS_40-F.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/bns/ir/annual/PDF.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2025/q4/BNS_40-F.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "BNS Annual | PDF",
+      "url": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2025/q4/Scotiabank-194th-Management-Proxy-Circular-EN-AODA.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/bns/ir/annual/PDF.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2025/q4/Scotiabank-194th-Management-Proxy-Circular-EN-AODA.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "BNS Annual | PDF",
+      "url": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2025/q4/Scotiabank-194th-Notice-of-Availability-AODA.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/bns/ir/annual/PDF.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2025/q4/Scotiabank-194th-Notice-of-Availability-AODA.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "BNS Annual | User Guide",
+      "url": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2025/q4/Scotiabank-AGM-2026-Hybrid-Meeting-Guide.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/bns/ir/annual/User_Guide.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2025/q4/Scotiabank-AGM-2026-Hybrid-Meeting-Guide.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "BNS Annual | PDF",
+      "url": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2025/q4/Scotiabank-Marked-Copy-of-Proposed-Amendments-to-By-law-No-1-2026.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/bns/ir/annual/PDF.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2025/q4/Scotiabank-Marked-Copy-of-Proposed-Amendments-to-By-law-No-1-2026.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "BNS Annual | Meeting Information",
+      "url": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2025/q4/Meeting-Information-English.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/bns/ir/annual/Meeting_Information.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2025/q4/Meeting-Information-English.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "BNS Annual | Restricted Bag Policy",
+      "url": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2025/q4/Restricted-Bag-Policy.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/bns/ir/annual/Restricted_Bag_Policy.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2025/q4/Restricted-Bag-Policy.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "NA Annual Report 2020",
+      "url": "https://www.nbc.ca/content/dam/bnc/a-propos-de-nous/relations-investisseurs/assemblee-annuelle/2021/na-annual-report-2020.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/na/ir/annual/NA_Annual_2020.pdf",
+      "status": "failed: Timeout 45000ms exceeded while waiting for event \"download\"\n=========================== logs ===========================\nwaiting for event \"download\"\n============================================================"
+    },
+    {
+      "label": "NA Annual Report 2020 (alt)",
+      "url": "https://www.nbc.ca/content/dam/bnc/a-propos-de-nous/relations-investisseurs/assemblee-annuelle/2020/na-annual-report-2020.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/na/ir/annual/NA_Annual_2020.pdf",
+      "status": "failed: Timeout 45000ms exceeded while waiting for event \"download\"\n=========================== logs ===========================\nwaiting for event \"download\"\n============================================================"
+    },
+    {
+      "label": "NA Annual Report 2021",
+      "url": "https://www.nbc.ca/content/dam/bnc/a-propos-de-nous/relations-investisseurs/assemblee-annuelle/2022/na-annual-report-2021.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/na/ir/annual/NA_Annual_2021.pdf",
+      "status": "failed: Timeout 45000ms exceeded while waiting for event \"download\"\n=========================== logs ===========================\nwaiting for event \"download\"\n============================================================"
+    },
+    {
+      "label": "NA Annual Report 2021 (alt)",
+      "url": "https://www.nbc.ca/content/dam/bnc/a-propos-de-nous/relations-investisseurs/assemblee-annuelle/2021/na-annual-report-2021.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/na/ir/annual/NA_Annual_2021.pdf",
+      "status": "failed: Timeout 45000ms exceeded while waiting for event \"download\"\n=========================== logs ===========================\nwaiting for event \"download\"\n============================================================"
+    },
+    {
+      "label": "NA Annual Report 2022",
+      "url": "https://www.nbc.ca/content/dam/bnc/a-propos-de-nous/relations-investisseurs/assemblee-annuelle/2023/na-annual-report-2022.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/na/ir/annual/NA_Annual_2022.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.nbc.ca/content/dam/bnc/a-propos-de-nous/relations-investisseurs/assemblee-annuelle/2023/na-annual-report-2022.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "NA Annual Report 2022 (alt)",
+      "url": "https://www.nbc.ca/content/dam/bnc/a-propos-de-nous/relations-investisseurs/assemblee-annuelle/2022/na-annual-report-2022.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/na/ir/annual/NA_Annual_2022.pdf",
+      "status": "failed: Timeout 45000ms exceeded while waiting for event \"download\"\n=========================== logs ===========================\nwaiting for event \"download\"\n============================================================"
+    },
+    {
+      "label": "NA Annual Report 2023",
+      "url": "https://www.nbc.ca/content/dam/bnc/a-propos-de-nous/relations-investisseurs/assemblee-annuelle/2024/na-annual-report-2023.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/na/ir/annual/NA_Annual_2023.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.nbc.ca/content/dam/bnc/a-propos-de-nous/relations-investisseurs/assemblee-annuelle/2024/na-annual-report-2023.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "NA Annual Report 2023 (alt)",
+      "url": "https://www.nbc.ca/content/dam/bnc/a-propos-de-nous/relations-investisseurs/assemblee-annuelle/2023/na-annual-report-2023.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/na/ir/annual/NA_Annual_2023.pdf",
+      "status": "failed: Timeout 45000ms exceeded while waiting for event \"download\"\n=========================== logs ===========================\nwaiting for event \"download\"\n============================================================"
+    },
+    {
+      "label": "NA Annual Report 2024",
+      "url": "https://www.nbc.ca/content/dam/bnc/a-propos-de-nous/relations-investisseurs/assemblee-annuelle/2025/na-annual-report-2024.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/na/ir/annual/NA_Annual_2024.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.nbc.ca/content/dam/bnc/a-propos-de-nous/relations-investisseurs/assemblee-annuelle/2025/na-annual-report-2024.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "NA Annual Report 2024 (alt)",
+      "url": "https://www.nbc.ca/content/dam/bnc/a-propos-de-nous/relations-investisseurs/assemblee-annuelle/2024/na-annual-report-2024.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/na/ir/annual/NA_Annual_2024.pdf",
+      "status": "failed: Timeout 45000ms exceeded while waiting for event \"download\"\n=========================== logs ===========================\nwaiting for event \"download\"\n============================================================"
+    },
+    {
+      "label": "NA Annual Report 2025",
+      "url": "https://www.nbc.ca/content/dam/bnc/a-propos-de-nous/relations-investisseurs/assemblee-annuelle/2026/na-annual-report-2025.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/na/ir/annual/NA_Annual_2025.pdf",
+      "status": "failed: Page.goto: Download is starting\nCall log:\n  - navigating to \"https://www.nbc.ca/content/dam/bnc/a-propos-de-nous/relations-investisseurs/assemblee-annuelle/2026/na-annual-report-2025.pdf\", waiting until \"commit\"\n"
+    },
+    {
+      "label": "NA Annual Report 2025 (alt)",
+      "url": "https://www.nbc.ca/content/dam/bnc/a-propos-de-nous/relations-investisseurs/assemblee-annuelle/2025/na-annual-report-2025.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/na/ir/annual/NA_Annual_2025.pdf",
+      "status": "failed: Timeout 45000ms exceeded while waiting for event \"download\"\n=========================== logs ===========================\nwaiting for event \"download\"\n============================================================"
+    }
+  ]
+}

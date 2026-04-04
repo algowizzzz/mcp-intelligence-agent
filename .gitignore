@@ -18,6 +18,11 @@ ENV/
 .env
 *.env.local
 *.env.*.local
+connector_credentials.env
+api azure
+
+# DuckDB runtime artifacts
+*.db.wal
 
 # Test artifacts
 test_screenshots/

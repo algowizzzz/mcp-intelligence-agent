@@ -1,0 +1,17 @@
+{
+  "bank": "Citigroup",
+  "ticker": "c",
+  "region": "us",
+  "cik": "0000831001",
+  "form": "10-K",
+  "period": "2023-12-31",
+  "filed": "2024-02-23",
+  "accession": "0000831001-24-000033",
+  "description": "10-K",
+  "source_url": "https://www.sec.gov/Archives/edgar/data/831001/000083100124000033/c-20231231.htm",
+  "raw_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/c/10k/C_10K_20231231_000033.htm",
+  "md_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/c/10k/C_10K_20231231_000033.md",
+  "meta_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/c/10k/C_10K_20231231_000033.json",
+  "size_kb": 1692,
+  "downloaded_at": "2026-04-03T20:46:23.938957+00:00"
+}

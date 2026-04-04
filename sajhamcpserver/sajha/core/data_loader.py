@@ -47,6 +47,15 @@ class DataLoader:
     def __init__(self):
         from sajha.core.properties_configurator import PropertiesConfigurator
         props = PropertiesConfigurator()
+        # G-04: Use per-request worker data root from Flask g if set
+        try:
+            from flask import g as _g
+            worker_root = getattr(_g, 'worker_data_root', None)
+            if worker_root:
+                self._root = worker_root
+                return
+        except RuntimeError:
+            pass  # Outside a Flask request context
         self._root = props.get('data.root', 'data')
 
     def load(self, relative_path: str) -> Any:

@@ -1,0 +1,536 @@
+{
+  "root": "/Users/saadahmed/Desktop/react_agent/sajhamcpserver/data/workers/w-market-risk/my_data",
+  "built_at": "2026-04-03T22:56:04.826497+00:00",
+  "tree": [
+    {
+      "type": "folder",
+      "name": "risk_agent",
+      "path": "risk_agent",
+      "children": [
+        {
+          "type": "file",
+          "name": "UAT9D_test_245c1a.md",
+          "path": "risk_agent/UAT9D_test_245c1a.md",
+          "size_bytes": 19,
+          "modified_at": "2026-04-03T22:50:28.361384+00:00",
+          "mime": "text/markdown"
+        },
+        {
+          "type": "file",
+          "name": "UAT9D_test_ecc727.md",
+          "path": "risk_agent/UAT9D_test_ecc727.md",
+          "size_bytes": 19,
+          "modified_at": "2026-04-03T22:51:14.948422+00:00",
+          "mime": "text/markdown"
+        },
+        {
+          "type": "folder",
+          "name": "charts",
+          "path": "risk_agent/charts",
+          "children": [
+            {
+              "type": "file",
+              "name": "chart_bar_20260403_072719.html",
+              "path": "risk_agent/charts/chart_bar_20260403_072719.html",
+              "size_bytes": 8480,
+              "modified_at": "2026-04-03T22:27:42.595474+00:00",
+              "mime": "text/html"
+            },
+            {
+              "type": "file",
+              "name": "chart_bar_20260403_080205.html",
+              "path": "risk_agent/charts/chart_bar_20260403_080205.html",
+              "size_bytes": 8470,
+              "modified_at": "2026-04-03T22:27:42.594608+00:00",
+              "mime": "text/html"
+            },
+            {
+              "type": "file",
+              "name": "chart_bar_20260403_080326.html",
+              "path": "risk_agent/charts/chart_bar_20260403_080326.html",
+              "size_bytes": 8440,
+              "modified_at": "2026-04-03T22:27:42.593488+00:00",
+              "mime": "text/html"
+            },
+            {
+              "type": "file",
+              "name": "chart_bar_20260403_080346.html",
+              "path": "risk_agent/charts/chart_bar_20260403_080346.html",
+              "size_bytes": 8446,
+              "modified_at": "2026-04-03T22:27:42.593957+00:00",
+              "mime": "text/html"
+            },
+            {
+              "type": "file",
+              "name": "chart_bar_20260403_080546.html",
+              "path": "risk_agent/charts/chart_bar_20260403_080546.html",
+              "size_bytes": 8446,
+              "modified_at": "2026-04-03T22:27:42.595042+00:00",
+              "mime": "text/html"
+            },
+            {
+              "type": "file",
+              "name": "chart_bar_20260403_080551.html",
+              "path": "risk_agent/charts/chart_bar_20260403_080551.html",
+              "size_bytes": 8446,
+              "modified_at": "2026-04-03T22:27:42.594176+00:00",
+              "mime": "text/html"
+            },
+            {
+              "type": "file",
+              "name": "chart_bar_20260403_201904.html",
+              "path": "risk_agent/charts/chart_bar_20260403_201904.html",
+              "size_bytes": 8637,
+              "modified_at": "2026-04-03T22:27:42.589222+00:00",
+              "mime": "text/html"
+            },
+            {
+              "type": "file",
+              "name": "chart_bar_20260403_203824.html",
+              "path": "risk_agent/charts/chart_bar_20260403_203824.html",
+              "size_bytes": 8637,
+              "modified_at": "2026-04-03T22:27:42.594807+00:00",
+              "mime": "text/html"
+            },
+            {
+              "type": "file",
+              "name": "chart_line_20260403_080316.html",
+              "path": "risk_agent/charts/chart_line_20260403_080316.html",
+              "size_bytes": 8484,
+              "modified_at": "2026-04-03T22:27:42.591305+00:00",
+              "mime": "text/html"
+            },
+            {
+              "type": "file",
+              "name": "chart_line_20260403_080432.html",
+              "path": "risk_agent/charts/chart_line_20260403_080432.html",
+              "size_bytes": 8484,
+              "modified_at": "2026-04-03T22:27:42.592314+00:00",
+              "mime": "text/html"
+            },
+            {
+              "type": "file",
+              "name": "chart_line_20260403_080520.html",
+              "path": "risk_agent/charts/chart_line_20260403_080520.html",
+              "size_bytes": 8493,
+              "modified_at": "2026-04-03T22:27:42.592714+00:00",
+              "mime": "text/html"
+            },
+            {
+              "type": "file",
+              "name": "chart_line_20260403_080541.html",
+              "path": "risk_agent/charts/chart_line_20260403_080541.html",
+              "size_bytes": 8488,
+              "modified_at": "2026-04-03T22:27:42.592999+00:00",
+              "mime": "text/html"
+            },
+            {
+              "type": "file",
+              "name": "chart_line_20260403_080617.png",
+              "path": "risk_agent/charts/chart_line_20260403_080617.png",
+              "size_bytes": 84503,
+              "modified_at": "2026-04-03T22:27:42.590598+00:00",
+              "mime": "image/png"
+            },
+            {
+              "type": "file",
+              "name": "chart_line_20260403_080624.html",
+              "path": "risk_agent/charts/chart_line_20260403_080624.html",
+              "size_bytes": 8487,
+              "modified_at": "2026-04-03T22:27:42.591961+00:00",
+              "mime": "text/html"
+            },
+            {
+              "type": "file",
+              "name": "chart_line_20260403_195227.png",
+              "path": "risk_agent/charts/chart_line_20260403_195227.png",
+              "size_bytes": 107602,
+              "modified_at": "2026-04-03T22:27:42.590920+00:00",
+              "mime": "image/png"
+            },
+            {
+              "type": "file",
+              "name": "chart_line_20260403_195234.html",
+              "path": "risk_agent/charts/chart_line_20260403_195234.html",
+              "size_bytes": 8635,
+              "modified_at": "2026-04-03T22:27:42.594390+00:00",
+              "mime": "text/html"
+            },
+            {
+              "type": "file",
+              "name": "chart_line_20260403_200407.html",
+              "path": "risk_agent/charts/chart_line_20260403_200407.html",
+              "size_bytes": 8641,
+              "modified_at": "2026-04-03T22:27:42.593746+00:00",
+              "mime": "text/html"
+            },
+            {
+              "type": "file",
+              "name": "chart_line_20260403_200658.html",
+              "path": "risk_agent/charts/chart_line_20260403_200658.html",
+              "size_bytes": 8968,
+              "modified_at": "2026-04-03T22:27:42.589978+00:00",
+              "mime": "text/html"
+            },
+            {
+              "type": "file",
+              "name": "chart_line_20260403_202833.html",
+              "path": "risk_agent/charts/chart_line_20260403_202833.html",
+              "size_bytes": 8635,
+              "modified_at": "2026-04-03T22:27:42.590192+00:00",
+              "mime": "text/html"
+            },
+            {
+              "type": "file",
+              "name": "chart_line_20260403_205231.html",
+              "path": "risk_agent/charts/chart_line_20260403_205231.html",
+              "size_bytes": 8657,
+              "modified_at": "2026-04-03T22:27:42.589753+00:00",
+              "mime": "text/html"
+            },
+            {
+              "type": "file",
+              "name": "chart_pie_20260403_072719.png",
+              "path": "risk_agent/charts/chart_pie_20260403_072719.png",
+              "size_bytes": 77485,
+              "modified_at": "2026-04-03T22:27:42.591724+00:00",
+              "mime": "image/png"
+            },
+            {
+              "type": "file",
+              "name": "chart_pie_20260403_072735.html",
+              "path": "risk_agent/charts/chart_pie_20260403_072735.html",
+              "size_bytes": 8349,
+              "modified_at": "2026-04-03T22:27:42.595259+00:00",
+              "mime": "text/html"
+            },
+            {
+              "type": "file",
+              "name": "chart_pie_20260403_080541.html",
+              "path": "risk_agent/charts/chart_pie_20260403_080541.html",
+              "size_bytes": 8330,
+              "modified_at": "2026-04-03T22:27:42.593259+00:00",
+              "mime": "text/html"
+            }
+          ]
+        },
+        {
+          "type": "folder",
+          "name": "company_briefs",
+          "path": "risk_agent/company_briefs",
+          "children": [
+            {
+              "type": "file",
+              "name": "GS_Company_Brief.md",
+              "path": "risk_agent/company_briefs/GS_Company_Brief.md",
+              "size_bytes": 3581,
+              "modified_at": "2026-04-03T22:27:42.566119+00:00",
+              "mime": "text/markdown"
+            },
+            {
+              "type": "file",
+              "name": "goldman_sachs_company_brief.md",
+              "path": "risk_agent/company_briefs/goldman_sachs_company_brief.md",
+              "size_bytes": 3291,
+              "modified_at": "2026-04-03T22:27:42.566597+00:00",
+              "mime": "text/markdown"
+            },
+            {
+              "type": "file",
+              "name": "goldman_sachs_company_brief_2026-04-03_203511.md",
+              "path": "risk_agent/company_briefs/goldman_sachs_company_brief_2026-04-03_203511.md",
+              "size_bytes": 3696,
+              "modified_at": "2026-04-03T22:27:42.566370+00:00",
+              "mime": "text/markdown"
+            },
+            {
+              "type": "file",
+              "name": "goldman_sachs_company_brief_2026-04-03_204822.md",
+              "path": "risk_agent/company_briefs/goldman_sachs_company_brief_2026-04-03_204822.md",
+              "size_bytes": 4091,
+              "modified_at": "2026-04-03T22:27:42.566818+00:00",
+              "mime": "text/markdown"
+            }
+          ]
+        },
+        {
+          "type": "folder",
+          "name": "counterparty_briefs",
+          "path": "risk_agent/counterparty_briefs",
+          "children": [
+            {
+              "type": "file",
+              "name": "Deutsche_Bank_CCR_Intelligence_Brief_2026-03-27.md",
+              "path": "risk_agent/counterparty_briefs/Deutsche_Bank_CCR_Intelligence_Brief_2026-03-27.md",
+              "size_bytes": 9533,
+              "modified_at": "2026-04-03T22:27:42.576886+00:00",
+              "mime": "text/markdown"
+            },
+            {
+              "type": "file",
+              "name": "cpty_intel_Deutsche_Bank_2025-12-31.md",
+              "path": "risk_agent/counterparty_briefs/cpty_intel_Deutsche_Bank_2025-12-31.md",
+              "size_bytes": 6988,
+              "modified_at": "2026-04-03T22:27:42.575665+00:00",
+              "mime": "text/markdown"
+            },
+            {
+              "type": "file",
+              "name": "cpty_intel_Deutsche_Bank_2025-12-31_2026-04-03_074236.md",
+              "path": "risk_agent/counterparty_briefs/cpty_intel_Deutsche_Bank_2025-12-31_2026-04-03_074236.md",
+              "size_bytes": 7483,
+              "modified_at": "2026-04-03T22:27:42.574707+00:00",
+              "mime": "text/markdown"
+            },
+            {
+              "type": "file",
+              "name": "cpty_intel_RBC_2026-03-27.md",
+              "path": "risk_agent/counterparty_briefs/cpty_intel_RBC_2026-03-27.md",
+              "size_bytes": 6434,
+              "modified_at": "2026-04-03T22:27:42.576064+00:00",
+              "mime": "text/markdown"
+            },
+            {
+              "type": "file",
+              "name": "cpty_intel_brief_filled_20260403080119.md",
+              "path": "risk_agent/counterparty_briefs/cpty_intel_brief_filled_20260403080119.md",
+              "size_bytes": 2933,
+              "modified_at": "2026-04-03T22:27:42.576569+00:00",
+              "mime": "text/markdown"
+            },
+            {
+              "type": "file",
+              "name": "cpty_intel_brief_filled_20260403081518.md",
+              "path": "risk_agent/counterparty_briefs/cpty_intel_brief_filled_20260403081518.md",
+              "size_bytes": 2847,
+              "modified_at": "2026-04-03T22:27:42.576317+00:00",
+              "mime": "text/markdown"
+            },
+            {
+              "type": "file",
+              "name": "goldman_sachs_cpty_brief_2025-12-31.md",
+              "path": "risk_agent/counterparty_briefs/goldman_sachs_cpty_brief_2025-12-31.md",
+              "size_bytes": 3838,
+              "modified_at": "2026-04-03T22:27:42.575211+00:00",
+              "mime": "text/markdown"
+            },
+            {
+              "type": "file",
+              "name": "goldman_sachs_cpty_brief_2025-12-31_2026-04-03_201926.md",
+              "path": "risk_agent/counterparty_briefs/goldman_sachs_cpty_brief_2025-12-31_2026-04-03_201926.md",
+              "size_bytes": 1644,
+              "modified_at": "2026-04-03T22:27:42.577972+00:00",
+              "mime": "text/markdown"
+            },
+            {
+              "type": "file",
+              "name": "goldman_sachs_cpty_brief_2025-12-31_2026-04-03_201939.md",
+              "path": "risk_agent/counterparty_briefs/goldman_sachs_cpty_brief_2025-12-31_2026-04-03_201939.md",
+              "size_bytes": 5053,
+              "modified_at": "2026-04-03T22:27:42.577311+00:00",
+              "mime": "text/markdown"
+            },
+            {
+              "type": "file",
+              "name": "goldman_sachs_cpty_brief_2025-12-31_2026-04-03_203844.md",
+              "path": "risk_agent/counterparty_briefs/goldman_sachs_cpty_brief_2025-12-31_2026-04-03_203844.md",
+              "size_bytes": 1659,
+              "modified_at": "2026-04-03T22:27:42.574944+00:00",
+              "mime": "text/markdown"
+            }
+          ]
+        },
+        {
+          "type": "folder",
+          "name": "exports",
+          "path": "risk_agent/exports",
+          "children": [
+            {
+              "type": "file",
+              "name": "active_by_cpty.csv",
+              "path": "risk_agent/exports/active_by_cpty.csv",
+              "size_bytes": 70,
+              "modified_at": "2026-04-03T22:27:42.602238+00:00",
+              "mime": "text/csv"
+            },
+            {
+              "type": "file",
+              "name": "analysis_result.csv",
+              "path": "risk_agent/exports/analysis_result.csv",
+              "size_bytes": 26,
+              "modified_at": "2026-04-03T22:27:42.601985+00:00",
+              "mime": "text/csv"
+            },
+            {
+              "type": "file",
+              "name": "dept_summary.csv",
+              "path": "risk_agent/exports/dept_summary.csv",
+              "size_bytes": 30,
+              "modified_at": "2026-04-03T22:27:42.600814+00:00",
+              "mime": "text/csv"
+            },
+            {
+              "type": "file",
+              "name": "filtered_output.parquet",
+              "path": "risk_agent/exports/filtered_output.parquet",
+              "size_bytes": 753,
+              "modified_at": "2026-04-03T22:27:42.600543+00:00",
+              "mime": "application/octet-stream"
+            },
+            {
+              "type": "file",
+              "name": "test_export.csv",
+              "path": "risk_agent/exports/test_export.csv",
+              "size_bytes": 70,
+              "modified_at": "2026-04-03T22:27:42.603086+00:00",
+              "mime": "text/csv"
+            },
+            {
+              "type": "file",
+              "name": "test_export_2026-04-03_063649.csv",
+              "path": "risk_agent/exports/test_export_2026-04-03_063649.csv",
+              "size_bytes": 70,
+              "modified_at": "2026-04-03T22:27:42.602739+00:00",
+              "mime": "text/csv"
+            },
+            {
+              "type": "file",
+              "name": "test_export_results.csv",
+              "path": "risk_agent/exports/test_export_results.csv",
+              "size_bytes": 36,
+              "modified_at": "2026-04-03T22:27:42.601191+00:00",
+              "mime": "text/csv"
+            },
+            {
+              "type": "file",
+              "name": "test_pass.csv",
+              "path": "risk_agent/exports/test_pass.csv",
+              "size_bytes": 21,
+              "modified_at": "2026-04-03T22:27:42.602512+00:00",
+              "mime": "text/csv"
+            },
+            {
+              "type": "file",
+              "name": "test_pass.parquet",
+              "path": "risk_agent/exports/test_pass.parquet",
+              "size_bytes": 728,
+              "modified_at": "2026-04-03T22:27:42.601607+00:00",
+              "mime": "application/octet-stream"
+            }
+          ]
+        },
+        {
+          "type": "folder",
+          "name": "reports",
+          "path": "risk_agent/reports",
+          "children": [
+            {
+              "type": "file",
+              "name": "CTRL-2025-0847_Assessment_Report.md",
+              "path": "risk_agent/reports/CTRL-2025-0847_Assessment_Report.md",
+              "size_bytes": 5019,
+              "modified_at": "2026-04-03T22:27:42.608427+00:00",
+              "mime": "text/markdown"
+            },
+            {
+              "type": "file",
+              "name": "SAJHA_Comprehensive_Test_Report_2026-04-03.md",
+              "path": "risk_agent/reports/SAJHA_Comprehensive_Test_Report_2026-04-03.md",
+              "size_bytes": 13539,
+              "modified_at": "2026-04-03T22:27:42.609930+00:00",
+              "mime": "text/markdown"
+            },
+            {
+              "type": "file",
+              "name": "ccr_portfolio_2026-03-27.md",
+              "path": "risk_agent/reports/ccr_portfolio_2026-03-27.md",
+              "size_bytes": 2808,
+              "modified_at": "2026-04-03T22:27:42.608778+00:00",
+              "mime": "text/markdown"
+            },
+            {
+              "type": "file",
+              "name": "ccr_portfolio_2026-03-27_2026-04-03_081545.md",
+              "path": "risk_agent/reports/ccr_portfolio_2026-03-27_2026-04-03_081545.md",
+              "size_bytes": 2322,
+              "modified_at": "2026-04-03T22:27:42.608170+00:00",
+              "mime": "text/markdown"
+            },
+            {
+              "type": "file",
+              "name": "exposure_trend_TD_2026-03-27.md",
+              "path": "risk_agent/reports/exposure_trend_TD_2026-03-27.md",
+              "size_bytes": 2750,
+              "modified_at": "2026-04-03T22:27:42.609341+00:00",
+              "mime": "text/markdown"
+            },
+            {
+              "type": "file",
+              "name": "smoke_fill.md",
+              "path": "risk_agent/reports/smoke_fill.md",
+              "size_bytes": 1647,
+              "modified_at": "2026-04-03T22:27:42.610127+00:00",
+              "mime": "text/markdown"
+            },
+            {
+              "type": "file",
+              "name": "smoke_test.md",
+              "path": "risk_agent/reports/smoke_test.md",
+              "size_bytes": 18,
+              "modified_at": "2026-04-03T22:27:42.609543+00:00",
+              "mime": "text/markdown"
+            },
+            {
+              "type": "file",
+              "name": "test_md_save.md",
+              "path": "risk_agent/reports/test_md_save.md",
+              "size_bytes": 13,
+              "modified_at": "2026-04-03T22:27:42.609112+00:00",
+              "mime": "text/markdown"
+            }
+          ]
+        },
+        {
+          "type": "file",
+          "name": "test_plan.md",
+          "path": "risk_agent/test_plan.md",
+          "size_bytes": 17536,
+          "modified_at": "2026-04-03T22:27:42.627400+00:00",
+          "mime": "text/markdown"
+        },
+        {
+          "type": "file",
+          "name": "test_sample.csv",
+          "path": "risk_agent/test_sample.csv",
+          "size_bytes": 47,
+          "modified_at": "2026-04-03T22:27:42.615526+00:00",
+          "mime": "text/csv"
+        },
+        {
+          "type": "file",
+          "name": "test_sample.parquet",
+          "path": "risk_agent/test_sample.parquet",
+          "size_bytes": 2171,
+          "modified_at": "2026-04-03T22:27:42.623867+00:00",
+          "mime": "application/octet-stream"
+        },
+        {
+          "type": "file",
+          "name": "test_upload.txt",
+          "path": "risk_agent/test_upload.txt",
+          "size_bytes": 5,
+          "modified_at": "2026-04-03T22:27:42.620511+00:00",
+          "mime": "text/plain"
+        },
+        {
+          "type": "file",
+          "name": "uat_analysis.md",
+          "path": "risk_agent/uat_analysis.md",
+          "size_bytes": 44,
+          "modified_at": "2026-04-03T22:27:42.631205+00:00",
+          "mime": "text/markdown"
+        }
+      ]
+    }
+  ]
+}

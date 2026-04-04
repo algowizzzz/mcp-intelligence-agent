@@ -1,7 +1,38 @@
 {
   "root": "/Users/saadahmed/Desktop/react_agent/sajhamcpserver/data/workers/w-market-risk/domain_data",
-  "built_at": "2026-04-03T18:10:20.293366+00:00",
+  "built_at": "2026-04-04T15:11:25.236785+00:00",
   "tree": [
+    {
+      "type": "folder",
+      "name": "Test",
+      "path": "Test",
+      "children": [
+        {
+          "type": "file",
+          "name": "test_results_2026-04-03.md",
+          "path": "Test/test_results_2026-04-03.md",
+          "size_bytes": 13889,
+          "modified_at": "2026-04-03T22:27:35.874572+00:00",
+          "mime": "text/markdown"
+        },
+        {
+          "type": "file",
+          "name": "test_trades.csv",
+          "path": "Test/test_trades.csv",
+          "size_bytes": 254,
+          "modified_at": "2026-04-03T22:27:35.874800+00:00",
+          "mime": "text/csv"
+        },
+        {
+          "type": "file",
+          "name": "test_trades.parquet",
+          "path": "Test/test_trades.parquet",
+          "size_bytes": 1886,
+          "modified_at": "2026-04-03T22:27:35.874288+00:00",
+          "mime": "application/octet-stream"
+        }
+      ]
+    },
     {
       "type": "folder",
       "name": "analytics",
@@ -88,6 +119,53 @@
     },
     {
       "type": "folder",
+      "name": "duckdb",
+      "path": "duckdb",
+      "children": [
+        {
+          "type": "file",
+          "name": "customers.csv",
+          "path": "duckdb/customers.csv",
+          "size_bytes": 5560,
+          "modified_at": "2026-04-03T22:27:35.868631+00:00",
+          "mime": "text/csv"
+        },
+        {
+          "type": "file",
+          "name": "duckdb_analytics.db",
+          "path": "duckdb/duckdb_analytics.db",
+          "size_bytes": 274432,
+          "modified_at": "2026-04-03T23:23:41.317547+00:00",
+          "mime": "application/octet-stream"
+        },
+        {
+          "type": "file",
+          "name": "duckdb_analytics.db.wal",
+          "path": "duckdb/duckdb_analytics.db.wal",
+          "size_bytes": 71954,
+          "modified_at": "2026-04-03T23:38:39.059651+00:00",
+          "mime": "application/octet-stream"
+        },
+        {
+          "type": "file",
+          "name": "orders.csv",
+          "path": "duckdb/orders.csv",
+          "size_bytes": 8242,
+          "modified_at": "2026-04-03T22:27:35.869184+00:00",
+          "mime": "text/csv"
+        },
+        {
+          "type": "file",
+          "name": "products.csv",
+          "path": "duckdb/products.csv",
+          "size_bytes": 1652,
+          "modified_at": "2026-04-03T22:27:35.868897+00:00",
+          "mime": "text/csv"
+        }
+      ]
+    },
+    {
+      "type": "folder",
       "name": "iris",
       "path": "iris",
       "children": [
@@ -146,6 +224,120 @@
       "name": "market_data",
       "path": "market_data",
       "children": []
+    },
+    {
+      "type": "folder",
+      "name": "msdocs",
+      "path": "msdocs",
+      "children": []
+    },
+    {
+      "type": "folder",
+      "name": "osfi",
+      "path": "osfi",
+      "children": [
+        {
+          "type": "file",
+          "name": "B13_tech_cyber.md",
+          "path": "osfi/B13_tech_cyber.md",
+          "size_bytes": 28743,
+          "modified_at": "2026-04-03T22:27:35.864492+00:00",
+          "mime": "text/markdown"
+        },
+        {
+          "type": "folder",
+          "name": "CAR_2026",
+          "path": "osfi/CAR_2026",
+          "children": [
+            {
+              "type": "file",
+              "name": "CAR_2026_ch2_credit_risk.md",
+              "path": "osfi/CAR_2026/CAR_2026_ch2_credit_risk.md",
+              "size_bytes": 20316,
+              "modified_at": "2026-04-03T22:27:35.863495+00:00",
+              "mime": "text/markdown"
+            },
+            {
+              "type": "file",
+              "name": "CAR_2026_overview.md",
+              "path": "osfi/CAR_2026/CAR_2026_overview.md",
+              "size_bytes": 17098,
+              "modified_at": "2026-04-03T22:27:35.863129+00:00",
+              "mime": "text/markdown"
+            }
+          ]
+        },
+        {
+          "type": "folder",
+          "name": "LAR_2026",
+          "path": "osfi/LAR_2026",
+          "children": [
+            {
+              "type": "file",
+              "name": "LAR_2026_overview.md",
+              "path": "osfi/LAR_2026/LAR_2026_overview.md",
+              "size_bytes": 19738,
+              "modified_at": "2026-04-03T22:27:35.865005+00:00",
+              "mime": "text/markdown"
+            }
+          ]
+        },
+        {
+          "type": "file",
+          "name": "README.md",
+          "path": "osfi/README.md",
+          "size_bytes": 4758,
+          "modified_at": "2026-04-03T22:27:35.864031+00:00",
+          "mime": "text/markdown"
+        }
+      ]
+    },
+    {
+      "type": "folder",
+      "name": "sqlselect",
+      "path": "sqlselect",
+      "children": [
+        {
+          "type": "file",
+          "name": "customer_data.csv",
+          "path": "sqlselect/customer_data.csv",
+          "size_bytes": 752,
+          "modified_at": "2026-04-03T22:27:35.872318+00:00",
+          "mime": "text/csv"
+        },
+        {
+          "type": "file",
+          "name": "inventory_data.csv",
+          "path": "sqlselect/inventory_data.csv",
+          "size_bytes": 743,
+          "modified_at": "2026-04-03T22:27:35.871868+00:00",
+          "mime": "text/csv"
+        },
+        {
+          "type": "file",
+          "name": "sales_data.csv",
+          "path": "sqlselect/sales_data.csv",
+          "size_bytes": 1144,
+          "modified_at": "2026-04-03T22:27:35.872095+00:00",
+          "mime": "text/csv"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "name": "uat_test.xlsx",
+      "path": "uat_test.xlsx",
+      "size_bytes": 5434,
+      "modified_at": "2026-04-03T21:43:57.475226+00:00",
+      "mime": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    },
+    {
+      "type": "file",
+      "name": "uat_test_preview.md",
+      "path": "uat_test_preview.md",
+      "size_bytes": 168,
+      "modified_at": "2026-04-03T21:42:58.019595+00:00",
+      "mime": "text/markdown"
     },
     {
       "type": "folder",

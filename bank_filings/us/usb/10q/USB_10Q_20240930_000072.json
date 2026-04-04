@@ -1,0 +1,17 @@
+{
+  "bank": "US Bancorp",
+  "ticker": "usb",
+  "region": "us",
+  "cik": "0000036104",
+  "form": "10-Q",
+  "period": "2024-09-30",
+  "filed": "2024-11-05",
+  "accession": "0000036104-24-000072",
+  "description": "10-Q",
+  "source_url": "https://www.sec.gov/Archives/edgar/data/36104/000003610424000072/usb-20240930.htm",
+  "raw_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/usb/10q/USB_10Q_20240930_000072.htm",
+  "md_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/usb/10q/USB_10Q_20240930_000072.md",
+  "meta_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/usb/10q/USB_10Q_20240930_000072.json",
+  "size_kb": 476,
+  "downloaded_at": "2026-04-03T20:48:24.305027+00:00"
+}

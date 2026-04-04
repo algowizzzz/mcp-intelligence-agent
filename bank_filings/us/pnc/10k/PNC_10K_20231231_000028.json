@@ -1,0 +1,17 @@
+{
+  "bank": "PNC Financial",
+  "ticker": "pnc",
+  "region": "us",
+  "cik": "0000713676",
+  "form": "10-K",
+  "period": "2023-12-31",
+  "filed": "2024-02-21",
+  "accession": "0000713676-24-000028",
+  "description": "10-K",
+  "source_url": "https://www.sec.gov/Archives/edgar/data/713676/000071367624000028/pnc-20231231.htm",
+  "raw_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/pnc/10k/PNC_10K_20231231_000028.htm",
+  "md_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/pnc/10k/PNC_10K_20231231_000028.md",
+  "meta_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/pnc/10k/PNC_10K_20231231_000028.json",
+  "size_kb": 1094,
+  "downloaded_at": "2026-04-03T20:49:18.561592+00:00"
+}

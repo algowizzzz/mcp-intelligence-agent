@@ -1,0 +1,17 @@
+{
+  "bank": "JPMorgan Chase",
+  "ticker": "jpm",
+  "region": "us",
+  "cik": "0000019617",
+  "form": "10-Q",
+  "period": "2023-06-30",
+  "filed": "2023-08-03",
+  "accession": "0000019617-23-000432",
+  "description": "10-Q",
+  "source_url": "https://www.sec.gov/Archives/edgar/data/19617/000001961723000432/jpm-20230630.htm",
+  "raw_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/jpm/10q/JPM_10Q_20230630_000432.htm",
+  "md_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/jpm/10q/JPM_10Q_20230630_000432.md",
+  "meta_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/jpm/10q/JPM_10Q_20230630_000432.json",
+  "size_kb": 12247,
+  "downloaded_at": "2026-04-03T20:41:59.827261Z"
+}

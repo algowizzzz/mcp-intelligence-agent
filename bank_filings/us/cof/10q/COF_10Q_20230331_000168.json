@@ -1,0 +1,17 @@
+{
+  "bank": "Capital One",
+  "ticker": "cof",
+  "region": "us",
+  "cik": "0000927628",
+  "form": "10-Q",
+  "period": "2023-03-31",
+  "filed": "2023-05-05",
+  "accession": "0000927628-23-000168",
+  "description": "10-Q",
+  "source_url": "https://www.sec.gov/Archives/edgar/data/927628/000092762823000168/cof-20230331.htm",
+  "raw_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/cof/10q/COF_10Q_20230331_000168.htm",
+  "md_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/cof/10q/COF_10Q_20230331_000168.md",
+  "meta_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/cof/10q/COF_10Q_20230331_000168.json",
+  "size_kb": 522,
+  "downloaded_at": "2026-04-03T20:49:54.999784+00:00"
+}

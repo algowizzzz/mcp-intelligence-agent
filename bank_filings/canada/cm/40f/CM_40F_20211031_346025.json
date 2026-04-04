@@ -1,0 +1,17 @@
+{
+  "bank": "CIBC",
+  "ticker": "cm",
+  "region": "canada",
+  "cik": "0001045520",
+  "form": "40-F",
+  "period": "2021-10-31",
+  "filed": "2021-12-02",
+  "accession": "0001193125-21-346025",
+  "description": "FORM 40-F",
+  "source_url": "https://www.sec.gov/Archives/edgar/data/1045520/000119312521346025/d123871d40f.htm",
+  "raw_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/cm/40f/CM_40F_20211031_346025.htm",
+  "md_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/cm/40f/CM_40F_20211031_346025.md",
+  "meta_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/cm/40f/CM_40F_20211031_346025.json",
+  "size_kb": 365,
+  "downloaded_at": "2026-04-03T20:50:32.571013+00:00"
+}

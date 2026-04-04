@@ -1,0 +1,21 @@
+{
+  "root": "/Users/saadahmed/Desktop/react_agent/sajhamcpserver/data/workers/w-market-risk/my_data/test_user",
+  "built_at": "2026-04-04T14:17:48.314754+00:00",
+  "tree": [
+    {
+      "type": "folder",
+      "name": "reports",
+      "path": "reports",
+      "children": [
+        {
+          "type": "file",
+          "name": "counterparty_intelligence_RBC_2026-03-27.md",
+          "path": "reports/counterparty_intelligence_RBC_2026-03-27.md",
+          "size_bytes": 3677,
+          "modified_at": "2026-04-04T02:49:27.687099+00:00",
+          "mime": "text/markdown"
+        }
+      ]
+    }
+  ]
+}

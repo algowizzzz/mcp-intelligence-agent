@@ -1,0 +1,17 @@
+{
+  "bank": "TD Bank Group",
+  "ticker": "td",
+  "region": "canada",
+  "cik": "0000947263",
+  "form": "40-F",
+  "period": "2022-10-31",
+  "filed": "2022-12-01",
+  "accession": "0001193125-22-296446",
+  "description": "40-F",
+  "source_url": "https://www.sec.gov/Archives/edgar/data/947263/000119312522296446/d404924d40f.htm",
+  "raw_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/td/40f/TD_40F_20221031_296446.htm",
+  "md_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/td/40f/TD_40F_20221031_296446.md",
+  "meta_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/td/40f/TD_40F_20221031_296446.json",
+  "size_kb": 380,
+  "downloaded_at": "2026-04-03T20:50:20.319187+00:00"
+}

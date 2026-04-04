@@ -1,0 +1,17 @@
+{
+  "bank": "Bank of Montreal",
+  "ticker": "bmo",
+  "region": "canada",
+  "cik": "0000927971",
+  "form": "40-F",
+  "period": "2021-10-31",
+  "filed": "2021-12-03",
+  "accession": "0001193125-21-347995",
+  "description": "40-F",
+  "source_url": "https://www.sec.gov/Archives/edgar/data/927971/000119312521347995/d212602d40f.htm",
+  "raw_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/bmo/40f/BMO_40F_20211031_347995.htm",
+  "md_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/bmo/40f/BMO_40F_20211031_347995.md",
+  "meta_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/bmo/40f/BMO_40F_20211031_347995.json",
+  "size_kb": 315,
+  "downloaded_at": "2026-04-03T20:50:29.210045+00:00"
+}

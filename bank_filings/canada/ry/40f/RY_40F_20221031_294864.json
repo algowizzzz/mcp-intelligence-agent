@@ -1,0 +1,17 @@
+{
+  "bank": "Royal Bank of Canada",
+  "ticker": "ry",
+  "region": "canada",
+  "cik": "0001000275",
+  "form": "40-F",
+  "period": "2022-10-31",
+  "filed": "2022-11-30",
+  "accession": "0001193125-22-294864",
+  "description": "40-F",
+  "source_url": "https://www.sec.gov/Archives/edgar/data/1000275/000119312522294864/d358828d40f.htm",
+  "raw_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/40f/RY_40F_20221031_294864.htm",
+  "md_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/40f/RY_40F_20221031_294864.md",
+  "meta_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/canada/ry/40f/RY_40F_20221031_294864.json",
+  "size_kb": 342,
+  "downloaded_at": "2026-04-03T20:50:17.190424+00:00"
+}

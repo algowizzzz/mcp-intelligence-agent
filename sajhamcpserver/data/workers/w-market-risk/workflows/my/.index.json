@@ -1,22 +1,35 @@
 {
-  "root": "sajhamcpserver/data/workflows/my",
-  "built_at": "2026-04-03T17:39:45.583496+00:00",
+  "root": "/Users/saadahmed/Desktop/react_agent/sajhamcpserver/data/workers/w-market-risk/workflows/my",
+  "built_at": "2026-04-04T14:55:24.280613+00:00",
   "tree": [
     {
-      "type": "file",
-      "name": "BMO_Market_Credit_Risk_Intelligence_Brief_Workflow.md",
-      "path": "BMO_Market_Credit_Risk_Intelligence_Brief_Workflow.md",
-      "size_bytes": 9846,
-      "modified_at": "2026-04-02T05:36:17.494646+00:00",
-      "mime": "text/markdown"
+      "type": "folder",
+      "name": "CCR",
+      "path": "CCR",
+      "children": [
+        {
+          "type": "file",
+          "name": "BMO_Market_Credit_Risk_Intelligence_Brief_Workflow.md",
+          "path": "CCR/BMO_Market_Credit_Risk_Intelligence_Brief_Workflow.md",
+          "size_bytes": 9846,
+          "modified_at": "2026-04-03T18:05:32.827753+00:00",
+          "mime": "text/markdown"
+        },
+        {
+          "type": "file",
+          "name": "market_credit_risk_intelligence_brief.md",
+          "path": "CCR/market_credit_risk_intelligence_brief.md",
+          "size_bytes": 8579,
+          "modified_at": "2026-04-03T18:05:32.828624+00:00",
+          "mime": "text/markdown"
+        }
+      ]
     },
     {
-      "type": "file",
-      "name": "market_credit_risk_intelligence_brief.md",
-      "path": "market_credit_risk_intelligence_brief.md",
-      "size_bytes": 8579,
-      "modified_at": "2026-04-03T04:21:37.902002+00:00",
-      "mime": "text/markdown"
+      "type": "folder",
+      "name": "T&O Risk",
+      "path": "T&O Risk",
+      "children": []
     }
   ]
 }

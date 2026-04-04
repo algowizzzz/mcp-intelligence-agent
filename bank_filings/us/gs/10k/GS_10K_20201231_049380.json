@@ -1,0 +1,17 @@
+{
+  "bank": "Goldman Sachs",
+  "ticker": "gs",
+  "region": "us",
+  "cik": "0000886982",
+  "form": "10-K",
+  "period": "2020-12-31",
+  "filed": "2021-02-22",
+  "accession": "0001193125-21-049380",
+  "description": "10-K",
+  "source_url": "https://www.sec.gov/Archives/edgar/data/886982/000119312521049380/d39654d10k.htm",
+  "raw_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/gs/10k/GS_10K_20201231_049380.htm",
+  "md_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/gs/10k/GS_10K_20201231_049380.md",
+  "meta_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/gs/10k/GS_10K_20201231_049380.json",
+  "size_kb": 1400,
+  "downloaded_at": "2026-04-03T20:47:39.805476+00:00"
+}

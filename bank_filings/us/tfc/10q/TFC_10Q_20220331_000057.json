@@ -1,0 +1,17 @@
+{
+  "bank": "Truist Financial",
+  "ticker": "tfc",
+  "region": "us",
+  "cik": "0000092230",
+  "form": "10-Q",
+  "period": "2022-03-31",
+  "filed": "2022-05-05",
+  "accession": "0000092230-22-000057",
+  "description": "10-Q",
+  "source_url": "https://www.sec.gov/Archives/edgar/data/92230/000009223022000057/tfc-20220331.htm",
+  "raw_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/tfc/10q/TFC_10Q_20220331_000057.htm",
+  "md_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/tfc/10q/TFC_10Q_20220331_000057.md",
+  "meta_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/tfc/10q/TFC_10Q_20220331_000057.json",
+  "size_kb": 353,
+  "downloaded_at": "2026-04-03T20:48:58.947532+00:00"
+}

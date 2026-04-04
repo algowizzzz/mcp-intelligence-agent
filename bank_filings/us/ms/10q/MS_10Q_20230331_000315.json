@@ -1,0 +1,17 @@
+{
+  "bank": "Morgan Stanley",
+  "ticker": "ms",
+  "region": "us",
+  "cik": "0000895421",
+  "form": "10-Q",
+  "period": "2023-03-31",
+  "filed": "2023-05-02",
+  "accession": "0000895421-23-000315",
+  "description": "10-Q",
+  "source_url": "https://www.sec.gov/Archives/edgar/data/895421/000089542123000315/ms-20230331.htm",
+  "raw_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/ms/10q/MS_10Q_20230331_000315.htm",
+  "md_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/ms/10q/MS_10Q_20230331_000315.md",
+  "meta_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/ms/10q/MS_10Q_20230331_000315.json",
+  "size_kb": 521,
+  "downloaded_at": "2026-04-03T20:48:02.905523+00:00"
+}

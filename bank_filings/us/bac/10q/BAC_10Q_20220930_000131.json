@@ -1,0 +1,17 @@
+{
+  "bank": "Bank of America",
+  "ticker": "bac",
+  "region": "us",
+  "cik": "0000070858",
+  "form": "10-Q",
+  "period": "2022-09-30",
+  "filed": "2022-10-28",
+  "accession": "0000070858-22-000131",
+  "description": "10-Q",
+  "source_url": "https://www.sec.gov/Archives/edgar/data/70858/000007085822000131/bac-20220930.htm",
+  "raw_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/bac/10q/BAC_10Q_20220930_000131.htm",
+  "md_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/bac/10q/BAC_10Q_20220930_000131.md",
+  "meta_file": "/Users/saadahmed/Desktop/react_agent/bank_filings/us/bac/10q/BAC_10Q_20220930_000131.json",
+  "size_kb": 13358,
+  "downloaded_at": "2026-04-03T20:42:12.501063Z"
+}

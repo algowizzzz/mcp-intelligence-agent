@@ -1,0 +1,680 @@
+{
+  "summary": {
+    "ok": 71,
+    "skipped": 0,
+    "failed": 29
+  },
+  "results": [
+    {
+      "label": "OSFI_CAR_2024 index",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/capital-adequacy-requirements-2024",
+      "file": "",
+      "status": "scrape_failed: 404 Client Error: Not Found for url: https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/capital-adequacy-requirements-2024"
+    },
+    {
+      "label": "OSFI_CAR_2023 index",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/capital-adequacy-requirements-2023",
+      "file": "",
+      "status": "scrape_failed: 404 Client Error: Not Found for url: https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/capital-adequacy-requirements-2023"
+    },
+    {
+      "label": "OSFI_LAR_2024 index",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/liquidity-adequacy-requirements-2024",
+      "file": "",
+      "status": "scrape_failed: 404 Client Error: Not Found for url: https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/liquidity-adequacy-requirements-2024"
+    },
+    {
+      "label": "OSFI_LAR_2023 index",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/liquidity-adequacy-requirements-2023",
+      "file": "",
+      "status": "scrape_failed: 404 Client Error: Not Found for url: https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/liquidity-adequacy-requirements-2023"
+    },
+    {
+      "label": "OSFI B-6 Liquidity Principles",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/liquidity-principles-deposit-taking-institutions",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/guidelines/OSFI_B-6_Liquidity_Principles.html",
+      "status": "failed: 404 Client Error: Not Found for url: https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/liquidity-principles-deposit-taking-institutions"
+    },
+    {
+      "label": "OSFI B-10 Third-Party Risk Management",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/third-party-risk-management-guideline",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/guidelines/OSFI_B-10_Third_Party_Risk.html",
+      "status": "ok",
+      "size_kb": 100
+    },
+    {
+      "label": "OSFI B-13 Technology and Cyber Risk",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/technology-cyber-risk-management",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/guidelines/OSFI_B-13_Tech_Cyber_Risk.html",
+      "status": "ok",
+      "size_kb": 85
+    },
+    {
+      "label": "OSFI B-15 Climate Risk Management",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/climate-risk-management",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/guidelines/OSFI_B-15_Climate_Risk.html",
+      "status": "ok",
+      "size_kb": 105
+    },
+    {
+      "label": "OSFI B-20 Residential Mortgage Underwriting",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/residential-mortgage-underwriting-practices-procedures",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/guidelines/OSFI_B-20_Mortgage_Underwriting.html",
+      "status": "ok",
+      "size_kb": 90
+    },
+    {
+      "label": "OSFI E-13 Regulatory Compliance Management",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/regulatory-compliance-management",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/guidelines/OSFI_E-13_Compliance_Mgmt.html",
+      "status": "ok",
+      "size_kb": 43
+    },
+    {
+      "label": "OSFI E-21 Operational Risk and Resilience",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/operational-resilience-risk-management",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/guidelines/OSFI_E-21_Operational_Risk.html",
+      "status": "failed: 404 Client Error: Not Found for url: https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/operational-resilience-risk-management"
+    },
+    {
+      "label": "OSFI E-23 Enterprise-Wide Model Risk Management",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/enterprise-wide-model-risk-management-financial-institutions",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/guidelines/OSFI_E-23_Model_Risk.html",
+      "status": "failed: 404 Client Error: Not Found for url: https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/enterprise-wide-model-risk-management-financial-institutions"
+    },
+    {
+      "label": "OSFI Corporate Governance Guideline",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/corporate-governance-guideline",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/guidelines/OSFI_Corporate_Governance.html",
+      "status": "failed: 404 Client Error: Not Found for url: https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/corporate-governance-guideline"
+    },
+    {
+      "label": "OSFI Integrity and Security Guideline",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/integrity-security-guideline",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/guidelines/OSFI_Integrity_Security.html",
+      "status": "ok",
+      "size_kb": 71
+    },
+    {
+      "label": "OSFI Pillar 3 Disclosure Requirements",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/pillar-3-disclosure-requirements",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/guidelines/OSFI_Pillar3_Disclosure.html",
+      "status": "ok",
+      "size_kb": 36
+    },
+    {
+      "label": "OSFI Supervisory Framework",
+      "url": "https://www.osfi-bsif.gc.ca/en/supervision/supervisory-framework",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/guidelines/OSFI_Supervisory_Framework.html",
+      "status": "ok",
+      "size_kb": 98
+    },
+    {
+      "label": "OSFI Domestic Stability Buffer",
+      "url": "https://www.osfi-bsif.gc.ca/en/bank-regulatory-capital/domestic-stability-buffer",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/guidelines/OSFI_DSB_Announcements.html",
+      "status": "failed: 404 Client Error: Not Found for url: https://www.osfi-bsif.gc.ca/en/bank-regulatory-capital/domestic-stability-buffer"
+    },
+    {
+      "label": "Bank Act (Canada)",
+      "url": "https://laws-lois.justice.gc.ca/eng/acts/B-1.01/",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/canada/other/Bank_Act_Canada.html",
+      "status": "ok",
+      "size_kb": 83
+    },
+    {
+      "label": "PCMLTFA \u2014 AML Act",
+      "url": "https://laws-lois.justice.gc.ca/eng/acts/P-24.501/",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/canada/other/PCMLTFA_AML_Act.html",
+      "status": "ok",
+      "size_kb": 30
+    },
+    {
+      "label": "FINTRAC Guidelines Overview",
+      "url": "https://www.fintrac-canafe.gc.ca/guidance-directives/overview-apercu/Guide-eng",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/canada/other/FINTRAC_Guidelines.html",
+      "status": "failed: 404 Client Error: Not Found for url: https://fintrac-canafe.canada.ca/guidance-directives/overview-apercu/Guide-eng"
+    },
+    {
+      "label": "OSC NI 31-103 Registration Requirements",
+      "url": "https://www.osc.ca/en/securities-law/instruments-rules-policies/3/31-103",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/canada/other/OSC_NI_31-103.html",
+      "status": "ok",
+      "size_kb": 681
+    },
+    {
+      "label": "CIRO Rules and Enforcement",
+      "url": "https://www.ciro.ca/rules-and-enforcement/current-rules",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/canada/other/CIRO_Rules.html",
+      "status": "failed: 403 Client Error: Forbidden for url: https://www.ciro.ca/rules-and-enforcement/current-rules"
+    },
+    {
+      "label": "OCC \u2014 Commercial Real Estate Lending",
+      "url": "https://www.occ.gov/publications-and-resources/publications/comptrollers-handbook/files/commercial-real-estate-lending/index-commercial-real-estate-lending.html",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/occ/OCC_Commercial Real Estate Lending.html",
+      "status": "ok",
+      "size_kb": 55
+    },
+    {
+      "label": "OCC \u2014 Rating Credit Risk",
+      "url": "https://www.occ.gov/publications-and-resources/publications/comptrollers-handbook/files/rating-credit-risk/index-rating-credit-risk.html",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/occ/OCC_Rating Credit Risk.html",
+      "status": "ok",
+      "size_kb": 55
+    },
+    {
+      "label": "OCC \u2014 Model Risk Management",
+      "url": "https://www.occ.gov/publications-and-resources/publications/comptrollers-handbook/files/model-risk-management/index-model-risk-management.html",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/occ/OCC_Model Risk Management.html",
+      "status": "ok",
+      "size_kb": 56
+    },
+    {
+      "label": "OCC \u2014 Interest Rate Risk",
+      "url": "https://www.occ.gov/publications-and-resources/publications/comptrollers-handbook/files/interest-rate-risk/index-interest-rate-risk.html",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/occ/OCC_Interest Rate Risk.html",
+      "status": "ok",
+      "size_kb": 55
+    },
+    {
+      "label": "OCC \u2014 Comptroller's Handbook: Commercial Real Estate Lending",
+      "url": "https://www.occ.gov/publications-and-resources/publications/comptrollers-handbook/files/commercial-real-estate-lending/index-commercial-real-estate-lending.html",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/occ/OCC_Comptroller_s Handbook_ Commercial Real Estate Lending.html",
+      "status": "ok",
+      "size_kb": 55
+    },
+    {
+      "label": "OCC \u2014 Comptroller's Handbook: Model Risk Management",
+      "url": "https://www.occ.gov/publications-and-resources/publications/comptrollers-handbook/files/model-risk-management/index-model-risk-management.html",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/occ/OCC_Comptroller_s Handbook_ Model Risk Management.html",
+      "status": "ok",
+      "size_kb": 56
+    },
+    {
+      "label": "OCC \u2014 Comptroller's Handbook: Interest Rate Risk",
+      "url": "https://www.occ.gov/publications-and-resources/publications/comptrollers-handbook/files/interest-rate-risk/index-interest-rate-risk.html",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/occ/OCC_Comptroller_s Handbook_ Interest Rate Risk.html",
+      "status": "ok",
+      "size_kb": 55
+    },
+    {
+      "label": "OCC \u2014 Comptroller's Handbook: Rating Credit Risk",
+      "url": "https://www.occ.gov/publications-and-resources/publications/comptrollers-handbook/files/rating-credit-risk/index-rating-credit-risk.html",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/occ/OCC_Comptroller_s Handbook_ Rating Credit Risk.html",
+      "status": "ok",
+      "size_kb": 55
+    },
+    {
+      "label": "Fed SR 11-7 Model Risk Management",
+      "url": "https://www.federalreserve.gov/supervisionreg/srletters/sr1107.htm",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/federal_reserve/Fed_SR11-7_Model_Risk.html",
+      "status": "ok",
+      "size_kb": 99
+    },
+    {
+      "label": "Fed SR 12-7 Stress Testing Guidance",
+      "url": "https://www.federalreserve.gov/supervisionreg/srletters/sr1207.htm",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/federal_reserve/Fed_SR12-7_Stress_Testing.html",
+      "status": "ok",
+      "size_kb": 90
+    },
+    {
+      "label": "Fed SR 99-18 Counterparty Credit Risk",
+      "url": "https://www.federalreserve.gov/supervisionreg/srletters/sr9918.htm",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/federal_reserve/Fed_SR99-18_CCR.html",
+      "status": "failed: 404 Client Error: Not Found for url: https://www.federalreserve.gov/supervisionreg/srletters/sr9918.htm"
+    },
+    {
+      "label": "Fed SR 16-11 Data and Models",
+      "url": "https://www.federalreserve.gov/supervisionreg/srletters/sr1611.htm",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/federal_reserve/Fed_SR16-11_Data_Models.html",
+      "status": "ok",
+      "size_kb": 92
+    },
+    {
+      "label": "Fed Regulation YY Enhanced Prudential Standards",
+      "url": "https://www.federalreserve.gov/supervisionreg/regs/regy.htm",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/federal_reserve/Fed_Reg_YY.html",
+      "status": "failed: 404 Client Error: Not Found for url: https://www.federalreserve.gov/supervisionreg/regs/regy.htm"
+    },
+    {
+      "label": "Fed Regulation W Transactions with Affiliates",
+      "url": "https://www.federalreserve.gov/supervisionreg/regs/regw.htm",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/federal_reserve/Fed_Reg_W.html",
+      "status": "failed: 404 Client Error: Not Found for url: https://www.federalreserve.gov/supervisionreg/regs/regw.htm"
+    },
+    {
+      "label": "CCAR Stress Test Policies Index",
+      "url": "https://www.federalreserve.gov/publications/stress-test-policies.htm",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/federal_reserve/Fed_CCAR_Index.html",
+      "status": "failed: 404 Client Error: Not Found for url: https://www.federalreserve.gov/publications/stress-test-policies.htm"
+    },
+    {
+      "label": "DFAST Stress Tests Index",
+      "url": "https://www.federalreserve.gov/supervisionreg/dfa-stress-tests.htm",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/federal_reserve/Fed_DFAST_Index.html",
+      "status": "ok",
+      "size_kb": 79
+    },
+    {
+      "label": "SEC Regulation SHO Short Selling",
+      "url": "https://www.sec.gov/divisions/marketreg/mrfaqregsho1204.htm",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/markets/SEC_Reg_SHO.html",
+      "status": "failed: 403 Client Error: Forbidden for url: https://www.sec.gov/divisions/marketreg/mrfaqregsho1204.htm"
+    },
+    {
+      "label": "CFTC Swap Dealer Rules Dodd-Frank",
+      "url": "https://www.cftc.gov/LawRegulation/DoddFrankAct/Rulemakings/index.htm",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/markets/CFTC_Dodd_Frank.html",
+      "status": "ok",
+      "size_kb": 50
+    },
+    {
+      "label": "SEC Regulation Best Interest",
+      "url": "https://www.sec.gov/info/smallbus/secg/regulation-best-interest",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/markets/SEC_Reg_BI.html",
+      "status": "failed: 403 Client Error: Forbidden for url: https://www.sec.gov/info/smallbus/secg/regulation-best-interest"
+    },
+    {
+      "label": "SEC Investment Advisers Act",
+      "url": "https://www.sec.gov/divisions/investment/adviserinfo.htm",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/markets/SEC_Advisers_Act.html",
+      "status": "failed: 403 Client Error: Forbidden for url: https://www.sec.gov/divisions/investment/adviserinfo.htm"
+    },
+    {
+      "label": "FINRA Rulebook",
+      "url": "https://www.finra.org/rules-guidance/rulebooks/finra-rules",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/markets/FINRA_Rulebook.html",
+      "status": "ok",
+      "size_kb": 2590
+    },
+    {
+      "label": "BCBS-IOSCO Margin Requirements for Non-Cleared Derivatives",
+      "url": "https://www.bis.org/bcbs/publ/d499.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/markets/BCBS_IOSCO_Margin_Requirements_d499.pdf",
+      "status": "ok",
+      "size_kb": 383
+    },
+    {
+      "label": "Volcker Rule Final Rule 2020",
+      "url": "https://www.occ.gov/topics/charters-and-licensing/volcker-rule/volcker-rule-final-rule-2020.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/markets/OCC_Volcker_Rule_2020.pdf",
+      "status": "ok",
+      "size_kb": 76
+    },
+    {
+      "label": "Bank Secrecy Act FinCEN",
+      "url": "https://www.fincen.gov/resources/statutes-regulations/bank-secrecy-act",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/aml/FinCEN_BSA.html",
+      "status": "failed: 404 Client Error: Not Found for url: https://www.fincen.gov/resources/statutes-regulations/bank-secrecy-act"
+    },
+    {
+      "label": "FFIEC BSA/AML Examination Manual",
+      "url": "https://bsaaml.ffiec.gov/manual",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/aml/FFIEC_BSAAML_Manual.html",
+      "status": "ok",
+      "size_kb": 140
+    },
+    {
+      "label": "FinCEN AML Program Rules",
+      "url": "https://www.fincen.gov/resources/statutes-regulations",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/aml/FinCEN_AML_Rules.html",
+      "status": "ok",
+      "size_kb": 35
+    },
+    {
+      "label": "OFAC Sanctions Programs",
+      "url": "https://ofac.treasury.gov/faqs/topic/1521",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/aml/OFAC_Sanctions.html",
+      "status": "ok",
+      "size_kb": 46
+    },
+    {
+      "label": "FASB ASC 326 CECL",
+      "url": "https://asc.fasb.org/326",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/aml/FASB_ASC326_CECL.html",
+      "status": "failed: 403 Client Error: Forbidden for url: https://asc.fasb.org/326"
+    },
+    {
+      "label": "BCBS 239 Risk Data Aggregation RDARR (MANDATORY)",
+      "url": "https://www.bis.org/publ/bcbs239.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/bcbs/BCBS_239_RDARR.pdf",
+      "status": "ok",
+      "size_kb": 126
+    },
+    {
+      "label": "Basel LCR Standard bcbs238",
+      "url": "https://www.bis.org/publ/bcbs238.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/bcbs/Basel_LCR_Standard_bcbs238.pdf",
+      "status": "ok",
+      "size_kb": 431
+    },
+    {
+      "label": "Basel NSFR Standard d295",
+      "url": "https://www.bis.org/bcbs/publ/d295.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/bcbs/Basel_NSFR_d295.pdf",
+      "status": "ok",
+      "size_kb": 404
+    },
+    {
+      "label": "Basel IRRBB Standard d368",
+      "url": "https://www.bis.org/bcbs/publ/d368.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/bcbs/Basel_IRRBB_d368.pdf",
+      "status": "ok",
+      "size_kb": 1174
+    },
+    {
+      "label": "BCBS Sound Stress Testing Practices bcbs155",
+      "url": "https://www.bis.org/publ/bcbs155.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/bcbs/BCBS_Stress_Testing_bcbs155.pdf",
+      "status": "ok",
+      "size_kb": 151
+    },
+    {
+      "label": "BCBS Sound Liquidity Risk Management bcbs144",
+      "url": "https://www.bis.org/publ/bcbs144.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/bcbs/BCBS_Liquidity_Risk_bcbs144.pdf",
+      "status": "ok",
+      "size_kb": 153
+    },
+    {
+      "label": "BCBS Corporate Governance Principles d328",
+      "url": "https://www.bis.org/bcbs/publ/d328.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/bcbs/BCBS_Corporate_Governance_d328.pdf",
+      "status": "ok",
+      "size_kb": 437
+    },
+    {
+      "label": "BCBS-IOSCO Margin Requirements d499",
+      "url": "https://www.bis.org/bcbs/publ/d499.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/bcbs/BCBS_Margin_Requirements_d499.pdf",
+      "status": "ok",
+      "size_kb": 383
+    },
+    {
+      "label": "Basel Framework \u2014 CRE Credit Risk",
+      "url": "https://www.bis.org/basel_framework/chapter/CRE/1.htm",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/bcbs/Basel_Framework_CRE.html",
+      "status": "ok",
+      "size_kb": 20
+    },
+    {
+      "label": "Basel Framework \u2014 MAR Market Risk FRTB",
+      "url": "https://www.bis.org/basel_framework/chapter/MAR/1.htm",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/bcbs/Basel_Framework_MAR.html",
+      "status": "ok",
+      "size_kb": 20
+    },
+    {
+      "label": "Basel Framework \u2014 OPE Operational Risk",
+      "url": "https://www.bis.org/basel_framework/chapter/OPE/1.htm",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/bcbs/Basel_Framework_OPE.html",
+      "status": "ok",
+      "size_kb": 20
+    },
+    {
+      "label": "Basel Framework \u2014 LEX Large Exposures",
+      "url": "https://www.bis.org/basel_framework/chapter/LEX/1.htm",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/bcbs/Basel_Framework_LEX.html",
+      "status": "ok",
+      "size_kb": 20
+    },
+    {
+      "label": "Basel Framework \u2014 SA-CCR CRE52",
+      "url": "https://www.bis.org/basel_framework/chapter/CRE/52.htm",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/bcbs/Basel_Framework_SA-CCR_CRE52.html",
+      "status": "ok",
+      "size_kb": 20
+    },
+    {
+      "label": "Basel Framework Index",
+      "url": "https://www.bis.org/basel_framework/",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/bcbs/Basel_Framework_Index.html",
+      "status": "ok",
+      "size_kb": 20
+    },
+    {
+      "label": "CAR 2026 Ch1 Overview",
+      "url": "https://www.osfi-bsif.gc.ca/sites/default/files/documents/2026-car-nfp-chap1-en.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/car/OSFI_2026-car-nfp-chap1-en.pdf",
+      "status": "ok",
+      "size_kb": 550
+    },
+    {
+      "label": "CAR 2026 Ch2 Definition of Capital",
+      "url": "https://www.osfi-bsif.gc.ca/sites/default/files/documents/2026-car-nfp-chap2-en.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/car/OSFI_2026-car-nfp-chap2-en.pdf",
+      "status": "ok",
+      "size_kb": 714
+    },
+    {
+      "label": "CAR 2026 Ch3 Operational Risk",
+      "url": "https://www.osfi-bsif.gc.ca/sites/default/files/documents/2026-car-nfp-chap3-en.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/car/OSFI_2026-car-nfp-chap3-en.pdf",
+      "status": "ok",
+      "size_kb": 513
+    },
+    {
+      "label": "CAR 2026 Ch4 Credit Risk Standardized",
+      "url": "https://www.osfi-bsif.gc.ca/sites/default/files/documents/2026-car-nfp-chap4-en.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/car/OSFI_2026-car-nfp-chap4-en.pdf",
+      "status": "ok",
+      "size_kb": 1024
+    },
+    {
+      "label": "CAR 2026 Ch5 Credit Risk IRB",
+      "url": "https://www.osfi-bsif.gc.ca/sites/default/files/documents/2026-car-nfp-chap5-en.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/car/OSFI_2026-car-nfp-chap5-en.pdf",
+      "status": "ok",
+      "size_kb": 1329
+    },
+    {
+      "label": "CAR 2026 Ch6 Securitization",
+      "url": "https://www.osfi-bsif.gc.ca/sites/default/files/documents/2026-car-nfp-chap6-en.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/car/OSFI_2026-car-nfp-chap6-en.pdf",
+      "status": "ok",
+      "size_kb": 959
+    },
+    {
+      "label": "CAR 2026 Ch7 Settlement & CCR SA-CCR",
+      "url": "https://www.osfi-bsif.gc.ca/sites/default/files/documents/2026-car-nfp-chap7-en.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/car/OSFI_2026-car-nfp-chap7-en.pdf",
+      "status": "ok",
+      "size_kb": 892
+    },
+    {
+      "label": "CAR 2026 Ch8 CVA Risk",
+      "url": "https://www.osfi-bsif.gc.ca/sites/default/files/documents/2026-car-nfp-chap8-en.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/car/OSFI_2026-car-nfp-chap8-en.pdf",
+      "status": "ok",
+      "size_kb": 571
+    },
+    {
+      "label": "CAR 2026 Ch9 Market Risk FRTB",
+      "url": "https://www.osfi-bsif.gc.ca/sites/default/files/documents/2026-car-nfp-chap9-en.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/car/OSFI_2026-car-nfp-chap9-en.pdf",
+      "status": "ok",
+      "size_kb": 1324
+    },
+    {
+      "label": "LAR 2026 Ch2 LCR",
+      "url": "https://www.osfi-bsif.gc.ca/sites/default/files/documents/2026-lar-nl-chpt-2-en.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/lar/OSFI_2026-lar-nl-chpt-2-en.pdf",
+      "status": "ok",
+      "size_kb": 907
+    },
+    {
+      "label": "LAR 2026 Ch3 NSFR",
+      "url": "https://www.osfi-bsif.gc.ca/sites/default/files/documents/2026-lar-nl-chpt-3-en.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/lar/OSFI_2026-lar-nl-chpt-3-en.pdf",
+      "status": "ok",
+      "size_kb": 594
+    },
+    {
+      "label": "LAR 2026 Ch4 Net Cumulative Cash Flow",
+      "url": "https://www.osfi-bsif.gc.ca/sites/default/files/documents/2026-lar-nl-chpt-4-en.pdf",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/lar/OSFI_2026-lar-nl-chpt-4-en.pdf",
+      "status": "ok",
+      "size_kb": 374
+    },
+    {
+      "label": "LAR 2026 Ch1 Overview",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/liquidity-adequacy-requirements-lar-2026-chapter-1-overview",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/lar/OSFI_LAR_2026_Ch1_Overview.html",
+      "status": "ok",
+      "size_kb": 444
+    },
+    {
+      "label": "LAR 2026 Ch5 Operating Cash Flows",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/liquidity-adequacy-requirements-lar-2026-chapter-5-operating-cash-flows",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/lar/OSFI_LAR_2026_Ch5_OperatingCashFlows.html",
+      "status": "failed: 404 Client Error: Not Found for url: https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/liquidity-adequacy-requirements-lar-2026-chapter-5-operating-cash-flows"
+    },
+    {
+      "label": "LAR 2026 Ch6 Liquidity Monitoring Tools",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/liquidity-adequacy-requirements-lar-2026-chapter-6-liquidity-monitoring-tools",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/lar/OSFI_LAR_2026_Ch6_LiquidityMonitoring.html",
+      "status": "ok",
+      "size_kb": 448
+    },
+    {
+      "label": "LAR 2026 Ch7 Intraday Liquidity",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/liquidity-adequacy-requirements-lar-2026-chapter-7-intraday-liquidity-management",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/lar/OSFI_LAR_2026_Ch7_IntradayLiquidity.html",
+      "status": "failed: 404 Client Error: Not Found for url: https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/liquidity-adequacy-requirements-lar-2026-chapter-7-intraday-liquidity-management"
+    },
+    {
+      "label": "OSFI E-23 Model Risk Management 2027",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/guideline-e-23-model-risk-management-2027",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/guidelines/OSFI_E-23_Model_Risk_2027.html",
+      "status": "ok",
+      "size_kb": 74
+    },
+    {
+      "label": "OSFI Corporate Governance Guideline",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/corporate-governance",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/guidelines/OSFI_Corporate_Governance.html",
+      "status": "ok",
+      "size_kb": 72
+    },
+    {
+      "label": "OSFI E-21 Operational Risk Resilience",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/guideline-e-21-operational-risk-resilience",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/guidelines/OSFI_E-21_Operational_Risk.html",
+      "status": "failed: 404 Client Error: Not Found for url: https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/guideline-e-21-operational-risk-resilience"
+    },
+    {
+      "label": "OSFI B-6 Liquidity Principles",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/guideline-b-6-liquidity-principles-deposit-taking-institutions",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/guidelines/OSFI_B-6_Liquidity_Principles.html",
+      "status": "failed: 404 Client Error: Not Found for url: https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/guideline-b-6-liquidity-principles-deposit-taking-institutions"
+    },
+    {
+      "label": "OSFI DSB Dec 2025 Announcement",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/osfi-maintains-level-domestic-stability-buffer-35-letter-december-2025",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/guidelines/OSFI_DSB_Dec2025.html",
+      "status": "ok",
+      "size_kb": 39
+    },
+    {
+      "label": "OSFI DSB Jun 2025 Announcement",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/osfi-maintains-level-domestic-stability-buffer-350-letter-june-2025",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/osfi/guidelines/OSFI_DSB_Jun2025.html",
+      "status": "ok",
+      "size_kb": 39
+    },
+    {
+      "label": "Fed SR 99-18 Counterparty Credit Risk",
+      "url": "https://www.federalreserve.gov/boarddocs/srletters/1999/sr9918.htm",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/federal_reserve/Fed_SR99-18_CCR.html",
+      "status": "failed: 404 Client Error: Not Found for url: https://www.federalreserve.gov/boarddocs/srletters/1999/sr9918.htm"
+    },
+    {
+      "label": "Federal Regulation YY Enhanced Prudential Standards (eCFR)",
+      "url": "https://www.ecfr.gov/current/title-12/part-252",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/federal_reserve/Fed_Reg_YY_eCFR.html",
+      "status": "ok",
+      "size_kb": 1323
+    },
+    {
+      "label": "Federal Regulation W Transactions with Affiliates (eCFR)",
+      "url": "https://www.ecfr.gov/current/title-12/part-223",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/federal_reserve/Fed_Reg_W_eCFR.html",
+      "status": "ok",
+      "size_kb": 310
+    },
+    {
+      "label": "CCAR Stress Test Policies",
+      "url": "https://www.federalreserve.gov/supervisionreg/stress-tests-capital-planning.htm",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/federal_reserve/Fed_CCAR_Index.html",
+      "status": "ok",
+      "size_kb": 79
+    },
+    {
+      "label": "Bank Secrecy Act FinCEN",
+      "url": "https://www.fincen.gov/resources/statutes-regulations",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/aml/FinCEN_BSA_Regulations.html",
+      "status": "ok",
+      "size_kb": 35
+    },
+    {
+      "label": "FASB ASC 326 CECL (public summary)",
+      "url": "https://www.fasb.org/page/PageContent?pageId=/standards/recently-issued-standards.html",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/aml/FASB_Standards_Index.html",
+      "status": "failed: 403 Client Error: Forbidden for url: https://www.fasb.org/page/PageContent?pageId=/standards/recently-issued-standards.html"
+    },
+    {
+      "label": "FINTRAC Guidelines Overview",
+      "url": "https://www.fintrac-canafe.gc.ca/guidance-directives/overview-apercu/Guide-eng",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/canada/other/FINTRAC_Guidelines.html",
+      "status": "failed: 404 Client Error: Not Found for url: https://fintrac-canafe.canada.ca/guidance-directives/overview-apercu/Guide-eng"
+    },
+    {
+      "label": "FINTRAC Guidelines Alt",
+      "url": "https://fintrac-canafe.canada.ca/guidance-directives/1-eng",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/canada/other/FINTRAC_Guidelines_Alt.html",
+      "status": "failed: 404 Client Error: Not Found for url: https://fintrac-canafe.canada.ca/guidance-directives/1-eng"
+    },
+    {
+      "label": "SEC Regulation SHO Short Selling",
+      "url": "https://www.sec.gov/divisions/marketreg/mrfaqregsho1204.htm",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/markets/SEC_Reg_SHO.html",
+      "status": "ok",
+      "size_kb": 1
+    },
+    {
+      "label": "SEC Regulation Best Interest (Reg BI)",
+      "url": "https://www.sec.gov/info/smallbus/secg/regulation-best-interest",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/markets/SEC_Reg_BI.html",
+      "status": "ok",
+      "size_kb": 1
+    },
+    {
+      "label": "SEC Investment Advisers Act",
+      "url": "https://www.sec.gov/divisions/investment/adviserinfo.htm",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/markets/SEC_Advisers_Act.html",
+      "status": "ok",
+      "size_kb": 1
+    },
+    {
+      "label": "FASB ASC 326 CECL",
+      "url": "https://asc.fasb.org/326",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/us/aml/FASB_ASC326_CECL.html",
+      "status": "ok",
+      "size_kb": 36
+    },
+    {
+      "label": "CIRO Rules and Enforcement",
+      "url": "https://www.ciro.ca/rules-and-enforcement/current-rules",
+      "file": "/Users/saadahmed/Desktop/react_agent/regulatory_downloads/canada/other/CIRO_Rules.html",
+      "status": "ok",
+      "size_kb": 221
+    },
+    {
+      "label": "OSFI E-21",
+      "url": "https://www.osfi-bsif.gc.ca/en/guidance/guidance-library?q=E-21+operational+risk",
+      "file": "",
+      "status": "not_found"
+    }
+  ]
+}

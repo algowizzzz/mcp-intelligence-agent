@@ -1,14 +1,5 @@
 {
   "root": "/Users/saadahmed/Desktop/react_agent/sajhamcpserver/data/workers/w-market-risk/domain_data/uploads",
-  "built_at": "2026-04-03T18:11:01.528706+00:00",
-  "tree": [
-    {
-      "type": "file",
-      "name": "scoping_test_0f6ee2.txt",
-      "path": "scoping_test_0f6ee2.txt",
-      "size_bytes": 37,
-      "modified_at": "2026-04-03T18:11:01.528660+00:00",
-      "mime": "text/plain"
-    }
-  ]
+  "built_at": "2026-04-03T23:24:05.313303+00:00",
+  "tree": []
 }
