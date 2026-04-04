@@ -3,9 +3,24 @@
     {
       "connector_type": "microsoft_azure",
       "display_name": "Microsoft 365",
-      "status": "not_configured",
+      "status": "configured",
+      "enabled": true,
+      "credentials": {
+        "tenant_id": "a241c412-f9f1-4461-8992-5c0b24ea8578",
+        "client_id": "d39a3d30-eb6d-4969-98aa-82bab2ca5b22",
+        "client_secret": "${AZURE_CLIENT_SECRET}"
+      }
+    },
+    {
+      "connector_type": "atlassian",
+      "display_name": "Atlassian (Jira + Confluence)",
+      "status": "partial",
       "enabled": false,
-      "credentials": {}
+      "credentials": {
+        "email": "sa5425592@gmail.com",
+        "api_token": "PENDING_USER_ACTION",
+        "base_url": "https://sa5425592.atlassian.net"
+      }
     }
   ]
 }

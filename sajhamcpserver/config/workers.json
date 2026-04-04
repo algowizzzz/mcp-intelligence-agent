@@ -30,12 +30,18 @@
       "common_data_path": "./data/common",
       "connector_scope": {
         "microsoft_azure": {
-          "teams_team_id": "qa-team",
-          "sharepoint_site_url": "https://qa.sharepoint.com/sites/QA"
+          "teams_team_id": "33793fc4-5b65-4a4f-b7b6-e11bcf3ffb54",
+          "teams_team_name": "Market Risk",
+          "teams_channel_id": "19:SHmWm9n11mv8FTPMTv2XpTyDbcj9bnLntOzTD_PW7KQ1@thread.tacv2",
+          "teams_channel_name": "B-Pulse Alerts",
+          "outlook_user_email": "SaadAhmed@DeepLearnHQ.onmicrosoft.com"
         },
         "atlassian": {
-          "confluence_space_key": "RISK",
-          "jira_project_key": "CCR"
+          "confluence_space_key": "PENDING_CONFLUENCE_SETUP",
+          "confluence_parent_page_id": "PENDING_CONFLUENCE_SETUP",
+          "jira_project_key": "MRISK",
+          "jira_board_id": "35",
+          "jira_site_url": "https://sa5425592.atlassian.net"
         }
       }
     },

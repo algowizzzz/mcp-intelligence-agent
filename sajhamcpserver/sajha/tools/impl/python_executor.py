@@ -108,8 +108,7 @@ def _write_manifest():
     with open(manifest_path, 'w') as _f:
         _json.dump(_FIGURES, _f)
 _atexit.register(_write_manifest)
-
-del _os, _sys, _json, _atexit
+# Note: do NOT delete _os/_json here — the atexit callback still references them
 """
 
 

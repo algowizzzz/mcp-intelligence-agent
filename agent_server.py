@@ -1446,8 +1446,22 @@ async def list_charts(payload: dict = Depends(require_jwt)):
 
 
 @app.get('/api/fs/charts/{filename}')
-async def serve_chart(filename: str, payload: dict = Depends(require_jwt)):
-    """Serve a chart file (HTML or PNG) for the authenticated user."""
+async def serve_chart(filename: str, token: str = '', payload: dict = None,
+                      creds: HTTPAuthorizationCredentials | None = Depends(_bearer)):
+    """Serve a chart file (HTML or PNG).
+
+    Accepts auth via Bearer header OR ?token= query param so iframes can load
+    charts without needing custom request headers.
+    """
+    # Resolve JWT from header or query param
+    raw_token = token or (creds.credentials if creds else '')
+    if not raw_token:
+        raise HTTPException(status_code=401, detail='Not authenticated')
+    try:
+        payload = _jwt_decode(raw_token)
+    except Exception:
+        raise HTTPException(status_code=401, detail='Invalid token')
+
     # Reject path traversal attempts
     if '/' in filename or '\\' in filename or '..' in filename:
         raise HTTPException(status_code=400, detail='Invalid filename')

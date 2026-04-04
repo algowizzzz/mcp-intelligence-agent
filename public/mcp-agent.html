@@ -4190,9 +4190,10 @@
             chartBtn.style.cssText = 'margin-left:8px;font-size:11px;padding:3px 8px';
             chartBtn.textContent = 'Open Chart';
             var capturedFile = output.html_file, capturedTitle = output.title || name;
+            var capturedChartUrl = '/api/fs/charts/' + capturedFile;
             chartBtn.onclick = function(e) {
               e.stopPropagation();
-              openCanvasChart(capturedTitle, '/api/fs/charts/' + capturedFile);
+              openCanvasChart(capturedTitle, capturedChartUrl);
             };
             hdr.appendChild(chartBtn);
           }
@@ -7196,12 +7197,15 @@
     // REQ-03: Open chart in canvas panel via iframe
     var _lastChartUrl = '';
     function openCanvasChart(title, chartUrl) {
+      // Append JWT token as query param so the iframe GET request can authenticate
+      var tok = sessionStorage.getItem('rg_token') || '';
+      var authedUrl = chartUrl + (chartUrl.indexOf('?') === -1 ? '?' : '&') + 'token=' + encodeURIComponent(tok);
       _lastChartUrl = chartUrl;
       document.getElementById('canvas-title').textContent = title || 'Chart';
       var saveBtn = document.getElementById('canvas-save-btn');
       if (saveBtn) saveBtn.style.display = 'none';
       var cc = document.getElementById('canvas-content');
-      cc.innerHTML = '<iframe src="' + chartUrl + '" style="width:100%;height:100%;min-height:480px;border:none;border-radius:6px" allowfullscreen sandbox="allow-scripts allow-same-origin"></iframe>';
+      cc.innerHTML = '<iframe src="' + authedUrl + '" style="width:100%;height:100%;min-height:480px;border:none;border-radius:6px" allowfullscreen sandbox="allow-scripts allow-same-origin"></iframe>';
       document.body.classList.add('canvas-active');
       if (_currentAgentMsg) {
         var actions = _currentAgentMsg.querySelector('.msg-actions');
