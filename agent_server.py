@@ -1681,6 +1681,12 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
                     if not isinstance(output, (str, dict, list)):
                         output = str(output)
                     yield f"data: {json.dumps({'type': 'tool_end', 'name': event['name'], 'output': output, 'run_id': event['run_id']})}\n\n"
+                    # REQ-04a: Python figure detection — emit canvas SSE event for captured figures
+                    if event['name'] in ('python_execute', 'python_run_script') and isinstance(output, dict):
+                        figures = output.get('figures', [])
+                        if figures:
+                            first_fig = figures[0]
+                            yield f"data: {json.dumps({'type': 'canvas', 'title': 'Python Output', 'canvas_type': 'chart', 'chart_url': first_fig['url']})}\n\n"
                 elif t == 'on_interrupt':
                     yield f"data: {json.dumps({'type': 'hitl', 'question': event['data'].get('question', ''), 'options': event['data'].get('options', []), 'thread_id': thread_id})}\n\n"
                 elif t == 'on_chat_model_end':

@@ -60,3 +60,9 @@ sajhamcpserver/.env
 
 # Claude Code internals
 .claude/worktrees/
+
+# Python sandbox venv (REQ-04a)
+sajhamcpserver/python_sandbox_venv/
+
+# SQLite agent checkpoints
+sajhamcpserver/data/checkpoints.db

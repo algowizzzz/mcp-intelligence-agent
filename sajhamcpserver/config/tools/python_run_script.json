@@ -1,0 +1,7 @@
+{
+  "name": "python_run_script",
+  "description": "Run a .py script from domain_data or my_data sections. Pass script_path relative to the section root.",
+  "version": "1.0.0",
+  "enabled": true,
+  "implementation": "sajha.tools.impl.python_executor.PythonRunScriptTool"
+}

@@ -1,0 +1,7 @@
+{
+  "name": "python_execute",
+  "description": "Execute Python code in a sandboxed environment. Available libraries: pandas, numpy, scipy, matplotlib, plotly, openpyxl, pyarrow, statsmodels. No network access. Timeout: 60s. Use plotly for charts (they render in the canvas panel). Call fig.show() or plt.show() to capture figures.",
+  "version": "1.0.0",
+  "enabled": true,
+  "implementation": "sajha.tools.impl.python_executor.PythonExecuteTool"
+}
