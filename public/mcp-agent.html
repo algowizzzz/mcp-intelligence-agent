@@ -13,6 +13,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <script src="/js/file-tree.js"></script>
   <style>
     /* ================================================================
        ROOT & RESET
@@ -5147,6 +5148,42 @@
       my_workflows:  { label: 'My Workflows',       writable: true,  wfSection: true  },
     };
 
+    // ── BPulseFileTree instances (Implementation B replacement) ───────────────
+    function _bpftToken() { return sessionStorage.getItem('rg_token') || ''; }
+    function _bpftToast(msg) { showToast(msg, 2000); }
+
+    var _bpftInstB = {};
+    Object.keys(_FT_SECTIONS).forEach(function(section) {
+      var cfg = _FT_SECTIONS[section];
+      _bpftInstB[section] = new BPulseFileTree({
+        containerId: 'ft-tree-' + section,
+        section: section,
+        apiPrefix: _agentBase + '/api/fs',
+        writable: cfg.writable,
+        workflowSection: cfg.wfSection,
+        token: _bpftToken,
+        onToast: _bpftToast,
+        onFileClick: function(sec, path, name) {
+          ftPreviewFile(sec, path, name);
+          _ftAddFileToChat(sec, path, name);
+        },
+        onWorkflowSelect: (function(sec) {
+          return function(s, path, name) {
+            _ftSelectWorkflowForChat(s, path, name, function(content) {
+              ftPreviewWorkflow(s, path, name, true, content);
+            });
+          };
+        })(section),
+        isFileActive: function(path) {
+          return !!(_activeWorkflow && _activeWorkflow.path === path);
+        },
+        isFileSelected: function(path) {
+          var key = section + ':' + path;
+          return !!(_selectedFiles && _selectedFiles[key]);
+        },
+      });
+    });
+
     function _ftHeaders() {
       var h = { 'Content-Type': 'application/json' };
       var _tok = sessionStorage.getItem('rg_token');
@@ -5163,12 +5200,13 @@
     }
 
     function ftLoad(section) {
+      if (_bpftInstB[section]) { _bpftInstB[section].load(); ftUpdateBadge(section); return; }
+      // Fallback fetch (should not be needed)
       fetch(_agentBase + '/api/fs/' + section + '/tree', { headers: _ftHeaders() })
         .then(function(r) { return r.ok ? r.json() : null; })
         .then(function(data) {
           if (!data) return;
           _ftTrees[section] = data;
-          ftRenderTree(section);
           ftUpdateBadge(section);
         })
         .catch(function() {});
@@ -5186,7 +5224,9 @@
       if (_ftSectionOpen[section]) {
         body.classList.add('open');
         chevron.classList.add('open');
-        if (!_ftTrees[section]) ftLoad(section);
+        // Always load via BPulseFileTree on open
+        if (_bpftInstB[section]) _bpftInstB[section].load();
+        else if (!_ftTrees[section]) ftLoad(section);
       } else {
         body.classList.remove('open');
         chevron.classList.remove('open');
@@ -5233,83 +5273,26 @@
       return '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#888888" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="' + d + '"></path></svg>';
     }
 
+    // ftRenderTree — delegate to BPulseFileTree refresh; also re-render active/selected state
     function ftRenderTree(section) {
+      if (_bpftInstB[section]) { _bpftInstB[section]._render(); return; }
+      // legacy fallback
       var container = $('ft-tree-' + section);
       if (!container) return;
       var tree = _ftTrees[section];
       if (!tree || !tree.tree) {
         container.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--text-muted)">Empty</div>';
-        return;
       }
-      if (!_ftExpanded[section]) _ftExpanded[section] = {};
-      container.innerHTML = ftRenderNodes(section, tree.tree, 0);
-      ftBindDragDrop(section, container);
     }
 
-    function ftRenderNodes(section, nodes, depth) {
-      if (!nodes || !nodes.length) return '';
-      var html = '';
-      nodes.forEach(function(node) {
-        if (node.type === 'folder') {
-          var isOpen = !!_ftExpanded[section][node.path];
-          var chevronClass = isOpen ? 'ft-row-chevron open' : 'ft-row-chevron';
-          var indent = depth * 14;
-          var isWritable = _FT_SECTIONS[section] && _FT_SECTIONS[section].writable;
-          html += '<div class="ft-row" data-section="' + esc(section) + '" data-path="' + esc(node.path) + '" data-type="folder"' +
-            ' draggable="' + (isWritable ? 'true' : 'false') + '"' +
-            ' oncontextmenu="ftCtxMenu(event,\'' + esc(section) + '\',\'' + esc(node.path) + '\',\'folder\',\'' + esc(node.name) + '\')">' +
-            '<div class="ft-indent" style="width:' + indent + 'px"></div>' +
-            '<div class="' + chevronClass + '" onclick="event.stopPropagation();ftToggleFolder(\'' + esc(section) + '\',\'' + esc(node.path) + '\')">' +
-              '<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>' +
-            '</div>' +
-            '<span class="ft-icon">' + ftFolderIcon(isOpen) + '</span>' +
-            '<span class="ft-row-name">' + esc(node.name) + '</span>' +
-            (isWritable ? '<div class="ft-row-actions">' +
-              '<button class="ft-action-btn" title="New File" onclick="event.stopPropagation();ftNewFile(\'' + esc(section) + '\',\'' + esc(node.path) + '\')">' +
-                '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>' +
-              '</button>' +
-              '<button class="ft-action-btn danger" title="Delete" onclick="event.stopPropagation();ftDeleteFolder(\'' + esc(section) + '\',\'' + esc(node.path) + '\')">' +
-                '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14H6L5 6"></path></svg>' +
-              '</button>' +
-            '</div>' : '') +
-          '</div>';
-          if (isOpen && node.children && node.children.length) {
-            html += ftRenderNodes(section, node.children, depth + 1);
-          }
-        } else {
-          // File row
-          var isWf = _FT_SECTIONS[section] && _FT_SECTIONS[section].wfSection;
-          var isActive = _activeWorkflow && _activeWorkflow.section === section && _activeWorkflow.path === node.path;
-          var selKey = section + ':' + node.path;
-          var isSelected = !!_selectedFiles[selKey];
-          var rowClass = 'ft-row' + (isActive ? ' wf-active' : '') + (isSelected ? ' selected' : '');
-          var indent = (depth + 1) * 14;
-          var isWritable = _FT_SECTIONS[section] && _FT_SECTIONS[section].writable;
-          var ext = (node.name.split('.').pop() || '').toLowerCase();
-          var isEditable = isWritable && isWf && ext === 'md';
-          html += '<div class="' + rowClass + '" data-section="' + esc(section) + '" data-path="' + esc(node.path) + '" data-type="file" data-name="' + esc(node.name) + '"' +
-            ' draggable="' + (isWritable ? 'true' : 'false') + '"' +
-            ' onclick="ftFileClick(\'' + esc(section) + '\',\'' + esc(node.path) + '\',\'' + esc(node.name) + '\',' + isWf + ',' + isEditable + ')"' +
-            ' oncontextmenu="ftCtxMenu(event,\'' + esc(section) + '\',\'' + esc(node.path) + '\',\'file\',\'' + esc(node.name) + '\')">' +
-            '<div class="ft-indent" style="width:' + indent + 'px"></div>' +
-            '<div class="ft-row-chevron"></div>' +
-            '<span class="ft-icon">' + ftFileIcon(node.name) + '</span>' +
-            '<span class="ft-row-name">' + esc(node.name) + '</span>' +
-            (isWritable ? '<div class="ft-row-actions">' +
-              '<button class="ft-action-btn danger" title="Delete" onclick="event.stopPropagation();ftDeleteFile(\'' + esc(section) + '\',\'' + esc(node.path) + '\')">' +
-                '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14H6L5 6"></path></svg>' +
-              '</button>' +
-            '</div>' : '') +
-          '</div>';
-        }
-      });
-      return html;
-    }
+    // ftRenderNodes kept for badge counting compat — returns 0 (BPulseFileTree owns rendering)
+    function ftRenderNodes(section, nodes, depth) { return ''; }
 
     function ftToggleFolder(section, path) {
-      if (!_ftExpanded[section]) _ftExpanded[section] = {};
-      _ftExpanded[section][path] = !_ftExpanded[section][path];
-      ftRenderTree(section);
+      if (_bpftInstB[section]) {
+        _bpftInstB[section]._expanded[path] = !_bpftInstB[section]._expanded[path];
+        _bpftInstB[section]._render();
+      }
     }
 
     function ftFileClick(section, path, name, isWf, isEditable) {
@@ -5635,123 +5618,27 @@
       });
     }
 
-    // Drag-and-drop
-    function ftBindDragDrop(section, container) {
-      container.querySelectorAll('[draggable="true"]').forEach(function(el) {
-        el.addEventListener('dragstart', function(e) {
-          var s = el.getAttribute('data-section');
-          var p = el.getAttribute('data-path');
-          var t = el.getAttribute('data-type');
-          e.dataTransfer.setData('text/plain', JSON.stringify({ section: s, path: p, type: t }));
-          e.dataTransfer.effectAllowed = 'move';
-          el.style.opacity = '0.5';
-        });
-        el.addEventListener('dragend', function(e) {
-          el.style.opacity = '';
-          container.querySelectorAll('.drag-over').forEach(function(x) { x.classList.remove('drag-over'); });
-        });
-      });
-      container.querySelectorAll('[data-type="folder"]').forEach(function(el) {
-        el.addEventListener('dragover', function(e) {
-          e.preventDefault();
-          try {
-            var dragData = JSON.parse(e.dataTransfer.getData('text/plain') || '{}');
-            var targetSection = el.getAttribute('data-section');
-            if (dragData.section && dragData.section !== targetSection) {
-              e.dataTransfer.dropEffect = 'none';
-              return;
-            }
-          } catch(ex) {}
-          e.dataTransfer.dropEffect = 'move';
-          container.querySelectorAll('.drag-over').forEach(function(x) { x.classList.remove('drag-over'); });
-          el.classList.add('drag-over');
-        });
-        el.addEventListener('dragleave', function(e) { el.classList.remove('drag-over'); });
-        el.addEventListener('drop', function(e) {
-          e.preventDefault();
-          el.classList.remove('drag-over');
-          try {
-            var dragData = JSON.parse(e.dataTransfer.getData('text/plain'));
-            var targetSection = el.getAttribute('data-section');
-            var targetPath = el.getAttribute('data-path');
-            if (dragData.section !== targetSection) { showToast('Cross-section moves not allowed', 2000); return; }
-            if (!_FT_SECTIONS[targetSection] || !_FT_SECTIONS[targetSection].writable) { showToast('This section is read-only', 2000); return; }
-            var srcName = dragData.path.split('/').pop();
-            var dst = targetPath + '/' + srcName;
-            var h = _ftHeaders();
-            fetch(_agentBase + '/api/fs/' + targetSection + '/move', {
-              method: 'POST',
-              headers: h,
-              body: JSON.stringify({ src: dragData.path, dst: dst })
-            }).then(function(r) {
-              if (r.ok) { ftLoad(targetSection); showToast('Moved', 1500); }
-              else { showToast('Move failed', 2000); }
-            });
-          } catch(ex) { showToast('Move failed', 2000); }
-        });
-      });
-    }
+    // Drag-and-drop — now handled internally by BPulseFileTree; stub kept for compat
+    function ftBindDragDrop(section, container) { /* handled by BPulseFileTree */ }
 
-    // New folder/file creation
+    // New folder/file creation — delegate to BPulseFileTree
     function ftNewFolder(section, parentPath) {
-      var container = $('ft-tree-' + section);
-      if (!container) return;
-      if (!_ftSectionOpen[section]) ftToggle(section);
-      var inputRow = document.createElement('div');
-      inputRow.className = 'ft-inline-input';
-      inputRow.innerHTML = '<span>' + ftFolderIcon(false) + '</span><input type="text" placeholder="folder name">';
-      container.prepend(inputRow);
-      var inp = inputRow.querySelector('input');
-      inp.focus();
-      inp.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-          var name = inp.value.trim();
-          if (!name) { inputRow.remove(); return; }
-          var fullPath = parentPath ? parentPath + '/' + name : name;
-          inputRow.remove();
-          fetch(_agentBase + '/api/fs/' + section + '/folder', {
-            method: 'POST', headers: _ftHeaders(),
-            body: JSON.stringify({ path: fullPath })
-          }).then(function(r) { if (r.ok) ftLoad(section); else showToast('Create folder failed', 2000); });
-        } else if (e.key === 'Escape') {
-          inputRow.remove();
-        }
-      });
+      if (_bpftInstB[section]) { _bpftInstB[section].mkdir(parentPath || ''); return; }
     }
 
     function ftNewFile(section, parentPath) {
-      var container = $('ft-tree-' + section);
-      if (!container) return;
-      if (!_ftSectionOpen[section]) ftToggle(section);
-      var inputRow = document.createElement('div');
-      inputRow.className = 'ft-inline-input';
-      inputRow.innerHTML = '<span>' + ftFileIcon('new.md') + '</span><input type="text" placeholder="workflow-name.md">';
-      container.prepend(inputRow);
-      var inp = inputRow.querySelector('input');
-      inp.focus();
-      inp.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-          var name = inp.value.trim();
-          if (!name) { inputRow.remove(); return; }
-          if (!name.endsWith('.md')) name += '.md';
-          var fullPath = parentPath ? parentPath + '/' + name : name;
-          inputRow.remove();
-          fetch(_agentBase + '/api/fs/' + section + '/file', {
-            method: 'PATCH', headers: _ftHeaders(),
-            body: JSON.stringify({ path: fullPath, content: '# ' + name.replace('.md','') + '\n\n' })
-          }).then(function(r) {
-            if (r.ok) { ftLoad(section); ftOpenMdEditor(section, fullPath, name); }
-            else { showToast('Create file failed', 2000); }
-          });
-        } else if (e.key === 'Escape') {
-          inputRow.remove();
-        }
-      });
+      if (_bpftInstB[section]) { _bpftInstB[section].createMd(parentPath || ''); return; }
     }
 
     function ftUploadFiles(section, folderPath, input) {
       var files = Array.from(input.files);
       if (!files.length) return;
+      if (_bpftInstB[section]) {
+        _bpftInstB[section].upload(files, folderPath || '');
+        input.value = '';
+        return;
+      }
+      // Fallback
       var h = _ftAuthHeader();
       var url = _agentBase + '/api/fs/' + section + '/upload' + (folderPath ? '?path=' + encodeURIComponent(folderPath) : '');
       Promise.all(files.map(function(f) {
@@ -5766,30 +5653,22 @@
     }
 
     function ftDeleteFile(section, path) {
-      if (!confirm('Delete ' + path + '?')) return;
-      fetch(_agentBase + '/api/fs/' + section + '/file?path=' + encodeURIComponent(path), {
-        method: 'DELETE', headers: _ftHeaders()
-      }).then(function(r) {
-        if (r.ok) {
-          // Clear if active workflow
+      if (_bpftInstB[section]) {
+        _bpftInstB[section].deleteFile(path, path.split('/').pop());
+        // Also clear workflow/selection refs after delete
+        setTimeout(function() {
           if (_activeWorkflow && _activeWorkflow.section === section && _activeWorkflow.path === path) {
             _activeWorkflow = null; renderContextBar();
           }
           var key = section + ':' + path;
           if (_selectedFiles[key]) { delete _selectedFiles[key]; renderContextBar(); }
-          ftLoad(section);
-        } else { showToast('Delete failed', 2000); }
-      });
+        }, 100);
+        return;
+      }
     }
 
     function ftDeleteFolder(section, path) {
-      if (!confirm('Delete folder ' + path + '? (Must be empty)')) return;
-      fetch(_agentBase + '/api/fs/' + section + '/folder?path=' + encodeURIComponent(path), {
-        method: 'DELETE', headers: _ftHeaders()
-      }).then(function(r) {
-        if (r.ok) ftLoad(section);
-        else r.json().then(function(d) { showToast(d.detail || 'Delete failed', 2000); });
-      });
+      if (_bpftInstB[section]) { _bpftInstB[section].deleteFolder(path, path.split('/').pop()); return; }
     }
 
     // Context menu
@@ -5844,22 +5723,11 @@
           adminRenameItem(_ctxTarget.section, _ctxTarget.path, _ctxTarget.type, _ctxTarget.name);
           return;
         }
-        var newName = prompt('Rename to:', _ctxTarget.name);
-        if (!newName || newName === _ctxTarget.name) return;
-        if (_ctxTarget.isAdmin) {
-          fetch(_adminFileOpUrl(_ctxTarget.section, 'rename'), {
-            method: 'POST',
-            headers: _adminJsonHeaders(),
-            body: JSON.stringify({ path: _ctxTarget.path, new_name: newName })
-          }).then(function(r) {
-            if (r.ok) { adminLoad(_ctxTarget.section); showToast('Renamed to ' + newName, 2000); }
-            else { showToast('Rename failed', 2000); }
-          });
-        } else {
-          fetch(_agentBase + '/api/fs/' + _ctxTarget.section + '/rename', {
-            method: 'POST', headers: _ftHeaders(),
-            body: JSON.stringify({ path: _ctxTarget.path, new_name: newName })
-          }).then(function(r) { if (r.ok) ftLoad(_ctxTarget.section); else showToast('Rename failed', 2000); });
+        // Delegate to BPulseFileTree inline rename (no prompt — BUG-FS-001 fix)
+        var sec = _ctxTarget.section;
+        var inst = _bpftInstB[sec];
+        if (inst) {
+          inst.rename(_ctxTarget.path, _ctxTarget.type === 'folder', _ctxTarget.name);
         }
       };
       if (downloadBtn) downloadBtn.onclick = function() {
@@ -6073,20 +5941,51 @@
       }
     }
 
+    // ── BPulseFileTree instances for admin panel (Implementation C replacement) ─
+    var _bpftInstC = {};
+
+    function _adminTreeApiPrefix(section) {
+      // Build the base prefix without section (BPulseFileTree appends /{section}/op)
+      var u = _authUser || {};
+      var workerId = _activeWorkerId || u.worker_id;
+      if (u.role === 'super_admin' && workerId) {
+        return _agentBase + '/api/super/workers/' + workerId + '/files';
+      }
+      return _agentBase + '/api/admin/worker/files';
+    }
+
+    function _createAdminTree(section) {
+      return new BPulseFileTree({
+        containerId: 'admin-tree-' + section,
+        section: section,
+        get apiPrefix() { return _adminTreeApiPrefix(section); },
+        writable: true,
+        workflowSection: false,
+        token: function() { return _adminToken || sessionStorage.getItem('rg_token') || ''; },
+        onToast: function(msg, type) { showToast(msg, 2000); },
+        onFileClick: function(sec, path, name) { adminPreviewFile(sec, path, name); },
+      });
+    }
+
+    Object.keys(_ADMIN_SECTIONS).forEach(function(section) {
+      _bpftInstC[section] = _createAdminTree(section);
+    });
+
     function adminLoadAll() {
       Object.keys(_ADMIN_SECTIONS).forEach(function(s) { adminLoad(s); });
     }
 
     function adminLoad(section) {
+      if (_bpftInstC[section]) {
+        _bpftInstC[section].load();
+        return;
+      }
+      // Fallback
       fetch(_adminFileOpUrl(section, ''), { headers: _adminHeaders() })
         .then(function(r) { return r.ok ? r.json() : null; })
         .then(function(data) {
           if (!data) return;
           _adminTrees[section] = data;
-          adminRenderTree(section);
-          // Update badge
-          var badge = $('admin-badge-' + section);
-          if (badge) badge.textContent = ftCountFiles(data.tree);
         })
         .catch(function() {});
     }
@@ -6099,7 +5998,8 @@
       if (_adminSectionOpen[section]) {
         body.classList.add('open');
         chevron.classList.add('open');
-        if (!_adminTrees[section]) adminLoad(section);
+        if (_bpftInstC[section]) _bpftInstC[section].load();
+        else if (!_adminTrees[section]) adminLoad(section);
       } else {
         body.classList.remove('open');
         chevron.classList.remove('open');
@@ -6107,245 +6007,64 @@
     }
 
     function adminRenderTree(section) {
+      if (_bpftInstC[section]) { _bpftInstC[section]._render(); return; }
       var container = $('admin-tree-' + section);
       if (!container) return;
-      var tree = _adminTrees[section];
-      if (!tree || !tree.tree) {
-        container.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--text-muted)">Empty</div>';
-        return;
-      }
-      if (!_adminExpanded[section]) _adminExpanded[section] = {};
-      container.innerHTML = adminRenderNodes(section, tree.tree, 0);
+      container.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--text-muted)">Empty</div>';
     }
 
-    function adminRenderNodes(section, nodes, depth) {
-      if (!nodes || !nodes.length) return '';
-      var html = '';
-      nodes.forEach(function(node) {
-        var indent = depth * 14;
-        if (node.type === 'folder') {
-          var isOpen = !!_adminExpanded[section][node.path];
-          var isSelected = _adminSelectedSection === section && _adminSelectedFolder === node.path;
-          function countDescendants(n) { return (n.children||[]).reduce(function(s,c){ return s + 1 + countDescendants(c); }, 0); }
-          var descCount = countDescendants(node);
-          var folderBulkCb = (_adminBulkSection === section)
-            ? '<input type="checkbox" class="admin-bulk-checkbox" ' + (_adminBulkSelected[node.path] ? 'checked' : '') + ' onclick="event.stopPropagation();adminBulkToggle(\'' + esc(node.path) + '\',this.checked)">'
-            : '';
-          var isDraggable = !_adminBulkSection;
-          html += '<div class="ft-row' + (isSelected ? ' selected' : '') + '" data-asection="' + esc(section) + '" data-apath="' + esc(node.path) + '" data-atype="folder" data-aname="' + esc(node.name) + '"' +
-            ' draggable="' + isDraggable + '"' +
-            ' ondragstart="' + (isDraggable ? 'adminDragStart(event)' : '') + '"' +
-            ' ondragover="adminDragOver(event)"' +
-            ' ondragleave="adminDragLeave(event)"' +
-            ' ondrop="adminDrop(event)"' +
-            ' onclick="adminSelectFolder(\'' + esc(section) + '\',\'' + esc(node.path) + '\')"' +
-            ' oncontextmenu="adminCtxMenu(event,\'' + esc(section) + '\',\'' + esc(node.path) + '\',\'folder\',\'' + esc(node.name) + '\')">' +
-            '<div class="ft-indent" style="width:' + indent + 'px"></div>' +
-            folderBulkCb +
-            '<div class="ft-row-chevron' + (isOpen ? ' open' : '') + '" onclick="event.stopPropagation();adminToggleFolder(\'' + esc(section) + '\',\'' + esc(node.path) + '\')">' +
-              '<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>' +
-            '</div>' +
-            '<span class="ft-icon">' + ftFolderIcon(isOpen) + '</span>' +
-            '<span class="ft-row-name">' + esc(node.name) + '</span>' +
-            '<div class="ft-row-actions">' +
-              '<button class="ft-action-btn" title="Upload files here" onclick="event.stopPropagation();adminSelectFolder(\'' + esc(section) + '\',\'' + esc(node.path) + '\');document.getElementById(\'adminUploadInput\').click();">' +
-                '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>' +
-              '</button>' +
-              '<button class="ft-action-btn danger" title="Delete" onclick="event.stopPropagation();adminDeleteItem(\'' + esc(section) + '\',\'' + esc(node.path) + '\',\'folder\',\'' + esc(node.name) + '\',' + descCount + ')">' +
-                '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14H6L5 6"></path></svg>' +
-              '</button>' +
-            '</div>' +
-          '</div>';
-          if (isOpen && node.children && node.children.length) {
-            html += adminRenderNodes(section, node.children, depth + 1);
-          }
-        } else {
-          // File row
-          var ext = (node.name.split('.').pop() || '').toLowerCase();
-          var isMd = ext === 'md';
-          var validIcon = '';
-          if (isMd) {
-            validIcon = '<span class="admin-fm-icon" data-section="' + esc(section) + '" data-path="' + esc(node.path) + '" style="font-size:11px;margin-left:4px;" title="Checking frontmatter...">&#8987;</span>';
-          }
-          var bulkCb = (_adminBulkSection === section)
-            ? '<input type="checkbox" class="admin-bulk-checkbox" ' + (_adminBulkSelected[node.path] ? 'checked' : '') + ' onclick="event.stopPropagation();adminBulkToggle(\'' + esc(node.path) + '\',this.checked)">'
-            : '';
-          html += '<div class="ft-row" data-asection="' + esc(section) + '" data-apath="' + esc(node.path) + '" data-atype="file" data-aname="' + esc(node.name) + '"' +
-            ' draggable="' + (_adminBulkSection ? 'false' : 'true') + '"' +
-            ' ondragstart="adminDragStart(event)"' +
-            ' onclick="' + (_adminBulkSection ? 'adminBulkToggle(\'' + esc(node.path) + '\',!_adminBulkSelected[\'' + esc(node.path) + '\']);adminRenderTree(\'' + esc(section) + '\')' : 'adminPreviewFile(\'' + esc(section) + '\',\'' + esc(node.path) + '\',\'' + esc(node.name) + '\')') + '"' +
-            ' oncontextmenu="adminCtxMenu(event,\'' + esc(section) + '\',\'' + esc(node.path) + '\',\'file\',\'' + esc(node.name) + '\')">' +
-            '<div class="ft-indent" style="width:' + (indent + 14) + 'px"></div>' +
-            bulkCb +
-            '<div class="ft-row-chevron"></div>' +
-            '<span class="ft-icon">' + ftFileIcon(node.name) + '</span>' +
-            '<span class="ft-row-name">' + esc(node.name) + validIcon + '</span>' +
-            '<div class="ft-row-actions">' +
-              '<button class="ft-action-btn danger" title="Delete" onclick="event.stopPropagation();adminDeleteItem(\'' + esc(section) + '\',\'' + esc(node.path) + '\',\'file\',\'' + esc(node.name) + '\',0)">' +
-                '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14H6L5 6"></path></svg>' +
-              '</button>' +
-            '</div>' +
-          '</div>';
-        }
-      });
-      // After render, validate MD files async
-      setTimeout(function() { adminValidateMdIcons(section); }, 50);
-      return html;
-    }
+    // adminRenderNodes, drag-to-move, adminToggleFolder, adminSelectFolder,
+    // adminNewFolder, adminNewFolderActive — all replaced by BPulseFileTree (_bpftInstC)
+    function adminRenderNodes() { return ''; }
 
-    function adminValidateMdIcons(section) {
-      var container = $('admin-tree-' + section);
-      if (!container) return;
-      var icons = container.querySelectorAll('.admin-fm-icon');
-      icons.forEach(function(icon) {
-        var s = icon.getAttribute('data-section');
-        var p = icon.getAttribute('data-path');
-        fetch(_agentBase + '/api/admin/validate/' + s + '/' + encodeURIComponent(p), { headers: _adminHeaders() })
-          .then(function(r) { return r.ok ? r.json() : null; })
-          .then(function(data) {
-            if (!data) return;
-            if (data.valid) {
-              icon.textContent = '✓';
-              icon.style.color = 'var(--green)';
-              icon.title = 'Frontmatter valid';
-            } else {
-              icon.textContent = '⚠';
-              icon.style.color = 'var(--amber)';
-              icon.title = 'Missing frontmatter: ' + data.missing.join(', ');
-            }
-          })
-          .catch(function() { icon.textContent = ''; });
-      });
-    }
-
-    // ── Admin drag-to-move ────────────────────────────────────────────
-    var _adminDrag = null; // { section, path, type, name }
-
-    function adminDragStart(e) {
-      var el = e.currentTarget;
-      _adminDrag = {
-        section: el.getAttribute('data-asection'),
-        path:    el.getAttribute('data-apath'),
-        type:    el.getAttribute('data-atype'),
-        name:    el.getAttribute('data-aname')
-      };
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', _adminDrag.path);
-      el.style.opacity = '0.4';
-      setTimeout(function() { el.style.opacity = ''; }, 0);
-    }
-
-    function adminDragOver(e) {
-      if (!_adminDrag) return;
-      var el = e.currentTarget;
-      // Can't drop onto yourself or a child of yourself
-      var destPath = el.getAttribute('data-apath');
-      if (destPath === _adminDrag.path) return;
-      if (destPath.startsWith(_adminDrag.path + '/')) return;
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      el.classList.add('admin-drop-target');
-    }
-
-    function adminDragLeave(e) {
-      if (!e.currentTarget.contains(e.relatedTarget)) {
-        e.currentTarget.classList.remove('admin-drop-target');
-      }
-    }
-
-    function adminDrop(e) {
-      e.preventDefault();
-      var el = e.currentTarget;
-      el.classList.remove('admin-drop-target');
-      if (!_adminDrag) return;
-      var destPath = el.getAttribute('data-apath');
-      var destSection = el.getAttribute('data-asection');
-      if (!destPath || destPath === _adminDrag.path) { _adminDrag = null; return; }
-      if (destPath.startsWith(_adminDrag.path + '/')) { _adminDrag = null; return; }
-      adminMoveItem(_adminDrag.section, _adminDrag.path, destSection, destPath, _adminDrag.name);
-      _adminDrag = null;
-    }
-
+    // Admin drag-to-move — handled by BPulseFileTree internally
+    var _adminDrag = null;
+    function adminDragStart(e) {}
+    function adminDragOver(e) {}
+    function adminDragLeave(e) {}
+    function adminDrop(e) {}
     function adminMoveItem(srcSection, srcPath, destSection, destFolder, name) {
-      if (srcSection !== destSection) { showToast('Cannot move between sections', 2000); return; }
-      fetch(_adminFileOpUrl(srcSection, 'move'), {
-        method: 'POST',
-        headers: _adminJsonHeaders(),
-        body: JSON.stringify({ src: srcPath, dest_folder: destFolder })
-      }).then(function(r) {
-        if (r.ok) {
-          adminLoad(srcSection);
-          showToast('"' + name + '" moved to ' + destFolder, 2000);
-        } else {
-          r.json().then(function(d) { showToast(d.detail || 'Move failed', 2000); });
-        }
-      }).catch(function() { showToast('Move failed', 2000); });
+      if (_bpftInstC[srcSection]) { _bpftInstC[srcSection].load(); }
     }
     // ─────────────────────────────────────────────────────────────────
 
     function adminToggleFolder(section, path) {
-      if (!_adminExpanded[section]) _adminExpanded[section] = {};
-      _adminExpanded[section][path] = !_adminExpanded[section][path];
-      adminRenderTree(section);
+      if (_bpftInstC[section]) {
+        _bpftInstC[section]._expanded[path] = !_bpftInstC[section]._expanded[path];
+        _bpftInstC[section]._render();
+      }
     }
 
     function adminSelectFolder(section, path) {
       _adminSelectedSection = section;
       _adminSelectedFolder = path;
-      // Update header text
       var label = _ADMIN_SECTIONS[section] ? _ADMIN_SECTIONS[section].label : section;
       var displayPath = path ? label + ' / ' + path.replace(/\//g, ' / ') : label + ' (root)';
       var el = $('admin-selected-folder');
       if (el) el.textContent = 'Uploading to: ' + displayPath;
-      // Show/hide placeholder vs queue
       var placeholder = $('admin-placeholder');
       var zone = $('admin-upload-zone');
       var queue = $('admin-queue-container');
       if (placeholder) placeholder.style.display = 'none';
       if (zone) { zone.classList.remove('no-folder'); zone.style.display = ''; }
       if (queue) queue.style.display = '';
-      // Update upload zone text
       var zoneSub = $('admin-upload-zone-sub');
       if (zoneSub) {
         var isMdOnly = _ADMIN_SECTIONS[section] && _ADMIN_SECTIONS[section].acceptMdOnly;
         zoneSub.textContent = isMdOnly ? 'Only .md files · Max 20 MB per file' : 'All file types · Max 20 MB per file';
       }
-      // Re-render tree to update selected state
-      adminRenderTree(section);
+      if (_bpftInstC[section]) _bpftInstC[section]._render();
     }
 
     function adminNewFolder(section, parentPath) {
-      var container = $('admin-tree-' + section);
-      if (!container) return;
-      if (!_adminSectionOpen[section]) adminFtToggle(section);
-      var inputRow = document.createElement('div');
-      inputRow.className = 'ft-inline-input';
-      inputRow.innerHTML = '<span>' + ftFolderIcon(false) + '</span><input type="text" placeholder="folder name">';
-      container.prepend(inputRow);
-      var inp = inputRow.querySelector('input');
-      inp.focus();
-      inp.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-          var name = inp.value.trim();
-          if (!name) { inputRow.remove(); return; }
-          var fullPath = parentPath ? parentPath + '/' + name : name;
-          inputRow.remove();
-          fetch(_adminFileOpUrl(section, 'folder'), {
-            method: 'POST',
-            headers: _adminJsonHeaders(),
-            body: JSON.stringify({ path: fullPath })
-          }).then(function(r) {
-            if (r.ok) { adminLoad(section); showToast('Folder "' + name + '" created', 2000); }
-            else { showToast('Create folder failed', 2000); }
-          });
-        } else if (e.key === 'Escape') { inputRow.remove(); }
-      });
+      if (_bpftInstC[section]) { _bpftInstC[section].mkdir(parentPath || ''); return; }
     }
 
     function adminNewFolderActive() {
       if (_adminSelectedSection) adminNewFolder(_adminSelectedSection, _adminSelectedFolder);
       else showToast('Select a folder first', 2000);
     }
+
 
     function adminDeleteItem(section, path, type, name, childCount) {
       var title, body;

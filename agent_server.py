@@ -1365,8 +1365,16 @@ async def fs_rename(section: str, req: FsRenameRequest, payload: dict = Depends(
 
 
 @app.patch('/api/fs/{section}/file/used')
-async def fs_mark_file_used(section: str, path: str = '', payload: dict = Depends(require_jwt)):
-    """Mark a workflow file as recently used. Updates last_used timestamp in section metadata."""
+async def fs_mark_file_used(section: str, request: Request, path: str = '', payload: dict = Depends(require_jwt)):
+    """Mark a workflow file as recently used. Updates last_used timestamp in section metadata.
+    Also appends an audit entry to sajhamcpserver/data/audit/file_used.jsonl (BUG-FS-002)."""
+    # Accept path from query string or JSON body
+    if not path:
+        try:
+            body = await request.json()
+            path = body.get('path', '')
+        except Exception:
+            pass
     worker = _fs_worker(payload)
     if not path:
         raise HTTPException(status_code=400, detail='path required')
@@ -1378,8 +1386,21 @@ async def fs_mark_file_used(section: str, path: str = '', payload: dict = Depend
     except Exception:
         meta = {}
     from datetime import datetime, timezone
-    meta[path] = {'last_used': datetime.now(timezone.utc).isoformat()}
+    now_iso = datetime.now(timezone.utc).isoformat()
+    meta[path] = {'last_used': now_iso}
     meta_path.write_text(json.dumps(meta, indent=2))
+    # Audit log (BUG-FS-002)
+    entry = {
+        'user_id': payload.get('sub', ''),
+        'worker_id': payload.get('worker_id', ''),
+        'section': section,
+        'path': path,
+        'used_at': now_iso
+    }
+    audit_path = pathlib.Path('sajhamcpserver/data/audit/file_used.jsonl')
+    audit_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(audit_path, 'a') as f:
+        f.write(json.dumps(entry) + '\n')
     return {'ok': True, 'path': path}
 
 

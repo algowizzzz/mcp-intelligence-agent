@@ -594,15 +594,13 @@
         <div class="filetree-layout">
           <div class="filetree-sidebar">
             <div class="filetree-toolbar">
-              <button class="btn btn-secondary btn-sm" onclick="adminUpload('domain_data')" title="Upload files">↑ Upload</button>
-              <button class="btn btn-secondary btn-sm" onclick="adminNewFolder('domain_data')" title="New folder">+ Folder</button>
-              <button class="btn btn-secondary btn-sm" id="dd-select-btn" onclick="toggleSelectMode('domain_data')">Select</button>
-              <button class="btn btn-danger btn-sm" id="dd-bulk-delete-btn" style="display:none" onclick="bulkDelete('domain_data')">Delete 0</button>
+              <button class="btn btn-secondary btn-sm" onclick="document.getElementById('bpft-upload-input-dd').click()" title="Upload files">↑ Upload</button>
+              <button class="btn btn-secondary btn-sm" onclick="window._bpft_dd && window._bpft_dd.mkdir()" title="New folder">+ Folder</button>
+              <button class="btn btn-secondary btn-sm" id="dd-select-btn" onclick="window._bpft_dd && (window._bpft_dd.toggleBulkMode(),this.textContent=window._bpft_dd._bulkMode?'Cancel':'Select')">Select</button>
+              <button class="btn btn-danger btn-sm" id="dd-bulk-delete-btn" onclick="window._bpft_dd && window._bpft_dd.bulkDelete()">Delete</button>
             </div>
-            <div class="filetree-body" id="tree-domain_data"
-              ondragover="handleExternalDragOver(event,'domain_data')"
-              ondragleave="handleExternalDragLeave(event,'tree-domain_data')"
-              ondrop="handleExternalDrop(event,'domain_data','tree-domain_data')"></div>
+            <input type="file" id="bpft-upload-input-dd" multiple style="display:none">
+            <div class="filetree-body" id="tree-domain_data"></div>
           </div>
           <div class="preview-panel" id="preview-panel">
             <div class="preview-header">
@@ -632,15 +630,13 @@
         <div class="filetree-layout">
           <div class="filetree-sidebar">
             <div class="filetree-toolbar">
-              <button class="btn btn-secondary btn-sm" onclick="adminUpload('verified_workflows')">↑ Upload .md</button>
-              <button class="btn btn-secondary btn-sm" onclick="adminNewFile('verified_workflows')">+ New</button>
-              <button class="btn btn-secondary btn-sm" id="wf-select-btn" onclick="toggleSelectMode('verified_workflows')">Select</button>
-              <button class="btn btn-danger btn-sm" id="wf-bulk-delete-btn" style="display:none" onclick="bulkDelete('verified_workflows')">Delete 0</button>
+              <button class="btn btn-secondary btn-sm" onclick="document.getElementById('bpft-upload-input-wf').click()">↑ Upload .md</button>
+              <button class="btn btn-secondary btn-sm" onclick="window._bpft_wf && window._bpft_wf.createMd('')">+ New</button>
+              <button class="btn btn-secondary btn-sm" id="wf-select-btn" onclick="window._bpft_wf && (window._bpft_wf.toggleBulkMode(),this.textContent=window._bpft_wf._bulkMode?'Cancel':'Select')">Select</button>
+              <button class="btn btn-danger btn-sm" id="wf-bulk-delete-btn" onclick="window._bpft_wf && window._bpft_wf.bulkDelete()">Delete</button>
             </div>
-            <div class="filetree-body" id="tree-verified_workflows"
-              ondragover="handleExternalDragOver(event,'verified_workflows')"
-              ondragleave="handleExternalDragLeave(event,'tree-verified_workflows')"
-              ondrop="handleExternalDrop(event,'verified_workflows','tree-verified_workflows')"></div>
+            <input type="file" id="bpft-upload-input-wf" accept=".md" multiple style="display:none">
+            <div class="filetree-body" id="tree-verified_workflows"></div>
           </div>
           <div class="preview-panel" id="preview-panel-wf">
             <div class="preview-header">
@@ -1253,150 +1249,18 @@ function _workerFileTreeUrl(section) {
   return API + '/api/admin/worker/files/' + section;
 }
 
-async function loadFileTree(section) {
-  var treeEl = document.getElementById('tree-' + section);
-  if (treeEl) treeEl.innerHTML = '<div style="color:var(--text-m);font-size:12px;padding:8px">Loading…</div>';
-  try {
-    var r = await fetch(_workerFileTreeUrl(section), { headers: authHeaders() });
-    if (!r.ok) { treeEl.innerHTML = '<div style="color:#aaaaaa;font-size:12px;padding:8px">Error loading tree</div>'; return; }
-    var data = await r.json();
-    _treesData[section] = data;
-    renderTree(section, data, treeEl, '');
-  } catch(e) {
-    if (treeEl) treeEl.innerHTML = '<div style="color:#aaaaaa;font-size:12px;padding:8px">Failed to load</div>';
+function _bpftApiPrefix() {
+  if (typeof _user !== 'undefined' && _user && _user.role === 'super_admin' && typeof _currentWorker !== 'undefined' && _currentWorker) {
+    return (typeof API !== 'undefined' ? API : '') + '/api/super/workers/' + _currentWorker.worker_id + '/files';
   }
+  return (typeof API !== 'undefined' ? API : '') + '/api/admin/worker/files';
 }
 
-function renderTree(section, node, container, path) {
-  container.innerHTML = '';
-  var topLevel = node.tree || node.children || [];
-  if (!topLevel.length) return;
-  renderChildren(section, topLevel, container, path);
+function loadFileTree(section) {
+  if (section === 'domain_data' && window._bpft_dd) { window._bpft_dd.load(); return; }
+  if (section === 'verified_workflows' && window._bpft_wf) { window._bpft_wf.load(); return; }
 }
 
-// ── Drag state ────────────────────────────────────────────────────────────────
-var _drag = null; // { section, path, isDir }
-
-function renderChildren(section, children, container, parentPath) {
-  if (!children) return;
-  var selectMode = !!_selectModes[section];
-  if (selectMode) container.classList.add('select-mode');
-
-  children.forEach(child => {
-    var itemPath = parentPath ? parentPath + '/' + child.name : child.name;
-    var isDir = child.type === 'directory' || child.type === 'folder';
-    var el = document.createElement('div');
-    var isSelected = _selectedItems[section] && _selectedItems[section].has(itemPath);
-    el.className = 'tree-item' + (isSelected ? ' selected' : '');
-    el.dataset.path = itemPath;
-    el.dataset.type = isDir ? 'dir' : 'file';
-    el.dataset.section = section;
-
-    // Drag source — always enabled (not in select mode)
-    if (!selectMode) {
-      el.draggable = true;
-      el.addEventListener('dragstart', (e) => {
-        _drag = { section, path: itemPath, isDir };
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', itemPath);
-        el.style.opacity = '0.5';
-      });
-      el.addEventListener('dragend', () => { el.style.opacity = ''; });
-
-      // Double-click inline rename (AP-05)
-      el.addEventListener('dblclick', (e) => {
-        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
-        e.stopPropagation();
-        startInlineRename(section, itemPath, isDir);
-      });
-
-      // Right-click context menu (AP-06)
-      el.addEventListener('contextmenu', (e) => {
-        showContextMenu(e, section, itemPath, isDir, child.name);
-      });
-    }
-
-    var icon = isDir
-      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'
-      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
-
-    el.innerHTML = `${icon}<span class="item-name">${child.name}</span>
-      <div class="item-actions">
-        ${!isDir && !selectMode ? `<button onclick="previewFile(event, '${section}', '${itemPath}', '${child.name}')">preview</button>` : ''}
-        ${!selectMode ? `<button onclick="renameItem(event, '${section}', '${itemPath}', ${isDir})">rename</button>
-        <button onclick="deleteItem(event, '${section}', '${itemPath}', ${isDir}, '${child.name}')">delete</button>` : ''}
-      </div>`;
-
-    if (selectMode) {
-      // Click toggles selection
-      el.onclick = (e) => {
-        if (!_selectedItems[section]) _selectedItems[section] = new Set();
-        if (_selectedItems[section].has(itemPath)) {
-          _selectedItems[section].delete(itemPath);
-          el.classList.remove('selected');
-        } else {
-          _selectedItems[section].add(itemPath);
-          el.classList.add('selected');
-        }
-        // Update delete button count
-        var delBtnId = section === 'domain_data' ? 'dd-bulk-delete-btn' : 'wf-bulk-delete-btn';
-        var cnt = _selectedItems[section].size;
-        var delBtn = document.getElementById(delBtnId);
-        if (delBtn) delBtn.textContent = 'Delete ' + cnt;
-      };
-    } else if (!isDir) {
-      el.onclick = (e) => {
-        if (e.target.tagName === 'BUTTON') return;
-        previewFile(e, section, itemPath, child.name);
-      };
-    }
-
-    if (isDir) {
-      // Drop target — folders accept dragged items
-      el.addEventListener('dragover', (e) => {
-        if (_drag && _drag.section === section && _drag.path !== itemPath && !_drag.path.startsWith(itemPath + '/')) {
-          e.preventDefault();
-          e.dataTransfer.dropEffect = 'move';
-          el.style.background = 'rgba(255,255,255,0.12)';
-        }
-      });
-      el.addEventListener('dragleave', () => { el.style.background = ''; });
-      el.addEventListener('drop', async (e) => {
-        e.preventDefault();
-        el.style.background = '';
-        if (!_drag || _drag.section !== section || _drag.path === itemPath || _drag.path.startsWith(itemPath + '/')) return;
-        var r = await fetch(_workerFileOpUrl(section, 'move'), {
-          method: 'POST', headers: authHeaders(),
-          body: JSON.stringify({ src: _drag.path, dest_folder: itemPath })
-        });
-        _drag = null;
-        if (r.ok) { showToast('Moved', 'success'); loadFileTree(section); }
-        else { var d = await r.json().catch(()=>{}); showToast(d && d.detail ? d.detail : 'Move failed', 'error'); }
-      });
-
-      // Expand/collapse on click (not in select mode)
-      if (!selectMode) {
-        var childContainer = document.createElement('div');
-        childContainer.className = 'tree-indent';
-        var expanded = false;
-        el.onclick = (e) => {
-          if (e.target.tagName === 'BUTTON') return;
-          expanded = !expanded;
-          childContainer.style.display = expanded ? 'block' : 'none';
-          if (expanded && child.children) {
-            renderChildren(section, child.children, childContainer, itemPath);
-          }
-        };
-        childContainer.style.display = 'none';
-        container.appendChild(el);
-        container.appendChild(childContainer);
-        return;
-      }
-    }
-
-    container.appendChild(el);
-  });
-}
 
 // ── Preview ───────────────────────────────────────────────────────────────────
 var _currentPanelSuffix = '';
@@ -1434,13 +1298,11 @@ async function previewFile(e, section, path, name) {
     });
     if (!r.ok) { pb.innerHTML = '<div style="color:#aaaaaa;font-size:13px">Error loading file</div>'; return; }
 
-    // New endpoints return JSON: { path, encoding, content, size_bytes }
     var data = await r.json();
     var ext = name.split('.').pop().toLowerCase();
     var sz = data.size_bytes || 0;
     pfm.textContent = sz ? (sz > 1048576 ? (sz/1048576).toFixed(1)+' MB' : Math.round(sz/1024)+' KB') : '';
 
-    // Helper: decode base64 string → ArrayBuffer
     function b64ToAb(b64) {
       var bin = atob(b64);
       var ab = new ArrayBuffer(bin.length);
@@ -1507,13 +1369,6 @@ function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
 // ── File operations ───────────────────────────────────────────────────────────
 var _uploadSection = '';
 
-function adminUpload(section) {
-  _uploadSection = section;
-  var input = document.getElementById('file-upload-input');
-  input.accept = section === 'verified_workflows' ? '.md' : '*';
-  input.click();
-}
-
 function _workerUploadUrl(section) {
   if (_user.role === 'super_admin' && _currentWorker) {
     return API + '/api/super/workers/' + _currentWorker.worker_id + '/files/' + section + '/upload';
@@ -1522,7 +1377,6 @@ function _workerUploadUrl(section) {
 }
 
 function _workerFileOpUrl(section, op) {
-  // op: 'file' | 'folder' | 'rename' | 'move'
   if (_user.role === 'super_admin' && _currentWorker) {
     return API + '/api/super/workers/' + _currentWorker.worker_id + '/files/' + section + '/' + op;
   }
@@ -1553,491 +1407,6 @@ async function handleFileUpload(event) {
   loadFileTree(section);
 }
 
-async function adminNewFolder(section) {
-  var name = prompt('Folder name:');
-  if (!name || !name.trim()) return;
-  try {
-    var r = await fetch(_workerFileOpUrl(section, 'folder'), {
-      method: 'POST', headers: authHeaders(),
-      body: JSON.stringify({ path: name.trim() })
-    });
-    if (r.ok) { showToast('Folder created', 'success'); loadFileTree(section); }
-    else { var d = await r.json(); showToast(d.detail || 'Error', 'error'); }
-  } catch(e) { showToast('Error', 'error'); }
-}
-
-async function adminNewFile(section) {
-  var name = prompt('Workflow filename (.md):');
-  if (!name) return;
-  if (!name.endsWith('.md')) name += '.md';
-  try {
-    var r = await fetch(_workerFileOpUrl(section, 'file'), {
-      method: 'PATCH', headers: authHeaders(),
-      body: JSON.stringify({ path: name, content: '' })
-    });
-    if (r.ok) { showToast('File created', 'success'); loadFileTree(section); }
-    else { var d = await r.json(); showToast(d.detail || 'Error', 'error'); }
-  } catch(e) { showToast('Error', 'error'); }
-}
-
-function renameItem(e, section, path, isDir) {
-  e.stopPropagation();
-  startInlineRename(section, path, isDir);
-}
-
-async function deleteItem(e, section, path, isDir, name) {
-  e.stopPropagation();
-  var msg = isDir ? `Delete folder "${name}" and all its contents?` : `Delete "${name}"?`;
-  if (!confirm(msg)) return;
-  try {
-    var r;
-    if (isDir) {
-      r = await fetch(_workerFileOpUrl(section, 'folder'), {
-        method: 'DELETE', headers: authHeaders(),
-        body: JSON.stringify({ path, recursive: true })
-      });
-    } else {
-      r = await fetch(_workerFileOpUrl(section, 'file') + '?path=' + encodeURIComponent(path), {
-        method: 'DELETE', headers: authHeaders()
-      });
-    }
-    if (r.ok) { showToast('Deleted', 'success'); loadFileTree(section); }
-    else { var d = await r.json(); showToast(d.detail || 'Delete failed', 'error'); }
-  } catch(e) { showToast('Error', 'error'); }
-}
-
-// ── Bulk select ───────────────────────────────────────────────────────────────
-function toggleSelectMode(section) {
-  var isOn = _selectModes[section];
-  _selectModes[section] = !isOn;
-  _selectedItems[section] = new Set();
-  var btnId = section === 'domain_data' ? 'dd-select-btn' : 'wf-select-btn';
-  var delBtnId = section === 'domain_data' ? 'dd-bulk-delete-btn' : 'wf-bulk-delete-btn';
-  document.getElementById(btnId).textContent = isOn ? 'Select' : 'Cancel';
-  var delBtn = document.getElementById(delBtnId);
-  delBtn.style.display = isOn ? 'none' : 'inline-block';
-  delBtn.textContent = 'Delete 0';
-  // Remove select-mode class from tree container before re-render
-  var treeId = 'tree-' + section;
-  var treeEl = document.getElementById(treeId);
-  if (treeEl) treeEl.classList.remove('select-mode');
-  loadFileTree(section);
-}
-
-async function bulkDelete(section) {
-  var items = _selectedItems[section];
-  if (!items || items.size === 0) return;
-  var confirmed = await new Promise(resolve => {
-    showModal(
-      'Delete ' + items.size + ' item' + (items.size > 1 ? 's' : ''),
-      'This action cannot be undone.',
-      '<p style="color:var(--text-m);font-size:13px">Are you sure you want to permanently delete ' + items.size + ' selected item' + (items.size > 1 ? 's' : '') + '?</p>',
-      [
-        { label: 'Cancel',  action: 'closeModalFn(); window._bulkDeleteResolve(false)' },
-        { label: 'Delete',  primary: true, action: 'closeModalFn(); window._bulkDeleteResolve(true)' }
-      ]
-    );
-    window._bulkDeleteResolve = resolve;
-  });
-  if (!confirmed) return;
-  var count = 0;
-  for (var path of items) {
-    var isDir = path.endsWith('/') || _treesData[section] && isPathDir(path, _treesData[section]);
-    try {
-      var r;
-      if (isDir) {
-        r = await fetch(_workerFileOpUrl(section, 'folder'), {
-          method: 'DELETE', headers: authHeaders(),
-          body: JSON.stringify({ path, recursive: true })
-        });
-      } else {
-        r = await fetch(_workerFileOpUrl(section, 'file') + '?path=' + encodeURIComponent(path), {
-          method: 'DELETE', headers: authHeaders()
-        });
-      }
-      if (r.ok) count++;
-    } catch(e) {}
-  }
-  showToast(`Deleted ${count} of ${items.size} items`, 'success');
-  _selectedItems[section] = new Set();
-  loadFileTree(section);
-}
-
-function isPathDir(path, node) {
-  var topLevel = node.tree || node.children || [];
-  for (var c of topLevel) {
-    if (c.name === path.split('/')[0]) {
-      return c.type === 'directory' || c.type === 'folder';
-    }
-  }
-  return false;
-}
-
-// ── Users ──────────────────────────────────────────────────────────────────────
-var _cachedUsers = [];
-
-async function fetchUsers() {
-  try {
-    var url = _user.role === 'super_admin' ? API + '/api/super/users' : API + '/api/admin/worker/users';
-    var r = await fetch(url, { headers: authHeaders() });
-    if (r.ok) { var d = await r.json(); _cachedUsers = d.users || []; return _cachedUsers; }
-  } catch(e) {}
-  return [];
-}
-
-async function loadUsers() {
-  var users = await fetchUsers();
-  if (_user.role !== 'super_admin') {
-    document.getElementById('users-sub').textContent = 'Users assigned to ' + (_currentWorker ? _currentWorker.name : 'this worker');
-  }
-  var workers = _allWorkers;
-  var workerMap = {};
-  workers.forEach(w => { workerMap[w.worker_id] = w.name; });
-
-  var html = users.map(u => {
-    var role = u.role || 'user';
-    var pillCls = role === 'super_admin' ? 'pill-blue' : role === 'admin' ? 'pill-amber' : 'pill-grey';
-    var roleLbl = role === 'super_admin' ? 'Super Admin' : role === 'admin' ? 'Admin' : 'User';
-    var statusCls = !u.enabled ? 'pill-grey' : !u.onboarding_complete ? 'pill-amber' : 'pill-green';
-    var statusLbl = !u.enabled ? 'Disabled' : !u.onboarding_complete ? 'Onboarding' : 'Active';
-    var workerName = workerMap[u.worker_id] || u.worker_id || '—';
-    return `
-      <tr>
-        <td>
-          <div style="display:flex;align-items:center;gap:10px">
-            <div class="avatar" style="width:28px;height:28px;font-size:10px">${u.avatar_initials || u.user_id.substring(0,2).toUpperCase()}</div>
-            <div>
-              <div class="user-row-name">${u.display_name || u.user_name || u.user_id}</div>
-              <div class="user-row-sub">@${u.user_id}${u.email ? ' · ' + u.email : ''}</div>
-            </div>
-          </div>
-        </td>
-        <td><span class="pill ${pillCls}">${roleLbl}</span></td>
-        <td>${workerName}</td>
-        <td><span class="pill ${statusCls}">${statusLbl}</span></td>
-        <td>
-          <div style="display:flex;gap:6px">
-            <button class="btn btn-secondary btn-sm" onclick="resetPassword('${u.user_id}')">Reset PW</button>
-            <button class="btn btn-secondary btn-sm" onclick="toggleUserEnabled('${u.user_id}', ${!u.enabled})">${u.enabled ? 'Disable' : 'Enable'}</button>
-            ${_user.role === 'super_admin' ? `<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.user_id}')">Delete</button>` : ''}
-          </div>
-        </td>
-      </tr>`;
-  }).join('');
-  document.getElementById('users-tbody').innerHTML = html || '<tr><td colspan="5" style="color:var(--text-m);text-align:center;padding:24px">No users</td></tr>';
-}
-
-async function resetPassword(userId) {
-  if (!confirm(`Reset password for ${userId}?`)) return;
-  try {
-    var url = _user.role === 'super_admin'
-      ? API + '/api/super/users/' + userId + '/reset-password'
-      : API + '/api/admin/worker/users/' + userId + '/reset-password';
-    var r = await fetch(url, { method: 'POST', headers: authHeaders() });
-    if (r.ok) {
-      var d = await r.json();
-      showModal('Password Reset', `Temporary password for <strong>${userId}</strong>:`, `
-        <div style="background:rgba(255,255,255,0.06);border-radius:8px;padding:12px;font-family:monospace;font-size:16px;text-align:center;letter-spacing:2px">${d.temp_password}</div>
-        <div style="font-size:12px;color:var(--text-m);margin-top:8px">Share this with the user. They will be prompted to change it on next login.</div>
-      `, [{ label: 'Close', action: 'closeModal()' }]);
-    } else {
-      var d = await r.json().catch(() => ({}));
-      showToast('Error: ' + (d.detail || 'Password reset failed'), 'error');
-    }
-  } catch(e) { showToast('Error', 'error'); }
-}
-
-async function toggleUserEnabled(userId, newState) {
-  try {
-    var url = _user.role === 'super_admin'
-      ? API + '/api/super/users/' + userId
-      : API + '/api/admin/worker/users/' + userId;
-    var r = await fetch(url, {
-      method: 'PUT', headers: authHeaders(), body: JSON.stringify({ enabled: newState })
-    });
-    if (r.ok) { showToast(newState ? 'User enabled' : 'User disabled', 'success'); loadUsers(); }
-    else {
-      var d = await r.json().catch(() => ({}));
-      showToast('Error: ' + (d.detail || 'Update failed'), 'error');
-    }
-  } catch(e) { showToast('Error', 'error'); }
-}
-
-async function deleteUser(userId) {
-  if (!confirm(`Delete user "${userId}"? This cannot be undone.`)) return;
-  try {
-    var url = _user.role === 'super_admin'
-      ? API + '/api/super/users/' + userId
-      : API + '/api/admin/worker/users/' + userId;
-    var r = await fetch(url, { method: 'DELETE', headers: authHeaders() });
-    if (r.ok) { showToast('User deleted', 'success'); loadUsers(); }
-    else { var d = await r.json().catch(() => ({})); showToast(d.detail || 'Delete failed', 'error'); }
-  } catch(e) { showToast('Error', 'error'); }
-}
-
-function openCreateUserModal() {
-  showModal('Create User', 'Create a new user account', `
-    <div class="form-row"><label class="form-label">Username</label><input class="form-input" id="cu-uid" placeholder="username"></div>
-    <div class="form-row"><label class="form-label">Display Name</label><input class="form-input" id="cu-name" placeholder="Full Name"></div>
-    <div class="form-row"><label class="form-label">Email</label><input class="form-input" id="cu-email" placeholder="user@example.com"></div>
-    <div class="form-row"><label class="form-label">Temporary Password</label><input class="form-input" id="cu-pass" placeholder="Min. 10 characters"></div>
-    <div class="form-row"><label class="form-label">Role</label>
-      <select class="form-select" id="cu-role"><option value="user">User</option><option value="admin">Admin</option></select>
-    </div>
-    <div class="form-row"><label class="form-label">Assign to Worker</label>
-      <select class="form-select" id="cu-worker">
-        ${_allWorkers.map(w => `<option value="${w.worker_id}">${w.name}</option>`).join('')}
-      </select>
-    </div>
-  `, [
-    { label: 'Cancel', action: 'closeModalFn()' },
-    { label: 'Create User', action: 'createUser()', primary: true }
-  ]);
-}
-
-async function createUser() {
-  var body = {
-    user_id: document.getElementById('cu-uid').value.trim(),
-    display_name: document.getElementById('cu-name').value.trim(),
-    email: document.getElementById('cu-email').value.trim(),
-    password: document.getElementById('cu-pass').value,
-    role: document.getElementById('cu-role').value,
-    worker_id: document.getElementById('cu-worker') ? document.getElementById('cu-worker').value : null,
-  };
-  if (!body.user_id || !body.display_name || !body.password) { showToast('Username, display name, and password are required.', 'error'); return; }
-  try {
-    var url = _user.role === 'super_admin'
-      ? API + '/api/super/users'
-      : API + '/api/admin/worker/users';
-    var r = await fetch(url, { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
-    if (r.ok) { closeModalFn(); showToast('User created', 'success'); loadUsers(); }
-    else { var d = await r.json().catch(() => ({})); showToast(d.detail || 'Error creating user', 'error'); }
-  } catch(e) { showToast('Network error', 'error'); }
-}
-
-// ── Workers management ─────────────────────────────────────────────────────────
-async function loadWorkers() {
-  await loadSuperAdminWorkers();
-  renderWorkersGrid(_allWorkers, 'workers-grid');
-}
-
-function openCreateWorkerModal() {
-  showModal('Create Digital Worker', 'Create a new AI agent instance', `
-    <div class="form-row"><label class="form-label">Worker Name</label><input class="form-input" id="nw-name" placeholder="e.g. CCR Risk Agent"></div>
-    <div class="form-row"><label class="form-label">Description</label><input class="form-input" id="nw-desc" placeholder="Short description"></div>
-    <div class="form-row"><label class="form-label">Clone from (optional)</label>
-      <select class="form-select" id="nw-clone"><option value="">— Start fresh —</option>${_allWorkers.map(w=>`<option value="${w.worker_id}">${w.name}</option>`).join('')}</select>
-    </div>
-  `, [
-    { label: 'Cancel', action: 'closeModalFn()' },
-    { label: 'Create Worker', action: 'createWorker()', primary: true }
-  ]);
-}
-
-async function createWorker() {
-  var body = {
-    name: document.getElementById('nw-name').value.trim(),
-    description: document.getElementById('nw-desc').value.trim(),
-    clone_from: document.getElementById('nw-clone').value || null,
-  };
-  if (!body.name) { alert('Worker name is required'); return; }
-  try {
-    var r = await fetch(API + '/api/super/workers', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
-    if (r.ok) {
-      var w = await r.json();
-      closeModalFn(); showToast('Worker created: ' + w.name, 'success');
-      await loadSuperAdminWorkers(); loadWorkers();
-    } else { var d = await r.json(); alert(d.detail || 'Error'); }
-  } catch(e) { alert('Network error'); }
-}
-
-// ── Modal ─────────────────────────────────────────────────────────────────────
-function showModal(title, sub, bodyHtml, actions) {
-  document.getElementById('modal-title').textContent = title;
-  document.getElementById('modal-sub').innerHTML = sub;
-  document.getElementById('modal-body').innerHTML = bodyHtml;
-  document.getElementById('modal-actions').innerHTML = actions.map(a =>
-    `<button class="btn ${a.primary ? 'btn-primary' : 'btn-secondary'}" onclick="${a.action}">${a.label}</button>`
-  ).join('');
-  document.getElementById('modal-overlay').classList.remove('hidden');
-}
-
-function closeModal(e) {
-  if (e && e.target !== document.getElementById('modal-overlay')) return;
-  closeModalFn();
-}
-function closeModalFn() { document.getElementById('modal-overlay').classList.add('hidden'); }
-
-// ── Audit Log ─────────────────────────────────────────────────────────────────
-var _auditEntries = [];
-var _auditOffset  = 0;
-var _auditLimit   = 200;
-var _auditTotal   = 0;
-
-async function loadAudit(offset) {
-  if (offset === undefined) offset = _auditOffset;
-  _auditOffset = offset;
-  var tbody = document.getElementById('audit-tbody');
-  if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-m);text-align:center;padding:24px">Loading…</td></tr>';
-  try {
-    var wf = (document.getElementById('audit-filter-worker').value || '');
-    var uf = (document.getElementById('audit-filter-user').value || '');
-    var url = API + '/api/super/audit?limit=' + _auditLimit + '&offset=' + offset;
-    if (wf) url += '&worker_id=' + encodeURIComponent(wf);
-    if (uf) url += '&user_id='   + encodeURIComponent(uf);
-    var r = await fetch(url, { headers: authHeaders() });
-    if (!r.ok) { tbody.innerHTML = '<tr><td colspan="6" style="color:#aaaaaa;text-align:center;padding:24px">Error loading audit log</td></tr>'; return; }
-    var data = await r.json();
-    _auditEntries = data.entries || [];
-    _auditTotal   = data.total_matched != null ? data.total_matched : _auditEntries.length;
-    renderAuditTable(_auditEntries);
-    updateAuditPagination();
-  } catch(e) {
-    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="color:#aaaaaa;text-align:center;padding:24px">Failed to load</td></tr>';
-  }
-}
-
-function filterAuditTable() {
-  _auditOffset = 0;
-  loadAudit(0);
-}
-
-function updateAuditPagination() {
-  var pg = document.getElementById('audit-pagination');
-  var info = document.getElementById('audit-page-info');
-  var prev = document.getElementById('audit-prev-btn');
-  var next = document.getElementById('audit-next-btn');
-  if (!pg) return;
-  if (_auditTotal <= _auditLimit) { pg.style.display = 'none'; return; }
-  pg.style.display = 'flex';
-  var from = _auditOffset + 1;
-  var to   = Math.min(_auditOffset + _auditEntries.length, _auditTotal);
-  info.textContent = from + '–' + to + ' of ' + _auditTotal;
-  prev.disabled = (_auditOffset === 0);
-  next.disabled = (_auditOffset + _auditEntries.length >= _auditTotal);
-}
-
-function auditPagePrev() { if (_auditOffset > 0) loadAudit(Math.max(0, _auditOffset - _auditLimit)); }
-function auditPageNext() { if (_auditOffset + _auditEntries.length < _auditTotal) loadAudit(_auditOffset + _auditLimit); }
-
-function renderAuditTable(entries) {
-  var tbody = document.getElementById('audit-tbody');
-  if (!tbody) return;
-  if (!entries.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-m);text-align:center;padding:24px">No entries</td></tr>';
-    return;
-  }
-  tbody.innerHTML = entries.map(e => {
-    var rawTs = e.timestamp || e.ts || e.called_at || e.time || null;
-    var ts = rawTs ? new Date(rawTs).toLocaleString() : '—';
-    var toolName = e.tool_name || e.tool || '—';
-    var statusCls = e.status === 'ok' || e.status === 'success' ? 'pill-green' : e.status === 'error' ? 'pill-red' : 'pill-grey';
-    var dur = e.duration_ms != null ? e.duration_ms + ' ms' : '—';
-    return `<tr>
-      <td style="font-size:11px;color:var(--text-m)">${ts}</td>
-      <td style="font-size:12px">${e.worker_id || '—'}</td>
-      <td style="font-size:12px">${e.user_id || '—'}</td>
-      <td style="font-family:monospace;font-size:11px">${toolName}</td>
-      <td><span class="pill ${statusCls}">${e.status || '—'}</span></td>
-      <td style="font-size:12px;color:var(--text-m)">${dur}</td>
-    </tr>`;
-  }).join('');
-}
-
-// ── External file drop zone ───────────────────────────────────────────────────
-function handleExternalDragOver(e, section) {
-  // Only handle drops from outside the browser (files), not internal tree drags
-  if (_drag) return;
-  if (e.dataTransfer.types && (e.dataTransfer.types.indexOf('Files') !== -1 || e.dataTransfer.types.indexOf('files') !== -1)) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
-    var treeId = section === 'verified_workflows' ? 'tree-verified_workflows' : 'tree-domain_data';
-    document.getElementById(treeId).classList.add('drop-active');
-  }
-}
-
-function handleExternalDragLeave(e, treeId) {
-  var el = document.getElementById(treeId);
-  if (el && !el.contains(e.relatedTarget)) el.classList.remove('drop-active');
-}
-
-async function handleExternalDrop(e, section, treeId) {
-  e.preventDefault();
-  document.getElementById(treeId).classList.remove('drop-active');
-  if (_drag) return; // internal move — handled by tree item drop
-  var files = Array.from(e.dataTransfer.files);
-  if (!files.length) return;
-  var destFolder = '';
-  // If dropped on a folder item, extract path
-  var target = e.target.closest('.tree-item[data-type="dir"]');
-  if (target) destFolder = target.dataset.path + '/';
-  var successCount = 0, errorCount = 0;
-  for (var f of files) {
-    var form = new FormData();
-    form.append('file', f);
-    var uploadPath = destFolder + f.name;
-    try {
-      var r = await fetch(_workerUploadUrl(section) + '?path=' + encodeURIComponent(uploadPath), {
-        method: 'POST', headers: { 'Authorization': 'Bearer ' + _token }, body: form
-      });
-      if (r.ok) { successCount++; }
-      else {
-        var d = await r.json().catch(() => ({}));
-        if (d.detail && d.detail.includes('already exists')) {
-          if (confirm(f.name + ' already exists. Overwrite?')) {
-            var r2 = await fetch(_workerUploadUrl(section) + '?path=' + encodeURIComponent(uploadPath) + '&overwrite=true', {
-              method: 'POST', headers: { 'Authorization': 'Bearer ' + _token }, body: form
-            });
-            if (r2.ok) successCount++; else errorCount++;
-          }
-        } else { errorCount++; showToast('Error: ' + (d.detail || r.status), 'error'); }
-      }
-    } catch(err) { errorCount++; showToast('Upload error: ' + f.name, 'error'); }
-  }
-  if (successCount) showToast('Uploaded ' + successCount + ' file' + (successCount > 1 ? 's' : ''), 'success');
-  if (errorCount)   showToast(errorCount + ' upload(s) failed', 'error');
-  loadFileTree(section);
-}
-
-// ── Context menu ──────────────────────────────────────────────────────────────
-var _ctxMenu = null;
-
-function showContextMenu(e, section, path, isDir, name) {
-  closeContextMenu();
-  e.preventDefault();
-  e.stopPropagation();
-  var menu = document.createElement('div');
-  menu.className = 'context-menu';
-  menu.id = 'ctx-menu';
-  var items = [];
-  if (!isDir) items.push({ label: '👁 Preview', action: () => previewFile(e, section, path, name) });
-  items.push({ label: '✏️ Rename',  action: () => startInlineRename(section, path, isDir) });
-  if (!isDir) items.push({ label: '⬇️ Download', action: () => downloadFile(section, path, name) });
-  items.push({ sep: true });
-  items.push({ label: '🗑 Delete', action: () => deleteItem(e, section, path, isDir, name), danger: true });
-  items.forEach(item => {
-    if (item.sep) { var s = document.createElement('div'); s.className = 'context-menu-sep'; menu.appendChild(s); return; }
-    var el = document.createElement('div');
-    el.className = 'context-menu-item' + (item.danger ? ' danger' : '');
-    el.textContent = item.label;
-    el.onclick = (ev) => { ev.stopPropagation(); closeContextMenu(); item.action(); };
-    menu.appendChild(el);
-  });
-  // Position near cursor, keep inside viewport
-  var x = e.clientX, y = e.clientY;
-  document.body.appendChild(menu);
-  if (x + 160 > window.innerWidth)  x = window.innerWidth  - 164;
-  if (y + menu.offsetHeight > window.innerHeight) y = y - menu.offsetHeight;
-  menu.style.left = x + 'px';
-  menu.style.top  = y + 'px';
-  _ctxMenu = menu;
-  setTimeout(() => document.addEventListener('click', closeContextMenu, { once: true }), 0);
-}
-
-function closeContextMenu() {
-  if (_ctxMenu) { _ctxMenu.remove(); _ctxMenu = null; }
-}
-
 async function downloadFile(section, path, name) {
   var r = await fetch(_workerFileOpUrl(section, 'file') + '?path=' + encodeURIComponent(path), { headers: authHeaders() });
   if (!r.ok) { showToast('Download failed', 'error'); return; }
@@ -2045,46 +1414,6 @@ async function downloadFile(section, path, name) {
   var content = data.encoding === 'base64' ? atob(data.content || '') : (data.content || '');
   var blob = new Blob([content]);
   var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
-}
-
-// ── Inline rename (dblclick) ──────────────────────────────────────────────────
-function startInlineRename(section, path, isDir) {
-  // Find the tree item by data-path
-  var treeId = section === 'verified_workflows' ? 'tree-verified_workflows' : 'tree-domain_data';
-  var treeEl = document.getElementById(treeId);
-  if (!treeEl) return;
-  var item = treeEl.querySelector('[data-path="' + CSS.escape(path) + '"]');
-  if (!item) { renameItem({ stopPropagation: () => {} }, section, path, isDir); return; }
-  var nameSpan = item.querySelector('.item-name');
-  if (!nameSpan) return;
-  var oldName = nameSpan.textContent;
-  var input = document.createElement('input');
-  input.className = 'tree-rename-input';
-  input.value = '';
-  nameSpan.replaceWith(input);
-  input.focus();
-  input.value = oldName;
-  input.select();
-  var committed = false;
-  async function commit() {
-    if (committed) return;
-    committed = true;
-    var newName = input.value.trim();
-    if (!newName || newName === oldName) { input.replaceWith(nameSpan); return; }
-    try {
-      var r = await fetch(_workerFileOpUrl(section, 'rename'), {
-        method: 'POST', headers: authHeaders(),
-        body: JSON.stringify({ path, new_name: newName })
-      });
-      if (r.ok) { showToast('Renamed', 'success'); loadFileTree(section); }
-      else { var d = await r.json(); showToast(d.detail || 'Rename failed', 'error'); input.replaceWith(nameSpan); }
-    } catch(err) { showToast('Error', 'error'); input.replaceWith(nameSpan); }
-  }
-  input.addEventListener('keydown', (ev) => {
-    if (ev.key === 'Enter')  { ev.preventDefault(); commit(); }
-    if (ev.key === 'Escape') { committed = true; input.replaceWith(nameSpan); }
-  });
-  input.addEventListener('blur', commit);
 }
 
 // ── Connectors ───────────────────────────────────────────────────────────────
@@ -2411,6 +1740,60 @@ async function saveConnectorScope(connectorType) {
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 initWorkerContext();
+</script>
+<script src="/js/file-tree.js"></script>
+<script>
+// Initialize BPulseFileTree instances for admin.html (runs after file-tree.js loads)
+(function() {
+  function _getToken() { return (typeof _token !== 'undefined' ? _token : '') || sessionStorage.getItem('rg_token') || ''; }
+  function _toast(msg, type) { if (typeof showToast === 'function') showToast(msg, type === 'error' ? 'error' : 'success'); }
+  function _apiPrefix() {
+    if (typeof _user !== 'undefined' && _user && _user.role === 'super_admin' && typeof _currentWorker !== 'undefined' && _currentWorker) {
+      return (typeof API !== 'undefined' ? API : '') + '/api/super/workers/' + _currentWorker.worker_id + '/files';
+    }
+    return (typeof API !== 'undefined' ? API : '') + '/api/admin/worker/files';
+  }
+
+  window._bpft_dd = new BPulseFileTree({
+    containerId: 'tree-domain_data',
+    section: 'domain_data',
+    get apiPrefix() { return _apiPrefix(); },
+    writable: true,
+    workflowSection: false,
+    token: _getToken,
+    onToast: _toast,
+    onFileClick: function(section, path, name) {
+      if (typeof previewFile === 'function') previewFile({ stopPropagation: function(){} }, section, path, name);
+    },
+  });
+
+  window._bpft_wf = new BPulseFileTree({
+    containerId: 'tree-verified_workflows',
+    section: 'verified_workflows',
+    get apiPrefix() { return _apiPrefix(); },
+    writable: true,
+    workflowSection: false,
+    token: _getToken,
+    onToast: _toast,
+    onFileClick: function(section, path, name) {
+      if (typeof previewFile === 'function') previewFile({ stopPropagation: function(){} }, section, path, name);
+    },
+  });
+
+  // Wire upload inputs
+  var ddInput = document.getElementById('bpft-upload-input-dd');
+  if (ddInput) ddInput.onchange = function() { window._bpft_dd && window._bpft_dd.upload(Array.from(this.files), ''); this.value = ''; };
+  var wfInput = document.getElementById('bpft-upload-input-wf');
+  if (wfInput) wfInput.onchange = function() { window._bpft_wf && window._bpft_wf.upload(Array.from(this.files), ''); this.value = ''; };
+
+  // Patch loadFileTree to use BPulseFileTree instances
+  var _origLoadFileTree = window.loadFileTree;
+  window.loadFileTree = function(section) {
+    if (section === 'domain_data' && window._bpft_dd) { window._bpft_dd.load(); return; }
+    if (section === 'verified_workflows' && window._bpft_wf) { window._bpft_wf.load(); return; }
+    if (_origLoadFileTree) _origLoadFileTree(section);
+  };
+})();
 </script>
 </body>
 </html>
