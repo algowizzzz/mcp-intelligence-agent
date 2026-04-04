@@ -24,6 +24,11 @@ api azure
 # DuckDB runtime artifacts
 *.db.wal
 
+# Large bank filing data (too large for git)
+bank_filings/
+regulatory_downloads/
+regulatory_md/
+
 # Test artifacts
 test_screenshots/
 .pytest_cache/
