@@ -62,12 +62,25 @@ SUPPORTED_TYPES = ['bar','bar_horizontal','line','area','scatter','histogram',
 PLOTLY_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js'
 
 
-def _resolve_my_data():
-    v = PropertiesConfigurator().get('data.my_data.dir', './data/uploads')
-    p = Path(v)
-    if not p.is_absolute():
-        p = Path.cwd() / p
-    return p.resolve()
+def _resolve_charts_dir(worker_ctx: dict = None, user_id: str = None) -> Path:
+    """Return per-user charts directory: my_data/{user_id}/charts/.
+    Falls back to data/uploads/charts only if no worker context available.
+    """
+    if worker_ctx:
+        try:
+            base = path_resolve('my_data', worker_ctx, user_id=user_id or '_shared')
+            return Path(base) / 'charts'
+        except Exception:
+            pass
+    # No worker context — error rather than silently using old path
+    try:
+        from flask import g as _g
+        my_data_root = getattr(_g, 'worker_my_data_root', '') or ''
+        if my_data_root:
+            return Path(my_data_root.strip()) / 'charts'
+    except RuntimeError:
+        pass
+    raise RuntimeError('Cannot resolve charts directory: no worker context available')
 
 
 def _make_layout(title, x_label, y_label, theme_key, width, height):
@@ -344,6 +357,15 @@ class GenerateChartTool(BaseMCPTool):
     def execute(self, arguments):
         import plotly.graph_objects as go
 
+        # Resolve per-user charts directory (REQ-03)
+        worker_ctx = _get_worker_ctx()
+        user_id = None
+        try:
+            from flask import g as _g
+            user_id = getattr(_g, 'user_id', None)
+        except RuntimeError:
+            pass
+
         chart_type = arguments.get('chart_type', '')
         if chart_type not in SUPPORTED_TYPES:
             return {'error': f"Unsupported chart_type '{chart_type}'. Supported: {SUPPORTED_TYPES}"}
@@ -429,7 +451,7 @@ class GenerateChartTool(BaseMCPTool):
                 fname = arguments.get('filename') or f"chart_{chart_type}_{ts}.png"
                 if not fname.endswith('.png'):
                     fname += '.png'
-                charts_dir = _resolve_my_data() / 'charts'
+                charts_dir = _resolve_charts_dir(worker_ctx, user_id)
                 charts_dir.mkdir(parents=True, exist_ok=True)
                 out_path = charts_dir / fname
                 img_bytes = pio.to_image(fig, format='png', width=width, height=height, scale=2)
@@ -450,7 +472,7 @@ class GenerateChartTool(BaseMCPTool):
         if html_content:
             try:
                 ts = datetime.now(tz=timezone.utc).strftime('%Y%m%d_%H%M%S')
-                charts_dir = _resolve_my_data() / 'charts'
+                charts_dir = _resolve_charts_dir(worker_ctx, user_id)
                 charts_dir.mkdir(parents=True, exist_ok=True)
                 html_fname = f"chart_{chart_type}_{ts}.html"
                 html_out = charts_dir / html_fname

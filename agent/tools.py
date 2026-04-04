@@ -51,9 +51,42 @@ async def _get_token() -> str:
 
 _MAX_TOOL_OUTPUT_CHARS = 12_000  # ~3k tokens per tool — keeps accumulated results well within context
 
+# Tools that return large HTML content — strip html field, set _chart_ready flag instead
+_HTML_OUTPUT_TOOLS = {'generate_chart', 'create_report', 'render_document', 'create_dashboard',
+                      'python_execute', 'python_run_script'}
+
 
 def _truncate_result(result: dict, tool_name: str) -> dict:
-    """Truncate oversized tool results before they enter the LangGraph checkpoint."""
+    """Truncate oversized tool results before they enter the LangGraph checkpoint.
+    For visualization/python tools: strip html field, keep metadata + _chart_ready flag.
+    """
+    import os as _os
+
+    if tool_name in _HTML_OUTPUT_TOOLS and isinstance(result, dict):
+        stripped = {k: v for k, v in result.items() if k != 'html'}
+        # Basename only — never expose full server paths
+        if 'html_file' in stripped and stripped['html_file']:
+            stripped['html_file'] = _os.path.basename(stripped['html_file'])
+        if 'png_path' in stripped and stripped['png_path']:
+            stripped['png_path'] = _os.path.basename(stripped['png_path'])
+        # Mark as chart-ready so agent_server emits canvas SSE event
+        stripped['_chart_ready'] = True
+        serialised = json.dumps(stripped)
+        if len(serialised) <= _MAX_TOOL_OUTPUT_CHARS:
+            return stripped
+        # Even stripped version too large — keep only essentials
+        return {
+            '_chart_ready': True,
+            '_truncated': True,
+            '_tool': tool_name,
+            'chart_type': result.get('chart_type', result.get('_tool', tool_name)),
+            'title': result.get('title', ''),
+            'html_file': _os.path.basename(result.get('html_file', '') or ''),
+            'png_path': _os.path.basename(result.get('png_path', '') or ''),
+            'data_rows_plotted': result.get('data_rows_plotted'),
+            'figures': result.get('figures', []),
+        }
+
     serialised = json.dumps(result)
     if len(serialised) <= _MAX_TOOL_OUTPUT_CHARS:
         return result

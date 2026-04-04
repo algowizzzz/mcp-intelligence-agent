@@ -835,6 +835,67 @@
     }
 
     /* ================================================================
+       CONTEXT GAUGE (REQ-05)
+       ================================================================ */
+    #ctx-gauge-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+      cursor: default;
+      position: relative;
+    }
+    #ctx-gauge-bar {
+      width: 64px;
+      height: 5px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    #ctx-gauge-fill {
+      height: 100%;
+      width: 0%;
+      background: #4caf82;
+      border-radius: 3px;
+      transition: width 0.4s ease, background 0.4s ease;
+    }
+    #ctx-gauge-fill.warn { background: #e6a817; }
+    #ctx-gauge-fill.critical { background: #e05252; }
+    #ctx-gauge-wrap .ctx-tooltip {
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      z-index: 200;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      line-height: 1.8;
+    }
+    #ctx-gauge-wrap:hover .ctx-tooltip { display: block; }
+
+    .summary-notice {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: rgba(76,175,130,0.08);
+      border: 1px solid rgba(76,175,130,0.25);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin: 8px 0;
+    }
+    .summary-notice svg { flex-shrink: 0; margin-top: 1px; }
+
+    /* ================================================================
        CHAT CONTAINER
        ================================================================ */
     #chat-container {
@@ -2980,6 +3041,11 @@
           </div>
           <div id="user-display-badge" style="display:none;margin-right:8px;font-size:12px;color:var(--text-secondary)"></div>
           <button id="logout-btn" style="display:none;background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:12px;padding:4px 8px" onclick="doLogout()">Sign out</button>
+          <div id="ctx-gauge-wrap" style="display:none">
+            <div id="ctx-gauge-bar"><div id="ctx-gauge-fill"></div></div>
+            <span id="ctx-gauge-label">0%</span>
+            <div class="ctx-tooltip" id="ctx-gauge-tooltip">Context window: 0 / 200,000 tokens</div>
+          </div>
           <div class="cost-pill" id="cost-pill">
             <span id="token-display">0 tok</span>
             <div class="cost-tooltip" id="cost-tooltip">
@@ -4112,6 +4178,26 @@
         var outputStr = typeof output === 'object' ? JSON.stringify(output, null, 2) : String(output || '');
         outputEl.textContent = truncateJSON(outputStr, 5000);
       }
+
+      // REQ-03: If chart_ready, add "Open Chart" button to tool card header
+      if (output && typeof output === 'object' && output._chart_ready && output.html_file) {
+        var card = $('tool-card-' + runId);
+        if (card) {
+          var hdr = card.querySelector('.tool-card-header');
+          if (hdr && !hdr.querySelector('.btn-open-chart')) {
+            var chartBtn = document.createElement('button');
+            chartBtn.className = 'btn-open-chart btn-view-canvas';
+            chartBtn.style.cssText = 'margin-left:8px;font-size:11px;padding:3px 8px';
+            chartBtn.textContent = 'Open Chart';
+            var capturedFile = output.html_file, capturedTitle = output.title || name;
+            chartBtn.onclick = function(e) {
+              e.stopPropagation();
+              openCanvasChart(capturedTitle, '/api/fs/charts/' + capturedFile);
+            };
+            hdr.appendChild(chartBtn);
+          }
+        }
+      }
     }
 
     function toggleToolCard(runId) {
@@ -4793,7 +4879,17 @@
         }
       }
       else if (type === 'canvas') {
-        openCanvas(evt.title, evt.content);
+        if (evt.canvas_type === 'chart' && evt.chart_url) {
+          openCanvasChart(evt.title, evt.chart_url);
+        } else {
+          openCanvas(evt.title, evt.content);
+        }
+      }
+      else if (type === 'context_gauge') {
+        updateContextGauge(evt.tokens, evt.limit);
+      }
+      else if (type === 'summary_occurred') {
+        showSummaryNotice(evt.exchanges_compressed, evt.tokens_before, evt.tokens_after);
       }
       else if (type === 'error') {
         showErrorInChat(evt.message || 'Unknown error');
@@ -7095,6 +7191,60 @@
       var html = DOMPurify.sanitize(marked.parse(md));
       document.getElementById('canvas-content').innerHTML = html;
       document.getElementById('canvas-content').scrollTop = 0;
+    }
+
+    // REQ-03: Open chart in canvas panel via iframe
+    var _lastChartUrl = '';
+    function openCanvasChart(title, chartUrl) {
+      _lastChartUrl = chartUrl;
+      document.getElementById('canvas-title').textContent = title || 'Chart';
+      var saveBtn = document.getElementById('canvas-save-btn');
+      if (saveBtn) saveBtn.style.display = 'none';
+      var cc = document.getElementById('canvas-content');
+      cc.innerHTML = '<iframe src="' + chartUrl + '" style="width:100%;height:100%;min-height:480px;border:none;border-radius:6px" allowfullscreen sandbox="allow-scripts allow-same-origin"></iframe>';
+      document.body.classList.add('canvas-active');
+      if (_currentAgentMsg) {
+        var actions = _currentAgentMsg.querySelector('.msg-actions');
+        if (actions && !actions.querySelector('.btn-view-canvas')) {
+          var viewBtn = document.createElement('button');
+          viewBtn.className = 'btn-view-canvas';
+          viewBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 3h18v18H3z"/><polyline points="7,17 12,12 17,17"/></svg> View Chart';
+          var capturedUrl = chartUrl, capturedTitle = title;
+          viewBtn.onclick = function() { openCanvasChart(capturedTitle, capturedUrl); };
+          actions.insertBefore(viewBtn, actions.firstChild);
+        }
+      }
+    }
+
+    // REQ-05: Update context gauge bar
+    function updateContextGauge(tokens, limit) {
+      var wrap = document.getElementById('ctx-gauge-wrap');
+      var fill = document.getElementById('ctx-gauge-fill');
+      var label = document.getElementById('ctx-gauge-label');
+      var tooltip = document.getElementById('ctx-gauge-tooltip');
+      if (!wrap || !fill || !label) return;
+      wrap.style.display = 'flex';
+      var pct = Math.min(100, Math.round(tokens / limit * 100));
+      fill.style.width = pct + '%';
+      fill.className = pct >= 90 ? 'critical' : pct >= 70 ? 'warn' : '';
+      label.textContent = pct + '%';
+      if (tooltip) tooltip.textContent = 'Context: ' + tokens.toLocaleString() + ' / ' + limit.toLocaleString() + ' tokens';
+    }
+
+    // REQ-05: Show summary notice in chat
+    function showSummaryNotice(exchangesCompressed, tokensBefore, tokensAfter) {
+      var container = document.getElementById('chat-inner');
+      if (!container) return;
+      var notice = document.createElement('div');
+      notice.className = 'summary-notice';
+      var pctBefore = Math.round(tokensBefore / 200000 * 100);
+      var pctAfter = Math.round(tokensAfter / 200000 * 100);
+      notice.innerHTML =
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4caf82" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>' +
+        '<span>Context compressed &mdash; ' + exchangesCompressed + ' earlier exchange' + (exchangesCompressed !== 1 ? 's' : '') + ' summarized. ' +
+        'Usage: ' + pctBefore + '% &rarr; ' + pctAfter + '%</span>';
+      container.appendChild(notice);
+      container.scrollTop = container.scrollHeight;
     }
 
     function closeCanvas() {

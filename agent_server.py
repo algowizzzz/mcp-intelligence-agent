@@ -13,6 +13,7 @@ import httpx
 from agent.agent import create_agent_for_worker, checkpointer
 from agent.prompt import get_system_prompt, SYSTEM_PROMPT
 from agent.tools import _service_headers, _worker_ctx, SAJHA_BASE, get_tools_for_worker, AGENT_TOOLS
+from agent.summariser import count_tokens_accurate
 
 _WORKFLOWS_DIR = pathlib.Path('sajhamcpserver/data/workflows')
 _UPLOADS_DIR   = pathlib.Path('sajhamcpserver/data/uploads')
@@ -1383,6 +1384,53 @@ async def fs_delete_folder(section: str, path: str = '', payload: dict = Depends
     return {'ok': True}
 
 
+# ── Chart serving endpoints (REQ-03) ───────────────────────────────────────────
+
+def _resolve_charts_root(worker: dict, user_id: str) -> pathlib.Path:
+    """Resolve per-user charts directory from worker my_data_path."""
+    raw = worker.get('my_data_path', './data/uploads')
+    base = pathlib.Path('sajhamcpserver')
+    return (base / raw.lstrip('./')).resolve() / user_id / 'charts'
+
+
+@app.get('/api/fs/charts')
+async def list_charts(payload: dict = Depends(require_jwt)):
+    """List available charts (HTML and PNG) for the authenticated user."""
+    worker = _fs_worker(payload)
+    charts_root = _resolve_charts_root(worker, payload['user_id'])
+    if not charts_root.exists():
+        return {'charts': []}
+    charts = []
+    for f in sorted(charts_root.iterdir()):
+        if f.suffix in ('.html', '.png') and f.is_file():
+            charts.append({
+                'filename': f.name,
+                'type': 'html' if f.suffix == '.html' else 'png',
+                'url': f'/api/fs/charts/{f.name}',
+                'size': f.stat().st_size,
+                'modified': f.stat().st_mtime,
+            })
+    return {'charts': charts}
+
+
+@app.get('/api/fs/charts/{filename}')
+async def serve_chart(filename: str, payload: dict = Depends(require_jwt)):
+    """Serve a chart file (HTML or PNG) for the authenticated user."""
+    # Reject path traversal attempts
+    if '/' in filename or '\\' in filename or '..' in filename:
+        raise HTTPException(status_code=400, detail='Invalid filename')
+    worker = _fs_worker(payload)
+    charts_root = _resolve_charts_root(worker, payload['user_id'])
+    chart_path = (charts_root / filename).resolve()
+    if not str(chart_path).startswith(str(charts_root)):
+        raise HTTPException(status_code=400, detail='Path traversal not allowed')
+    if not chart_path.exists():
+        raise HTTPException(status_code=404, detail='Chart not found')
+    if chart_path.suffix == '.png':
+        return FileResponse(str(chart_path), media_type='image/png')
+    return FileResponse(str(chart_path), media_type='text/html')
+
+
 # ── Admin API ──────────────────────────────────────────────────────────────────
 
 class AdminFolderRequest(BaseModel):
@@ -1681,12 +1729,18 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
                     if not isinstance(output, (str, dict, list)):
                         output = str(output)
                     yield f"data: {json.dumps({'type': 'tool_end', 'name': event['name'], 'output': output, 'run_id': event['run_id']})}\n\n"
-                    # REQ-04a: Python figure detection — emit canvas SSE event for captured figures
-                    if event['name'] in ('python_execute', 'python_run_script') and isinstance(output, dict):
-                        figures = output.get('figures', [])
-                        if figures:
-                            first_fig = figures[0]
-                            yield f"data: {json.dumps({'type': 'canvas', 'title': 'Python Output', 'canvas_type': 'chart', 'chart_url': first_fig['url']})}\n\n"
+                    if isinstance(output, dict):
+                        # REQ-03: Viz tool chart ready — emit canvas SSE event
+                        if output.get('_chart_ready') and output.get('html_file'):
+                            chart_filename = output['html_file']
+                            chart_title = output.get('title', 'Chart')
+                            yield f"data: {json.dumps({'type': 'canvas', 'title': chart_title, 'content': '', 'canvas_type': 'chart', 'chart_url': f'/api/fs/charts/{chart_filename}'})}\n\n"
+                        # REQ-04a: Python figure detection — emit canvas SSE event for captured figures
+                        elif event['name'] in ('python_execute', 'python_run_script'):
+                            figures = output.get('figures', [])
+                            if figures:
+                                first_fig = figures[0]
+                                yield f"data: {json.dumps({'type': 'canvas', 'title': 'Python Output', 'canvas_type': 'chart', 'chart_url': first_fig['url']})}\n\n"
                 elif t == 'on_interrupt':
                     yield f"data: {json.dumps({'type': 'hitl', 'question': event['data'].get('question', ''), 'options': event['data'].get('options', []), 'thread_id': thread_id})}\n\n"
                 elif t == 'on_chat_model_end':
@@ -1727,6 +1781,21 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
                 canvas = envelope['canvas']
                 yield f"data: {_json.dumps({'type': 'replace_text', 'text': envelope.get('summary', '')})}\n\n"
                 yield f"data: {_json.dumps({'type': 'canvas', 'title': canvas.get('title','Document'), 'content': canvas.get('content',''), 'canvas_type': canvas.get('type','report')})}\n\n"
+            # REQ-05: emit context gauge + summary notice if compression fired
+            try:
+                final_state = await agent_instance.aget_state(config)
+                if final_state and final_state.values:
+                    sv = final_state.values
+                    msgs = sv.get('messages', [])
+                    token_count = count_tokens_accurate(msgs)
+                    yield f"data: {_json.dumps({'type': 'context_gauge', 'tokens': token_count, 'limit': 200000})}\n\n"
+                    if sv.get('_summary_occurred'):
+                        exchanges_compressed = sv.get('exchanges_compressed', 0)
+                        tokens_before = sv.get('tokens_before', 0)
+                        tokens_after = sv.get('tokens_after', token_count)
+                        yield f"data: {_json.dumps({'type': 'summary_occurred', 'exchanges_compressed': exchanges_compressed, 'tokens_before': tokens_before, 'tokens_after': tokens_after})}\n\n"
+            except Exception:
+                pass
             yield 'data: [DONE]\n\n'
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"

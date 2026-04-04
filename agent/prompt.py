@@ -29,9 +29,38 @@ def _load_prompt_from_workers() -> str:
     return _FALLBACK_PROMPT
 
 
+_PYTHON_ADDENDUM = """
+## Python Execution (REQ-04a)
+
+You have access to two Python execution tools:
+
+- `python_execute`: Run ad-hoc Python code in a sandboxed environment.
+- `python_run_script`: Run a .py script from domain_data or my_data.
+
+Available libraries: pandas, numpy, scipy, matplotlib, plotly, openpyxl, pyarrow, statsmodels.
+
+Best practices:
+- Use pandas for tabular data operations.
+- Use plotly for charts — plotly charts render interactively in the canvas panel.
+- Call `fig.show()` or `plt.show()` to capture figures; they are auto-saved and displayed.
+- Do not attempt to access the network, file system outside provided context_files, or import blocked modules (os, sys, subprocess, socket, requests).
+- For large datasets, load from context_files rather than embedding data in code.
+- Summarise numeric results in your response — do not rely solely on stdout.
+"""
+
+
+def _augment_prompt(prompt: str) -> str:
+    """Append platform addenda (Python execution guidance) to a worker system prompt."""
+    return prompt + _PYTHON_ADDENDUM
+
+
+SYSTEM_PROMPT = _augment_prompt(_load_prompt_from_workers())
+
+
 def get_system_prompt(worker_id: str) -> str:
     """Load the system_prompt for a specific worker at call time (not cached).
     Called per-request so admin prompt updates take effect immediately.
+    Appends platform addenda (Python guidance etc.) to the worker prompt.
     Falls back to the default worker prompt if not found.
     """
     try:
@@ -40,13 +69,11 @@ def get_system_prompt(worker_id: str) -> str:
             if w.get('worker_id') == worker_id and w.get('enabled', True):
                 prompt = w.get('system_prompt', '').strip()
                 if prompt:
-                    return prompt
+                    return _augment_prompt(prompt)
     except Exception:
         pass
-    return _load_prompt_from_workers()
+    return _augment_prompt(_load_prompt_from_workers())
 
-
-SYSTEM_PROMPT = _load_prompt_from_workers()
 
 SUMMARISE_PROMPT = """You are a context compressor for a financial risk intelligence session on the B-Pulse platform.
 
