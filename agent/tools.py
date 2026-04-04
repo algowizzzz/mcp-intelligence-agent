@@ -216,14 +216,16 @@ def _build_pydantic_model(tool_name: str, schema: dict):
     required = set(schema.get('required', []))
     fields = {}
     for name, prop in props.items():
+        # Pydantic v2 rejects leading underscores — strip them (server-injected fields like _worker_context)
+        safe_name = name.lstrip('_') or name
         ptype, default = TYPE_MAP.get(prop.get('type', 'string'), (str, ''))
         desc = prop.get('description', name)
         if name in required:
-            fields[name] = (ptype, Field(description=desc))
+            fields[safe_name] = (ptype, Field(description=desc))
         else:
             ptype = Optional[ptype]
             prop_default = prop.get('default', None)
-            fields[name] = (ptype, Field(default=prop_default, description=desc))
+            fields[safe_name] = (ptype, Field(default=prop_default, description=desc))
     if not fields:
         fields['input'] = (Optional[str], Field(default='', description='Tool input'))
     model_name = tool_name.replace('-', '_').title().replace('_', '') + 'Input'

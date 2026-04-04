@@ -997,7 +997,24 @@ async def admin_reset_worker_user_password(user_id: str, payload: dict = Depends
     else:
         raise HTTPException(status_code=404, detail='User not found in this worker')
     _save_users(users)
-    return {'ok': True, 'temporary_password': tmp_password}
+    return {'ok': True, 'temp_password': tmp_password}
+
+
+@app.delete('/api/admin/worker/users/{user_id}')
+async def admin_delete_worker_user(user_id: str, payload: dict = Depends(require_admin)):
+    """Admin: delete a user scoped to their worker. Cannot delete self."""
+    w = _get_admin_worker(payload)
+    if not w:
+        raise HTTPException(status_code=404, detail='Worker not found')
+    if user_id == payload['user_id']:
+        raise HTTPException(status_code=400, detail='Cannot delete your own account')
+    users = _load_users()
+    target = next((u for u in users if u['user_id'] == user_id and u.get('worker_id') == w['worker_id']), None)
+    if not target:
+        raise HTTPException(status_code=404, detail='User not found in this worker')
+    users = [u for u in users if u['user_id'] != user_id]
+    _save_users(users)
+    return {'ok': True}
 
 
 # ── File upload ────────────────────────────────────────────────────────────────

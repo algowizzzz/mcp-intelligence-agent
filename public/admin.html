@@ -894,6 +894,11 @@ var roleLabel = _user.role === 'super_admin' ? 'Super Admin' : 'Admin';
 document.getElementById('sidebar-role').textContent = roleLabel;
 if (_user.role === 'super_admin') {
   document.getElementById('super-nav').style.display = 'block';
+} else {
+  // Hide worker-creation controls from non-super-admin users (BUG-ADMIN-001)
+  document.querySelectorAll('[onclick="openCreateWorkerModal()"]').forEach(function(el) {
+    el.style.display = 'none';
+  });
 }
 
 function authHeaders() { return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _token }; }
@@ -1761,8 +1766,12 @@ async function toggleUserEnabled(userId, newState) {
 async function deleteUser(userId) {
   if (!confirm(`Delete user "${userId}"? This cannot be undone.`)) return;
   try {
-    var r = await fetch(API + '/api/super/users/' + userId, { method: 'DELETE', headers: authHeaders() });
+    var url = _user.role === 'super_admin'
+      ? API + '/api/super/users/' + userId
+      : API + '/api/admin/worker/users/' + userId;
+    var r = await fetch(url, { method: 'DELETE', headers: authHeaders() });
     if (r.ok) { showToast('User deleted', 'success'); loadUsers(); }
+    else { var d = await r.json().catch(() => ({})); showToast(d.detail || 'Delete failed', 'error'); }
   } catch(e) { showToast('Error', 'error'); }
 }
 

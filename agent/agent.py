@@ -3,6 +3,8 @@ load_dotenv()
 
 import os
 
+import sqlite3
+
 from langchain.agents import create_agent
 from langchain.agents.factory import AgentMiddleware
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -56,8 +58,14 @@ class MessageTrimmer(AgentMiddleware):
 
 
 # Shared across all per-request agent instances — preserves thread history
+# SqliteSaver.from_conn_string is a context manager; use direct construction
+# with check_same_thread=False so the connection is safe across async tasks.
 llm = create_llm()
-checkpointer = SqliteSaver.from_conn_string(_DB_PATH)
+_db_dir = os.path.dirname(_DB_PATH)
+if _db_dir:
+    os.makedirs(_db_dir, exist_ok=True)
+_sqlite_conn = sqlite3.connect(_DB_PATH, check_same_thread=False)
+checkpointer = SqliteSaver(_sqlite_conn)
 
 
 def create_agent_for_worker(system_prompt: str, tools: list = None):
