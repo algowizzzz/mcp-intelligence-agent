@@ -46,6 +46,15 @@ Best practices:
 - Do not attempt to access the network, file system outside provided context_files, or import blocked modules (os, sys, subprocess, socket, requests).
 - For large datasets, load from context_files rather than embedding data in code.
 - Summarise numeric results in your response — do not rely solely on stdout.
+
+## Extended Quantitative Finance Libraries (REQ-04b)
+Additional libraries available in the sandbox:
+- scikit-learn: ML models (LinearRegression, PCA, KMeans, RandomForest), dimensionality reduction, clustering
+- arch: GARCH/EGARCH volatility modelling — `from arch import arch_model`
+- riskfolio-lib: Portfolio optimisation — mean-variance, CVaR, HRP — `import riskfolio as rp`
+- QuantLib: Interest rate curves, bond pricing, derivatives (if available for runtime Python version)
+- xarray: Multi-dimensional labelled arrays for scenario grids and stress tests
+- networkx: Counterparty network graphs, contagion and centrality analysis
 """
 
 
