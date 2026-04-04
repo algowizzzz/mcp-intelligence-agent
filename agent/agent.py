@@ -1,15 +1,19 @@
 from dotenv import load_dotenv
 load_dotenv()
 
+import os
+
 from langchain.agents import create_agent
 from langchain.agents.factory import AgentMiddleware
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.sqlite import SqliteSaver
 from .tools import AGENT_TOOLS
 from .prompt import SYSTEM_PROMPT
 from .llm_factory import create_llm
 from .summariser import SummarisationMiddleware
 
-_MAX_HISTORY_CHARS = 200_000  # ~50k tokens — leaves room for tools + response within 200k context
+_MAX_HISTORY_CHARS = 800_000  # Hard fallback only — SummarisationMiddleware fires first at 180k tokens
+
+_DB_PATH = os.getenv('CHECKPOINT_DB_PATH', './sajhamcpserver/data/checkpoints.db')
 
 class MessageTrimmer(AgentMiddleware):
     """Trims old messages before each model call to stay under Claude's 200k token limit."""
@@ -53,7 +57,7 @@ class MessageTrimmer(AgentMiddleware):
 
 # Shared across all per-request agent instances — preserves thread history
 llm = create_llm()
-checkpointer = MemorySaver()
+checkpointer = SqliteSaver.from_conn_string(_DB_PATH)
 
 
 def create_agent_for_worker(system_prompt: str, tools: list = None):

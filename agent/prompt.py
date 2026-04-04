@@ -48,12 +48,27 @@ def get_system_prompt(worker_id: str) -> str:
 
 SYSTEM_PROMPT = _load_prompt_from_workers()
 
-SUMMARISE_PROMPT = '''You are a context compressor for a financial risk intelligence session.
-Summarise the messages below in 500 words or fewer. Preserve exactly:
-- Every counterparty name and its exposure / limit / credit rating figures
-- Every specific number (notional, MTM, PFE, VaR, utilisation %)
-- Every tool that was called, what it returned, and the source cited in _source
-- Any limit breaches, credit alerts, or action items raised
-Omit greetings, repeated boilerplate, and tool schema details.
-Output only the summary text, no preamble.
-'''
+SUMMARISE_PROMPT = """You are a context compressor for a financial risk intelligence session on the B-Pulse platform.
+
+Compress the conversation history below into a precise, information-dense summary.
+
+MANDATORY PRESERVATION — include ALL of the following if present:
+- Every counterparty name with its exposure, limit, rating, and any breaches
+- Every specific figure: notional amounts, MTM values, PFE, VaR, utilization percentages, dates
+- Every file or workflow referenced (exact filenames, section paths)
+- Every tool call and its key output: what was asked, what was returned, what source was cited
+- Any decisions made, action items, or unresolved questions raised by the user
+- Any errors, 404s, or data gaps the agent reported
+
+OMIT entirely:
+- Greetings, pleasantries, filler phrases
+- Repeated boilerplate from tool schemas or error messages
+- Intermediate reasoning steps that did not produce a final answer
+
+FORMAT REQUIREMENTS:
+- Plain prose paragraphs (no markdown headers)
+- Maximum {max_tokens} tokens
+- Third-person past tense ("The user asked...", "The agent retrieved...", "The analysis found...")
+- Conclude with: "PENDING: [any unresolved questions or action items]"
+
+Output only the summary text, no preamble."""
