@@ -3,11 +3,8 @@ load_dotenv()
 
 import os
 
-import sqlite3
-
 from langchain.agents import create_agent
 from langchain.agents.factory import AgentMiddleware
-from langgraph.checkpoint.sqlite import SqliteSaver
 from .tools import AGENT_TOOLS
 from .prompt import SYSTEM_PROMPT
 from .llm_factory import create_llm
@@ -57,15 +54,18 @@ class MessageTrimmer(AgentMiddleware):
         return await handler(request.override(messages=trimmed))
 
 
-# Shared across all per-request agent instances — preserves thread history
-# SqliteSaver.from_conn_string is a context manager; use direct construction
-# with check_same_thread=False so the connection is safe across async tasks.
 llm = create_llm()
-_db_dir = os.path.dirname(_DB_PATH)
-if _db_dir:
-    os.makedirs(_db_dir, exist_ok=True)
-_sqlite_conn = sqlite3.connect(_DB_PATH, check_same_thread=False)
-checkpointer = SqliteSaver(_sqlite_conn)
+
+# checkpointer is injected by agent_server.py via set_checkpointer() during
+# FastAPI lifespan startup.  AsyncSqliteSaver requires an async context so it
+# cannot be constructed synchronously at module load time.
+checkpointer = None
+
+
+def set_checkpointer(cp) -> None:
+    """Called once at server startup with the live AsyncSqliteSaver instance."""
+    global checkpointer
+    checkpointer = cp
 
 
 def create_agent_for_worker(system_prompt: str, tools: list = None):
@@ -84,6 +84,7 @@ def create_agent_for_worker(system_prompt: str, tools: list = None):
     )
 
 
-# Default agent — used only for backward compatibility with direct imports.
-# agent_server.py creates per-request instances via create_agent_for_worker().
-agent = create_agent_for_worker(SYSTEM_PROMPT)
+# Default agent — kept for backward-compat direct imports; checkpointer will
+# be None until set_checkpointer() is called, which is fine because this is
+# only used after agent_server has started.
+agent = None  # populated lazily on first use if needed

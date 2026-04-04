@@ -1,5 +1,6 @@
 import os, json, uuid, pathlib, base64, sys as _sys, hmac, hashlib, time, shutil
 import os as _os
+from contextlib import asynccontextmanager
 from contextvars import ContextVar
 from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Request
 from fastapi.responses import StreamingResponse, JSONResponse, FileResponse, Response
@@ -10,7 +11,9 @@ from pydantic import BaseModel
 from typing import Optional, List
 from dotenv import load_dotenv
 import httpx
-from agent.agent import create_agent_for_worker, checkpointer
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+import agent.agent as _agent_module
+from agent.agent import create_agent_for_worker
 from agent.prompt import get_system_prompt, SYSTEM_PROMPT
 from agent.tools import _service_headers, _worker_ctx, SAJHA_BASE, get_tools_for_worker, AGENT_TOOLS
 from agent.summariser import count_tokens_accurate
@@ -340,7 +343,19 @@ _COMMON_DATA.mkdir(parents=True, exist_ok=True)
 _AUDIT_LOG.parent.mkdir(parents=True, exist_ok=True)
 _load_thread_registry()
 
-app = FastAPI(title='MCP Intelligence Agent')
+
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
+    """Initialize AsyncSqliteSaver on startup; close it on shutdown."""
+    _db_path = os.getenv('CHECKPOINT_DB_PATH', './sajhamcpserver/data/checkpoints.db')
+    pathlib.Path(_db_path).parent.mkdir(parents=True, exist_ok=True)
+    async with AsyncSqliteSaver.from_conn_string(_db_path) as cp:
+        _agent_module.set_checkpointer(cp)
+        yield
+    # AsyncSqliteSaver context exits automatically — connection closed
+
+
+app = FastAPI(title='MCP Intelligence Agent', lifespan=_lifespan)
 _cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:8080,http://127.0.0.1:8080').split(',')
 # 'null' allows file:// origins in local dev (browser sends Origin: null for file:// pages)
 _cors_origins = list({*_cors_origins, 'null', 'http://localhost:8000', 'http://127.0.0.1:8000'})
