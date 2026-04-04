@@ -1,0 +1,13 @@
+{
+  "name": "confluence_list_spaces",
+  "description": "List all Confluence spaces accessible to the connector.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "atlassian",
+  "implementation": "sajha.tools.impl.confluence_tools.ConfluenceListSpacesTool",
+  "metadata": {
+    "connector": "confluence",
+    "access": "read",
+    "category": "collaboration"
+  }
+}

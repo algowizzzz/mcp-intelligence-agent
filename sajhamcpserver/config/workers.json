@@ -3,7 +3,7 @@
     {
       "worker_id": "w-market-risk",
       "name": "Market Risk Worker",
-      "description": "Counterparty credit risk and market intelligence for capital markets analysts.",
+      "description": "QA test save",
       "created_by": "risk_agent",
       "created_at": "2026-04-03T00:00:00.000000Z",
       "enabled": true,
@@ -19,11 +19,25 @@
       ],
       "assigned_users": [
         "test_c0cec0",
-        "thread_7dd958"
+        "thread_7dd958",
+        "admin",
+        "uat_usr_c7eb1422",
+        "test_user",
+        "uat_usr_b48d7537"
       ],
       "my_workflows_path": "./data/workers/w-market-risk/workflows/my",
       "templates_path": "./data/workers/w-market-risk/templates",
-      "common_data_path": "./data/common"
+      "common_data_path": "./data/common",
+      "connector_scope": {
+        "microsoft_azure": {
+          "teams_team_id": "qa-team",
+          "sharepoint_site_url": "https://qa.sharepoint.com/sites/QA"
+        },
+        "atlassian": {
+          "confluence_space_key": "RISK",
+          "jira_project_key": "CCR"
+        }
+      }
     },
     {
       "worker_id": "w-e74b5836",
@@ -130,6 +144,86 @@
       "my_workflows_path": "./data/workers/w-e74b5836/workflows/my",
       "templates_path": "./data/workers/w-e74b5836/templates",
       "common_data_path": "./data/common"
+    },
+    {
+      "worker_id": "w-bb745fb7",
+      "name": "UAT Filtered Worker",
+      "description": "",
+      "created_by": "risk_agent",
+      "created_at": "2026-04-03T20:03:23.276128Z",
+      "enabled": true,
+      "system_prompt": "You are a test bot.",
+      "domain_data_path": "./data/workers/w-bb745fb7/domain_data",
+      "workflows_path": "./data/workers/w-bb745fb7/workflows/verified",
+      "my_workflows_path": "./data/workers/w-bb745fb7/workflows/my",
+      "templates_path": "./data/workers/w-bb745fb7/templates",
+      "my_data_path": "./data/workers/w-bb745fb7/my_data",
+      "common_data_path": "./data/common",
+      "enabled_tools": [
+        "iris_list_dates"
+      ],
+      "assigned_admins": [],
+      "assigned_users": []
+    },
+    {
+      "worker_id": "w-d2acce9c",
+      "name": "UAT Filtered Worker",
+      "description": "",
+      "created_by": "risk_agent",
+      "created_at": "2026-04-03T20:06:08.469023Z",
+      "enabled": true,
+      "system_prompt": "You are a test bot.",
+      "domain_data_path": "./data/workers/w-d2acce9c/domain_data",
+      "workflows_path": "./data/workers/w-d2acce9c/workflows/verified",
+      "my_workflows_path": "./data/workers/w-d2acce9c/workflows/my",
+      "templates_path": "./data/workers/w-d2acce9c/templates",
+      "my_data_path": "./data/workers/w-d2acce9c/my_data",
+      "common_data_path": "./data/common",
+      "enabled_tools": [
+        "iris_list_dates"
+      ],
+      "assigned_admins": [],
+      "assigned_users": []
+    },
+    {
+      "worker_id": "w-7bde3869",
+      "name": "QA Test Worker",
+      "description": "QA testing worker",
+      "created_by": "risk_agent",
+      "created_at": "2026-04-03T23:59:45.954816Z",
+      "enabled": true,
+      "system_prompt": "",
+      "domain_data_path": "./data/workers/w-7bde3869/domain_data",
+      "workflows_path": "./data/workers/w-7bde3869/workflows/verified",
+      "my_workflows_path": "./data/workers/w-7bde3869/workflows/my",
+      "templates_path": "./data/workers/w-7bde3869/templates",
+      "my_data_path": "./data/workers/w-7bde3869/my_data",
+      "common_data_path": "./data/common",
+      "enabled_tools": [
+        "*"
+      ],
+      "assigned_admins": [],
+      "assigned_users": []
+    },
+    {
+      "worker_id": "w-e6add95c",
+      "name": "QA Delete Test",
+      "description": "Delete me",
+      "created_by": "risk_agent",
+      "created_at": "2026-04-04T10:44:44.943862Z",
+      "enabled": true,
+      "system_prompt": "",
+      "domain_data_path": "./data/workers/w-e6add95c/domain_data",
+      "workflows_path": "./data/workers/w-e6add95c/workflows/verified",
+      "my_workflows_path": "./data/workers/w-e6add95c/workflows/my",
+      "templates_path": "./data/workers/w-e6add95c/templates",
+      "my_data_path": "./data/workers/w-e6add95c/my_data",
+      "common_data_path": "./data/common",
+      "enabled_tools": [
+        "*"
+      ],
+      "assigned_admins": [],
+      "assigned_users": []
     }
   ]
 }

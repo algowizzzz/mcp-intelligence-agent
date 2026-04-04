@@ -1,0 +1,14 @@
+{
+  "name": "sharepoint_upload_file",
+  "description": "Upload a file to a SharePoint site drive root. Requires confirmation.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "microsoft_azure",
+  "implementation": "sajha.tools.impl.sharepoint_tools_connector.SharePointUploadFileTool",
+  "metadata": {
+    "connector": "sharepoint",
+    "access": "write",
+    "confirmation_required": true,
+    "category": "collaboration"
+  }
+}

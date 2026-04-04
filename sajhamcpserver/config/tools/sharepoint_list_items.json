@@ -1,0 +1,13 @@
+{
+  "name": "sharepoint_list_items",
+  "description": "Get items from a SharePoint list.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "microsoft_azure",
+  "implementation": "sajha.tools.impl.sharepoint_tools_connector.SharePointGetListItemsTool",
+  "metadata": {
+    "connector": "sharepoint",
+    "access": "read",
+    "category": "collaboration"
+  }
+}

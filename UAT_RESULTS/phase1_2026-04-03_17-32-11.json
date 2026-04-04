@@ -1,0 +1,707 @@
+{
+  "run_id": "phase1_2026-04-03_17-32-11",
+  "phase": "phase1",
+  "generated_at": "2026-04-03T22:32:15.417131Z",
+  "summary": {
+    "total": 77,
+    "pass": 21,
+    "fail": 55,
+    "skip": 1,
+    "error": 0
+  },
+  "results": [
+    {
+      "id": "A-01",
+      "module": "Module 1 \u2014 Authentication",
+      "scenario": "super_admin login returns JWT",
+      "status": "FAIL",
+      "detail": "got empty token",
+      "duration_ms": 9.2,
+      "timestamp": "2026-04-03T22:32:12.228342Z"
+    },
+    {
+      "id": "A-02",
+      "module": "Module 1 \u2014 Authentication",
+      "scenario": "admin login returns JWT",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:12.628105Z"
+    },
+    {
+      "id": "A-03",
+      "module": "Module 1 \u2014 Authentication",
+      "scenario": "user login returns JWT",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:13.026523Z"
+    },
+    {
+      "id": "A-04",
+      "module": "Module 1 \u2014 Authentication",
+      "scenario": "wrong password rejected (not 200)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:13.035855Z"
+    },
+    {
+      "id": "A-05",
+      "module": "Module 1 \u2014 Authentication",
+      "scenario": "rate limit: 429 after 11 rapid attempts",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:13.136790Z"
+    },
+    {
+      "id": "A-06",
+      "module": "Module 1 \u2014 Authentication",
+      "scenario": "/api/auth/me returns user_id + role",
+      "status": "FAIL",
+      "detail": "status=401 body={'detail': 'Missing token'}",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:13.145794Z"
+    },
+    {
+      "id": "A-07",
+      "module": "Module 1 \u2014 Authentication",
+      "scenario": "tampered JWT rejected (401)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:13.155513Z"
+    },
+    {
+      "id": "A-08",
+      "module": "Module 1 \u2014 Authentication",
+      "scenario": "missing token \u2192 401",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:13.165568Z"
+    },
+    {
+      "id": "A-09a",
+      "module": "Module 1 \u2014 Authentication",
+      "scenario": "change-password returns 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.028175Z"
+    },
+    {
+      "id": "A-09b",
+      "module": "Module 1 \u2014 Authentication",
+      "scenario": "re-login with new password works",
+      "status": "FAIL",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.037548Z"
+    },
+    {
+      "id": "A-10",
+      "module": "Module 1 \u2014 Authentication",
+      "scenario": "valid token accepted on /api/auth/me",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.063479Z"
+    },
+    {
+      "id": "W-01",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "list workers returns both known workers",
+      "status": "FAIL",
+      "detail": "status=401 ids=[]",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.072131Z"
+    },
+    {
+      "id": "W-02a",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "create worker \u2192 201 + worker_id",
+      "status": "FAIL",
+      "detail": "status=401 body={'detail': 'Missing token'}",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.096225Z"
+    },
+    {
+      "id": "W-03a",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "GET worker has domain_data_path field",
+      "status": "FAIL",
+      "detail": "keys=['detail']",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.105023Z"
+    },
+    {
+      "id": "W-03b",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "GET worker has common_data_path field",
+      "status": "FAIL",
+      "detail": "keys=['detail']",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.105523Z"
+    },
+    {
+      "id": "W-03c",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "GET worker has enabled_tools field",
+      "status": "FAIL",
+      "detail": "keys=['detail']",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.105778Z"
+    },
+    {
+      "id": "W-06a",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "clone worker \u2192 201",
+      "status": "FAIL",
+      "detail": "status=401 {'detail': 'Missing token'}",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.114147Z"
+    },
+    {
+      "id": "W-09",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "delete workers: 200 + folder removed",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.114491Z"
+    },
+    {
+      "id": "W-10",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "admin cannot create worker (403)",
+      "status": "FAIL",
+      "detail": "got 401",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.123515Z"
+    },
+    {
+      "id": "W-11",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "user cannot list workers (403)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.132254Z"
+    },
+    {
+      "id": "U-01",
+      "module": "Module 3 \u2014 User Management",
+      "scenario": "list users \u2192 200, non-empty",
+      "status": "FAIL",
+      "detail": "status=401 count=0",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.140836Z"
+    },
+    {
+      "id": "U-02",
+      "module": "Module 3 \u2014 User Management",
+      "scenario": "create admin user \u2192 201",
+      "status": "FAIL",
+      "detail": "status=401 {'detail': 'Missing token'}",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.149614Z"
+    },
+    {
+      "id": "U-03",
+      "module": "Module 3 \u2014 User Management",
+      "scenario": "create user \u2192 201",
+      "status": "FAIL",
+      "detail": "status=401 {'detail': 'Missing token'}",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.158118Z"
+    },
+    {
+      "id": "U-04",
+      "module": "Module 3 \u2014 User Management",
+      "scenario": "create super_admin rejected (400/422)",
+      "status": "FAIL",
+      "detail": "status=401 {'detail': 'Missing token'}",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.166183Z"
+    },
+    {
+      "id": "U-05",
+      "module": "Module 3 \u2014 User Management",
+      "scenario": "update user role \u2192 200",
+      "status": "FAIL",
+      "detail": "status=401 {'detail': 'Missing token'}",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.174318Z"
+    },
+    {
+      "id": "U-06",
+      "module": "Module 3 \u2014 User Management",
+      "scenario": "reset password \u2192 200 + token",
+      "status": "FAIL",
+      "detail": "status=401 {'detail': 'Missing token'}",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.185102Z"
+    },
+    {
+      "id": "U-07",
+      "module": "Module 3 \u2014 User Management",
+      "scenario": "duplicate user_id \u2192 409/422",
+      "status": "FAIL",
+      "detail": "got 401",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.193558Z"
+    },
+    {
+      "id": "U-08",
+      "module": "Module 3 \u2014 User Management",
+      "scenario": "GET worker returns assigned_users list",
+      "status": "FAIL",
+      "detail": "keys=['detail']",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.201843Z"
+    },
+    {
+      "id": "U-09",
+      "module": "Module 3 \u2014 User Management",
+      "scenario": "delete UAT users \u2192 200",
+      "status": "FAIL",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.227172Z"
+    },
+    {
+      "id": "F-01",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "super: browse domain_data tree \u2192 200 + tree",
+      "status": "FAIL",
+      "detail": "status=401",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.235903Z"
+    },
+    {
+      "id": "F-02",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "super: upload file \u2192 201/200",
+      "status": "FAIL",
+      "detail": "status=401 {'detail': 'Missing token'}",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.245269Z"
+    },
+    {
+      "id": "F-03",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "super: upload .md to verified \u2192 201/200",
+      "status": "FAIL",
+      "detail": "status=401 {'detail': 'Missing token'}",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.254364Z"
+    },
+    {
+      "id": "F-04",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "upload duplicate \u2192 409",
+      "status": "FAIL",
+      "detail": "got 401",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.263497Z"
+    },
+    {
+      "id": "F-05",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "upload with overwrite=true \u2192 200",
+      "status": "FAIL",
+      "detail": "status=401",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.272494Z"
+    },
+    {
+      "id": "F-06",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "create folder \u2192 200",
+      "status": "FAIL",
+      "detail": "status=401 {'detail': 'Missing token'}",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.281083Z"
+    },
+    {
+      "id": "F-07",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "create nested folder \u2192 200",
+      "status": "FAIL",
+      "detail": "status=401 {'detail': 'Missing token'}",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.291690Z"
+    },
+    {
+      "id": "F-08",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "create blank file (PATCH with empty content) \u2192 200",
+      "status": "FAIL",
+      "detail": "status=401 {'detail': 'Missing token'}",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.301428Z"
+    },
+    {
+      "id": "F-09",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "write file content \u2192 200",
+      "status": "FAIL",
+      "detail": "status=401 {'detail': 'Missing token'}",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.310106Z"
+    },
+    {
+      "id": "F-10a",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "read file \u2192 200",
+      "status": "FAIL",
+      "detail": "status=401",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.335621Z"
+    },
+    {
+      "id": "F-10b",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "read file content matches written value",
+      "status": "FAIL",
+      "detail": "content=''",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.336026Z"
+    },
+    {
+      "id": "F-10c",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "read file has size_bytes",
+      "status": "FAIL",
+      "detail": "keys=['detail']",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.336330Z"
+    },
+    {
+      "id": "F-10d",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "read file has encoding field",
+      "status": "FAIL",
+      "detail": "keys=['detail']",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.336612Z"
+    },
+    {
+      "id": "F-11",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "rename file \u2192 200",
+      "status": "FAIL",
+      "detail": "status=401 {'detail': 'Missing token'}",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.345001Z"
+    },
+    {
+      "id": "F-12",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "move file to subfolder \u2192 200",
+      "status": "FAIL",
+      "detail": "status=401 {'detail': 'Missing token'}",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.353334Z"
+    },
+    {
+      "id": "F-13",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "delete file \u2192 200",
+      "status": "FAIL",
+      "detail": "status=401",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.362035Z"
+    },
+    {
+      "id": "F-14",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "delete non-empty folder (recursive=true) \u2192 200",
+      "status": "FAIL",
+      "detail": "status=401",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.378290Z"
+    },
+    {
+      "id": "F-15",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "delete non-empty folder (recursive=false) \u2192 400/409",
+      "status": "FAIL",
+      "detail": "got 401",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.402371Z"
+    },
+    {
+      "id": "F-16",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "cleanup: uploaded test files removed",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.435337Z"
+    },
+    {
+      "id": "F-17",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "path traversal \u2192 403/400",
+      "status": "FAIL",
+      "detail": "got 401 body={'detail': 'Missing token'}",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.443790Z"
+    },
+    {
+      "id": "F-18",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "admin: browse own domain_data \u2192 200",
+      "status": "FAIL",
+      "detail": "status=401",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.452545Z"
+    },
+    {
+      "id": "F-19",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "admin: upload file \u2192 200/201",
+      "status": "FAIL",
+      "detail": "status=401",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.461766Z"
+    },
+    {
+      "id": "F-20",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "admin: create folder \u2192 200",
+      "status": "FAIL",
+      "detail": "status=401",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.475192Z"
+    },
+    {
+      "id": "F-21",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "admin: write + read file roundtrip",
+      "status": "FAIL",
+      "detail": "write=401 read=401 content=''",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.493255Z"
+    },
+    {
+      "id": "F-22",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "admin: rename file \u2192 200",
+      "status": "FAIL",
+      "detail": "status=401",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.502990Z"
+    },
+    {
+      "id": "F-23",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "admin: delete folder cleanup \u2192 200",
+      "status": "FAIL",
+      "detail": "status=401",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.528027Z"
+    },
+    {
+      "id": "F-24",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "admin cannot access super worker files (403)",
+      "status": "FAIL",
+      "detail": "got 401",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.549694Z"
+    },
+    {
+      "id": "F-25",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "user cannot browse admin file tree (403)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.558106Z"
+    },
+    {
+      "id": "F-26",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "user cannot upload (403)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.567064Z"
+    },
+    {
+      "id": "S-01",
+      "module": "Module 9 \u2014 Security & RBAC",
+      "scenario": "no token on protected endpoint \u2192 401",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.575449Z"
+    },
+    {
+      "id": "S-02",
+      "module": "Module 9 \u2014 Security & RBAC",
+      "scenario": "invalid JWT \u2192 401",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.583824Z"
+    },
+    {
+      "id": "S-03",
+      "module": "Module 9 \u2014 Security & RBAC",
+      "scenario": "user token on super endpoint \u2192 403",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.592627Z"
+    },
+    {
+      "id": "S-04",
+      "module": "Module 9 \u2014 Security & RBAC",
+      "scenario": "admin cannot delete super worker (403)",
+      "status": "FAIL",
+      "detail": "got 401",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.601638Z"
+    },
+    {
+      "id": "S-05",
+      "module": "Module 9 \u2014 Security & RBAC",
+      "scenario": "user cannot query other worker tools (403)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.610157Z"
+    },
+    {
+      "id": "S-06",
+      "module": "Module 9 \u2014 Security & RBAC",
+      "scenario": "path traversal on file read \u2192 403/400",
+      "status": "FAIL",
+      "detail": "got 401",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.618890Z"
+    },
+    {
+      "id": "S-07",
+      "module": "Module 9 \u2014 Security & RBAC",
+      "scenario": "upload >50 MB \u2192 413",
+      "status": "FAIL",
+      "detail": "got 401",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.905458Z"
+    },
+    {
+      "id": "S-08",
+      "module": "Module 9 \u2014 Security & RBAC",
+      "scenario": "GET /api/agent/threads returns 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:14.917497Z"
+    },
+    {
+      "id": "S-09",
+      "module": "Module 9 \u2014 Security & RBAC",
+      "scenario": "real user not blocked after fake-user rate limit test",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:15.314931Z"
+    },
+    {
+      "id": "S-10",
+      "module": "Module 9 \u2014 Security & RBAC",
+      "scenario": "admin cannot write to other worker via super endpoint (403)",
+      "status": "FAIL",
+      "detail": "got 401",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:15.324624Z"
+    },
+    {
+      "id": "P-01",
+      "module": "Module 10 \u2014 Thread Persistence",
+      "scenario": "Thread survives server restart \u2014 requires manual restart, skipped in automated run",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:15.325569Z"
+    },
+    {
+      "id": "P-02",
+      "module": "Module 10 \u2014 Thread Persistence",
+      "scenario": "GET /api/agent/threads \u2192 200",
+      "status": "FAIL",
+      "detail": "status=401",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:15.335602Z"
+    },
+    {
+      "id": "P-03",
+      "module": "Module 10 \u2014 Thread Persistence",
+      "scenario": "user and super_admin thread lists are disjoint",
+      "status": "FAIL",
+      "detail": "overlap=set()",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:15.353540Z"
+    },
+    {
+      "id": "P-04",
+      "module": "Module 10 \u2014 Thread Persistence",
+      "scenario": "threads.jsonl exists on disk",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:15.354277Z"
+    },
+    {
+      "id": "G-01",
+      "module": "Module 11 \u2014 G-04 Path Isolation",
+      "scenario": "MR + CCR domain_data trees both return 200",
+      "status": "FAIL",
+      "detail": "mr=401 ccr=401",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:15.371058Z"
+    },
+    {
+      "id": "G-02",
+      "module": "Module 11 \u2014 G-04 Path Isolation",
+      "scenario": "MR worker domain_data contains iris/ data",
+      "status": "FAIL",
+      "detail": "paths=[]",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:15.371685Z"
+    },
+    {
+      "id": "G-03",
+      "module": "Module 11 \u2014 G-04 Path Isolation",
+      "scenario": "common/regulatory/osfi pool exists on disk",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:15.372289Z"
+    },
+    {
+      "id": "G-04",
+      "module": "Module 11 \u2014 G-04 Path Isolation",
+      "scenario": "workflow trees return independently per worker",
+      "status": "FAIL",
+      "detail": "mr=401 ccr=401",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:15.390278Z"
+    },
+    {
+      "id": "G-05",
+      "module": "Module 11 \u2014 G-04 Path Isolation",
+      "scenario": "file written to MR not visible in CCR (404)",
+      "status": "FAIL",
+      "detail": "got 401",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:32:15.407868Z"
+    }
+  ]
+}

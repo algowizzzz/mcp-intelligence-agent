@@ -7,6 +7,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from sajha.tools.base_mcp_tool import BaseMCPTool
 from sajha.core.properties_configurator import PropertiesConfigurator
+from sajha.storage import storage
+from sajha.path_resolver import resolve as path_resolve
+
+
+def _get_worker_ctx():
+    try:
+        from flask import g as _g
+        return getattr(_g, 'worker_ctx', {}) or {}
+    except RuntimeError:
+        return {}
 
 # ── Theme definitions ─────────────────────────────────────────────────────────
 _THEMES = {
@@ -423,7 +433,7 @@ class GenerateChartTool(BaseMCPTool):
                 charts_dir.mkdir(parents=True, exist_ok=True)
                 out_path = charts_dir / fname
                 img_bytes = pio.to_image(fig, format='png', width=width, height=height, scale=2)
-                out_path.write_bytes(img_bytes)
+                storage.write_bytes(str(out_path), img_bytes)
                 png_path = str(out_path)
                 png_size = len(img_bytes)
             except ImportError:
@@ -444,7 +454,7 @@ class GenerateChartTool(BaseMCPTool):
                 charts_dir.mkdir(parents=True, exist_ok=True)
                 html_fname = f"chart_{chart_type}_{ts}.html"
                 html_out = charts_dir / html_fname
-                html_out.write_text(html_content, encoding='utf-8')
+                storage.write_text(str(html_out), html_content, encoding='utf-8')
                 html_file_path = str(html_out)
             except Exception:
                 pass

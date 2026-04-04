@@ -1,0 +1,14 @@
+{
+  "name": "outlook_send_email",
+  "description": "Send an email from an Outlook mailbox. Requires confirmation.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "microsoft_azure",
+  "implementation": "sajha.tools.impl.outlook_tools.OutlookSendEmailTool",
+  "metadata": {
+    "connector": "outlook",
+    "access": "write",
+    "confirmation_required": true,
+    "category": "communication"
+  }
+}

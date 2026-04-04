@@ -1,0 +1,464 @@
+{
+  "run_id": "module9_2026-04-03_17-56-03",
+  "phase": "module9",
+  "generated_at": "2026-04-03T22:56:07.382567Z",
+  "summary": {
+    "total": 50,
+    "pass": 45,
+    "fail": 0,
+    "skip": 0,
+    "error": 5
+  },
+  "results": [
+    {
+      "id": "PG-APP-01",
+      "module": "Module 9G \u2014 application.properties",
+      "scenario": "data.root points to w-market-risk worker-scoped path",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:03.349260Z"
+    },
+    {
+      "id": "PG-APP-02",
+      "module": "Module 9G \u2014 application.properties",
+      "scenario": "data.duckdb.dir points to w-market-risk",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:03.349670Z"
+    },
+    {
+      "id": "PG-APP-03",
+      "module": "Module 9G \u2014 application.properties",
+      "scenario": "data.sqlselect.dir points to w-market-risk",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:03.349841Z"
+    },
+    {
+      "id": "PG-APP-04",
+      "module": "Module 9G \u2014 application.properties",
+      "scenario": "data.iris_combined_csv points to w-market-risk",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:03.349976Z"
+    },
+    {
+      "id": "PG-APP-05",
+      "module": "Module 9G \u2014 application.properties",
+      "scenario": "data.osfi_docs_dir points to w-market-risk",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:03.350102Z"
+    },
+    {
+      "id": "PG-APP-06",
+      "module": "Module 9G \u2014 application.properties",
+      "scenario": "data.uploads_dir points to w-market-risk/my_data/risk_agent",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:03.350353Z"
+    },
+    {
+      "id": "PG-APP-07",
+      "module": "Module 9G \u2014 application.properties",
+      "scenario": "data.my_data.dir points to w-market-risk/my_data/risk_agent",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:03.350474Z"
+    },
+    {
+      "id": "PH-01",
+      "module": "Module 9H \u2014 Filesystem",
+      "scenario": "MR domain_data/osfi/ exists",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:03.350623Z"
+    },
+    {
+      "id": "PH-02",
+      "module": "Module 9H \u2014 Filesystem",
+      "scenario": "MR duckdb_analytics.db exists",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:03.350765Z"
+    },
+    {
+      "id": "PH-03",
+      "module": "Module 9H \u2014 Filesystem",
+      "scenario": "MR iris_combined.csv exists",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:03.350914Z"
+    },
+    {
+      "id": "PH-04",
+      "module": "Module 9H \u2014 Filesystem",
+      "scenario": "MR domain_data/sqlselect/ exists",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:03.351059Z"
+    },
+    {
+      "id": "PH-05",
+      "module": "Module 9H \u2014 Filesystem",
+      "scenario": "MR workflows/verified/ exists",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:03.351205Z"
+    },
+    {
+      "id": "PH-06",
+      "module": "Module 9H \u2014 Filesystem",
+      "scenario": "CCR workflows/verified/ exists",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:03.351356Z"
+    },
+    {
+      "id": "PH-07",
+      "module": "Module 9H \u2014 Filesystem",
+      "scenario": "MR my_data/ exists",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:03.351509Z"
+    },
+    {
+      "id": "PH-08",
+      "module": "Module 9H \u2014 Filesystem",
+      "scenario": "MR workflows/verified/ contains exactly 12 expected .md files",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:03.351837Z"
+    },
+    {
+      "id": "PH-09",
+      "module": "Module 9H \u2014 Filesystem",
+      "scenario": "CCR my_data does not contain risk_agent user files (no cross-worker copy)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:03.352120Z"
+    },
+    {
+      "id": "PA-01",
+      "module": "Module 9A \u2014 Super Admin File Tree",
+      "scenario": "MR domain_data tree shows migrated subdirs (osfi/duckdb/iris/sqlselect/counterparties)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:04.625837Z"
+    },
+    {
+      "id": "PA-01b",
+      "module": "Module 9A \u2014 Super Admin File Tree",
+      "scenario": "iris/iris_combined.csv present in domain_data tree",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:04.626230Z"
+    },
+    {
+      "id": "PA-02",
+      "module": "Module 9A \u2014 Super Admin File Tree",
+      "scenario": "MR verified_workflows returns 12 workflow .md files",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:04.639506Z"
+    },
+    {
+      "id": "PA-03",
+      "module": "Module 9A \u2014 Super Admin File Tree",
+      "scenario": "CCR verified_workflows has no MR workflows (worker isolation)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:04.648832Z"
+    },
+    {
+      "id": "PA-04",
+      "module": "Module 9A \u2014 Super Admin File Tree",
+      "scenario": "CCR domain_data does not contain MR-specific data (no cross-worker bleed)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:04.658193Z"
+    },
+    {
+      "id": "PA-05",
+      "module": "Module 9A \u2014 Super Admin File Tree",
+      "scenario": "GET /files/my_data returns HTTP 400 (not in admin whitelist)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:04.666965Z"
+    },
+    {
+      "id": "PA-06",
+      "module": "Module 9A \u2014 Super Admin File Tree",
+      "scenario": "GET /files/common returns HTTP 400 (common_data not in admin whitelist)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:04.675614Z"
+    },
+    {
+      "id": "PA-07",
+      "module": "Module 9A \u2014 Super Admin File Tree",
+      "scenario": "Upload test .csv to MR domain_data returns 200 (or 409 if already exists)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:04.687226Z"
+    },
+    {
+      "id": "PA-07b",
+      "module": "Module 9A \u2014 Super Admin File Tree",
+      "scenario": "Uploaded file _uat9a_test_a31af8.csv appears in domain_data tree",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:04.697472Z"
+    },
+    {
+      "id": "PA-09",
+      "module": "Module 9A \u2014 Super Admin File Tree",
+      "scenario": "Upload .md to MR verified_workflows returns 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:04.719084Z"
+    },
+    {
+      "id": "PA-10",
+      "module": "Module 9A \u2014 Super Admin File Tree",
+      "scenario": "Read uploaded workflow file returns content",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:04.729146Z"
+    },
+    {
+      "id": "PA-10b",
+      "module": "Module 9A \u2014 Super Admin File Tree",
+      "scenario": "Rename workflow file in verified_workflows returns 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:04.738978Z"
+    },
+    {
+      "id": "PA-11",
+      "module": "Module 9A \u2014 Super Admin File Tree",
+      "scenario": "Delete workflow file from verified_workflows returns 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:04.748595Z"
+    },
+    {
+      "id": "PA-11b",
+      "module": "Module 9A \u2014 Super Admin File Tree",
+      "scenario": "Deleted workflow file is absent from verified_workflows tree",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:04.758028Z"
+    },
+    {
+      "id": "PB-01",
+      "module": "Module 9B \u2014 Admin Role File Tree",
+      "scenario": "Admin GET /api/admin/worker returns own worker (MR) with 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:04.766870Z"
+    },
+    {
+      "id": "PB-02",
+      "module": "Module 9B \u2014 Admin Role File Tree",
+      "scenario": "Admin domain_data tree shows osfi/duckdb/iris/sqlselect",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:04.776691Z"
+    },
+    {
+      "id": "PB-03",
+      "module": "Module 9B \u2014 Admin Role File Tree",
+      "scenario": "Admin verified_workflows shows 12 workflow files",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:04.785728Z"
+    },
+    {
+      "id": "PB-04",
+      "module": "Module 9B \u2014 Admin Role File Tree",
+      "scenario": "Admin token returns HTTP 403 on super admin endpoint",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:04.794544Z"
+    },
+    {
+      "id": "PB-05",
+      "module": "Module 9B \u2014 Admin Role File Tree",
+      "scenario": "Admin upload to own domain_data returns 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:04.805155Z"
+    },
+    {
+      "id": "PB-06",
+      "module": "Module 9B \u2014 Admin Role File Tree",
+      "scenario": "Admin GET /files/my_data \u2014 super admin blocks it (HTTP 400); admin endpoint returns 200 [known gap]",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:04.830607Z"
+    },
+    {
+      "id": "PC-01",
+      "module": "Module 9C \u2014 User Role RBAC",
+      "scenario": "User JWT returns 403 on /api/admin/worker and file tree endpoints",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:04.847589Z"
+    },
+    {
+      "id": "PC-02",
+      "module": "Module 9C \u2014 User Role RBAC",
+      "scenario": "User JWT returns 403 on super admin endpoint",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:04.869999Z"
+    },
+    {
+      "id": "PC-03",
+      "module": "Module 9C \u2014 User Role RBAC",
+      "scenario": "User JWT can access /api/agent/run (200 streaming)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:04.890418Z"
+    },
+    {
+      "id": "PC-04",
+      "module": "Module 9C \u2014 User Role RBAC",
+      "scenario": "Unauthenticated requests return 401 on admin endpoints",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:04.907531Z"
+    },
+    {
+      "id": "PD-01",
+      "module": "Module 9D \u2014 Data Migration via Agent",
+      "scenario": "OSFI list tools read from worker domain_data",
+      "status": "ERROR",
+      "detail": "Agent error: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CZhfQeVktCpayVGfBeedx'}",
+      "duration_ms": 947,
+      "timestamp": "2026-04-03T22:56:05.854964Z"
+    },
+    {
+      "id": "PD-02",
+      "module": "Module 9D \u2014 Data Migration via Agent",
+      "scenario": "DuckDB list tables uses MR worker database",
+      "status": "ERROR",
+      "detail": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CZhfQgz5NGoNMcGf8fC9S'}",
+      "duration_ms": 271,
+      "timestamp": "2026-04-03T22:56:06.128789Z"
+    },
+    {
+      "id": "PD-03",
+      "module": "Module 9D \u2014 Data Migration via Agent",
+      "scenario": "IRIS dates returned from MR worker iris path",
+      "status": "ERROR",
+      "detail": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CZhfQi8Y33LMHZiWSi45o'}",
+      "duration_ms": 293,
+      "timestamp": "2026-04-03T22:56:06.424501Z"
+    },
+    {
+      "id": "PD-04",
+      "module": "Module 9D \u2014 Data Migration via Agent",
+      "scenario": "Workflow list returns from MR worker path",
+      "status": "ERROR",
+      "detail": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CZhfQjiHRnRHjcCB5MpdR'}",
+      "duration_ms": 389,
+      "timestamp": "2026-04-03T22:56:06.814082Z"
+    },
+    {
+      "id": "PD-05",
+      "module": "Module 9D \u2014 Data Migration via Agent",
+      "scenario": "md_save writes to user-scoped my_data",
+      "status": "ERROR",
+      "detail": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CZhfQmJ2ziKNqbZ6Rb3v3'}",
+      "duration_ms": 371,
+      "timestamp": "2026-04-03T22:56:07.186943Z"
+    },
+    {
+      "id": "PE-01",
+      "module": "Module 9E \u2014 Worker Clone Isolation",
+      "scenario": "Cloned worker my_data is empty (no user files copied)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:07.256888Z"
+    },
+    {
+      "id": "PE-02",
+      "module": "Module 9E \u2014 Worker Clone Isolation",
+      "scenario": "Cloned worker domain_data is populated (copy from MR)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:07.257917Z"
+    },
+    {
+      "id": "PF-04",
+      "module": "Module 9F \u2014 Section Key Regressions",
+      "scenario": "Delete multiple files from verified_workflows (section key correct)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:07.322899Z"
+    },
+    {
+      "id": "PF-05",
+      "module": "Module 9F \u2014 Section Key Regressions",
+      "scenario": "Rename in verified_workflows returns 200 (section key accepted)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:07.342482Z"
+    },
+    {
+      "id": "PF-06",
+      "module": "Module 9F \u2014 Section Key Regressions",
+      "scenario": "Admin rename in verified_workflows returns 200 (section key accepted)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:56:07.371765Z"
+    }
+  ]
+}

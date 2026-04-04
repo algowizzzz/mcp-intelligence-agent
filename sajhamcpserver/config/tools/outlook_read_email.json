@@ -1,0 +1,13 @@
+{
+  "name": "outlook_read_email",
+  "description": "Read recent emails from an Outlook mailbox.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "microsoft_azure",
+  "implementation": "sajha.tools.impl.outlook_tools.OutlookReadEmailsTool",
+  "metadata": {
+    "connector": "outlook",
+    "access": "read",
+    "category": "communication"
+  }
+}

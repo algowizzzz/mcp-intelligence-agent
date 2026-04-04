@@ -1,0 +1,13 @@
+{
+  "name": "confluence_search",
+  "description": "Search Confluence pages using CQL (Confluence Query Language).",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "atlassian",
+  "implementation": "sajha.tools.impl.confluence_tools.ConfluenceSearchPagesTool",
+  "metadata": {
+    "connector": "confluence",
+    "access": "read",
+    "category": "collaboration"
+  }
+}

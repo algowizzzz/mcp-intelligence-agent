@@ -1,0 +1,13 @@
+{
+  "name": "powerbi_get_dataset",
+  "description": "Get metadata for a specific Power BI dataset.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "microsoft_azure",
+  "implementation": "sajha.tools.impl.powerbi_tools.PowerBIGetDatasetTool",
+  "metadata": {
+    "connector": "powerbi",
+    "access": "read",
+    "category": "analytics"
+  }
+}

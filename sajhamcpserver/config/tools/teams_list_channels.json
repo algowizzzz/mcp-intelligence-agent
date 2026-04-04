@@ -1,0 +1,13 @@
+{
+  "name": "teams_list_channels",
+  "description": "List all channels in a Microsoft Teams team. Reads team_id from worker context or parameters.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "microsoft_azure",
+  "implementation": "sajha.tools.impl.teams_tools.TeamsListChannelsTool",
+  "metadata": {
+    "connector": "teams",
+    "access": "read",
+    "category": "collaboration"
+  }
+}

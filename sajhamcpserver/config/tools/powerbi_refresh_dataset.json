@@ -1,0 +1,14 @@
+{
+  "name": "powerbi_refresh_dataset",
+  "description": "Trigger a refresh for a Power BI dataset. Requires confirmation.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "microsoft_azure",
+  "implementation": "sajha.tools.impl.powerbi_tools.PowerBIRefreshDatasetTool",
+  "metadata": {
+    "connector": "powerbi",
+    "access": "write",
+    "confirmation_required": true,
+    "category": "analytics"
+  }
+}

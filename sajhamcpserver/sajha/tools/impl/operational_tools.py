@@ -1,11 +1,22 @@
 """
 Operational Tools Suite — pdf_read, md_save, md_to_docx, search_files, fill_template, list_versions
 """
+import io
 import os, re, json, shutil, mimetypes
 from datetime import datetime, timezone
 from pathlib import Path
 from sajha.tools.base_mcp_tool import BaseMCPTool
 from sajha.core.properties_configurator import PropertiesConfigurator
+from sajha.storage import storage
+from sajha.path_resolver import resolve as path_resolve
+
+
+def _get_worker_ctx():
+    try:
+        from flask import g as _g
+        return getattr(_g, 'worker_ctx', {}) or {}
+    except RuntimeError:
+        return {}
 
 
 def _props():
@@ -19,12 +30,36 @@ def _resolve(path_str):
     return (Path.cwd() / p).resolve()
 
 def _domain_root():
+    """Return domain data root. Checks per-request worker context first (REQ-API-02)."""
+    try:
+        from flask import g as _g
+        worker_root = getattr(_g, 'worker_data_root', None)
+        if worker_root:
+            return Path(worker_root.rstrip('/')).resolve()
+    except RuntimeError:
+        pass
     return _resolve(_props().get('data.domain_data.dir', './data/domain_data'))
 
 def _my_data_root():
+    """Return my-data root. Checks per-request worker context first (REQ-DD-02 / REQ-MD-01)."""
+    try:
+        from flask import g as _g
+        my_data_root = getattr(_g, 'worker_my_data_root', None)
+        if my_data_root:
+            return Path(my_data_root.rstrip('/')).resolve()
+    except RuntimeError:
+        pass
     return _resolve(_props().get('data.my_data.dir', './data/uploads'))
 
 def _templates_dir():
+    """Return templates dir. Checks per-request worker context first (REQ-API-02)."""
+    try:
+        from flask import g as _g
+        worker_root = getattr(_g, 'worker_data_root', None)
+        if worker_root:
+            return Path(worker_root.rstrip('/') + '/templates').resolve()
+    except RuntimeError:
+        pass
     return _resolve(_props().get('data.templates_dir', './data/domain_data/templates'))
 
 def _safe_path(path_str, *allowed_roots):
@@ -100,7 +135,8 @@ class PdfReadTool(BaseMCPTool):
                 return {"error": "Neither PyMuPDF nor pdfplumber is installed."}
 
         try:
-            doc = fitz.open(str(safe))
+            raw = storage.read_bytes(str(safe))
+            doc = fitz.open(stream=io.BytesIO(raw), filetype='pdf')
         except Exception as e:
             return {"error": f"PDF could not be parsed: {e}"}
 
@@ -227,7 +263,7 @@ class MdSaveTool(BaseMCPTool):
                 shutil.move(str(dest), str(archive_path))
                 archived_as = archive_name
 
-        dest.write_text(content, encoding="utf-8")
+        storage.write_text(str(dest), content, encoding="utf-8")
         stat = dest.stat()
 
         return {
@@ -286,7 +322,7 @@ class MdToDocxTool(BaseMCPTool):
         if safe.suffix.lower() != ".md":
             return {"error": "md_to_docx only accepts .md files."}
 
-        text = safe.read_text(encoding="utf-8")
+        text = storage.read_text(str(safe), encoding="utf-8")
         # Strip YAML frontmatter
         text = re.sub(r"^---\n.*?\n---\n", "", text, flags=re.DOTALL)
 
@@ -575,7 +611,8 @@ class SearchFilesTool(BaseMCPTool):
         if ext == "pdf":
             try:
                 import fitz
-                doc = fitz.open(str(path))
+                raw = storage.read_bytes(str(path))
+                doc = fitz.open(stream=io.BytesIO(raw), filetype='pdf')
                 return "\n".join(doc[i].get_text() for i in range(len(doc)))
             except Exception:
                 return ""
@@ -633,7 +670,7 @@ class FillTemplateTool(BaseMCPTool):
         if safe.suffix.lower() != ".md":
             return {"error": "fill_template only accepts .md template files."}
 
-        content = safe.read_text(encoding="utf-8")
+        content = storage.read_text(str(safe), encoding="utf-8")
 
         # Strip and parse frontmatter
         fm_match = re.match(r"^---\n(.*?)\n---\n", content, re.DOTALL)

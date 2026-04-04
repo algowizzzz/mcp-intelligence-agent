@@ -1,0 +1,13 @@
+{
+  "name": "jira_list_sprints",
+  "description": "List sprints for a Jira board.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "atlassian",
+  "implementation": "sajha.tools.impl.jira_tools.JiraListSprintsTool",
+  "metadata": {
+    "connector": "jira",
+    "access": "read",
+    "category": "project_management"
+  }
+}

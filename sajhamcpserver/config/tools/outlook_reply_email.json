@@ -1,0 +1,14 @@
+{
+  "name": "outlook_reply_email",
+  "description": "Reply to an email in an Outlook mailbox. Requires confirmation.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "microsoft_azure",
+  "implementation": "sajha.tools.impl.outlook_tools.OutlookReplyEmailTool",
+  "metadata": {
+    "connector": "outlook",
+    "access": "write",
+    "confirmation_required": true,
+    "category": "communication"
+  }
+}

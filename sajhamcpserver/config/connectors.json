@@ -1,0 +1,11 @@
+{
+  "connectors": [
+    {
+      "connector_type": "microsoft_azure",
+      "display_name": "Microsoft 365",
+      "status": "not_configured",
+      "enabled": false,
+      "credentials": {}
+    }
+  ]
+}

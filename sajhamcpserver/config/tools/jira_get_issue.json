@@ -1,0 +1,13 @@
+{
+  "name": "jira_get_issue",
+  "description": "Get a specific Jira issue by key (e.g. PROJ-123).",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "atlassian",
+  "implementation": "sajha.tools.impl.jira_tools.JiraGetIssueTool",
+  "metadata": {
+    "connector": "jira",
+    "access": "read",
+    "category": "project_management"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "teams_get_meetings",
+  "description": "Get online meetings or calendar events for a Teams user.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "microsoft_azure",
+  "implementation": "sajha.tools.impl.teams_tools.TeamsGetMeetingsTool",
+  "metadata": {
+    "connector": "teams",
+    "access": "read",
+    "category": "collaboration"
+  }
+}

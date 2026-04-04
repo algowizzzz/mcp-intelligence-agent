@@ -1,0 +1,13 @@
+{
+  "name": "teams_get_messages",
+  "description": "Get recent messages from a Microsoft Teams channel.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "microsoft_azure",
+  "implementation": "sajha.tools.impl.teams_tools.TeamsGetMessagesTool",
+  "metadata": {
+    "connector": "teams",
+    "access": "read",
+    "category": "collaboration"
+  }
+}

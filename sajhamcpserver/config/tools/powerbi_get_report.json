@@ -1,0 +1,13 @@
+{
+  "name": "powerbi_get_report",
+  "description": "Get metadata for a specific Power BI report.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "microsoft_azure",
+  "implementation": "sajha.tools.impl.powerbi_tools.PowerBIGetReportTool",
+  "metadata": {
+    "connector": "powerbi",
+    "access": "read",
+    "category": "analytics"
+  }
+}

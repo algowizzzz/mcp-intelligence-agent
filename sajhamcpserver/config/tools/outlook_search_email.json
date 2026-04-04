@@ -1,0 +1,13 @@
+{
+  "name": "outlook_search_email",
+  "description": "Search emails in an Outlook mailbox using a keyword query.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "microsoft_azure",
+  "implementation": "sajha.tools.impl.outlook_tools.OutlookSearchEmailsTool",
+  "metadata": {
+    "connector": "outlook",
+    "access": "read",
+    "category": "communication"
+  }
+}

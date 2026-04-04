@@ -8,6 +8,16 @@ import datetime
 from typing import Dict, Any
 from sajha.tools.base_mcp_tool import BaseMCPTool
 from sajha.core.properties_configurator import PropertiesConfigurator
+from sajha.storage import storage
+from sajha.path_resolver import resolve as path_resolve
+
+
+def _get_worker_ctx():
+    try:
+        from flask import g as _g
+        return getattr(_g, 'worker_ctx', {}) or {}
+    except RuntimeError:
+        return {}
 
 
 class OsfiBaseTool(BaseMCPTool):
@@ -20,6 +30,17 @@ class OsfiBaseTool(BaseMCPTool):
         return {'type': 'object'}
 
     def _get_osfi_dir(self) -> str:
+        """Return OSFI docs directory, preferring per-request worker paths (G-04)."""
+        try:
+            from flask import g as _g
+            common_root = getattr(_g, 'worker_common_root', None)
+            if common_root:
+                return common_root.rstrip('/') + '/regulatory/osfi'
+            worker_root = getattr(_g, 'worker_data_root', None)
+            if worker_root:
+                return worker_root.rstrip('/') + '/osfi'
+        except RuntimeError:
+            pass
         return PropertiesConfigurator().get('data.osfi_docs_dir', './data/domain_data/osfi')
 
     def _get_chunk_size(self) -> int:
@@ -121,8 +142,8 @@ class OsfiSearchGuidanceTool(OsfiBaseTool):
         matches = []
         current_heading = ''
         offset = 0
-        with open(filepath, 'r', encoding='utf-8') as fh:
-            for line in fh:
+        file_text = storage.read_text(filepath)
+        for line in file_text.splitlines(keepends=True):
                 if line.startswith('#'):
                     current_heading = line.strip()
                 elif keyword in line.lower() and len(line.strip()) > 20:
@@ -157,8 +178,7 @@ class OsfiReadDocumentTool(OsfiBaseTool):
                     'available': [f['filename'] for f in all_files]}
 
         fpath = matched[0]['path']
-        with open(fpath, 'r', encoding='utf-8') as fh:
-            content = fh.read()
+        content = storage.read_text(fpath)
 
         total_chars = len(content)
         max_chunks = self._get_max_chunks()

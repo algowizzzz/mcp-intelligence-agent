@@ -1,0 +1,698 @@
+{
+  "run_id": "phase2_2026-04-03_16-15-01",
+  "phase": "phase2",
+  "generated_at": "2026-04-03T21:21:52.531467Z",
+  "summary": {
+    "total": 76,
+    "pass": 73,
+    "fail": 0,
+    "skip": 3,
+    "error": 0
+  },
+  "results": [
+    {
+      "id": "C-01",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "simple query returns non-empty text",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 1365,
+      "timestamp": "2026-04-03T21:15:03.559277Z"
+    },
+    {
+      "id": "C-02",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "agent run returns a thread_id",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:15:03.561125Z"
+    },
+    {
+      "id": "C-03",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "tool-calling query invokes at least one tool",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:15:06.126917Z"
+    },
+    {
+      "id": "C-04",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "resume thread: agent returns text",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:15:07.068157Z"
+    },
+    {
+      "id": "C-05",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "thread appears in /api/agent/threads",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:15:07.091331Z"
+    },
+    {
+      "id": "C-06",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "agent accepts CCR worker query",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:15:12.265792Z"
+    },
+    {
+      "id": "C-07",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "tool allowlist: EDGAR tools not called when restricted",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:15:15.154606Z"
+    },
+    {
+      "id": "C-08",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "invalid worker_id: agent returns error or empty gracefully",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:15:15.190832Z"
+    },
+    {
+      "id": "C-09",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "agent can list uploaded files after upload",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:15:18.387134Z"
+    },
+    {
+      "id": "T-01",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "iris_search_counterparties \u2014 find by name",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 3791,
+      "timestamp": "2026-04-03T21:15:22.196786Z"
+    },
+    {
+      "id": "T-02",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "iris_counterparty_dashboard \u2014 full dashboard",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 5491,
+      "timestamp": "2026-04-03T21:15:27.689504Z"
+    },
+    {
+      "id": "T-03",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "iris_exposure_trend \u2014 time series",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 6511,
+      "timestamp": "2026-04-03T21:15:34.201901Z"
+    },
+    {
+      "id": "T-04",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "iris_limit_lookup \u2014 find limits",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 6302,
+      "timestamp": "2026-04-03T21:15:40.505904Z"
+    },
+    {
+      "id": "T-05",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "iris_limit_breach_check \u2014 scan for breaches",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 6909,
+      "timestamp": "2026-04-03T21:15:47.417837Z"
+    },
+    {
+      "id": "T-06",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "iris_portfolio_breach_scan \u2014 portfolio-wide",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 6000,
+      "timestamp": "2026-04-03T21:15:53.420820Z"
+    },
+    {
+      "id": "T-07",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "iris_multi_counterparty_comparison \u2014 side by side",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 6951,
+      "timestamp": "2026-04-03T21:16:00.372825Z"
+    },
+    {
+      "id": "T-08",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "iris_rating_screen \u2014 filter by rating",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 5003,
+      "timestamp": "2026-04-03T21:16:05.376847Z"
+    },
+    {
+      "id": "T-09",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "iris_list_dates \u2014 available snapshots",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 3235,
+      "timestamp": "2026-04-03T21:16:08.612723Z"
+    },
+    {
+      "id": "T-10",
+      "module": "Module 6B \u2014 OSFI Regulatory Tools",
+      "scenario": "osfi_list_docs \u2014 list available documents",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 4200,
+      "timestamp": "2026-04-03T21:16:12.813721Z"
+    },
+    {
+      "id": "T-11",
+      "module": "Module 6B \u2014 OSFI Regulatory Tools",
+      "scenario": "osfi_search_guidance \u2014 keyword search",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 5731,
+      "timestamp": "2026-04-03T21:16:18.545909Z"
+    },
+    {
+      "id": "T-12",
+      "module": "Module 6B \u2014 OSFI Regulatory Tools",
+      "scenario": "osfi_read_document \u2014 read CAR guideline",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 6081,
+      "timestamp": "2026-04-03T21:16:24.627140Z"
+    },
+    {
+      "id": "T-13",
+      "module": "Module 6B \u2014 OSFI Regulatory Tools",
+      "scenario": "osfi_fetch_announcements \u2014 live fetch",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 6227,
+      "timestamp": "2026-04-03T21:16:30.855510Z"
+    },
+    {
+      "id": "T-14",
+      "module": "Module 6B \u2014 OSFI Regulatory Tools",
+      "scenario": "osfi_read_document \u2014 multi-chunk navigation",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 6591,
+      "timestamp": "2026-04-03T21:16:37.447257Z"
+    },
+    {
+      "id": "T-15",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "edgar_find_filing \u2014 JPMorgan 10-K",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 5442,
+      "timestamp": "2026-04-03T21:16:42.890180Z"
+    },
+    {
+      "id": "T-16",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "edgar_extract_section \u2014 MD&A",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 7094,
+      "timestamp": "2026-04-03T21:16:49.984489Z"
+    },
+    {
+      "id": "T-17",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "edgar_get_metric \u2014 revenue XBRL",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 5275,
+      "timestamp": "2026-04-03T21:16:55.261120Z"
+    },
+    {
+      "id": "T-18",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "edgar_get_statements \u2014 balance sheet",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 6103,
+      "timestamp": "2026-04-03T21:17:01.364242Z"
+    },
+    {
+      "id": "T-19",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "edgar_earnings_brief \u2014 recent quarter",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 7361,
+      "timestamp": "2026-04-03T21:17:08.726132Z"
+    },
+    {
+      "id": "T-20",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "edgar_peer_comparison \u2014 3 banks",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 10591,
+      "timestamp": "2026-04-03T21:17:19.318878Z"
+    },
+    {
+      "id": "T-21",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "edgar_risk_summary \u2014 risk factors",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 8956,
+      "timestamp": "2026-04-03T21:17:28.275581Z"
+    },
+    {
+      "id": "T-22",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "edgar_segment_analysis \u2014 business segments",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 8757,
+      "timestamp": "2026-04-03T21:17:37.035426Z"
+    },
+    {
+      "id": "T-23",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "edgar_company_brief \u2014 one-pager",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 9024,
+      "timestamp": "2026-04-03T21:17:46.061750Z"
+    },
+    {
+      "id": "T-24",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "edgar_calculate_ratios \u2014 ROE / ROA / CET1",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 4764,
+      "timestamp": "2026-04-03T21:17:50.827708Z"
+    },
+    {
+      "id": "T-25",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "Canadian bank (BMO) \u2014 6-K guidance",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 5692,
+      "timestamp": "2026-04-03T21:17:56.521024Z"
+    },
+    {
+      "id": "T-26",
+      "module": "Module 6D \u2014 Tavily / IR / News Tools",
+      "scenario": "tavily_news_search \u2014 bank stress tests",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 5188,
+      "timestamp": "2026-04-03T21:18:01.710274Z"
+    },
+    {
+      "id": "T-27",
+      "module": "Module 6D \u2014 Tavily / IR / News Tools",
+      "scenario": "tavily_web_search \u2014 general query",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 9978,
+      "timestamp": "2026-04-03T21:18:11.690017Z"
+    },
+    {
+      "id": "T-28",
+      "module": "Module 6D \u2014 Tavily / IR / News Tools",
+      "scenario": "tavily_research_search \u2014 deep research",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 16089,
+      "timestamp": "2026-04-03T21:18:27.779718Z"
+    },
+    {
+      "id": "T-29",
+      "module": "Module 6D \u2014 Tavily / IR / News Tools",
+      "scenario": "tavily_yahoo_get_quote \u2014 JPM stock",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 4396,
+      "timestamp": "2026-04-03T21:18:32.177244Z"
+    },
+    {
+      "id": "T-30",
+      "module": "Module 6D \u2014 Tavily / IR / News Tools",
+      "scenario": "tavily_yahoo_get_history \u2014 GS 30-day price",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 4953,
+      "timestamp": "2026-04-03T21:18:37.134287Z"
+    },
+    {
+      "id": "T-31",
+      "module": "Module 6D \u2014 Tavily / IR / News Tools",
+      "scenario": "tavily_yahoo_search_symbols \u2014 symbol search",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 3415,
+      "timestamp": "2026-04-03T21:18:40.551013Z"
+    },
+    {
+      "id": "T-32",
+      "module": "Module 6D \u2014 Tavily / IR / News Tools",
+      "scenario": "ir_list_supported_companies",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 5047,
+      "timestamp": "2026-04-03T21:18:45.599669Z"
+    },
+    {
+      "id": "T-33",
+      "module": "Module 6D \u2014 Tavily / IR / News Tools",
+      "scenario": "ir_get_latest_earnings \u2014 RBC",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 6629,
+      "timestamp": "2026-04-03T21:18:52.229536Z"
+    },
+    {
+      "id": "T-34",
+      "module": "Module 6E \u2014 DuckDB / SQL Tools",
+      "scenario": "duckdb_list_files \u2014 list databases",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 5369,
+      "timestamp": "2026-04-03T21:18:57.617281Z"
+    },
+    {
+      "id": "T-35",
+      "module": "Module 6E \u2014 DuckDB / SQL Tools",
+      "scenario": "duckdb_list_tables \u2014 list tables",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 3460,
+      "timestamp": "2026-04-03T21:19:01.078325Z"
+    },
+    {
+      "id": "T-36",
+      "module": "Module 6E \u2014 DuckDB / SQL Tools",
+      "scenario": "duckdb_query \u2014 SELECT query",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 6527,
+      "timestamp": "2026-04-03T21:19:07.606315Z"
+    },
+    {
+      "id": "T-37",
+      "module": "Module 6E \u2014 DuckDB / SQL Tools",
+      "scenario": "duckdb_sql \u2014 aggregation",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 10675,
+      "timestamp": "2026-04-03T21:19:18.281990Z"
+    },
+    {
+      "id": "T-38",
+      "module": "Module 6E \u2014 DuckDB / SQL Tools",
+      "scenario": "sqlselect_list_sources \u2014 list CSV/Parquet",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 3523,
+      "timestamp": "2026-04-03T21:19:21.806533Z"
+    },
+    {
+      "id": "T-39",
+      "module": "Module 6E \u2014 DuckDB / SQL Tools",
+      "scenario": "sqlselect_execute_query \u2014 query iris CSV",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 5209,
+      "timestamp": "2026-04-03T21:19:27.017044Z"
+    },
+    {
+      "id": "T-40",
+      "module": "Module 6E \u2014 DuckDB / SQL Tools",
+      "scenario": "sqlselect_sample_data \u2014 sample iris",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 6394,
+      "timestamp": "2026-04-03T21:19:33.412097Z"
+    },
+    {
+      "id": "T-41",
+      "module": "Module 6E \u2014 DuckDB / SQL Tools",
+      "scenario": "sqlselect_get_schema \u2014 iris schema",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 10578,
+      "timestamp": "2026-04-03T21:19:43.991296Z"
+    },
+    {
+      "id": "T-42",
+      "module": "Module 6F \u2014 MS Document Tools",
+      "scenario": "msdoc_list_files \u2014 list Word/Excel files",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 4294,
+      "timestamp": "2026-04-03T21:19:48.304593Z"
+    },
+    {
+      "id": "T-43",
+      "module": "Module 6F \u2014 MS Document Tools",
+      "scenario": "msdoc_read_word \u2014 read uploaded .docx",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 6355,
+      "timestamp": "2026-04-03T21:19:54.661250Z"
+    },
+    {
+      "id": "T-45",
+      "module": "Module 6F \u2014 MS Document Tools",
+      "scenario": "msdoc_search_word \u2014 keyword in Word doc",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 3835,
+      "timestamp": "2026-04-03T21:19:58.498086Z"
+    },
+    {
+      "id": "T-44",
+      "module": "Module 6F \u2014 MS Document Tools",
+      "scenario": "msdoc_read_excel (skipped: requires real .xlsx upload \u2014 manual test)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:19:58.512475Z"
+    },
+    {
+      "id": "T-46",
+      "module": "Module 6F \u2014 MS Document Tools",
+      "scenario": "msdoc_search_excel (skipped: requires real .xlsx upload \u2014 manual test)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:19:58.512983Z"
+    },
+    {
+      "id": "T-47",
+      "module": "Module 6G \u2014 Utility Tools",
+      "scenario": "list_uploaded_files \u2014 list uploads",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 6070,
+      "timestamp": "2026-04-03T21:20:04.583182Z"
+    },
+    {
+      "id": "T-48",
+      "module": "Module 6G \u2014 Utility Tools",
+      "scenario": "pdf_read \u2014 extract text from PDF",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 4680,
+      "timestamp": "2026-04-03T21:20:09.273862Z"
+    },
+    {
+      "id": "T-49",
+      "module": "Module 6G \u2014 Utility Tools",
+      "scenario": "parquet_read (skipped: requires pre-uploaded .parquet \u2014 manual test)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:20:09.290441Z"
+    },
+    {
+      "id": "T-50",
+      "module": "Module 6G \u2014 Utility Tools",
+      "scenario": "md_save \u2014 save analysis to markdown",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 4372,
+      "timestamp": "2026-04-03T21:20:13.663087Z"
+    },
+    {
+      "id": "T-51",
+      "module": "Module 6G \u2014 Utility Tools",
+      "scenario": "md_to_docx \u2014 convert markdown to Word",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 4444,
+      "timestamp": "2026-04-03T21:20:18.108006Z"
+    },
+    {
+      "id": "T-52",
+      "module": "Module 6G \u2014 Utility Tools",
+      "scenario": "generate_chart \u2014 create a chart",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 7327,
+      "timestamp": "2026-04-03T21:20:25.437369Z"
+    },
+    {
+      "id": "T-53",
+      "module": "Module 6G \u2014 Utility Tools",
+      "scenario": "fill_template \u2014 fill a workflow template",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 6614,
+      "timestamp": "2026-04-03T21:20:32.052223Z"
+    },
+    {
+      "id": "T-54",
+      "module": "Module 6G \u2014 Utility Tools",
+      "scenario": "search_files \u2014 keyword search in uploads",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 3916,
+      "timestamp": "2026-04-03T21:20:35.969528Z"
+    },
+    {
+      "id": "T-55",
+      "module": "Module 6H \u2014 CCR Exposure Tools",
+      "scenario": "get_counterparty_exposure \u2014 by counterparty",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 5747,
+      "timestamp": "2026-04-03T21:20:41.716865Z"
+    },
+    {
+      "id": "T-56",
+      "module": "Module 6H \u2014 CCR Exposure Tools",
+      "scenario": "get_credit_limits \u2014 limits table",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 5977,
+      "timestamp": "2026-04-03T21:20:47.695231Z"
+    },
+    {
+      "id": "T-57",
+      "module": "Module 6H \u2014 CCR Exposure Tools",
+      "scenario": "get_trade_inventory \u2014 trade-level details",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 5520,
+      "timestamp": "2026-04-03T21:20:53.216067Z"
+    },
+    {
+      "id": "T-58",
+      "module": "Module 6H \u2014 CCR Exposure Tools",
+      "scenario": "get_var_contribution \u2014 VaR attribution",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 4303,
+      "timestamp": "2026-04-03T21:20:57.520475Z"
+    },
+    {
+      "id": "T-59",
+      "module": "Module 6H \u2014 CCR Exposure Tools",
+      "scenario": "get_historical_exposure \u2014 time series",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 4419,
+      "timestamp": "2026-04-03T21:21:01.941789Z"
+    },
+    {
+      "id": "T-60",
+      "module": "Module 6H \u2014 CCR Exposure Tools",
+      "scenario": "CCR tool on worker with no iris data: graceful response",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:21:08.464620Z"
+    },
+    {
+      "id": "WF-01",
+      "module": "Module 7 \u2014 Workflows",
+      "scenario": "workflow_list \u2014 list all available workflows",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 3468,
+      "timestamp": "2026-04-03T21:21:11.933586Z"
+    },
+    {
+      "id": "WF-02",
+      "module": "Module 7 \u2014 Workflows",
+      "scenario": "workflow_get \u2014 fetch counterparty_intelligence steps",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 7821,
+      "timestamp": "2026-04-03T21:21:19.755254Z"
+    },
+    {
+      "id": "WF-03",
+      "module": "Module 7 \u2014 Workflows",
+      "scenario": "counterparty_intelligence workflow \u2014 Deutsche Bank",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 6675,
+      "timestamp": "2026-04-03T21:21:26.431634Z"
+    },
+    {
+      "id": "WF-04",
+      "module": "Module 7 \u2014 Workflows",
+      "scenario": "osfi_regulatory_watch workflow",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 8624,
+      "timestamp": "2026-04-03T21:21:35.058045Z"
+    },
+    {
+      "id": "WF-05",
+      "module": "Module 7 \u2014 Workflows",
+      "scenario": "custom workflow upload \u2192 on disk in worker workflows folder",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:21:40.469584Z"
+    },
+    {
+      "id": "WF-06",
+      "module": "Module 7 \u2014 Workflows",
+      "scenario": "workflow with missing inputs: agent asks for parameters",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:21:45.928634Z"
+    },
+    {
+      "id": "WF-07",
+      "module": "Module 7 \u2014 Workflows",
+      "scenario": "CCR workflow not visible from MR worker",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:21:52.517288Z"
+    }
+  ]
+}

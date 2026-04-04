@@ -1,0 +1,13 @@
+{
+  "name": "sharepoint_list_sites",
+  "description": "List SharePoint Online sites accessible to the connector.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "microsoft_azure",
+  "implementation": "sajha.tools.impl.sharepoint_tools_connector.SharePointListSitesTool",
+  "metadata": {
+    "connector": "sharepoint",
+    "access": "read",
+    "category": "collaboration"
+  }
+}

@@ -1,0 +1,158 @@
+{
+  "run_id": "module9_2026-04-03_17-49-18",
+  "phase": "module9",
+  "generated_at": "2026-04-03T22:49:18.413932Z",
+  "summary": {
+    "total": 16,
+    "pass": 16,
+    "fail": 0,
+    "skip": 0,
+    "error": 0
+  },
+  "results": [
+    {
+      "id": "PG-APP-01",
+      "module": "Module 9G \u2014 application.properties",
+      "scenario": "data.root points to w-market-risk worker-scoped path",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:49:18.410172Z"
+    },
+    {
+      "id": "PG-APP-02",
+      "module": "Module 9G \u2014 application.properties",
+      "scenario": "data.duckdb.dir points to w-market-risk",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:49:18.410809Z"
+    },
+    {
+      "id": "PG-APP-03",
+      "module": "Module 9G \u2014 application.properties",
+      "scenario": "data.sqlselect.dir points to w-market-risk",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:49:18.410983Z"
+    },
+    {
+      "id": "PG-APP-04",
+      "module": "Module 9G \u2014 application.properties",
+      "scenario": "data.iris_combined_csv points to w-market-risk",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:49:18.411198Z"
+    },
+    {
+      "id": "PG-APP-05",
+      "module": "Module 9G \u2014 application.properties",
+      "scenario": "data.osfi_docs_dir points to w-market-risk",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:49:18.411377Z"
+    },
+    {
+      "id": "PG-APP-06",
+      "module": "Module 9G \u2014 application.properties",
+      "scenario": "data.uploads_dir points to w-market-risk/my_data/risk_agent",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:49:18.411524Z"
+    },
+    {
+      "id": "PG-APP-07",
+      "module": "Module 9G \u2014 application.properties",
+      "scenario": "data.my_data.dir points to w-market-risk/my_data/risk_agent",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:49:18.411661Z"
+    },
+    {
+      "id": "PH-01",
+      "module": "Module 9H \u2014 Filesystem",
+      "scenario": "MR domain_data/osfi/ exists",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:49:18.411820Z"
+    },
+    {
+      "id": "PH-02",
+      "module": "Module 9H \u2014 Filesystem",
+      "scenario": "MR duckdb_analytics.db exists",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:49:18.411983Z"
+    },
+    {
+      "id": "PH-03",
+      "module": "Module 9H \u2014 Filesystem",
+      "scenario": "MR iris_combined.csv exists",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:49:18.412152Z"
+    },
+    {
+      "id": "PH-04",
+      "module": "Module 9H \u2014 Filesystem",
+      "scenario": "MR domain_data/sqlselect/ exists",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:49:18.412298Z"
+    },
+    {
+      "id": "PH-05",
+      "module": "Module 9H \u2014 Filesystem",
+      "scenario": "MR workflows/verified/ exists",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:49:18.412582Z"
+    },
+    {
+      "id": "PH-06",
+      "module": "Module 9H \u2014 Filesystem",
+      "scenario": "CCR workflows/verified/ exists",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:49:18.412764Z"
+    },
+    {
+      "id": "PH-07",
+      "module": "Module 9H \u2014 Filesystem",
+      "scenario": "MR my_data/ exists",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:49:18.412933Z"
+    },
+    {
+      "id": "PH-08",
+      "module": "Module 9H \u2014 Filesystem",
+      "scenario": "MR workflows/verified/ contains exactly 12 expected .md files",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:49:18.413368Z"
+    },
+    {
+      "id": "PH-09",
+      "module": "Module 9H \u2014 Filesystem",
+      "scenario": "CCR my_data does not contain risk_agent user files (no cross-worker copy)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:49:18.413927Z"
+    }
+  ]
+}

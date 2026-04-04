@@ -1,0 +1,13 @@
+{
+  "name": "powerbi_list_datasets",
+  "description": "List all Power BI datasets in a workspace.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "microsoft_azure",
+  "implementation": "sajha.tools.impl.powerbi_tools.PowerBIListDatasetsTool",
+  "metadata": {
+    "connector": "powerbi",
+    "access": "read",
+    "category": "analytics"
+  }
+}

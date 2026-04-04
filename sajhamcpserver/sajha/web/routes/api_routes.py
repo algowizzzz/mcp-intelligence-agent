@@ -9,7 +9,7 @@ import io
 import os
 import datetime as dt
 from pathlib import Path
-from flask import request, jsonify, make_response
+from flask import request, jsonify, make_response, g
 from datetime import datetime
 from werkzeug.utils import secure_filename
 from sajha.web.routes.base_routes import BaseRoutes
@@ -40,6 +40,11 @@ class ApiRoutes(BaseRoutes):
             """
             # Authenticate request (supports both session tokens and API keys)
             headers = dict(request.headers)
+            # G-04: Inject per-worker path context for tool path resolution
+            g.worker_data_root    = headers.get('X-Worker-Data-Root', '')
+            g.worker_common_root  = headers.get('X-Worker-Common-Root', '')
+            g.worker_my_data_root = headers.get('X-Worker-My-Data-Root', '')
+            g.worker_id           = headers.get('X-Worker-Id', '')
             is_auth, auth_context, auth_msg = self.auth_manager.authenticate_request(headers)
             
             # Convert auth_context to session-like dict for MCP handler
@@ -112,6 +117,12 @@ class ApiRoutes(BaseRoutes):
             """
             # Authenticate request
             headers = dict(request.headers)
+            # G-04: Inject per-worker path context so tool implementations can
+            # resolve paths to the calling worker's scoped data directories.
+            g.worker_data_root    = headers.get('X-Worker-Data-Root', '')
+            g.worker_common_root  = headers.get('X-Worker-Common-Root', '')
+            g.worker_my_data_root = headers.get('X-Worker-My-Data-Root', '')
+            g.worker_id           = headers.get('X-Worker-Id', '')
             is_auth, auth_context, auth_msg = self.auth_manager.authenticate_request(headers)
             
             if not is_auth:
@@ -570,7 +581,9 @@ class ApiRoutes(BaseRoutes):
 
             from sajha.core.properties_configurator import PropertiesConfigurator
             props = PropertiesConfigurator()
-            uploads_dir = props.get('data.uploads_dir', './data/uploads')
+            # REQ-MD-01: use per-user my_data root from worker context if present
+            my_data_root = getattr(g, 'worker_my_data_root', '') or ''
+            uploads_dir = my_data_root.strip() or props.get('data.uploads_dir', './data/uploads')
             max_size_mb = int(props.get('data.uploads_max_size_mb', '50'))
 
             os.makedirs(uploads_dir, exist_ok=True)

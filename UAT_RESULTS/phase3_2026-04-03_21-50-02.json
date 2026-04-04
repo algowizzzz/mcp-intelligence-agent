@@ -1,0 +1,140 @@
+{
+  "run_id": "phase3_2026-04-03_21-50-02",
+  "phase": "phase3",
+  "generated_at": "2026-04-03T21:50:02.000000Z",
+  "summary": {
+    "total": 14,
+    "pass": 10,
+    "fail": 4,
+    "skip": 0,
+    "error": 0
+  },
+  "results": [
+    {
+      "id": "AP-01",
+      "module": "Module 8 \u2014 Admin Panel UI",
+      "scenario": "Admin panel loads",
+      "status": "PASS",
+      "detail": "Opened admin.html as admin user. Worker badge shows 'Market Risk Worker'. Domain Data and Workflows nav items visible.",
+      "duration_ms": null,
+      "timestamp": "2026-04-03T21:32:00.000000Z"
+    },
+    {
+      "id": "AP-02",
+      "module": "Module 8 \u2014 Admin Panel UI",
+      "scenario": "Super admin panel",
+      "status": "PASS",
+      "detail": "Logged in as risk_agent (super_admin). Worker selector dropdown visible top-right; All Workers card grid shown; SUPER ADMIN nav section (Users, Workers, Audit) visible; sidebar shows 'Saad Ahmed / Super Admin'.",
+      "duration_ms": null,
+      "timestamp": "2026-04-03T21:32:18.000000Z"
+    },
+    {
+      "id": "AP-03",
+      "module": "Module 8 \u2014 Admin Panel UI",
+      "scenario": "File tree renders",
+      "status": "PASS",
+      "detail": "Domain Data tab shows 5 top-level folders (analytics, counterparties, iris, market_data, uploads) with folder SVG icons. Upload / +Folder / Select toolbar present. Preview pane shows placeholder.",
+      "duration_ms": null,
+      "timestamp": "2026-04-03T21:33:00.000000Z"
+    },
+    {
+      "id": "AP-04",
+      "module": "Module 8 \u2014 Admin Panel UI",
+      "scenario": "Upload queue",
+      "status": "FAIL",
+      "detail": "No drag-to-upload zone exists in domain_data section; drag handlers are for internal file-to-folder moves only. No upload queue panel or per-file progress bars. Upload uses hidden <input type=file multiple> triggered by '↑ Upload' button; files uploaded sequentially via fetch(); per-file feedback is a toast notification only (showToast). Expected: drop zone + queue UI + progress bars.",
+      "duration_ms": null,
+      "timestamp": "2026-04-03T21:35:00.000000Z"
+    },
+    {
+      "id": "AP-05",
+      "module": "Module 8 \u2014 Admin Panel UI",
+      "scenario": "Inline rename (double-click)",
+      "status": "FAIL",
+      "detail": "No dblclick event listener on tree items. .tree-rename-input CSS class exists suggesting inline edit was planned but not wired. Rename is accessible only via hover 'rename' button in .item-actions, which calls renameItem() using browser prompt() dialog. Expected: dblclick -> inline <input> with Enter-to-commit.",
+      "duration_ms": null,
+      "timestamp": "2026-04-03T21:35:30.000000Z"
+    },
+    {
+      "id": "AP-06",
+      "module": "Module 8 \u2014 Admin Panel UI",
+      "scenario": "Context menu",
+      "status": "FAIL",
+      "detail": "No contextmenu event listener registered anywhere in admin.html. Right-clicking a file shows the browser's native context menu only. File actions (preview, rename, delete) are accessible via hover .item-actions buttons (display:flex on :hover). Expected: right-click -> custom menu with Preview / Rename / Delete.",
+      "duration_ms": null,
+      "timestamp": "2026-04-03T21:36:00.000000Z"
+    },
+    {
+      "id": "AP-07",
+      "module": "Module 8 \u2014 Admin Panel UI",
+      "scenario": "Drag-and-drop move",
+      "status": "PASS",
+      "detail": "Files rendered with draggable=true. dragstart sets _drag state {section, path, isDir}. dragover on target folder: e.preventDefault() called (drop accepted), folder background changes to rgba(255,255,255,0.12). drop handler calls /files/{section}/move API with {src, dest_folder}; on success showToast('Moved') and loadFileTree() called. Full end-to-end not executed to preserve test data; mechanics fully verified.",
+      "duration_ms": null,
+      "timestamp": "2026-04-03T21:37:00.000000Z"
+    },
+    {
+      "id": "AP-08",
+      "module": "Module 8 \u2014 Admin Panel UI",
+      "scenario": "Bulk delete",
+      "status": "PASS",
+      "detail": "Clicked Select -> button text changed to 'Cancel', delete button appeared showing 'Delete 0'. Clicked 3 top-level items -> each gained .selected class, delete button updated to 'Delete 3'. Clicked Delete 3 -> window.confirm() called with message 'Delete 3 items? This cannot be undone.' Confirmed cancelled (no actual deletion). Note: uses native browser confirm() not a custom styled modal.",
+      "duration_ms": null,
+      "timestamp": "2026-04-03T21:38:00.000000Z"
+    },
+    {
+      "id": "AP-09",
+      "module": "Module 8 \u2014 Admin Panel UI",
+      "scenario": "Preview .md panel",
+      "status": "PASS",
+      "detail": "Uploaded test uat_test_preview.md. Clicked file in tree. preview-file-name shows 'uat_test_preview.md'. preview-body renders .preview-md div with H1 heading, <strong> bold, <em> italic, <ul> list. GFM pipe tables not supported (rendered as raw text with <br> tags). Core markdown rendering functional.",
+      "duration_ms": null,
+      "timestamp": "2026-04-03T21:40:00.000000Z"
+    },
+    {
+      "id": "AP-10",
+      "module": "Module 8 \u2014 Admin Panel UI",
+      "scenario": "Preview .xlsx",
+      "status": "PASS",
+      "detail": "Uploaded test uat_test.xlsx (2 sheets: Sheet1, Sheet2). Clicked file. preview-sheet-tabs display:flex with 2 tabs ('Sheet1', 'Sheet2'). preview-body contains HTML table rendered via XLSX.utils.sheet_to_html. Sheet tab switching wired via switchSheet(). Full xlsx preview functional.",
+      "duration_ms": null,
+      "timestamp": "2026-04-03T21:43:00.000000Z"
+    },
+    {
+      "id": "AP-11",
+      "module": "Module 8 \u2014 Admin Panel UI",
+      "scenario": "Worker tool filtering UI",
+      "status": "PASS",
+      "detail": "Tools section loaded 88 checkboxes all checked. Unchecked edgar_find_filing toggle. Clicked 'Save Tools'. GET /api/workers/w-market-risk/tools returned 87 tools with edgar_find_filing absent. enabled_tools state changed from ['*'] to explicit list of 87. Restored to ['*'] after test.",
+      "duration_ms": null,
+      "timestamp": "2026-04-03T21:45:00.000000Z"
+    },
+    {
+      "id": "AP-12",
+      "module": "Module 8 \u2014 Admin Panel UI",
+      "scenario": "Audit log section",
+      "status": "PASS",
+      "detail": "Navigated to Audit tab. 200 entries loaded from /api/super/audit?limit=200 with columns Time/Worker/User/Tool/Status/Duration. Filter by worker 'w-market-risk': all 200 rows returned (all from this worker). Filter by non-matching user 'zzz_no_such_user': table re-renders with 'No entries'. Filter by 'risk_agent': 200 rows. Filters work by re-rendering tbody, not display:none.",
+      "duration_ms": null,
+      "timestamp": "2026-04-03T21:47:00.000000Z"
+    },
+    {
+      "id": "AP-13",
+      "module": "Module 8 \u2014 Admin Panel UI",
+      "scenario": "Audit pagination",
+      "status": "FAIL",
+      "detail": "No pagination UI exists in audit section. loadAudit() hardcodes limit=200 with no offset, page controls, or total_matched display. API /api/super/audit supports offset, limit, total_matched, total_returned fields but admin.html does not expose them. Expected: offset controls, non-overlapping entry navigation, total_matched display.",
+      "duration_ms": null,
+      "timestamp": "2026-04-03T21:47:30.000000Z"
+    },
+    {
+      "id": "AP-14",
+      "module": "Module 8 \u2014 Admin Panel UI",
+      "scenario": "User cannot see admin panel link",
+      "status": "PASS",
+      "detail": "Set sessionStorage to user-role JWT (role='user'). Navigated to admin.html -> immediately redirected to mcp-agent.html (role gate: if role==='user' -> location.href='mcp-agent.html'). On mcp-agent.html: admin-console-banner has display:none (only set to inline-block if role==='admin' || role==='super_admin'). Both protections confirmed working.",
+      "duration_ms": null,
+      "timestamp": "2026-04-03T21:48:30.000000Z"
+    }
+  ]
+}

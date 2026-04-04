@@ -1,11 +1,22 @@
 """
 Data Transform & Parquet Tools — parquet_read, data_transform, data_export
 """
+import io
 import os, re, shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from sajha.tools.base_mcp_tool import BaseMCPTool
 from sajha.core.properties_configurator import PropertiesConfigurator
+from sajha.storage import storage
+from sajha.path_resolver import resolve as path_resolve
+
+
+def _get_worker_ctx():
+    try:
+        from flask import g as _g
+        return getattr(_g, 'worker_ctx', {}) or {}
+    except RuntimeError:
+        return {}
 
 
 def _resolve(path_str):
@@ -15,10 +26,26 @@ def _resolve(path_str):
     return (Path.cwd() / p).resolve()
 
 def _domain_root():
+    """Return domain-data root. Uses per-request worker path (G-04) if set via Flask g."""
+    try:
+        from flask import g as _g
+        v = getattr(_g, 'worker_data_root', None)
+        if v:
+            return _resolve(v)
+    except RuntimeError:
+        pass  # Outside a Flask request context — fall through to config
     v = PropertiesConfigurator().get('data.domain_data.dir', './data/domain_data')
     return _resolve(v)
 
 def _my_data_root():
+    """Return my-data root. Uses per-request worker path (G-04) if set via Flask g."""
+    try:
+        from flask import g as _g
+        v = getattr(_g, 'worker_my_data_root', None)
+        if v:
+            return _resolve(v)
+    except RuntimeError:
+        pass  # Outside a Flask request context — fall through to config
     v = PropertiesConfigurator().get('data.my_data.dir', './data/uploads')
     return _resolve(v)
 
@@ -51,7 +78,9 @@ def _pq_to_df(path):
     return pd.DataFrame(data)
 
 def _df_to_pq(df, path, compression='snappy'):
-    """Write parquet avoiding pandas extension type conflicts."""
+    """Write parquet avoiding pandas extension type conflicts.
+    path may be a filesystem path (str/Path) or a file-like object (BytesIO).
+    """
     import pyarrow as pa, pyarrow.parquet as pq_mod
     arrays, fields = [], []
     for col in df.columns:
@@ -63,7 +92,9 @@ def _df_to_pq(df, path, compression='snappy'):
         arrays.append(arr)
         fields.append(pa.field(str(col), arr.type))
     table = pa.table(arrays, schema=pa.schema(fields))
-    pq_mod.write_table(table, str(path), compression=compression)
+    # Accept either a file path (str/Path) or a file-like object (e.g. BytesIO)
+    dest = path if hasattr(path, 'write') else str(path)
+    pq_mod.write_table(table, dest, compression=compression)
 
 def _load_df(file_path):
     import pandas as pd
@@ -71,9 +102,11 @@ def _load_df(file_path):
     if ext in ('.parquet', '.pq'):
         return _pq_to_df(file_path), 'parquet'
     if ext in ('.csv',):
-        return pd.read_csv(str(file_path), sep=None, engine='python'), 'csv'
+        data = storage.read_bytes(str(file_path))
+        return pd.read_csv(io.BytesIO(data), sep=None, engine='python'), 'csv'
     if ext in ('.tsv',):
-        return pd.read_csv(str(file_path), sep='\t'), 'tsv'
+        data = storage.read_bytes(str(file_path))
+        return pd.read_csv(io.BytesIO(data), sep='\t'), 'tsv'
     raise ValueError(f"Unsupported extension: {ext}")
 
 def _df_schema(df):
@@ -478,12 +511,16 @@ class DataExportTool(BaseMCPTool):
             shutil.move(str(dest), str(folder / archive_name))
             archived_as = archive_name
 
-        # Write
+        # Write via storage abstraction
         try:
             if fmt == 'parquet':
-                _df_to_pq(df, dest)
+                buf = io.BytesIO()
+                _df_to_pq(df, buf)
+                storage.write_bytes(str(dest), buf.getvalue())
             else:
-                df.to_csv(str(dest), index=include_index, encoding='utf-8')
+                csv_buf = io.StringIO()
+                df.to_csv(csv_buf, index=include_index, encoding='utf-8')
+                storage.write_text(str(dest), csv_buf.getvalue(), encoding='utf-8')
         except Exception as e:
             return {'error': f'Export failed: {e}'}
 

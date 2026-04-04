@@ -1,0 +1,13 @@
+{
+  "name": "sharepoint_download_file",
+  "description": "Get download URL and metadata for a file in a SharePoint drive.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "microsoft_azure",
+  "implementation": "sajha.tools.impl.sharepoint_tools_connector.SharePointDownloadFileTool",
+  "metadata": {
+    "connector": "sharepoint",
+    "access": "read",
+    "category": "collaboration"
+  }
+}

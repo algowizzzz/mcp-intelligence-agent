@@ -4,10 +4,21 @@ IRIS CCR Tools — Counterparty Credit Risk limit and exposure analytics.
 9 pandas-based MCP tools over iris_combined.csv.
 """
 
+import io
 import math
 import pandas as pd
 from sajha.tools.base_mcp_tool import BaseMCPTool
 from sajha.core.properties_configurator import PropertiesConfigurator
+from sajha.storage import storage
+from sajha.path_resolver import resolve as path_resolve
+
+
+def _get_worker_ctx():
+    try:
+        from flask import g as _g
+        return getattr(_g, 'worker_ctx', {}) or {}
+    except RuntimeError:
+        return {}
 
 
 def _clean(val):
@@ -23,6 +34,7 @@ def _clean_row(row: dict) -> dict:
 class IrisBaseTool(BaseMCPTool):
     """Shared base for all IRIS tools. Loads CSV once at class level."""
     _df = None
+    _df_path = None  # track which path the class-level df was loaded from
 
     @classmethod
     def _get_config(cls, key, default=None):
@@ -34,11 +46,26 @@ class IrisBaseTool(BaseMCPTool):
             return default
 
     @classmethod
+    def _iris_csv_path(cls) -> str:
+        """Return iris CSV path, preferring per-request worker root (G-04)."""
+        try:
+            from flask import g as _g
+            worker_root = getattr(_g, 'worker_data_root', None)
+            if worker_root:
+                return worker_root.rstrip('/') + '/iris/iris_combined.csv'
+        except RuntimeError:
+            pass
+        return cls._get_config('data.iris_combined_csv', './data/domain_data/iris/iris_combined.csv')
+
+    @classmethod
     def _get_df(cls):
-        if cls._df is None:
-            path = cls._get_config('data.iris_combined_csv', './data/domain_data/iris/iris_combined.csv')
-            cls._df = pd.read_csv(path, encoding='latin1', low_memory=False)
+        path = cls._iris_csv_path()
+        # Reload if path changed (different worker) or not yet loaded
+        if cls._df is None or cls._df_path != path:
+            data = storage.read_bytes(path)
+            cls._df = pd.read_csv(io.BytesIO(data), encoding='latin1', low_memory=False)
             cls._df['Date'] = cls._df['Date'].astype(str)
+            cls._df_path = path
         return cls._df
 
     @classmethod

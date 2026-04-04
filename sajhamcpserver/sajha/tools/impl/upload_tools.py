@@ -8,6 +8,16 @@ import datetime
 from typing import Dict, Any
 from sajha.tools.base_mcp_tool import BaseMCPTool
 from sajha.core.properties_configurator import PropertiesConfigurator
+from sajha.storage import storage
+from sajha.path_resolver import resolve as path_resolve
+
+
+def _get_worker_ctx():
+    try:
+        from flask import g as _g
+        return getattr(_g, 'worker_ctx', {}) or {}
+    except RuntimeError:
+        return {}
 
 
 class ListUploadedFilesTool(BaseMCPTool):
@@ -47,7 +57,31 @@ class ListUploadedFilesTool(BaseMCPTool):
 
     def execute(self, params: Dict[str, Any]) -> Any:
         props = PropertiesConfigurator()
-        uploads_dir = props.get('data.uploads_dir', './data/uploads')
+        # REQ-MD-01: per-user my_data from worker context header takes priority
+        # REQ-PREP-03: resolve via path_resolver when worker_ctx is available
+        worker_ctx = _get_worker_ctx()
+        uploads_dir = ''
+        if worker_ctx:
+            try:
+                user_id = None
+                try:
+                    from flask import g as _g
+                    user_id = getattr(_g, 'user_id', None)
+                except RuntimeError:
+                    pass
+                if user_id:
+                    uploads_dir = path_resolve('my_data', worker_ctx, user_id=user_id)
+                else:
+                    uploads_dir = path_resolve('my_data', worker_ctx, user_id='_shared')
+            except (ValueError, Exception):
+                uploads_dir = ''
+        if not uploads_dir:
+            try:
+                from flask import g as _g
+                my_data_root = getattr(_g, 'worker_my_data_root', '') or ''
+            except RuntimeError:
+                my_data_root = ''
+            uploads_dir = my_data_root.strip() or props.get('data.uploads_dir', './data/uploads')
         file_type = params.get('file_type', 'all')
         sort_by = params.get('sort_by', 'uploaded_at')
         subfolder = params.get('subfolder', '').strip().strip('/')

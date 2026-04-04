@@ -1,0 +1,698 @@
+{
+  "run_id": "phase2_2026-04-03_15-43-29",
+  "phase": "phase2",
+  "generated_at": "2026-04-03T20:49:22.559606Z",
+  "summary": {
+    "total": 76,
+    "pass": 17,
+    "fail": 0,
+    "skip": 59,
+    "error": 0
+  },
+  "results": [
+    {
+      "id": "C-01",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:43:29.457759Z"
+    },
+    {
+      "id": "C-02",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:43:29.458524Z"
+    },
+    {
+      "id": "C-03",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:43:29.458712Z"
+    },
+    {
+      "id": "C-04",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:43:29.458852Z"
+    },
+    {
+      "id": "C-05",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:43:29.459011Z"
+    },
+    {
+      "id": "C-06",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:43:29.459147Z"
+    },
+    {
+      "id": "C-07",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:43:29.459285Z"
+    },
+    {
+      "id": "C-08",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:43:29.459410Z"
+    },
+    {
+      "id": "C-09",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:43:29.459562Z"
+    },
+    {
+      "id": "T-01",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:43:29.459706Z"
+    },
+    {
+      "id": "T-02",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:43:29.459842Z"
+    },
+    {
+      "id": "T-03",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:43:29.459975Z"
+    },
+    {
+      "id": "T-04",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:43:29.460127Z"
+    },
+    {
+      "id": "T-05",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:43:29.460269Z"
+    },
+    {
+      "id": "T-06",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:43:29.460409Z"
+    },
+    {
+      "id": "T-07",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:43:29.460568Z"
+    },
+    {
+      "id": "T-08",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:43:29.460732Z"
+    },
+    {
+      "id": "T-09",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:43:29.460893Z"
+    },
+    {
+      "id": "T-10",
+      "module": "Module 6B \u2014 OSFI Regulatory Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:43:29.461069Z"
+    },
+    {
+      "id": "T-11",
+      "module": "Module 6B \u2014 OSFI Regulatory Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:43:29.461253Z"
+    },
+    {
+      "id": "T-12",
+      "module": "Module 6B \u2014 OSFI Regulatory Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:43:29.461430Z"
+    },
+    {
+      "id": "T-13",
+      "module": "Module 6B \u2014 OSFI Regulatory Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:43:29.461600Z"
+    },
+    {
+      "id": "T-14",
+      "module": "Module 6B \u2014 OSFI Regulatory Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:43:29.461779Z"
+    },
+    {
+      "id": "T-15",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "edgar_find_filing \u2014 JPMorgan 10-K",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 6477,
+      "timestamp": "2026-04-03T20:43:35.938687Z"
+    },
+    {
+      "id": "T-16",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "edgar_extract_section \u2014 MD&A",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 47776,
+      "timestamp": "2026-04-03T20:44:23.715537Z"
+    },
+    {
+      "id": "T-17",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "edgar_get_metric \u2014 revenue XBRL",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 5326,
+      "timestamp": "2026-04-03T20:44:29.042125Z"
+    },
+    {
+      "id": "T-18",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "edgar_get_statements \u2014 balance sheet",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 13103,
+      "timestamp": "2026-04-03T20:44:42.146203Z"
+    },
+    {
+      "id": "T-19",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "edgar_earnings_brief \u2014 recent quarter",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 39893,
+      "timestamp": "2026-04-03T20:45:22.040388Z"
+    },
+    {
+      "id": "T-20",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "edgar_peer_comparison \u2014 3 banks",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 17748,
+      "timestamp": "2026-04-03T20:45:39.790045Z"
+    },
+    {
+      "id": "T-21",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "edgar_risk_summary \u2014 risk factors",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 16468,
+      "timestamp": "2026-04-03T20:45:56.260610Z"
+    },
+    {
+      "id": "T-22",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "edgar_segment_analysis \u2014 business segments",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 91856,
+      "timestamp": "2026-04-03T20:47:28.117560Z"
+    },
+    {
+      "id": "T-23",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "edgar_company_brief \u2014 one-pager",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 59455,
+      "timestamp": "2026-04-03T20:48:27.573673Z"
+    },
+    {
+      "id": "T-24",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "edgar_calculate_ratios \u2014 ROE / ROA / CET1",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 7705,
+      "timestamp": "2026-04-03T20:48:35.279652Z"
+    },
+    {
+      "id": "T-25",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "Canadian bank (BMO) \u2014 6-K guidance",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 4680,
+      "timestamp": "2026-04-03T20:48:39.960837Z"
+    },
+    {
+      "id": "T-26",
+      "module": "Module 6D \u2014 Tavily / IR / News Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.961481Z"
+    },
+    {
+      "id": "T-27",
+      "module": "Module 6D \u2014 Tavily / IR / News Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.962208Z"
+    },
+    {
+      "id": "T-28",
+      "module": "Module 6D \u2014 Tavily / IR / News Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.963239Z"
+    },
+    {
+      "id": "T-29",
+      "module": "Module 6D \u2014 Tavily / IR / News Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.963878Z"
+    },
+    {
+      "id": "T-30",
+      "module": "Module 6D \u2014 Tavily / IR / News Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.964654Z"
+    },
+    {
+      "id": "T-31",
+      "module": "Module 6D \u2014 Tavily / IR / News Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.964964Z"
+    },
+    {
+      "id": "T-32",
+      "module": "Module 6D \u2014 Tavily / IR / News Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.965772Z"
+    },
+    {
+      "id": "T-33",
+      "module": "Module 6D \u2014 Tavily / IR / News Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.966231Z"
+    },
+    {
+      "id": "T-34",
+      "module": "Module 6E \u2014 DuckDB / SQL Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.966746Z"
+    },
+    {
+      "id": "T-35",
+      "module": "Module 6E \u2014 DuckDB / SQL Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.967072Z"
+    },
+    {
+      "id": "T-36",
+      "module": "Module 6E \u2014 DuckDB / SQL Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.974922Z"
+    },
+    {
+      "id": "T-37",
+      "module": "Module 6E \u2014 DuckDB / SQL Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.975295Z"
+    },
+    {
+      "id": "T-38",
+      "module": "Module 6E \u2014 DuckDB / SQL Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.975792Z"
+    },
+    {
+      "id": "T-39",
+      "module": "Module 6E \u2014 DuckDB / SQL Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.976112Z"
+    },
+    {
+      "id": "T-40",
+      "module": "Module 6E \u2014 DuckDB / SQL Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.976444Z"
+    },
+    {
+      "id": "T-41",
+      "module": "Module 6E \u2014 DuckDB / SQL Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.976764Z"
+    },
+    {
+      "id": "T-42",
+      "module": "Module 6F \u2014 MS Document Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.977110Z"
+    },
+    {
+      "id": "T-43",
+      "module": "Module 6F \u2014 MS Document Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.977452Z"
+    },
+    {
+      "id": "T-44",
+      "module": "Module 6F \u2014 MS Document Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.977782Z"
+    },
+    {
+      "id": "T-45",
+      "module": "Module 6F \u2014 MS Document Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.978123Z"
+    },
+    {
+      "id": "T-46",
+      "module": "Module 6F \u2014 MS Document Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.980429Z"
+    },
+    {
+      "id": "T-47",
+      "module": "Module 6G \u2014 Utility Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.981460Z"
+    },
+    {
+      "id": "T-48",
+      "module": "Module 6G \u2014 Utility Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.982881Z"
+    },
+    {
+      "id": "T-49",
+      "module": "Module 6G \u2014 Utility Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.983276Z"
+    },
+    {
+      "id": "T-50",
+      "module": "Module 6G \u2014 Utility Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.983654Z"
+    },
+    {
+      "id": "T-51",
+      "module": "Module 6G \u2014 Utility Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.984172Z"
+    },
+    {
+      "id": "T-52",
+      "module": "Module 6G \u2014 Utility Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.984564Z"
+    },
+    {
+      "id": "T-53",
+      "module": "Module 6G \u2014 Utility Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.984947Z"
+    },
+    {
+      "id": "T-54",
+      "module": "Module 6G \u2014 Utility Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:48:39.985472Z"
+    },
+    {
+      "id": "T-55",
+      "module": "Module 6H \u2014 CCR Exposure Tools",
+      "scenario": "get_counterparty_exposure \u2014 by counterparty",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 9930,
+      "timestamp": "2026-04-03T20:48:49.916483Z"
+    },
+    {
+      "id": "T-56",
+      "module": "Module 6H \u2014 CCR Exposure Tools",
+      "scenario": "get_credit_limits \u2014 limits table",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 4873,
+      "timestamp": "2026-04-03T20:48:54.791355Z"
+    },
+    {
+      "id": "T-57",
+      "module": "Module 6H \u2014 CCR Exposure Tools",
+      "scenario": "get_trade_inventory \u2014 trade-level details",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 4428,
+      "timestamp": "2026-04-03T20:48:59.222586Z"
+    },
+    {
+      "id": "T-58",
+      "module": "Module 6H \u2014 CCR Exposure Tools",
+      "scenario": "get_var_contribution \u2014 VaR attribution",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 3865,
+      "timestamp": "2026-04-03T20:49:03.088564Z"
+    },
+    {
+      "id": "T-59",
+      "module": "Module 6H \u2014 CCR Exposure Tools",
+      "scenario": "get_historical_exposure \u2014 time series",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 13344,
+      "timestamp": "2026-04-03T20:49:16.434480Z"
+    },
+    {
+      "id": "T-60",
+      "module": "Module 6H \u2014 CCR Exposure Tools",
+      "scenario": "CCR tool on worker with no iris data: graceful response",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:49:22.554111Z"
+    },
+    {
+      "id": "WF-01",
+      "module": "Module 7 \u2014 Workflows",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:49:22.555667Z"
+    },
+    {
+      "id": "WF-02",
+      "module": "Module 7 \u2014 Workflows",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:49:22.556338Z"
+    },
+    {
+      "id": "WF-03",
+      "module": "Module 7 \u2014 Workflows",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:49:22.556915Z"
+    },
+    {
+      "id": "WF-04",
+      "module": "Module 7 \u2014 Workflows",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:49:22.557551Z"
+    },
+    {
+      "id": "WF-05",
+      "module": "Module 7 \u2014 Workflows",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:49:22.558054Z"
+    },
+    {
+      "id": "WF-06",
+      "module": "Module 7 \u2014 Workflows",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:49:22.558546Z"
+    },
+    {
+      "id": "WF-07",
+      "module": "Module 7 \u2014 Workflows",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:49:22.559074Z"
+    }
+  ]
+}

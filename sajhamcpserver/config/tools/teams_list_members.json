@@ -1,0 +1,13 @@
+{
+  "name": "teams_list_members",
+  "description": "List members of a Microsoft Teams team (group).",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "microsoft_azure",
+  "implementation": "sajha.tools.impl.teams_tools.TeamsListMembersTool",
+  "metadata": {
+    "connector": "teams",
+    "access": "read",
+    "category": "collaboration"
+  }
+}

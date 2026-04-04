@@ -1,0 +1,149 @@
+{
+  "run_id": "phase2_2026-04-03_15-03-09",
+  "phase": "phase2",
+  "generated_at": "2026-04-03T20:04:44.716145Z",
+  "summary": {
+    "total": 15,
+    "pass": 14,
+    "fail": 1,
+    "skip": 0,
+    "error": 0
+  },
+  "results": [
+    {
+      "id": "C-01",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "simple query returns non-empty text",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 1928,
+      "timestamp": "2026-04-03T20:03:12.004375Z"
+    },
+    {
+      "id": "C-02",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "agent run returns a thread_id",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:03:12.005013Z"
+    },
+    {
+      "id": "C-03",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "tool-calling query invokes at least one tool",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:03:15.730974Z"
+    },
+    {
+      "id": "C-04",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "resume thread: agent returns text",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:03:16.831883Z"
+    },
+    {
+      "id": "C-05",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "thread appears in /api/agent/threads",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:03:16.841442Z"
+    },
+    {
+      "id": "C-06",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "agent accepts CCR worker query",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:03:23.267378Z"
+    },
+    {
+      "id": "C-07",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "tool allowlist: EDGAR tools not called when restricted",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:03:25.570133Z"
+    },
+    {
+      "id": "C-08",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "invalid worker_id: agent returns error or empty gracefully",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:03:25.588778Z"
+    },
+    {
+      "id": "C-09",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "agent can list uploaded files after upload",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T20:03:32.215149Z"
+    },
+    {
+      "id": "T-01",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "iris_search_counterparties \u2014 find by name",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 4198,
+      "timestamp": "2026-04-03T20:03:36.426715Z"
+    },
+    {
+      "id": "T-02",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "iris_counterparty_dashboard \u2014 full dashboard",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 19188,
+      "timestamp": "2026-04-03T20:03:55.615402Z"
+    },
+    {
+      "id": "T-03",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "iris_exposure_trend \u2014 time series",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 17032,
+      "timestamp": "2026-04-03T20:04:12.647886Z"
+    },
+    {
+      "id": "T-04",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "iris_limit_lookup \u2014 find limits",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 8234,
+      "timestamp": "2026-04-03T20:04:20.882646Z"
+    },
+    {
+      "id": "T-05",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "iris_limit_breach_check \u2014 scan for breaches",
+      "status": "FAIL",
+      "detail": "expected one of ['iris_limit_breach_check'], got ['iris_list_dates', 'iris_portfolio_breach_scan']",
+      "duration_ms": 11862,
+      "timestamp": "2026-04-03T20:04:32.745457Z"
+    },
+    {
+      "id": "T-06",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "iris_portfolio_breach_scan \u2014 portfolio-wide",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 11970,
+      "timestamp": "2026-04-03T20:04:44.715956Z"
+    }
+  ]
+}

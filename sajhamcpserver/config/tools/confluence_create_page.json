@@ -1,0 +1,14 @@
+{
+  "name": "confluence_create_page",
+  "description": "Create a new Confluence page in a space. Requires confirmation.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "atlassian",
+  "implementation": "sajha.tools.impl.confluence_tools.ConfluenceCreatePageTool",
+  "metadata": {
+    "connector": "confluence",
+    "access": "write",
+    "confirmation_required": true,
+    "category": "collaboration"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "jira_add_comment",
+  "description": "Add a comment to a Jira issue. Requires confirmation.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "atlassian",
+  "implementation": "sajha.tools.impl.jira_tools.JiraAddCommentTool",
+  "metadata": {
+    "connector": "jira",
+    "access": "write",
+    "confirmation_required": true,
+    "category": "project_management"
+  }
+}

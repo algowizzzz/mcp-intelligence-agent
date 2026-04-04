@@ -1,0 +1,824 @@
+{
+  "run_id": "phase1_2026-04-03_17-36-27",
+  "phase": "phase1",
+  "generated_at": "2026-04-03T22:36:35.917130Z",
+  "summary": {
+    "total": 90,
+    "pass": 89,
+    "fail": 0,
+    "skip": 1,
+    "error": 0
+  },
+  "results": [
+    {
+      "id": "A-01",
+      "module": "Module 1 \u2014 Authentication",
+      "scenario": "super_admin login returns JWT",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 396.6,
+      "timestamp": "2026-04-03T22:36:28.766000Z"
+    },
+    {
+      "id": "A-02",
+      "module": "Module 1 \u2014 Authentication",
+      "scenario": "admin login returns JWT",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:29.162947Z"
+    },
+    {
+      "id": "A-03",
+      "module": "Module 1 \u2014 Authentication",
+      "scenario": "user login returns JWT",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:29.558294Z"
+    },
+    {
+      "id": "A-04",
+      "module": "Module 1 \u2014 Authentication",
+      "scenario": "wrong password rejected (not 200)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:29.952879Z"
+    },
+    {
+      "id": "A-05",
+      "module": "Module 1 \u2014 Authentication",
+      "scenario": "rate limit: 429 after 11 rapid attempts",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:30.042186Z"
+    },
+    {
+      "id": "A-06",
+      "module": "Module 1 \u2014 Authentication",
+      "scenario": "/api/auth/me returns user_id + role",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:30.058445Z"
+    },
+    {
+      "id": "A-07",
+      "module": "Module 1 \u2014 Authentication",
+      "scenario": "tampered JWT rejected (401)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:30.068071Z"
+    },
+    {
+      "id": "A-08",
+      "module": "Module 1 \u2014 Authentication",
+      "scenario": "missing token \u2192 401",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:30.077089Z"
+    },
+    {
+      "id": "A-09a",
+      "module": "Module 1 \u2014 Authentication",
+      "scenario": "change-password returns 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:30.840901Z"
+    },
+    {
+      "id": "A-09b",
+      "module": "Module 1 \u2014 Authentication",
+      "scenario": "re-login with new password works",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:31.236323Z"
+    },
+    {
+      "id": "A-10",
+      "module": "Module 1 \u2014 Authentication",
+      "scenario": "valid token accepted on /api/auth/me",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.402530Z"
+    },
+    {
+      "id": "W-01",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "list workers returns both known workers",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.411768Z"
+    },
+    {
+      "id": "W-02a",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "create worker \u2192 201 + worker_id",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.438279Z"
+    },
+    {
+      "id": "W-02b",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "worker folder created on disk",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.438598Z"
+    },
+    {
+      "id": "W-02c-domain_data",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "  subdirectory domain_data exists",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.438830Z"
+    },
+    {
+      "id": "W-02c-workflows-verified",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "  subdirectory workflows/verified exists",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.439052Z"
+    },
+    {
+      "id": "W-02c-workflows-my",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "  subdirectory workflows/my exists",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.439444Z"
+    },
+    {
+      "id": "W-02c-templates",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "  subdirectory templates exists",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.439722Z"
+    },
+    {
+      "id": "W-02c-my_data",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "  subdirectory my_data exists",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.439951Z"
+    },
+    {
+      "id": "W-03a",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "GET worker has domain_data_path field",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.448864Z"
+    },
+    {
+      "id": "W-03b",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "GET worker has common_data_path field",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.449156Z"
+    },
+    {
+      "id": "W-03c",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "GET worker has enabled_tools field",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.449379Z"
+    },
+    {
+      "id": "W-04",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "update worker system_prompt \u2192 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.458423Z"
+    },
+    {
+      "id": "W-05a",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "update enabled_tools \u2192 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.466983Z"
+    },
+    {
+      "id": "W-05b",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "tool list reflects allowlist (only 2 tools)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.481330Z"
+    },
+    {
+      "id": "W-06a",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "clone worker \u2192 201",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.512451Z"
+    },
+    {
+      "id": "W-06b",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "clone folder exists",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.512769Z"
+    },
+    {
+      "id": "W-06c",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "clone my_data is empty",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.513069Z"
+    },
+    {
+      "id": "W-07",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "assign user to worker \u2192 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.522805Z"
+    },
+    {
+      "id": "W-08",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "unassign user from worker \u2192 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.532116Z"
+    },
+    {
+      "id": "W-09",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "delete workers: 200 + folder removed",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.560491Z"
+    },
+    {
+      "id": "W-10",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "admin cannot create worker (403)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.569554Z"
+    },
+    {
+      "id": "W-11",
+      "module": "Module 2 \u2014 Worker Management",
+      "scenario": "user cannot list workers (403)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.578035Z"
+    },
+    {
+      "id": "U-01",
+      "module": "Module 3 \u2014 User Management",
+      "scenario": "list users \u2192 200, non-empty",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.587122Z"
+    },
+    {
+      "id": "U-02",
+      "module": "Module 3 \u2014 User Management",
+      "scenario": "create admin user \u2192 201",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:32.975693Z"
+    },
+    {
+      "id": "U-03",
+      "module": "Module 3 \u2014 User Management",
+      "scenario": "create user \u2192 201",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:33.365361Z"
+    },
+    {
+      "id": "U-04",
+      "module": "Module 3 \u2014 User Management",
+      "scenario": "create super_admin rejected (400/422)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:33.375118Z"
+    },
+    {
+      "id": "U-05",
+      "module": "Module 3 \u2014 User Management",
+      "scenario": "update user role \u2192 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:33.386823Z"
+    },
+    {
+      "id": "U-06",
+      "module": "Module 3 \u2014 User Management",
+      "scenario": "reset password \u2192 200 + token",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:33.774444Z"
+    },
+    {
+      "id": "U-07",
+      "module": "Module 3 \u2014 User Management",
+      "scenario": "duplicate user_id \u2192 409/422",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:33.785889Z"
+    },
+    {
+      "id": "U-08",
+      "module": "Module 3 \u2014 User Management",
+      "scenario": "GET worker returns assigned_users list",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:33.799674Z"
+    },
+    {
+      "id": "U-09",
+      "module": "Module 3 \u2014 User Management",
+      "scenario": "delete UAT users \u2192 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:33.832467Z"
+    },
+    {
+      "id": "F-01",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "super: browse domain_data tree \u2192 200 + tree",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:33.860202Z"
+    },
+    {
+      "id": "F-02",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "super: upload file \u2192 201/200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:33.872494Z"
+    },
+    {
+      "id": "F-03",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "super: upload .md to verified \u2192 201/200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:33.883104Z"
+    },
+    {
+      "id": "F-04",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "upload duplicate \u2192 409",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:33.892326Z"
+    },
+    {
+      "id": "F-05",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "upload with overwrite=true \u2192 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:33.902900Z"
+    },
+    {
+      "id": "F-06",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "create folder \u2192 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:33.913979Z"
+    },
+    {
+      "id": "F-07",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "create nested folder \u2192 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:33.924847Z"
+    },
+    {
+      "id": "F-08",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "create blank file (PATCH with empty content) \u2192 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:33.934872Z"
+    },
+    {
+      "id": "F-09",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "write file content \u2192 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:33.945692Z"
+    },
+    {
+      "id": "F-10a",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "read file \u2192 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:33.955715Z"
+    },
+    {
+      "id": "F-10b",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "read file content matches written value",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:33.956384Z"
+    },
+    {
+      "id": "F-10c",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "read file has size_bytes",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:33.956955Z"
+    },
+    {
+      "id": "F-10d",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "read file has encoding field",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:33.957388Z"
+    },
+    {
+      "id": "F-11",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "rename file \u2192 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:33.968561Z"
+    },
+    {
+      "id": "F-12",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "move file to subfolder \u2192 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:33.984861Z"
+    },
+    {
+      "id": "F-13",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "delete file \u2192 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:33.997044Z"
+    },
+    {
+      "id": "F-14",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "delete non-empty folder (recursive=true) \u2192 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:34.020608Z"
+    },
+    {
+      "id": "F-15",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "delete non-empty folder (recursive=false) \u2192 400/409",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:34.051182Z"
+    },
+    {
+      "id": "F-16",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "cleanup: uploaded test files removed",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:34.102418Z"
+    },
+    {
+      "id": "F-17",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "path traversal \u2192 403/400",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:34.111912Z"
+    },
+    {
+      "id": "F-18",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "admin: browse own domain_data \u2192 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:34.121772Z"
+    },
+    {
+      "id": "F-19",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "admin: upload file \u2192 200/201",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:34.133486Z"
+    },
+    {
+      "id": "F-20",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "admin: create folder \u2192 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:34.144735Z"
+    },
+    {
+      "id": "F-21",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "admin: write + read file roundtrip",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:34.165700Z"
+    },
+    {
+      "id": "F-22",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "admin: rename file \u2192 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:34.177204Z"
+    },
+    {
+      "id": "F-23",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "admin: delete folder cleanup \u2192 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:34.211321Z"
+    },
+    {
+      "id": "F-24",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "admin cannot access super worker files (403)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:34.220267Z"
+    },
+    {
+      "id": "F-25",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "user cannot browse admin file tree (403)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:34.229818Z"
+    },
+    {
+      "id": "F-26",
+      "module": "Module 4 \u2014 File Operations",
+      "scenario": "user cannot upload (403)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:34.239424Z"
+    },
+    {
+      "id": "S-01",
+      "module": "Module 9 \u2014 Security & RBAC",
+      "scenario": "no token on protected endpoint \u2192 401",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:34.248653Z"
+    },
+    {
+      "id": "S-02",
+      "module": "Module 9 \u2014 Security & RBAC",
+      "scenario": "invalid JWT \u2192 401",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:34.257425Z"
+    },
+    {
+      "id": "S-03",
+      "module": "Module 9 \u2014 Security & RBAC",
+      "scenario": "user token on super endpoint \u2192 403",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:34.267014Z"
+    },
+    {
+      "id": "S-04",
+      "module": "Module 9 \u2014 Security & RBAC",
+      "scenario": "admin cannot delete super worker (403)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:34.275739Z"
+    },
+    {
+      "id": "S-05",
+      "module": "Module 9 \u2014 Security & RBAC",
+      "scenario": "user cannot query other worker tools (403)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:34.284617Z"
+    },
+    {
+      "id": "S-06",
+      "module": "Module 9 \u2014 Security & RBAC",
+      "scenario": "path traversal on file read \u2192 403/400",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:34.294342Z"
+    },
+    {
+      "id": "S-07",
+      "module": "Module 9 \u2014 Security & RBAC",
+      "scenario": "upload >50 MB \u2192 413",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:35.366829Z"
+    },
+    {
+      "id": "S-08",
+      "module": "Module 9 \u2014 Security & RBAC",
+      "scenario": "GET /api/agent/threads returns 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:35.377752Z"
+    },
+    {
+      "id": "S-09",
+      "module": "Module 9 \u2014 Security & RBAC",
+      "scenario": "real user not blocked after fake-user rate limit test",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:35.778021Z"
+    },
+    {
+      "id": "S-10",
+      "module": "Module 9 \u2014 Security & RBAC",
+      "scenario": "admin cannot write to other worker via super endpoint (403)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:35.787567Z"
+    },
+    {
+      "id": "P-01",
+      "module": "Module 10 \u2014 Thread Persistence",
+      "scenario": "Thread survives server restart \u2014 requires manual restart, skipped in automated run",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:35.788424Z"
+    },
+    {
+      "id": "P-02",
+      "module": "Module 10 \u2014 Thread Persistence",
+      "scenario": "GET /api/agent/threads \u2192 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:35.801401Z"
+    },
+    {
+      "id": "P-03",
+      "module": "Module 10 \u2014 Thread Persistence",
+      "scenario": "user and super_admin thread lists are disjoint",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:35.837306Z"
+    },
+    {
+      "id": "P-04",
+      "module": "Module 10 \u2014 Thread Persistence",
+      "scenario": "threads.jsonl exists on disk",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:35.838126Z"
+    },
+    {
+      "id": "G-01",
+      "module": "Module 11 \u2014 G-04 Path Isolation",
+      "scenario": "MR + CCR domain_data trees both return 200",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:35.857512Z"
+    },
+    {
+      "id": "G-02",
+      "module": "Module 11 \u2014 G-04 Path Isolation",
+      "scenario": "MR worker domain_data contains iris/ data",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:35.858474Z"
+    },
+    {
+      "id": "G-03",
+      "module": "Module 11 \u2014 G-04 Path Isolation",
+      "scenario": "common/regulatory/osfi pool exists on disk",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:35.859318Z"
+    },
+    {
+      "id": "G-04",
+      "module": "Module 11 \u2014 G-04 Path Isolation",
+      "scenario": "workflow trees return independently per worker",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:35.877096Z"
+    },
+    {
+      "id": "G-05",
+      "module": "Module 11 \u2014 G-04 Path Isolation",
+      "scenario": "file written to MR not visible in CCR (404)",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T22:36:35.896569Z"
+    }
+  ]
+}

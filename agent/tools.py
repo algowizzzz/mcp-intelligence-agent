@@ -34,6 +34,13 @@ def _service_headers() -> dict:
             headers['X-Worker-Data-Root'] = ctx['domain_data_path']
         if ctx.get('common_data_path'):
             headers['X-Worker-Common-Root'] = ctx['common_data_path']
+        if ctx.get('my_data_path'):
+            # REQ-MD-01: my_data is per-user — append user_id sub-directory at runtime
+            uid = ctx.get('user_id', '')
+            if uid:
+                headers['X-Worker-My-Data-Root'] = ctx['my_data_path'].rstrip('/') + '/' + uid
+            else:
+                headers['X-Worker-My-Data-Root'] = ctx['my_data_path']
     return headers
 
 

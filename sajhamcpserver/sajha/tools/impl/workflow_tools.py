@@ -1,9 +1,28 @@
 import os, json
 from sajha.tools.base_mcp_tool import BaseMCPTool
+from sajha.storage import storage
+from sajha.path_resolver import resolve as path_resolve
+
+
+def _get_worker_ctx():
+    try:
+        from flask import g as _g
+        return getattr(_g, 'worker_ctx', {}) or {}
+    except RuntimeError:
+        return {}
 
 
 def _workflows_dir():
-    """Read workflows dir from application.properties, fallback to ./data/workflows."""
+    """Return workflows dir. Checks per-request worker context first (G-04), then properties file."""
+    try:
+        from flask import g as _g
+        worker_root = getattr(_g, 'worker_data_root', None)
+        if worker_root:
+            # worker_data_root = domain_data path; workflows live one level up at worker root
+            worker_base = os.path.dirname(worker_root.rstrip('/'))
+            return worker_base + '/workflows'
+    except RuntimeError:
+        pass
     props_path = os.path.join(os.path.dirname(__file__), "../../..", "config", "application.properties")
     try:
         with open(os.path.abspath(props_path)) as f:
@@ -104,8 +123,7 @@ class WorkflowListTool(BaseMCPTool):
                     full_path = os.path.join(dirpath, fname)
                     rel_path = os.path.relpath(full_path, base).replace("\\", "/")
                     try:
-                        with open(full_path) as f:
-                            content = f.read()
+                        content = storage.read_text(full_path)
                         name, description, inputs = _parse_workflow_meta(fname, content)
                         workflows.append({
                             "filename": rel_path,
@@ -177,8 +195,7 @@ class WorkflowGetTool(BaseMCPTool):
                     break
             else:
                 return {"error": f"Workflow not found: {filename}"}
-        with open(full_path) as f:
-            content = f.read()
+        content = storage.read_text(full_path)
         fname = os.path.basename(full_path)
         name, description, inputs = _parse_workflow_meta(fname, content)
         return {

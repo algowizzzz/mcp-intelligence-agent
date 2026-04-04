@@ -1,0 +1,13 @@
+{
+  "name": "outlook_list_folders",
+  "description": "List mail folders in an Outlook mailbox.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "microsoft_azure",
+  "implementation": "sajha.tools.impl.outlook_tools.OutlookListFoldersTool",
+  "metadata": {
+    "connector": "outlook",
+    "access": "read",
+    "category": "communication"
+  }
+}

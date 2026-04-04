@@ -1,7 +1,8 @@
 import os, json, uuid, pathlib, base64, sys as _sys, hmac, hashlib, time, shutil
+import os as _os
 from contextvars import ContextVar
 from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Request
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import StreamingResponse, JSONResponse, FileResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
@@ -23,6 +24,16 @@ from sajha.tools.impl.fs_index import build_index, get_index
 _JWT_SECRET = os.getenv('JWT_SECRET', 'sajha-dev-secret-change-in-prod')
 _SAJHA_USERS_FILE  = pathlib.Path('sajhamcpserver/config/users.json')
 _SAJHA_WORKERS_FILE = pathlib.Path('sajhamcpserver/config/workers.json')
+
+_STORAGE_BACKEND = _os.environ.get('STORAGE_BACKEND', 'local')
+
+
+def serve_file(path: str) -> Response:
+    """Serve a file. Local: FileResponse. S3: pre-signed URL (not implemented locally)."""
+    if _STORAGE_BACKEND == 'local':
+        return FileResponse(path)
+    else:
+        raise NotImplementedError("S3 file serving not configured")
 
 
 # ── JWT helpers ────────────────────────────────────────────────────────────────
@@ -157,14 +168,14 @@ def _seed_worker_folders(worker_id: str):
 
 
 def _clone_worker_folder(src_id: str, dst_id: str):
-    """Clone source worker's folder to destination, excluding my_data contents (G-06)."""
+    """Clone source worker's folder to destination, excluding my_data (user-owned, REQ-MD-01)."""
     src = pathlib.Path(f'sajhamcpserver/data/workers/{src_id}')
     dst = pathlib.Path(f'sajhamcpserver/data/workers/{dst_id}')
     if src.exists():
         shutil.copytree(str(src), str(dst),
-                        ignore=shutil.ignore_patterns('my_data/*'),
+                        ignore=shutil.ignore_patterns('my_data'),  # exclude entire my_data tree
                         dirs_exist_ok=True)
-    # Ensure my_data exists but is empty
+    # Ensure my_data exists but is empty (no user data copied into the clone)
     (dst / 'my_data').mkdir(parents=True, exist_ok=True)
 
 
@@ -187,7 +198,32 @@ _ADMIN_SECTION_ROOTS = {
 }
 
 # Thread ownership registry — maps thread_id → {user_id, worker_id, created_at}
+_THREAD_REGISTRY_FILE = _DATA_ROOT / 'threads.jsonl'
 _thread_registry: dict = {}
+
+def _load_thread_registry():
+    """Load thread registry from disk on startup (G-08 persistence)."""
+    if not _THREAD_REGISTRY_FILE.exists():
+        return
+    for line in _THREAD_REGISTRY_FILE.read_text().splitlines():
+        try:
+            entry = json.loads(line)
+            tid = entry.pop('thread_id', None)
+            if tid:
+                _thread_registry[tid] = entry
+        except Exception:
+            pass
+
+def _persist_thread(thread_id: str, meta: dict):
+    """Append a new thread registration to disk."""
+    _THREAD_REGISTRY_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(_THREAD_REGISTRY_FILE, 'a') as f:
+        f.write(json.dumps({'thread_id': thread_id, **meta}) + '\n')
+
+# Login rate-limit: {user_id: [timestamp, ...]}
+_login_attempts: dict = {}
+_LOGIN_WINDOW = 60   # seconds
+_LOGIN_MAX    = 10   # max attempts per window
 
 
 def _resolve_worker_path(worker: dict, section: str, rel: str = '') -> pathlib.Path:
@@ -199,13 +235,14 @@ def _resolve_worker_path(worker: dict, section: str, rel: str = '') -> pathlib.P
     base = pathlib.Path('sajhamcpserver')
     dd = worker.get('domain_data_path', './data/domain_data')
     mapping = {
-        'domain_data':  dd,
-        'uploads':      dd.rstrip('/') + '/uploads',
-        'verified':     worker.get('workflows_path',    './data/workflows/verified'),
-        'my_workflows': worker.get('my_workflows_path', './data/workflows/my'),
-        'templates':    worker.get('templates_path',    './data/domain_data/templates'),
-        'my_data':      worker.get('my_data_path',      './data/uploads'),
-        'common':       worker.get('common_data_path',  './data/common'),
+        'domain_data':        dd,
+        'uploads':            dd.rstrip('/') + '/uploads',
+        'verified':           worker.get('workflows_path',    './data/workflows/verified'),
+        'verified_workflows': worker.get('workflows_path',    './data/workflows/verified'),  # canonical alias (REQ-WF-02)
+        'my_workflows':       worker.get('my_workflows_path', './data/workflows/my'),
+        'templates':          worker.get('templates_path',    './data/domain_data/templates'),
+        'my_data':            worker.get('my_data_path',      './data/uploads'),
+        'common':             worker.get('common_data_path',  './data/common'),
     }
     raw = mapping.get(section)
     if raw is None:
@@ -269,11 +306,17 @@ def _resolve_admin_path(section: str, rel: str = '') -> pathlib.Path:
 
 
 def _admin_section_roots_for_worker(worker: dict) -> dict:
-    """Return admin section roots scoped to a worker's paths."""
+    """Return admin-accessible section roots scoped to a worker's paths (REQ-WF-03).
+
+    Only exposes sections that admin/super-admin may browse and mutate.
+    my_data is intentionally excluded (user-owned, REQ-MD-01).
+    common_data is intentionally excluded (platform read-only, REQ-CD-01).
+    """
     base = pathlib.Path('sajhamcpserver')
-    dd = base / worker.get('domain_data_path', './data/domain_data').lstrip('./')
-    wf = base / worker.get('workflows_path', './data/workflows/verified').lstrip('./')
-    return {'domain_data': dd, 'verified_workflows': wf}
+    dd   = base / worker.get('domain_data_path',    './data/domain_data').lstrip('./')
+    wf   = base / worker.get('workflows_path',       './data/workflows/verified').lstrip('./')
+    mywf = base / worker.get('my_workflows_path',    './data/workflows/my').lstrip('./')
+    return {'domain_data': dd, 'verified_workflows': wf, 'my_workflows': mywf}
 
 
 def _resolve_admin_path_for_worker(worker: dict, section: str, rel: str = '') -> pathlib.Path:
@@ -281,17 +324,20 @@ def _resolve_admin_path_for_worker(worker: dict, section: str, rel: str = '') ->
     root = roots.get(section)
     if root is None:
         raise HTTPException(status_code=400, detail=f'Unknown admin section: {section}')
+    root_resolved = root.resolve()
+    root_resolved.mkdir(parents=True, exist_ok=True)
     if rel:
-        full = (root / rel).resolve()
-        if not str(full).startswith(str(root.resolve())):
+        full = (root_resolved / rel).resolve()
+        if not str(full).startswith(str(root_resolved)):
             raise HTTPException(status_code=400, detail='Path traversal not allowed')
         return full
-    return root
+    return root_resolved
 
 
 # Ensure common data directory exists
 _COMMON_DATA.mkdir(parents=True, exist_ok=True)
 _AUDIT_LOG.parent.mkdir(parents=True, exist_ok=True)
+_load_thread_registry()
 
 app = FastAPI(title='MCP Intelligence Agent')
 _cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:8080,http://127.0.0.1:8080').split(',')
@@ -367,6 +413,14 @@ async def auth_login(req: LoginRequest):
     """Authenticate user, return JWT with role/worker/onboarding claims."""
     if not req.user_id or not req.password:
         raise HTTPException(status_code=400, detail='user_id and password required')
+
+    # Rate limit: max _LOGIN_MAX attempts per _LOGIN_WINDOW seconds per user_id
+    now = time.time()
+    attempts = [t for t in _login_attempts.get(req.user_id, []) if now - t < _LOGIN_WINDOW]
+    if len(attempts) >= _LOGIN_MAX:
+        raise HTTPException(status_code=429, detail='Too many login attempts. Try again in 60 seconds.')
+    attempts.append(now)
+    _login_attempts[req.user_id] = attempts
 
     # Look up user from users.json first
     user = _find_user(req.user_id)
@@ -857,28 +911,151 @@ async def admin_list_worker_users(payload: dict = Depends(require_admin)):
     return {'users': users}
 
 
+@app.put('/api/admin/worker')
+async def admin_update_worker(req: Request, payload: dict = Depends(require_admin)):
+    """Admin: update own worker name, description, system_prompt."""
+    w = _get_admin_worker(payload)
+    if not w:
+        raise HTTPException(status_code=404, detail='Worker not found')
+    data = await req.json()
+    workers = _load_workers()
+    for wk in workers:
+        if wk['worker_id'] == w['worker_id']:
+            for field in ('name', 'description', 'system_prompt'):
+                if field in data:
+                    wk[field] = data[field]
+            break
+    _save_workers(workers)
+    return {'ok': True}
+
+
+@app.post('/api/admin/worker/users', status_code=201)
+async def admin_create_worker_user(req: Request, payload: dict = Depends(require_admin)):
+    """Admin: create a user scoped to their worker."""
+    w = _get_admin_worker(payload)
+    if not w:
+        raise HTTPException(status_code=404, detail='Worker not found')
+    data = await req.json()
+    user_id = data.get('user_id', '').strip()
+    if not user_id:
+        raise HTTPException(status_code=400, detail='user_id required')
+    users = _load_users()
+    if any(u['user_id'] == user_id for u in users):
+        raise HTTPException(status_code=409, detail='User already exists')
+    import bcrypt as _bcrypt
+    password = data.get('password', 'ChangeMe2025!')
+    hashed = _bcrypt.hashpw(password.encode(), _bcrypt.gensalt()).decode()
+    new_user = {
+        'user_id': user_id,
+        'display_name': data.get('display_name', user_id),
+        'role': 'user',
+        'worker_id': w['worker_id'],
+        'password_hash': hashed,
+        'enabled': True,
+        'onboarding_complete': False,
+    }
+    users.append(new_user)
+    _save_users(users)
+    return {'ok': True, 'user_id': user_id}
+
+
+@app.put('/api/admin/worker/users/{user_id}')
+async def admin_update_worker_user(user_id: str, req: Request, payload: dict = Depends(require_admin)):
+    """Admin: enable/disable a user in their worker."""
+    w = _get_admin_worker(payload)
+    if not w:
+        raise HTTPException(status_code=404, detail='Worker not found')
+    data = await req.json()
+    users = _load_users()
+    for u in users:
+        if u['user_id'] == user_id and u.get('worker_id') == w['worker_id']:
+            if 'enabled' in data:
+                u['enabled'] = bool(data['enabled'])
+            break
+    else:
+        raise HTTPException(status_code=404, detail='User not found in this worker')
+    _save_users(users)
+    return {'ok': True}
+
+
+@app.post('/api/admin/worker/users/{user_id}/reset-password')
+async def admin_reset_worker_user_password(user_id: str, payload: dict = Depends(require_admin)):
+    """Admin: reset a user's password (scoped to their worker)."""
+    w = _get_admin_worker(payload)
+    if not w:
+        raise HTTPException(status_code=404, detail='Worker not found')
+    import secrets as _secrets, bcrypt as _bcrypt
+    tmp_password = 'Tmp' + _secrets.token_urlsafe(8) + '!'
+    hashed = _bcrypt.hashpw(tmp_password.encode(), _bcrypt.gensalt()).decode()
+    users = _load_users()
+    for u in users:
+        if u['user_id'] == user_id and u.get('worker_id') == w['worker_id']:
+            u['password_hash'] = hashed
+            u['onboarding_complete'] = False
+            break
+    else:
+        raise HTTPException(status_code=404, detail='User not found in this worker')
+    _save_users(users)
+    return {'ok': True, 'temporary_password': tmp_password}
+
+
 # ── File upload ────────────────────────────────────────────────────────────────
 
+_UPLOAD_ALLOWED_EXT = {'pdf', 'docx', 'xlsx', 'csv', 'txt', 'parquet', 'md', 'json', 'png', 'jpg', 'jpeg'}
+_UPLOAD_MAX_MB = 50
+
 @app.post('/api/files/upload')
-async def upload_file(file: UploadFile = File(...), _: None = Depends(require_api_key)):
+async def upload_file(file: UploadFile = File(...), payload: dict = Depends(require_jwt)):
+    """Upload a file to the authenticated user's my_data directory (REQ-MD-01).
+
+    Saves directly to the worker's my_data/{user_id}/ path — no SAJHA proxy needed.
+    """
+    from datetime import datetime, timezone as _tz
     try:
+        user_id = payload.get('user_id', '')
+        user    = _find_user(user_id)
+        worker  = (_resolve_worker_for_user(user, None) if user else None)
+        if not worker:
+            raise HTTPException(status_code=404, detail='No worker assigned to this user')
+
+        # Resolve per-user my_data directory (REQ-MD-01)
+        raw_my_data = worker.get('my_data_path', './data/uploads')
+        my_data_dir = (pathlib.Path('sajhamcpserver') / raw_my_data.lstrip('./')).resolve()
+        user_dir = my_data_dir / user_id
+        user_dir.mkdir(parents=True, exist_ok=True)
+
+        # Validate extension
+        ext = file.filename.rsplit('.', 1)[-1].lower() if file.filename and '.' in file.filename else ''
+        if ext not in _UPLOAD_ALLOWED_EXT:
+            raise HTTPException(status_code=400,
+                                detail=f'Unsupported file type. Allowed: {", ".join(sorted(_UPLOAD_ALLOWED_EXT))}')
+
+        # Safe filename
+        safe_name = pathlib.Path(file.filename).name
+        dest = user_dir / safe_name
+        if dest.exists():
+            ts = datetime.now(_tz.utc).strftime('%Y%m%d_%H%M%S')
+            stem, suffix = safe_name.rsplit('.', 1) if '.' in safe_name else (safe_name, '')
+            safe_name = f'{stem}_{ts}.{suffix}' if suffix else f'{stem}_{ts}'
+            dest = user_dir / safe_name
+
         content = await file.read()
+        if len(content) > _UPLOAD_MAX_MB * 1024 * 1024:
+            raise HTTPException(status_code=413, detail=f'File exceeds {_UPLOAD_MAX_MB} MB limit')
 
-        async def _do_upload():
-            async with httpx.AsyncClient(timeout=30.0) as c:
-                r = await c.post(
-                    f'{SAJHA_BASE}/api/files/upload',
-                    headers=_service_headers(),
-                    files={'file': (file.filename, content,
-                                    file.content_type or 'application/octet-stream')},
-                )
-                r.raise_for_status()
-                return JSONResponse(content=r.json())
-
-        return await _do_upload()
-    except httpx.HTTPStatusError as e:
-        return JSONResponse(status_code=e.response.status_code,
-                            content={'success': False, 'error': f'SAJHA returned {e.response.status_code}'})
+        dest.write_bytes(content)
+        build_index(str(user_dir))   # refresh tree cache immediately
+        stat = dest.stat()
+        return JSONResponse(content={
+            'success': True,
+            'filename': safe_name,
+            'path': str(dest.relative_to(pathlib.Path('sajhamcpserver').resolve())).replace('\\', '/'),
+            'size_bytes': stat.st_size,
+            'uploaded_at': datetime.fromtimestamp(stat.st_mtime, tz=_tz.utc).isoformat(),
+            'file_type': ext,
+        })
+    except HTTPException:
+        raise
     except Exception as e:
         return JSONResponse(status_code=500, content={'success': False, 'error': str(e)})
 
@@ -903,24 +1080,35 @@ def _safe_filename(filename: str) -> str:
 # ── Workspace files ────────────────────────────────────────────────────────────
 
 @app.get('/api/workspace/files')
-async def list_workspace_files(_: None = Depends(require_api_key)):
+async def list_workspace_files(payload: dict = Depends(require_jwt)):
+    user = _find_user(payload['user_id'])
+    worker = _resolve_worker_for_user(user) if user else None
+    if not worker:
+        raise HTTPException(status_code=404, detail='No worker assigned to this user')
+    raw = worker.get('my_data_path', './data/uploads')
+    base = pathlib.Path('sajhamcpserver')
+    user_dir = (base / raw.lstrip('./')).resolve() / payload['user_id']
+    user_dir.mkdir(parents=True, exist_ok=True)
     files = []
-    if _UPLOADS_DIR.exists():
-        for f in sorted(_UPLOADS_DIR.iterdir()):
-            if f.is_file() and not f.name.startswith('.'):
-                files.append({'name': f.name, 'size': f.stat().st_size,
-                               'modified': f.stat().st_mtime})
+    for f in sorted(user_dir.iterdir()):
+        if f.is_file() and not f.name.startswith('.'):
+            files.append({'name': f.name, 'size': f.stat().st_size,
+                           'modified': f.stat().st_mtime})
     return {'files': files}
 
 
 # ── Workflows ──────────────────────────────────────────────────────────────────
 
 @app.get('/api/workflows')
-async def list_workflows(_: None = Depends(require_api_key)):
-    _WORKFLOWS_DIR.mkdir(parents=True, exist_ok=True)
+async def list_workflows(payload: dict = Depends(require_jwt)):
+    user = _find_user(payload['user_id'])
+    worker = _resolve_worker_for_user(user) if user else None
+    if not worker:
+        raise HTTPException(status_code=404, detail='No worker assigned to this user')
+    wf_dir = _resolve_worker_path(worker, 'verified_workflows')
     meta = _read_metadata()
     workflows = []
-    for f in sorted(_WORKFLOWS_DIR.iterdir()):
+    for f in sorted(wf_dir.iterdir()):
         if f.is_file() and f.suffix == '.md':
             workflows.append({
                 'filename': f.name,
@@ -933,12 +1121,19 @@ async def list_workflows(_: None = Depends(require_api_key)):
 
 
 @app.get('/api/workflows/{filename}')
-async def get_workflow(filename: str, _: None = Depends(require_api_key)):
+async def get_workflow(filename: str, payload: dict = Depends(require_jwt)):
+    user = _find_user(payload['user_id'])
+    worker = _resolve_worker_for_user(user) if user else None
+    if not worker:
+        raise HTTPException(status_code=404, detail='No worker assigned to this user')
     name = _safe_filename(filename)
-    path = _WORKFLOWS_DIR / name
-    if not path.exists():
-        raise HTTPException(status_code=404, detail='Workflow not found')
-    return {'filename': name, 'content': path.read_text()}
+    # Check verified_workflows first, then my_workflows (BUG-NEW-007 fix)
+    for section in ('verified_workflows', 'my_workflows'):
+        wf_dir = _resolve_worker_path(worker, section)
+        path = wf_dir / name
+        if path.exists():
+            return {'filename': name, 'content': path.read_text()}
+    raise HTTPException(status_code=404, detail='Workflow not found')
 
 
 class WorkflowCreate(BaseModel):
@@ -946,17 +1141,26 @@ class WorkflowCreate(BaseModel):
     content: str
 
 @app.post('/api/workflows', status_code=201)
-async def create_workflow(req: WorkflowCreate, _: None = Depends(require_api_key)):
+async def create_workflow(req: WorkflowCreate, payload: dict = Depends(require_jwt)):
+    user = _find_user(payload['user_id'])
+    worker = _resolve_worker_for_user(user) if user else None
+    if not worker:
+        raise HTTPException(status_code=404, detail='No worker assigned to this user')
     name = _safe_filename(req.filename)
-    _WORKFLOWS_DIR.mkdir(parents=True, exist_ok=True)
-    (_WORKFLOWS_DIR / name).write_text(req.content)
+    my_wf_dir = _resolve_worker_path(worker, 'my_workflows')
+    (my_wf_dir / name).write_text(req.content)
     return {'filename': name, 'ok': True}
 
 
 @app.delete('/api/workflows/{filename}')
-async def delete_workflow(filename: str, _: None = Depends(require_api_key)):
+async def delete_workflow(filename: str, payload: dict = Depends(require_jwt)):
+    user = _find_user(payload['user_id'])
+    worker = _resolve_worker_for_user(user) if user else None
+    if not worker:
+        raise HTTPException(status_code=404, detail='No worker assigned to this user')
     name = _safe_filename(filename)
-    path = _WORKFLOWS_DIR / name
+    my_wf_dir = _resolve_worker_path(worker, 'my_workflows')
+    path = my_wf_dir / name
     if not path.exists():
         raise HTTPException(status_code=404, detail='Workflow not found')
     path.unlink()
@@ -967,8 +1171,13 @@ async def delete_workflow(filename: str, _: None = Depends(require_api_key)):
 
 
 @app.patch('/api/workflows/{filename}/used')
-async def mark_workflow_used(filename: str, _: None = Depends(require_api_key)):
+async def mark_workflow_used(filename: str, payload: dict = Depends(require_jwt)):
+    user = _find_user(payload['user_id'])
+    worker = _resolve_worker_for_user(user) if user else None
+    if not worker:
+        raise HTTPException(status_code=404, detail='No worker assigned to this user')
     name = _safe_filename(filename)
+    wf_dir = _resolve_worker_path(worker, 'verified_workflows')
     from datetime import datetime, timezone
     meta = _read_metadata()
     meta[name] = {"last_used": datetime.now(timezone.utc).isoformat()}
@@ -987,10 +1196,26 @@ def _fs_worker(payload: dict) -> dict:
     return worker
 
 
+def _resolve_fs_path(worker: dict, user_id: str, section: str, rel: str = '') -> pathlib.Path:
+    """Resolve an fs section path. 'uploads' maps to my_data/{user_id}/ (REQ-MD-01)."""
+    if section == 'uploads':
+        raw = worker.get('my_data_path', './data/uploads')
+        base = pathlib.Path('sajhamcpserver')
+        root = (base / raw.lstrip('./')).resolve() / user_id
+        root.mkdir(parents=True, exist_ok=True)
+        if rel:
+            full = (root / rel).resolve()
+            if not str(full).startswith(str(root)):
+                raise HTTPException(status_code=400, detail='Path traversal not allowed')
+            return full
+        return root
+    return _resolve_worker_path(worker, section, rel)
+
+
 @app.get('/api/fs/{section}/tree')
 async def fs_tree(section: str, payload: dict = Depends(require_jwt)):
     worker = _fs_worker(payload)
-    root = _resolve_worker_path(worker, section)
+    root = _resolve_fs_path(worker, payload['user_id'], section)
     idx = get_index(str(root))
     return idx
 
@@ -1000,7 +1225,7 @@ async def fs_file(section: str, path: str = '', payload: dict = Depends(require_
     worker = _fs_worker(payload)
     if not path:
         raise HTTPException(status_code=400, detail='path required')
-    full = _resolve_worker_path(worker, section, path)
+    full = _resolve_fs_path(worker, payload['user_id'], section, path)
     if not full.exists() or not full.is_file():
         raise HTTPException(status_code=404, detail='File not found')
     content_bytes = full.read_bytes()
@@ -1021,8 +1246,9 @@ async def fs_upload(
     if section not in _WRITABLE_SECTIONS:
         raise HTTPException(status_code=403, detail='Section is read-only')
     worker = _fs_worker(payload)
-    root = _resolve_worker_path(worker, section)
-    folder = _resolve_worker_path(worker, section, path) if path else root
+    uid = payload['user_id']
+    root = _resolve_fs_path(worker, uid, section)
+    folder = _resolve_fs_path(worker, uid, section, path) if path else root
     folder.mkdir(parents=True, exist_ok=True)
     dest = folder / pathlib.Path(file.filename).name
     dest.write_bytes(await file.read())
@@ -1039,8 +1265,9 @@ async def fs_update_file(section: str, req: FsUpdateRequest, payload: dict = Dep
     if section not in _WRITABLE_SECTIONS:
         raise HTTPException(status_code=403, detail='Section is read-only')
     worker = _fs_worker(payload)
-    root = _resolve_worker_path(worker, section)
-    full = _resolve_worker_path(worker, section, req.path)
+    uid = payload['user_id']
+    root = _resolve_fs_path(worker, uid, section)
+    full = _resolve_fs_path(worker, uid, section, req.path)
     full.write_text(req.content, encoding='utf-8')
     build_index(str(root))
     return {'ok': True}
@@ -1054,8 +1281,9 @@ async def fs_mkdir(section: str, req: FsMkdirRequest, payload: dict = Depends(re
     if section not in _WRITABLE_SECTIONS:
         raise HTTPException(status_code=403, detail='Section is read-only')
     worker = _fs_worker(payload)
-    root = _resolve_worker_path(worker, section)
-    full = _resolve_worker_path(worker, section, req.path)
+    uid = payload['user_id']
+    root = _resolve_fs_path(worker, uid, section)
+    full = _resolve_fs_path(worker, uid, section, req.path)
     full.mkdir(parents=True, exist_ok=True)
     build_index(str(root))
     return {'ok': True}
@@ -1070,9 +1298,10 @@ async def fs_move(section: str, req: FsMoveRequest, payload: dict = Depends(requ
     if section not in _WRITABLE_SECTIONS:
         raise HTTPException(status_code=403, detail='Section is read-only')
     worker = _fs_worker(payload)
-    root = _resolve_worker_path(worker, section)
-    src_full = _resolve_worker_path(worker, section, req.src)
-    dst_full = _resolve_worker_path(worker, section, req.dst)
+    uid = payload['user_id']
+    root = _resolve_fs_path(worker, uid, section)
+    src_full = _resolve_fs_path(worker, uid, section, req.src)
+    dst_full = _resolve_fs_path(worker, uid, section, req.dst)
     if not src_full.exists():
         raise HTTPException(status_code=404, detail='Source not found')
     dst_full.parent.mkdir(parents=True, exist_ok=True)
@@ -1090,8 +1319,9 @@ async def fs_rename(section: str, req: FsRenameRequest, payload: dict = Depends(
     if section not in _WRITABLE_SECTIONS:
         raise HTTPException(status_code=403, detail='Section is read-only')
     worker = _fs_worker(payload)
-    root = _resolve_worker_path(worker, section)
-    full = _resolve_worker_path(worker, section, req.path)
+    uid = payload['user_id']
+    root = _resolve_fs_path(worker, uid, section)
+    full = _resolve_fs_path(worker, uid, section, req.path)
     if not full.exists():
         raise HTTPException(status_code=404, detail='Not found')
     new_name = pathlib.Path(req.new_name).name
@@ -1101,13 +1331,33 @@ async def fs_rename(section: str, req: FsRenameRequest, payload: dict = Depends(
     return {'ok': True}
 
 
+@app.patch('/api/fs/{section}/file/used')
+async def fs_mark_file_used(section: str, path: str = '', payload: dict = Depends(require_jwt)):
+    """Mark a workflow file as recently used. Updates last_used timestamp in section metadata."""
+    worker = _fs_worker(payload)
+    if not path:
+        raise HTTPException(status_code=400, detail='path required')
+    # Record usage in a simple metadata sidecar
+    root = _resolve_fs_path(worker, payload['user_id'], section)
+    meta_path = root / '.used_metadata.json'
+    try:
+        meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
+    except Exception:
+        meta = {}
+    from datetime import datetime, timezone
+    meta[path] = {'last_used': datetime.now(timezone.utc).isoformat()}
+    meta_path.write_text(json.dumps(meta, indent=2))
+    return {'ok': True, 'path': path}
+
+
 @app.delete('/api/fs/{section}/file')
 async def fs_delete_file(section: str, path: str = '', payload: dict = Depends(require_jwt)):
     if section not in _WRITABLE_SECTIONS:
         raise HTTPException(status_code=403, detail='Section is read-only')
     worker = _fs_worker(payload)
-    root = _resolve_worker_path(worker, section)
-    full = _resolve_worker_path(worker, section, path)
+    uid = payload['user_id']
+    root = _resolve_fs_path(worker, uid, section)
+    full = _resolve_fs_path(worker, uid, section, path)
     if not full.exists():
         raise HTTPException(status_code=404, detail='File not found')
     full.unlink()
@@ -1120,8 +1370,9 @@ async def fs_delete_folder(section: str, path: str = '', payload: dict = Depends
     if section not in _WRITABLE_SECTIONS:
         raise HTTPException(status_code=403, detail='Section is read-only')
     worker = _fs_worker(payload)
-    root = _resolve_worker_path(worker, section)
-    full = _resolve_worker_path(worker, section, path)
+    uid = payload['user_id']
+    root = _resolve_fs_path(worker, uid, section)
+    full = _resolve_fs_path(worker, uid, section, path)
     if not full.exists():
         raise HTTPException(status_code=404, detail='Folder not found')
     try:
@@ -1132,7 +1383,7 @@ async def fs_delete_folder(section: str, path: str = '', payload: dict = Depends
     return {'ok': True}
 
 
-# ── Admin API ─────────────────────────────────────────────────────────────────
+# ── Admin API ──────────────────────────────────────────────────────────────────
 
 class AdminFolderRequest(BaseModel):
     section: str
@@ -1388,11 +1639,13 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
                 raise HTTPException(status_code=403, detail='Thread belongs to a different user or worker')
     if not (req.thread_id or req.resume):
         import datetime
-        _thread_registry[thread_id] = {
+        meta = {
             'user_id': payload['user_id'],
             'worker_id': worker['worker_id'],
             'created_at': datetime.datetime.utcnow().isoformat() + 'Z',
         }
+        _thread_registry[thread_id] = meta
+        _persist_thread(thread_id, meta)
 
     async def stream():
         # Inject worker context into ContextVar for this async task (G-04 + G-13)
@@ -1479,6 +1732,332 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
                              headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
 
 
+# ── Super Admin — Worker-scoped file browser ──────────────────────────────────
+
+@app.get('/api/super/workers/{worker_id}/files/{section}')
+async def super_worker_tree(worker_id: str, section: str, _: dict = Depends(require_super_admin)):
+    """Browse any worker's file tree (super_admin only). Uses admin resolver (REQ-WF-03)."""
+    w = _find_worker(worker_id)
+    if not w:
+        raise HTTPException(status_code=404, detail='Worker not found')
+    root = _resolve_admin_path_for_worker(w, section)
+    return get_index(str(root))
+
+
+@app.post('/api/super/workers/{worker_id}/files/{section}/upload')
+async def super_worker_upload(
+    worker_id: str,
+    section: str,
+    path: str = '',
+    overwrite: bool = False,
+    file: UploadFile = File(...),
+    _: dict = Depends(require_super_admin),
+):
+    """Upload a file into any worker's scoped section (super_admin only). Uses admin resolver (REQ-WF-03)."""
+    w = _find_worker(worker_id)
+    if not w:
+        raise HTTPException(status_code=404, detail='Worker not found')
+    root = _resolve_admin_path_for_worker(w, section)
+    folder = _resolve_admin_path_for_worker(w, section, path) if path else root
+    folder.mkdir(parents=True, exist_ok=True)
+    dest = folder / pathlib.Path(file.filename).name
+    if dest.exists() and not overwrite:
+        raise HTTPException(status_code=409, detail='File already exists')
+    content = await file.read()
+    if len(content) > 50 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail='File exceeds 50 MB limit')
+    dest.write_bytes(content)
+    build_index(str(root))
+    from datetime import datetime, timezone
+    stat = dest.stat()
+    return {
+        'path': str(dest.relative_to(root)).replace('\\', '/'),
+        'size_bytes': stat.st_size,
+        'modified_at': datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+    }
+
+
+# ── Admin — Own worker file browser ───────────────────────────────────────────
+
+@app.get('/api/admin/worker/files/{section}')
+async def admin_worker_tree(section: str, payload: dict = Depends(require_admin)):
+    """Browse the admin's own worker file tree."""
+    w = _get_admin_worker(payload)
+    if not w:
+        raise HTTPException(status_code=404, detail='Worker not found')
+    root = _resolve_worker_path(w, section)
+    return get_index(str(root))
+
+
+@app.post('/api/admin/worker/files/{section}/upload')
+async def admin_worker_upload(
+    section: str,
+    path: str = '',
+    overwrite: bool = False,
+    file: UploadFile = File(...),
+    payload: dict = Depends(require_admin),
+):
+    """Upload a file into the admin's own worker section."""
+    w = _get_admin_worker(payload)
+    if not w:
+        raise HTTPException(status_code=404, detail='Worker not found')
+    root = _resolve_worker_path(w, section)
+    folder = _resolve_worker_path(w, section, path) if path else root
+    folder.mkdir(parents=True, exist_ok=True)
+    dest = folder / pathlib.Path(file.filename).name
+    if dest.exists() and not overwrite:
+        raise HTTPException(status_code=409, detail='File already exists')
+    content = await file.read()
+    if len(content) > 50 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail='File exceeds 50 MB limit')
+    dest.write_bytes(content)
+    build_index(str(root))
+    from datetime import datetime, timezone
+    stat = dest.stat()
+    return {
+        'path': str(dest.relative_to(root)).replace('\\', '/'),
+        'size_bytes': stat.st_size,
+        'modified_at': datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+    }
+
+
+# ── Shared helpers for worker-scoped file CRUD ────────────────────────────────
+
+def _wf_read(w, section, path, _res=None):
+    _r = _res or _resolve_worker_path
+    full = _r(w, section, path)
+    if not full.exists() or not full.is_file():
+        raise HTTPException(status_code=404, detail='File not found')
+    content_bytes = full.read_bytes()
+    root = _r(w, section)
+    size = full.stat().st_size
+    try:
+        return {'path': path, 'encoding': 'utf-8', 'content': content_bytes.decode('utf-8'), 'size_bytes': size}
+    except UnicodeDecodeError:
+        return {'path': path, 'encoding': 'base64', 'content': base64.b64encode(content_bytes).decode('ascii'), 'size_bytes': size}
+
+def _wf_write(w, section, path, content, _res=None):
+    _r = _res or _resolve_worker_path
+    full = _r(w, section, path)
+    full.parent.mkdir(parents=True, exist_ok=True)
+    full.write_text(content, encoding='utf-8')
+    build_index(str(_r(w, section)))
+    return {'ok': True}
+
+def _wf_delete_file(w, section, path, _res=None):
+    _r = _res or _resolve_worker_path
+    full = _r(w, section, path)
+    if not full.exists():
+        raise HTTPException(status_code=404, detail='File not found')
+    full.unlink()
+    build_index(str(_r(w, section)))
+    return {'ok': True}
+
+def _wf_delete_folder(w, section, path, recursive: bool = False, _res=None):
+    _r = _res or _resolve_worker_path
+    full = _r(w, section, path)
+    if not full.exists():
+        raise HTTPException(status_code=404, detail='Folder not found')
+    items = list(full.rglob('*'))
+    count = len([x for x in items if x.is_file()])
+    if count > 0 and not recursive:
+        raise HTTPException(status_code=409, detail=f'Folder contains {count} items. Use recursive=true to delete.')
+    shutil.rmtree(full)
+    build_index(str(_r(w, section)))
+    return {'ok': True}
+
+def _wf_mkdir(w, section, path, _res=None):
+    _r = _res or _resolve_worker_path
+    full = _r(w, section, path)
+    full.mkdir(parents=True, exist_ok=True)
+    build_index(str(_r(w, section)))
+    return {'ok': True}
+
+def _wf_rename(w, section, path, new_name, _res=None):
+    _r = _res or _resolve_worker_path
+    full = _r(w, section, path)
+    if not full.exists():
+        raise HTTPException(status_code=404, detail='Not found')
+    n = pathlib.Path(new_name).name
+    if not n or '/' in n or '\\' in n:
+        raise HTTPException(status_code=400, detail='Invalid name')
+    new_full = full.parent / n
+    if new_full.exists():
+        raise HTTPException(status_code=409, detail='A file or folder with this name already exists')
+    full.rename(new_full)
+    root = _r(w, section)
+    build_index(str(root))
+    return {'new_path': str(new_full.relative_to(root)).replace('\\', '/')}
+
+def _wf_move(w, section, src, dest_folder, _res=None):
+    _r = _res or _resolve_worker_path
+    root = _r(w, section)
+    src_full = _r(w, section, src)
+    dst_full = _r(w, section, dest_folder) / src_full.name
+    if not src_full.exists():
+        raise HTTPException(status_code=404, detail='Source not found')
+    try:
+        dst_full.relative_to(src_full)
+        raise HTTPException(status_code=400, detail='Cannot move a folder into itself')
+    except ValueError:
+        pass
+    if dst_full.exists():
+        raise HTTPException(status_code=409, detail=f'"{src_full.name}" already exists in target folder')
+    dst_full.parent.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(src_full), str(dst_full))
+    build_index(str(root))
+    return {'ok': True, 'new_path': str(dst_full.relative_to(root)).replace('\\', '/')}
+
+
+# ── Super Admin — Worker-scoped file CRUD ─────────────────────────────────────
+
+class _WfUpdate(BaseModel):
+    path: str
+    content: str
+
+class _WfMkdir(BaseModel):
+    path: str
+
+class _WfRename(BaseModel):
+    path: str
+    new_name: str
+
+class _WfMove(BaseModel):
+    src: str
+    dest_folder: str
+
+class _WfDelete(BaseModel):
+    path: str
+    recursive: bool = False
+
+
+@app.get('/api/super/workers/{worker_id}/files/{section}/file')
+async def super_worker_read_file(worker_id: str, section: str, path: str = '', _: dict = Depends(require_super_admin)):
+    w = _find_worker(worker_id)
+    if not w: raise HTTPException(status_code=404, detail='Worker not found')
+    if not path: raise HTTPException(status_code=400, detail='path required')
+    return _wf_read(w, section, path, _res=_resolve_admin_path_for_worker)
+
+@app.patch('/api/super/workers/{worker_id}/files/{section}/file')
+async def super_worker_write_file(worker_id: str, section: str, req: _WfUpdate, _: dict = Depends(require_super_admin)):
+    w = _find_worker(worker_id)
+    if not w: raise HTTPException(status_code=404, detail='Worker not found')
+    return _wf_write(w, section, req.path, req.content, _res=_resolve_admin_path_for_worker)
+
+@app.delete('/api/super/workers/{worker_id}/files/{section}/file')
+async def super_worker_delete_file(worker_id: str, section: str, path: str = '', _: dict = Depends(require_super_admin)):
+    w = _find_worker(worker_id)
+    if not w: raise HTTPException(status_code=404, detail='Worker not found')
+    if not path: raise HTTPException(status_code=400, detail='path required')
+    return _wf_delete_file(w, section, path, _res=_resolve_admin_path_for_worker)
+
+@app.delete('/api/super/workers/{worker_id}/files/{section}/folder')
+async def super_worker_delete_folder(worker_id: str, section: str, req: _WfDelete, _: dict = Depends(require_super_admin)):
+    w = _find_worker(worker_id)
+    if not w: raise HTTPException(status_code=404, detail='Worker not found')
+    return _wf_delete_folder(w, section, req.path, req.recursive, _res=_resolve_admin_path_for_worker)
+
+@app.post('/api/super/workers/{worker_id}/files/{section}/folder')
+async def super_worker_mkdir(worker_id: str, section: str, req: _WfMkdir, _: dict = Depends(require_super_admin)):
+    w = _find_worker(worker_id)
+    if not w: raise HTTPException(status_code=404, detail='Worker not found')
+    return _wf_mkdir(w, section, req.path, _res=_resolve_admin_path_for_worker)
+
+@app.post('/api/super/workers/{worker_id}/files/{section}/rename')
+async def super_worker_rename(worker_id: str, section: str, req: _WfRename, _: dict = Depends(require_super_admin)):
+    w = _find_worker(worker_id)
+    if not w: raise HTTPException(status_code=404, detail='Worker not found')
+    return _wf_rename(w, section, req.path, req.new_name, _res=_resolve_admin_path_for_worker)
+
+@app.post('/api/super/workers/{worker_id}/files/{section}/move')
+async def super_worker_move(worker_id: str, section: str, req: _WfMove, _: dict = Depends(require_super_admin)):
+    w = _find_worker(worker_id)
+    if not w: raise HTTPException(status_code=404, detail='Worker not found')
+    return _wf_move(w, section, req.src, req.dest_folder, _res=_resolve_admin_path_for_worker)
+
+
+# ── Admin — Own worker file CRUD ──────────────────────────────────────────────
+
+@app.get('/api/admin/worker/files/{section}/file')
+async def admin_worker_read_file(section: str, path: str = '', payload: dict = Depends(require_admin)):
+    w = _get_admin_worker(payload)
+    if not w: raise HTTPException(status_code=404, detail='Worker not found')
+    if not path: raise HTTPException(status_code=400, detail='path required')
+    return _wf_read(w, section, path)
+
+@app.patch('/api/admin/worker/files/{section}/file')
+async def admin_worker_write_file(section: str, req: _WfUpdate, payload: dict = Depends(require_admin)):
+    w = _get_admin_worker(payload)
+    if not w: raise HTTPException(status_code=404, detail='Worker not found')
+    return _wf_write(w, section, req.path, req.content)
+
+@app.delete('/api/admin/worker/files/{section}/file')
+async def admin_worker_delete_file(section: str, path: str = '', payload: dict = Depends(require_admin)):
+    w = _get_admin_worker(payload)
+    if not w: raise HTTPException(status_code=404, detail='Worker not found')
+    if not path: raise HTTPException(status_code=400, detail='path required')
+    return _wf_delete_file(w, section, path)
+
+@app.delete('/api/admin/worker/files/{section}/folder')
+async def admin_worker_delete_folder(section: str, req: _WfDelete, payload: dict = Depends(require_admin)):
+    w = _get_admin_worker(payload)
+    if not w: raise HTTPException(status_code=404, detail='Worker not found')
+    return _wf_delete_folder(w, section, req.path, req.recursive)
+
+@app.post('/api/admin/worker/files/{section}/folder')
+async def admin_worker_mkdir(section: str, req: _WfMkdir, payload: dict = Depends(require_admin)):
+    w = _get_admin_worker(payload)
+    if not w: raise HTTPException(status_code=404, detail='Worker not found')
+    return _wf_mkdir(w, section, req.path)
+
+@app.post('/api/admin/worker/files/{section}/rename')
+async def admin_worker_rename(section: str, req: _WfRename, payload: dict = Depends(require_admin)):
+    w = _get_admin_worker(payload)
+    if not w: raise HTTPException(status_code=404, detail='Worker not found')
+    return _wf_rename(w, section, req.path, req.new_name)
+
+@app.post('/api/admin/worker/files/{section}/move')
+async def admin_worker_move(section: str, req: _WfMove, payload: dict = Depends(require_admin)):
+    w = _get_admin_worker(payload)
+    if not w: raise HTTPException(status_code=404, detail='Worker not found')
+    return _wf_move(w, section, req.src, req.dest_folder)
+
+
+# ── Worker tool list ───────────────────────────────────────────────────────────
+
+@app.get('/api/workers/{worker_id}/tools')
+async def worker_tools_list(worker_id: str, payload: dict = Depends(require_jwt)):
+    """Return tool list for a worker, filtered to its enabled_tools allowlist."""
+    role = payload.get('role', 'user')
+    # Users can only query their own worker; admins/super_admins can query any
+    if role == 'user' and payload.get('worker_id') != worker_id:
+        raise HTTPException(status_code=403, detail='Access denied')
+    w = _find_worker(worker_id)
+    if not w:
+        raise HTTPException(status_code=404, detail='Worker not found')
+    enabled = w.get('enabled_tools', ['*'])
+    tools_dir = pathlib.Path('sajhamcpserver/config/tools')
+    tools = []
+    for f in sorted(tools_dir.glob('*.json')):
+        try:
+            cfg = json.loads(f.read_text())
+        except Exception:
+            continue
+        name = cfg.get('name') or f.stem
+        if enabled != ['*'] and name not in enabled:
+            continue
+        meta = cfg.get('metadata', {})
+        tools.append({
+            'name': name,
+            'description': cfg.get('description', ''),
+            'category': meta.get('category', _infer_category(name)),
+            'enabled': cfg.get('enabled', True),
+            'tags': meta.get('tags', []),
+            'input_schema': cfg.get('input_schema', {}),
+        })
+    return {'worker_id': worker_id, 'tools': tools, 'enabled_tools': enabled}
+
+
 # ── Thread listing (G-08) ──────────────────────────────────────────────────────
 
 @app.get('/api/agent/threads')
@@ -1501,13 +2080,14 @@ async def super_audit_log(
     worker_id: str = '',
     user_id: str = '',
     limit: int = 100,
+    offset: int = 0,
     _: dict = Depends(require_super_admin),
 ):
-    """Return recent tool-call audit log lines, optionally filtered."""
+    """Return recent tool-call audit log lines, optionally filtered. Supports pagination via offset."""
     if not _AUDIT_LOG.exists():
-        return {'entries': []}
+        return {'entries': [], 'total_matched': 0, 'offset': offset, 'limit': limit}
     lines = _AUDIT_LOG.read_text().splitlines()
-    entries = []
+    matched = []
     for line in reversed(lines):
         try:
             entry = json.loads(line)
@@ -1517,10 +2097,225 @@ async def super_audit_log(
             continue
         if user_id and entry.get('user_id') != user_id:
             continue
-        entries.append(entry)
-        if len(entries) >= limit:
+        matched.append(entry)
+    total_matched = len(matched)
+    page = matched[offset: offset + limit]
+    return {'entries': page, 'total_matched': total_matched, 'total_returned': len(page), 'offset': offset, 'limit': limit}
+
+
+# ── Connectors API ────────────────────────────────────────────────────────────
+
+_CONNECTORS_FILE = pathlib.Path('sajhamcpserver/config/connectors.json')
+
+_CONNECTOR_DEFAULTS = [
+    {
+        'connector_type': 'microsoft_azure',
+        'display_name': 'Microsoft 365',
+        'status': 'not_configured',
+        'enabled': False,
+        'has_credentials': False,
+        'tool_count': 24,
+    },
+    {
+        'connector_type': 'atlassian',
+        'display_name': 'Atlassian',
+        'status': 'not_configured',
+        'enabled': False,
+        'has_credentials': False,
+        'tool_count': 12,
+    },
+]
+
+
+def _load_connectors() -> list:
+    try:
+        data = json.loads(_CONNECTORS_FILE.read_text())
+        saved = {c['connector_type']: c for c in data.get('connectors', [])}
+    except Exception:
+        saved = {}
+    result = []
+    for d in _CONNECTOR_DEFAULTS:
+        ct = d['connector_type']
+        if ct in saved:
+            safe = {k: v for k, v in saved[ct].items() if k != 'credentials'}
+            safe['has_credentials'] = bool(saved[ct].get('credentials'))
+            safe.setdefault('tool_count', d['tool_count'])
+            result.append(safe)
+        else:
+            result.append(dict(d))
+    return result
+
+
+def _save_connector(connector_type: str, data: dict):
+    try:
+        existing = json.loads(_CONNECTORS_FILE.read_text())
+        connectors = {c['connector_type']: c for c in existing.get('connectors', [])}
+    except Exception:
+        connectors = {}
+    connectors[connector_type] = data
+    _CONNECTORS_FILE.write_text(json.dumps({'connectors': list(connectors.values())}, indent=2))
+
+
+@app.get('/api/super/connectors')
+async def list_connectors(_: dict = Depends(require_super_admin)):
+    """List all connector definitions with status (credentials redacted)."""
+    return {'connectors': _load_connectors()}
+
+
+@app.put('/api/super/connectors/{connector_type}')
+async def upsert_connector(connector_type: str, request: Request, _: dict = Depends(require_super_admin)):
+    """Create or update a connector's credentials and configuration."""
+    body = await request.json()
+    if connector_type not in [d['connector_type'] for d in _CONNECTOR_DEFAULTS]:
+        raise HTTPException(status_code=400, detail=f'Unknown connector type: {connector_type}')
+    try:
+        existing = json.loads(_CONNECTORS_FILE.read_text())
+        connectors = {c['connector_type']: c for c in existing.get('connectors', [])}
+    except Exception:
+        connectors = {}
+    prev = connectors.get(connector_type, {})
+    creds = {}
+    if connector_type == 'microsoft_azure':
+        if body.get('tenant_id'):  creds['tenant_id']     = body['tenant_id']
+        if body.get('client_id'):  creds['client_id']     = body['client_id']
+        if body.get('client_secret'): creds['client_secret'] = body['client_secret']
+    elif connector_type == 'atlassian':
+        if body.get('email'):          creds['email']           = body['email']
+        if body.get('api_token'):      creds['api_token']       = body['api_token']
+        if body.get('confluence_url'): creds['confluence_url']  = body['confluence_url']
+        if body.get('jira_url'):       creds['jira_url']        = body['jira_url']
+    # Merge: keep old creds if new ones not supplied
+    merged_creds = {**prev.get('credentials', {}), **creds}
+    record = {
+        'connector_type': connector_type,
+        'display_name': body.get('display_name', prev.get('display_name', connector_type)),
+        'status': 'disconnected' if merged_creds else 'not_configured',
+        'enabled': body.get('enabled', prev.get('enabled', False)),
+        'credentials': merged_creds,
+    }
+    _save_connector(connector_type, record)
+    safe = {k: v for k, v in record.items() if k != 'credentials'}
+    safe['has_credentials'] = bool(merged_creds)
+    return safe
+
+
+@app.post('/api/super/connectors/{connector_type}/test')
+async def test_connector(connector_type: str, _: dict = Depends(require_super_admin)):
+    """Test connector reachability. Returns {ok, message}."""
+    try:
+        data = json.loads(_CONNECTORS_FILE.read_text())
+        connectors = {c['connector_type']: c for c in data.get('connectors', [])}
+    except Exception:
+        connectors = {}
+    connector = connectors.get(connector_type)
+    if not connector or not connector.get('credentials'):
+        return {'ok': False, 'message': 'Connector not configured. Save credentials first.'}
+    creds = connector.get('credentials', {})
+    # Basic reachability test (no actual OAuth — just validate fields present)
+    if connector_type == 'microsoft_azure':
+        required = ['tenant_id', 'client_id', 'client_secret']
+        missing = [k for k in required if not creds.get(k)]
+        if missing:
+            return {'ok': False, 'message': f'Missing fields: {", ".join(missing)}'}
+        # Try a token endpoint ping
+        try:
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                tenant = creds['tenant_id']
+                resp = await client.get(
+                    f'https://login.microsoftonline.com/{tenant}/v2.0/.well-known/openid-configuration'
+                )
+            if resp.status_code == 200:
+                return {'ok': True, 'message': 'Microsoft tenant endpoint reachable. Credentials format valid.'}
+            return {'ok': False, 'message': f'Microsoft endpoint returned HTTP {resp.status_code}'}
+        except Exception as e:
+            return {'ok': False, 'message': f'Network error: {str(e)[:120]}'}
+    elif connector_type == 'atlassian':
+        required = ['email', 'api_token']
+        missing = [k for k in required if not creds.get(k)]
+        if missing:
+            return {'ok': False, 'message': f'Missing fields: {", ".join(missing)}'}
+        try:
+            import base64 as _b64
+            token = _b64.b64encode(f"{creds['email']}:{creds['api_token']}".encode()).decode()
+            base_url = creds.get('confluence_url') or creds.get('jira_url', '')
+            if not base_url:
+                return {'ok': False, 'message': 'No Confluence or Jira URL provided.'}
+            base_url = base_url.rstrip('/')
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                resp = await client.get(
+                    f'{base_url}/rest/api/user/current',
+                    headers={'Authorization': f'Basic {token}', 'Accept': 'application/json'}
+                )
+            if resp.status_code == 200:
+                data = resp.json()
+                name = data.get('displayName') or data.get('name', 'unknown')
+                return {'ok': True, 'message': f'Authenticated as {name}'}
+            return {'ok': False, 'message': f'Atlassian returned HTTP {resp.status_code}'}
+        except Exception as e:
+            return {'ok': False, 'message': f'Network error: {str(e)[:120]}'}
+    return {'ok': False, 'message': 'Test not implemented for this connector type.'}
+
+
+@app.delete('/api/super/connectors/{connector_type}')
+async def delete_connector(connector_type: str, _: dict = Depends(require_super_admin)):
+    """Delete a connector configuration."""
+    try:
+        existing = json.loads(_CONNECTORS_FILE.read_text())
+        connectors = {c['connector_type']: c for c in existing.get('connectors', [])}
+    except Exception:
+        connectors = {}
+    if connector_type not in connectors:
+        raise HTTPException(status_code=404, detail='Connector not found')
+    del connectors[connector_type]
+    _CONNECTORS_FILE.write_text(json.dumps({'connectors': list(connectors.values())}, indent=2))
+    return {'ok': True, 'deleted': connector_type}
+
+
+@app.get('/api/super/workers/{worker_id}/connector-scope')
+async def get_worker_connector_scope(worker_id: str, _: dict = Depends(require_super_admin)):
+    """Return the connector_scope for a worker."""
+    worker = _find_worker(worker_id)
+    if not worker:
+        raise HTTPException(status_code=404, detail='Worker not found')
+    return {'worker_id': worker_id, 'connector_scope': worker.get('connector_scope', {})}
+
+
+@app.put('/api/super/workers/{worker_id}/connector-scope/{connector_type}')
+async def set_worker_connector_scope(
+    worker_id: str,
+    connector_type: str,
+    request: Request,
+    _: dict = Depends(require_super_admin),
+):
+    """Set the connector scope for a specific connector on a worker."""
+    body = await request.json()
+    workers = _load_workers()
+    target = None
+    for w in workers:
+        if w.get('worker_id') == worker_id:
+            target = w
             break
-    return {'entries': entries, 'total_returned': len(entries)}
+    if not target:
+        raise HTTPException(status_code=404, detail='Worker not found')
+    if 'connector_scope' not in target:
+        target['connector_scope'] = {}
+    target['connector_scope'][connector_type] = body
+    _save_workers(workers)
+    return {'worker_id': worker_id, 'connector_type': connector_type, 'scope': body}
+
+
+@app.get('/api/admin/tools')
+async def list_tools_for_admin(user: dict = Depends(require_admin)):
+    """Return all tools from SAJHA with their config (for admin tool library view)."""
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            from agent.tools import SAJHA_BASE, _service_headers
+            r = await client.get(SAJHA_BASE + '/api/tools/list', headers=_service_headers())
+        if r.status_code == 200:
+            return r.json()
+        return {'tools': [], 'error': f'SAJHA returned {r.status_code}'}
+    except Exception as e:
+        return {'tools': [], 'error': str(e)}
 
 
 # ── Static frontend (dev: one port; Docker: nginx serves this instead) ─────────

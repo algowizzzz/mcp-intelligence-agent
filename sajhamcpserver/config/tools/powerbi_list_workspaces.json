@@ -1,0 +1,13 @@
+{
+  "name": "powerbi_list_workspaces",
+  "description": "List all Power BI workspaces (groups) accessible to the connector.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "microsoft_azure",
+  "implementation": "sajha.tools.impl.powerbi_tools.PowerBIListWorkspacesTool",
+  "metadata": {
+    "connector": "powerbi",
+    "access": "read",
+    "category": "analytics"
+  }
+}

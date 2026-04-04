@@ -6,13 +6,20 @@ With Auto-Refresh Support
 
 import os
 import json
-import time
-import threading
-import atexit
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from sajha.tools.base_mcp_tool import BaseMCPTool
 from sajha.core.properties_configurator import PropertiesConfigurator
+from sajha.storage import storage
+from sajha.path_resolver import resolve as path_resolve
+
+
+def _get_worker_ctx():
+    try:
+        from flask import g as _g
+        return getattr(_g, 'worker_ctx', {}) or {}
+    except RuntimeError:
+        return {}
 
 try:
     import duckdb
@@ -29,40 +36,47 @@ class DuckDbBaseTool(BaseMCPTool):
         """Initialize DuckDB base tool"""
         super().__init__(config)
 
-        # Data directory for CSV, Parquet, JSON files
-        self.data_directory = self.config.get('data_directory', PropertiesConfigurator().get('tool.duckdb.data_directory', '/home/claude/sajha/sajhamcpserver/data/duckdb'))
-
-        # Auto-refresh configuration
-        self.auto_refresh_enabled = self.config.get('auto_refresh_enabled', True)
-        self.auto_refresh_interval = self.config.get('auto_refresh_interval', 600)  # Default: 10 minutes (600 seconds)
+        # Data directory for CSV, Parquet, JSON files.
+        # REQ-PREP-04: resolved per-request from worker context via path_resolver;
+        # static config used only as fallback at init time.
+        worker_ctx = _get_worker_ctx()
+        if worker_ctx:
+            try:
+                self.data_directory = path_resolve('domain_data', worker_ctx)
+            except Exception:
+                self.data_directory = self.config.get(
+                    'data_directory',
+                    PropertiesConfigurator().get('tool.duckdb.data_directory', './data/duckdb')
+                )
+        else:
+            self.data_directory = self.config.get(
+                'data_directory',
+                PropertiesConfigurator().get('tool.duckdb.data_directory', './data/duckdb')
+            )
 
         # Ensure data directory exists
         os.makedirs(self.data_directory, exist_ok=True)
 
-        # Initialize DuckDB connection
-        self.db_path = os.path.join(self.data_directory, 'duckdb_analytics.db')
+        # REQ-PREP-04: in-memory DuckDB connection (no persistent db_path)
+        # S3/httpfs stub: to activate S3 reads, uncomment and configure:
+        # conn.execute("INSTALL httpfs; LOAD httpfs;")
+        # conn.execute("SET s3_region='us-east-1';")
         self.conn = None
 
         # Track file states for change detection
         self._file_states = {}  # {filename: {'mtime': timestamp, 'size': bytes, 'view_name': str}}
 
-        # Auto-refresh thread control
-        self._refresh_thread = None
-        self._stop_refresh = threading.Event()
+        # REQ-PREP-04: auto-refresh thread removed (was _start_auto_refresh / _auto_refresh_worker)
 
         # Initialize views from data files
         self._initialize_views_from_files()
 
-        # Start auto-refresh thread if enabled
-        if self.auto_refresh_enabled:
-            self._start_auto_refresh()
-            # Register cleanup on exit
-            atexit.register(self._stop_auto_refresh)
-
     def _get_connection(self):
-        """Get or create DuckDB connection"""
+        """Get or create DuckDB in-memory connection (REQ-PREP-04)."""
         if self.conn is None:
-            self.conn = duckdb.connect(self.db_path)
+            # REQ-PREP-04: in-memory only — no persistent db file
+            # S3/httpfs stub (not activated): configure AWS credentials + httpfs here for S3 reads
+            self.conn = duckdb.connect()
             # Enable automatic CSV/Parquet detection
             self.conn.execute("SET enable_object_cache=true")
         return self.conn
@@ -94,7 +108,17 @@ class DuckDbBaseTool(BaseMCPTool):
         return f"{size_bytes:.2f} PB"
 
     def _scan_data_files(self, file_type: str = 'all') -> List[Dict]:
-        """Scan data directory for supported file types"""
+        """Scan data directory for supported file types.
+        REQ-PREP-04: data_directory resolved per-request from worker context.
+        """
+        # Resolve data directory from current worker context if available
+        worker_ctx = _get_worker_ctx()
+        if worker_ctx:
+            try:
+                self.data_directory = path_resolve('domain_data', worker_ctx)
+            except Exception:
+                pass  # Keep existing data_directory
+
         supported_extensions = {
             'csv': ['.csv'],
             'parquet': ['.parquet', '.pq'],
@@ -109,42 +133,50 @@ class DuckDbBaseTool(BaseMCPTool):
 
         files = []
 
-        if os.path.exists(self.data_directory):
-            for filename in os.listdir(self.data_directory):
-                if filename.startswith('.') or filename.endswith('.db'):
-                    continue
+        # REQ-PREP-04: use storage.list_prefix instead of os.listdir
+        # list_prefix returns relative paths under data_directory
+        relative_paths = storage.list_prefix(self.data_directory)
+        for rel_path in relative_paths:
+            # Only process top-level files (no subdirectory traversal for DuckDB views)
+            if os.sep in rel_path or '/' in rel_path:
+                continue
+            filename = rel_path
+            if filename.startswith('.') or filename.endswith('.db'):
+                continue
 
-                file_ext = os.path.splitext(filename)[1].lower()
-                if file_ext in extensions:
-                    file_path = os.path.join(self.data_directory, filename)
+            file_ext = os.path.splitext(filename)[1].lower()
+            if file_ext not in extensions:
+                continue
 
-                    # Determine file type
-                    if file_ext in ['.csv']:
-                        ftype = 'csv'
-                    elif file_ext in ['.parquet', '.pq']:
-                        ftype = 'parquet'
-                    elif file_ext in ['.json', '.jsonl']:
-                        ftype = 'json'
-                    elif file_ext in ['.tsv']:
-                        ftype = 'tsv'
-                    else:
-                        continue
+            file_path = os.path.join(self.data_directory, filename)
 
-                    file_info = {
-                        'filename': filename,
-                        'file_type': ftype,
-                        'file_path': file_path
-                    }
+            # Determine file type
+            if file_ext in ['.csv']:
+                ftype = 'csv'
+            elif file_ext in ['.parquet', '.pq']:
+                ftype = 'parquet'
+            elif file_ext in ['.json', '.jsonl']:
+                ftype = 'json'
+            elif file_ext in ['.tsv']:
+                ftype = 'tsv'
+            else:
+                continue
 
-                    try:
-                        stat = os.stat(file_path)
-                        file_info['file_size_bytes'] = stat.st_size
-                        file_info['file_size_human'] = self._format_file_size(stat.st_size)
-                        file_info['modified_date'] = datetime.fromtimestamp(stat.st_mtime).isoformat()
-                    except:
-                        pass
+            file_info = {
+                'filename': filename,
+                'file_type': ftype,
+                'file_path': file_path
+            }
 
-                    files.append(file_info)
+            try:
+                stat = os.stat(file_path)
+                file_info['file_size_bytes'] = stat.st_size
+                file_info['file_size_human'] = self._format_file_size(stat.st_size)
+                file_info['modified_date'] = datetime.fromtimestamp(stat.st_mtime).isoformat()
+            except Exception:
+                pass
+
+            files.append(file_info)
 
         return files
 
@@ -258,41 +290,9 @@ class DuckDbBaseTool(BaseMCPTool):
             self.logger.error(f"Failed to initialize views from files: {e}")
             # Don't raise - allow the tool to continue even if initialization fails
 
-    def _start_auto_refresh(self):
-        """Start the auto-refresh background thread"""
-        if self._refresh_thread is None or not self._refresh_thread.is_alive():
-            self._stop_refresh.clear()
-            self._refresh_thread = threading.Thread(
-                target=self._auto_refresh_worker,
-                daemon=True,
-                name="DuckDB-AutoRefresh"
-            )
-            self._refresh_thread.start()
-            self.logger.info(f"Auto-refresh enabled: checking every {self.auto_refresh_interval} seconds")
-
-    def _stop_auto_refresh(self):
-        """Stop the auto-refresh background thread"""
-        if self._refresh_thread and self._refresh_thread.is_alive():
-            self._stop_refresh.set()
-            self._refresh_thread.join(timeout=5)
-            self.logger.info("Auto-refresh stopped")
-
-    def _auto_refresh_worker(self):
-        """Background worker that periodically checks for file changes"""
-        while not self._stop_refresh.is_set():
-            try:
-                # Wait for the configured interval (but check every second for stop signal)
-                for _ in range(self.auto_refresh_interval):
-                    if self._stop_refresh.is_set():
-                        return
-                    time.sleep(1)
-
-                # Perform the refresh check
-                self._check_and_sync_views()
-
-            except Exception as e:
-                self.logger.error(f"Auto-refresh error: {e}")
-                # Continue running despite errors
+    # REQ-PREP-04: _start_auto_refresh, _stop_auto_refresh, and _auto_refresh_worker
+    # removed — background refresh thread is not compatible with stateless/S3 deployment.
+    # Views are initialized fresh per-connection at startup.
 
     def _check_and_sync_views(self):
         """
@@ -449,11 +449,7 @@ class DuckDbBaseTool(BaseMCPTool):
             self.logger.error(f"Failed to check and sync views: {e}")
 
     def close(self):
-        """Close DuckDB connection and stop auto-refresh"""
-        # Stop auto-refresh thread
-        self._stop_auto_refresh()
-
-        # Close connection
+        """Close DuckDB in-memory connection (REQ-PREP-04: auto-refresh thread removed)."""
         if self.conn:
             self.conn.close()
             self.conn = None

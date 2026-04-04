@@ -1,0 +1,13 @@
+{
+  "name": "jira_list_projects",
+  "description": "List all Jira projects accessible to the connector.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "atlassian",
+  "implementation": "sajha.tools.impl.jira_tools.JiraListProjectsTool",
+  "metadata": {
+    "connector": "jira",
+    "access": "read",
+    "category": "project_management"
+  }
+}

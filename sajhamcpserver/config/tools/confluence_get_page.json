@@ -1,0 +1,13 @@
+{
+  "name": "confluence_get_page",
+  "description": "Get a specific Confluence page including its body content.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "atlassian",
+  "implementation": "sajha.tools.impl.confluence_tools.ConfluenceGetPageTool",
+  "metadata": {
+    "connector": "confluence",
+    "access": "read",
+    "category": "collaboration"
+  }
+}

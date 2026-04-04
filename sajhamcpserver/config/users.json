@@ -22,7 +22,7 @@
       "user_name": "Administrator",
       "display_name": "Admin User",
       "avatar_initials": "AU",
-      "password_hash": "$2b$12$FYLrBkbXFo9sA0ByNosXwer8k53djv74h6qq5TVU27z7VwMRskLlq",
+      "password_hash": "$2b$12$8pxK8PcrBBsZhred2Sh7EuZiNWUfcJ43OIQl8/SrXbnmPHM2k.kj2",
       "role": "admin",
       "worker_id": "w-market-risk",
       "tools": [
@@ -39,7 +39,24 @@
       "user_name": "Test User",
       "display_name": "Test User",
       "avatar_initials": "TU",
-      "password_hash": "$2b$12$mFqPc/z5EFQwnmnrnrlNQOwLBEgsGiDq9smKVEmnk3g6KpsC1CLzS",
+      "password_hash": "$2b$12$RZLcAgjGY.c3YMXRUnVH/.FuJ0n9w4IGMyi8ugPxUguxHS7apsHJa",
+      "role": "user",
+      "worker_id": "w-market-risk",
+      "tools": [
+        "*"
+      ],
+      "enabled": true,
+      "onboarding_complete": true,
+      "email": "",
+      "created_at": "2026-04-03T14:27:47.786907Z",
+      "last_login": "2026-04-03T11:56:40.055296Z"
+    },
+    {
+      "user_id": "uat_usr_b48d7537",
+      "user_name": "UAT Test User",
+      "display_name": "UAT Test User",
+      "avatar_initials": "UTU",
+      "password_hash": "$2b$12$3LWftXoRY4oGO8LyYLeG9ualWtJ6CpibMPKEwZKUj8.GEBeTIT76O",
       "role": "user",
       "worker_id": "w-market-risk",
       "tools": [
@@ -48,8 +65,25 @@
       "enabled": true,
       "onboarding_complete": false,
       "email": "",
-      "created_at": "2026-04-03T14:27:47.786907Z",
-      "last_login": "2026-04-03T11:56:40.055296Z"
+      "created_at": "2026-04-03T22:31:31.334054Z",
+      "last_login": null
+    },
+    {
+      "user_id": "uat_usr_c7eb1422",
+      "user_name": "UAT Test User",
+      "display_name": "UAT Test User",
+      "avatar_initials": "UTU",
+      "password_hash": "$2b$12$kU2ZIyuwTj8YZdMePXy/2.2k4mIngLH4j.fbmMINcFd03XOpC6tr6",
+      "role": "user",
+      "worker_id": "w-market-risk",
+      "tools": [
+        "*"
+      ],
+      "enabled": true,
+      "onboarding_complete": false,
+      "email": "",
+      "created_at": "2026-04-03T22:32:12.215648Z",
+      "last_login": null
     }
   ]
 }

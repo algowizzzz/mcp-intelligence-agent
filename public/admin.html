@@ -19,6 +19,15 @@
       .replace(/```(\w*)\n([\s\S]*?)```/g, function(_,lang,code){ return '<pre><code>' + escMd(code.trim()) + '</code></pre>'; })
       // Inline code
       .replace(/`([^`]+)`/g, function(_,c){ return '<code>' + escMd(c) + '</code>'; })
+      // GFM tables: header row | --- row | data rows
+      .replace(/^(\|.+\|\n)\|[-| :]+\|\n((?:\|.+\|\n?)*)/gm, function(_, header, body) {
+        var cols = header.trim().split('|').slice(1,-1).map(function(c){ return '<th>' + c.trim() + '</th>'; }).join('');
+        var rows = body.trim().split('\n').map(function(row){
+          var cells = row.trim().split('|').slice(1,-1).map(function(c){ return '<td>' + c.trim() + '</td>'; }).join('');
+          return '<tr>' + cells + '</tr>';
+        }).join('');
+        return '<table><thead><tr>' + cols + '</tr></thead><tbody>' + rows + '</tbody></table>';
+      })
       // Headings
       .replace(/^### (.+)$/gm, '<h3>$1</h3>')
       .replace(/^## (.+)$/gm,  '<h2>$1</h2>')
@@ -252,6 +261,46 @@
       font-family: inherit; outline: none; width: 140px;
     }
 
+    /* ── Context menu ── */
+    .context-menu {
+      position: fixed; z-index: 3000;
+      background: var(--navy-ll); border: 1px solid var(--border-m);
+      border-radius: 8px; padding: 4px 0; min-width: 148px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    .context-menu-item {
+      padding: 8px 14px; font-size: 13px; cursor: pointer;
+      display: flex; align-items: center; gap: 8px; color: var(--text);
+    }
+    .context-menu-item:hover { background: rgba(255,255,255,0.06); }
+    .context-menu-sep { border-top: 1px solid var(--border); margin: 3px 0; }
+    .context-menu-item.danger { color: #f08080; }
+
+    /* ── Drop zone overlay ── */
+    .filetree-body.drop-active::after {
+      content: 'Drop files to upload';
+      position: absolute; inset: 0;
+      background: rgba(255,255,255,0.06);
+      border: 2px dashed rgba(255,255,255,0.3);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-m); font-size: 13px; pointer-events: none;
+      z-index: 10;
+    }
+    .filetree-body { position: relative; }
+
+    /* ── Audit pagination ── */
+    .audit-pagination {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 0 2px; font-size: 12px; color: var(--text-m);
+    }
+    .audit-pagination button { min-width: 60px; }
+
+    /* ── GFM table support in markdown preview ── */
+    .preview-md table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 12px; }
+    .preview-md th, .preview-md td { border: 1px solid var(--border-m); padding: 6px 10px; text-align: left; }
+    .preview-md th { background: rgba(255,255,255,0.04); font-weight: 600; }
+
     /* ── Preview panel ── */
     .preview-panel {
       flex: 1; background: var(--navy-l); border: 1px solid var(--border); border-radius: var(--radius);
@@ -300,6 +349,7 @@
     .pill-amber { background: rgba(255,255,255,0.06); color: #aaaaaa; }
     .pill-grey { background: rgba(255,255,255,0.06); color: var(--text-m); }
     .pill-blue { background: rgba(255,255,255,0.08); color: #cccccc; }
+    .pill-red { background: rgba(220,50,50,0.18); color: #f08080; }
 
     /* ── Modal ── */
     .modal-overlay {
@@ -401,6 +451,14 @@
         <div class="nav-item" onclick="showSection('workers')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
           Manage Workers
+        </div>
+        <div class="nav-item" onclick="showSection('connectors')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          Connectors
+        </div>
+        <div class="nav-item" onclick="showSection('audit')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Audit Log
         </div>
       </div>
     </nav>
@@ -541,7 +599,10 @@
               <button class="btn btn-secondary btn-sm" id="dd-select-btn" onclick="toggleSelectMode('domain_data')">Select</button>
               <button class="btn btn-danger btn-sm" id="dd-bulk-delete-btn" style="display:none" onclick="bulkDelete('domain_data')">Delete 0</button>
             </div>
-            <div class="filetree-body" id="tree-domain_data"></div>
+            <div class="filetree-body" id="tree-domain_data"
+              ondragover="handleExternalDragOver(event,'domain_data')"
+              ondragleave="handleExternalDragLeave(event,'tree-domain_data')"
+              ondrop="handleExternalDrop(event,'domain_data','tree-domain_data')"></div>
           </div>
           <div class="preview-panel" id="preview-panel">
             <div class="preview-header">
@@ -576,7 +637,10 @@
               <button class="btn btn-secondary btn-sm" id="wf-select-btn" onclick="toggleSelectMode('verified_workflows')">Select</button>
               <button class="btn btn-danger btn-sm" id="wf-bulk-delete-btn" style="display:none" onclick="bulkDelete('verified_workflows')">Delete 0</button>
             </div>
-            <div class="filetree-body" id="tree-verified_workflows"></div>
+            <div class="filetree-body" id="tree-verified_workflows"
+              ondragover="handleExternalDragOver(event,'verified_workflows')"
+              ondragleave="handleExternalDragLeave(event,'tree-verified_workflows')"
+              ondrop="handleExternalDrop(event,'verified_workflows','tree-verified_workflows')"></div>
           </div>
           <div class="preview-panel" id="preview-panel-wf">
             <div class="preview-header">
@@ -631,8 +695,160 @@
         <div class="workers-grid" id="workers-grid"></div>
       </div>
 
+      <!-- ── Audit Log (Super Admin) ── -->
+      <div class="section-panel" id="section-audit">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Audit Log</div>
+            <div class="section-sub">Tool call history across all workers</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input class="form-input" id="audit-filter-worker" placeholder="Filter by worker…" style="width:160px" oninput="filterAuditTable()">
+            <input class="form-input" id="audit-filter-user" placeholder="Filter by user…" style="width:140px" oninput="filterAuditTable()">
+            <button class="btn btn-secondary btn-sm" onclick="loadAudit(0)">Refresh</button>
+          </div>
+        </div>
+        <div class="audit-pagination" id="audit-pagination" style="display:none">
+          <button class="btn btn-secondary btn-sm" id="audit-prev-btn" onclick="auditPagePrev()">← Prev</button>
+          <span id="audit-page-info">—</span>
+          <button class="btn btn-secondary btn-sm" id="audit-next-btn" onclick="auditPageNext()">Next →</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="users-table" id="audit-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Worker</th>
+                <th>User</th>
+                <th>Tool</th>
+                <th>Status</th>
+                <th>Duration (ms)</th>
+              </tr>
+            </thead>
+            <tbody id="audit-tbody">
+              <tr><td colspan="6" style="color:var(--text-m);text-align:center;padding:24px">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── Connectors (Super Admin) ── -->
+      <div class="section-panel" id="section-connectors">
+        <!-- Sub-tabs -->
+        <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:24px">
+          <div class="connector-tab active" id="ctab-overview" onclick="switchConnectorTab('overview')" style="padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid var(--accent);color:var(--text);margin-bottom:-1px">Overview</div>
+          <div class="connector-tab" id="ctab-tools" onclick="switchConnectorTab('tools')" style="padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-m);margin-bottom:-1px">Tool Library</div>
+          <div class="connector-tab" id="ctab-workers" onclick="switchConnectorTab('workers')" style="padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-m);margin-bottom:-1px">Worker Mapping</div>
+        </div>
+
+        <!-- Overview tab -->
+        <div id="ctab-panel-overview">
+          <div class="section-header">
+            <div>
+              <div class="section-title">Connectors</div>
+              <div class="section-sub">Configure external integrations for your digital workers</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="loadConnectors()">Refresh</button>
+          </div>
+          <div id="connectors-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">
+            <div style="color:var(--text-m);font-size:13px">Loading connectors…</div>
+          </div>
+        </div>
+
+        <!-- Tool Library tab -->
+        <div id="ctab-panel-tools" style="display:none">
+          <div class="section-header">
+            <div>
+              <div class="section-title">Connector Tool Library</div>
+              <div class="section-sub">All tools provided by external connectors</div>
+            </div>
+            <input class="form-input search-input" placeholder="Search tools…" oninput="filterConnectorTools(this.value)" style="max-width:240px">
+          </div>
+          <div id="connector-tools-container">
+            <div style="color:var(--text-m);font-size:13px">Loading tools…</div>
+          </div>
+        </div>
+
+        <!-- Worker Mapping tab -->
+        <div id="ctab-panel-workers" style="display:none">
+          <div class="section-header">
+            <div>
+              <div class="section-title">Worker Connector Scope</div>
+              <div class="section-sub">Restrict each worker to specific teams, sites, spaces, and projects</div>
+            </div>
+          </div>
+          <div class="form-row" style="max-width:400px">
+            <label class="form-label">Select Worker</label>
+            <select class="form-select" id="cw-worker-select" onchange="loadWorkerConnectorScope(this.value)">
+              <option value="">— choose a worker —</option>
+            </select>
+          </div>
+          <div id="cw-scope-form" style="display:none;max-width:700px">
+            <!-- Microsoft 365 scope -->
+            <div style="margin-bottom:24px">
+              <div style="font-size:14px;font-weight:700;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+                Microsoft 365 Scope
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                <div class="form-row">
+                  <label class="form-label">Teams — Team ID</label>
+                  <input class="form-input" id="cw-teams-id" placeholder="e.g. 19:abc123…@thread.tacv2">
+                  <div style="font-size:11px;color:var(--text-d);margin-top:4px">The Teams team this worker operates in</div>
+                </div>
+                <div class="form-row">
+                  <label class="form-label">SharePoint — Site URL</label>
+                  <input class="form-input" id="cw-sp-url" placeholder="e.g. https://company.sharepoint.com/sites/Risk">
+                </div>
+                <div class="form-row">
+                  <label class="form-label">SharePoint — Site ID</label>
+                  <input class="form-input" id="cw-sp-siteid" placeholder="Auto-resolved or enter manually">
+                </div>
+                <div class="form-row">
+                  <label class="form-label">Power BI — Workspace ID</label>
+                  <input class="form-input" id="cw-pbi-workspace" placeholder="e.g. a1b2c3d4-…">
+                </div>
+                <div class="form-row">
+                  <label class="form-label">Outlook — User Email</label>
+                  <input class="form-input" id="cw-outlook-email" placeholder="e.g. SaadAhmed@company.com">
+                </div>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="saveConnectorScope('microsoft_azure')">Save Microsoft 365 Scope</button>
+            </div>
+
+            <!-- Atlassian scope -->
+            <div>
+              <div style="font-size:14px;font-weight:700;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+                Atlassian Scope
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                <div class="form-row">
+                  <label class="form-label">Confluence — Space Key</label>
+                  <input class="form-input" id="cw-conf-space" placeholder="e.g. RG, RISK">
+                </div>
+                <div class="form-row">
+                  <label class="form-label">Jira — Project Key</label>
+                  <input class="form-input" id="cw-jira-project" placeholder="e.g. RISK, CCR">
+                </div>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="saveConnectorScope('atlassian')">Save Atlassian Scope</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div><!-- /content -->
   </div><!-- /main -->
+</div>
+
+<!-- ── Configure Connector Modal ── -->
+<div class="modal-overlay hidden" id="conn-modal-overlay" onclick="closeConnModal(event)">
+  <div class="modal" id="conn-modal-box" style="width:520px">
+    <div class="modal-title" id="conn-modal-title">Configure Connector</div>
+    <div class="modal-sub" id="conn-modal-sub"></div>
+    <div id="conn-modal-body"></div>
+    <div id="conn-modal-result" style="margin-top:12px;font-size:13px;display:none"></div>
+    <div class="modal-actions" id="conn-modal-actions"></div>
+  </div>
 </div>
 
 <!-- ── Modals ── -->
@@ -718,7 +934,7 @@ function showSection(name) {
   var titles = {
     dashboard: 'Dashboard', 'worker-config': 'Worker Configuration',
     tools: 'Tools', 'domain-data': 'Domain Data', workflows: 'Workflows',
-    users: 'Users', workers: 'Manage Workers'
+    users: 'Users', workers: 'Manage Workers', connectors: 'Connectors', audit: 'Audit Log'
   };
   document.getElementById('topbar-title').textContent = titles[name] || name;
 
@@ -729,6 +945,8 @@ function showSection(name) {
   else if (name === 'workflows') loadFileTree('verified_workflows');
   else if (name === 'users') loadUsers();
   else if (name === 'workers') loadWorkers();
+  else if (name === 'connectors') { _currentConnTab = 'overview'; switchConnectorTab('overview'); }
+  else if (name === 'audit') loadAudit();
 }
 
 // ── Worker switcher ───────────────────────────────────────────────────────────
@@ -788,9 +1006,41 @@ async function loadDashboard() {
     // Tools
     var et = _currentWorker.enabled_tools;
     document.getElementById('stat-tools').textContent = (et && et[0] === '*') ? 'All' : (et ? et.length : 0);
-    // Stats placeholders
-    document.getElementById('stat-workflows').textContent = '—';
-    document.getElementById('stat-files').textContent = '—';
+    // Workflow and domain file counts — fetch from file tree endpoints
+    try {
+      var wfUrl = _user.role === 'super_admin' && _currentWorker
+        ? API + '/api/super/workers/' + _currentWorker.worker_id + '/files/verified_workflows'
+        : API + '/api/admin/worker/files/verified_workflows';
+      var ddUrl = _user.role === 'super_admin' && _currentWorker
+        ? API + '/api/super/workers/' + _currentWorker.worker_id + '/files/domain_data'
+        : API + '/api/admin/worker/files/domain_data';
+      function countFiles(nodes) {
+        if (!nodes) return 0;
+        var n = 0;
+        nodes.forEach(function(node) {
+          if (node.type === 'file') { n++; }
+          else if (node.type === 'folder') { n += countFiles(node.children); }
+        });
+        return n;
+      }
+      var wfResp = await fetch(wfUrl, { headers: authHeaders() }).catch(() => null);
+      if (wfResp && wfResp.ok) {
+        var wfData = await wfResp.json();
+        document.getElementById('stat-workflows').textContent = countFiles(wfData.tree || wfData.children || []);
+      } else {
+        document.getElementById('stat-workflows').textContent = '—';
+      }
+      var ddResp = await fetch(ddUrl, { headers: authHeaders() }).catch(() => null);
+      if (ddResp && ddResp.ok) {
+        var ddData = await ddResp.json();
+        document.getElementById('stat-files').textContent = countFiles(ddData.tree || ddData.children || []);
+      } else {
+        document.getElementById('stat-files').textContent = '—';
+      }
+    } catch(e) {
+      document.getElementById('stat-workflows').textContent = '—';
+      document.getElementById('stat-files').textContent = '—';
+    }
   }
 }
 
@@ -844,7 +1094,10 @@ async function saveWorkerConfig() {
     system_prompt: document.getElementById('wc-prompt').value,
   };
   try {
-    var r = await fetch(API + '/api/super/workers/' + _currentWorker.worker_id, {
+    var url = _user.role === 'super_admin'
+      ? API + '/api/super/workers/' + _currentWorker.worker_id
+      : API + '/api/admin/worker';
+    var r = await fetch(url, {
       method: 'PUT', headers: authHeaders(), body: JSON.stringify(body)
     });
     if (r.ok) {
@@ -854,7 +1107,7 @@ async function saveWorkerConfig() {
       _allWorkers = _allWorkers.map(w => w.worker_id === updated.worker_id ? updated : w);
       showToast('Worker configuration saved', 'success');
     } else {
-      var d = await r.json();
+      var d = await r.json().catch(() => ({}));
       showToast('Error: ' + (d.detail || 'Save failed'), 'error');
     }
   } catch(e) { showToast('Network error', 'error'); }
@@ -987,11 +1240,19 @@ var _treesData = {};
 var _selectedItems = {};
 var _selectModes = {};
 
+function _workerFileTreeUrl(section) {
+  // Use worker-scoped endpoints (G-03 / G-04)
+  if (_user.role === 'super_admin' && _currentWorker) {
+    return API + '/api/super/workers/' + _currentWorker.worker_id + '/files/' + section;
+  }
+  return API + '/api/admin/worker/files/' + section;
+}
+
 async function loadFileTree(section) {
   var treeEl = document.getElementById('tree-' + section);
   if (treeEl) treeEl.innerHTML = '<div style="color:var(--text-m);font-size:12px;padding:8px">Loading…</div>';
   try {
-    var r = await fetch(API + '/api/admin/tree/' + section, { headers: authHeaders() });
+    var r = await fetch(_workerFileTreeUrl(section), { headers: authHeaders() });
     if (!r.ok) { treeEl.innerHTML = '<div style="color:#aaaaaa;font-size:12px;padding:8px">Error loading tree</div>'; return; }
     var data = await r.json();
     _treesData[section] = data;
@@ -1036,6 +1297,18 @@ function renderChildren(section, children, container, parentPath) {
         el.style.opacity = '0.5';
       });
       el.addEventListener('dragend', () => { el.style.opacity = ''; });
+
+      // Double-click inline rename (AP-05)
+      el.addEventListener('dblclick', (e) => {
+        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+        e.stopPropagation();
+        startInlineRename(section, itemPath, isDir);
+      });
+
+      // Right-click context menu (AP-06)
+      el.addEventListener('contextmenu', (e) => {
+        showContextMenu(e, section, itemPath, isDir, child.name);
+      });
     }
 
     var icon = isDir
@@ -1087,9 +1360,9 @@ function renderChildren(section, children, container, parentPath) {
         e.preventDefault();
         el.style.background = '';
         if (!_drag || _drag.section !== section || _drag.path === itemPath || _drag.path.startsWith(itemPath + '/')) return;
-        var r = await fetch(API + '/api/admin/move', {
+        var r = await fetch(_workerFileOpUrl(section, 'move'), {
           method: 'POST', headers: authHeaders(),
-          body: JSON.stringify({ section, src_path: _drag.path, dest_folder: itemPath })
+          body: JSON.stringify({ src: _drag.path, dest_folder: itemPath })
         });
         _drag = null;
         if (r.ok) { showToast('Moved', 'success'); loadFileTree(section); }
@@ -1151,18 +1424,28 @@ async function previewFile(e, section, path, name) {
   pb.innerHTML = '<div style="color:var(--text-m);font-size:13px;padding:8px">Loading preview…</div>';
 
   try {
-    var r = await fetch(API + '/api/admin/file?section=' + section + '&path=' + encodeURIComponent(path), {
+    var r = await fetch(_workerFileOpUrl(section, 'file') + '?path=' + encodeURIComponent(path), {
       headers: authHeaders()
     });
     if (!r.ok) { pb.innerHTML = '<div style="color:#aaaaaa;font-size:13px">Error loading file</div>'; return; }
 
+    // New endpoints return JSON: { path, encoding, content, size_bytes }
+    var data = await r.json();
     var ext = name.split('.').pop().toLowerCase();
-    var size = r.headers.get('X-File-Size');
-    var truncated = r.headers.get('X-Truncated');
-    pfm.textContent = (size ? (parseInt(size)/1024).toFixed(1) + ' KB' : '') + (truncated ? ' (truncated)' : '');
+    var sz = data.size_bytes || 0;
+    pfm.textContent = sz ? (sz > 1048576 ? (sz/1048576).toFixed(1)+' MB' : Math.round(sz/1024)+' KB') : '';
+
+    // Helper: decode base64 string → ArrayBuffer
+    function b64ToAb(b64) {
+      var bin = atob(b64);
+      var ab = new ArrayBuffer(bin.length);
+      var u8 = new Uint8Array(ab);
+      for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+      return ab;
+    }
 
     if (['txt','csv','tsv','json','html','xml','yaml','yml','md'].includes(ext)) {
-      var text = await r.text();
+      var text = data.content || '';
       if (ext === 'csv' || ext === 'tsv') {
         var sep = ext === 'tsv' ? '\t' : ',';
         var lines = text.split('\n').slice(0, 51).filter(Boolean);
@@ -1178,20 +1461,20 @@ async function previewFile(e, section, path, name) {
     } else if (['parquet','pq'].includes(ext)) {
       pb.innerHTML = `<div class="preview-empty"><p style="font-size:13px;color:var(--text-m)">Parquet binary file</p><p style="font-size:12px;color:var(--text-d);margin-top:8px">${name}</p><p style="font-size:11px;color:var(--text-d);margin-top:12px">Use the agent to query this file with <code style="background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px">parquet_read</code> or <code style="background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px">sqlselect_execute_query</code></p></div>`;
     } else if (ext === 'pdf') {
-      var blob = await r.blob();
+      var ab = b64ToAb(data.content || '');
+      var blob = new Blob([ab], {type:'application/pdf'});
       var url = URL.createObjectURL(blob);
       pb.innerHTML = `<iframe src="${url}" style="width:100%;height:100%;border:none;min-height:500px"></iframe>`;
     } else if (['docx','doc'].includes(ext)) {
-      var ab = await r.arrayBuffer();
+      var ab = b64ToAb(data.content || '');
       try {
         var result = await mammoth.convertToHtml({arrayBuffer: ab});
         pb.innerHTML = `<div class="preview-md">${result.value}</div>`;
       } catch(e) { pb.innerHTML = '<div style="color:var(--text-m)">Word preview not available</div>'; }
     } else if (['xlsx','xls'].includes(ext)) {
-      var ab = await r.arrayBuffer();
+      var ab = b64ToAb(data.content || '');
       var wb = XLSX.read(ab, {type: 'array'});
       var sheetNames = wb.SheetNames;
-      // Tabs
       if (tabsId) {
         var tabsEl = document.getElementById(tabsId);
         tabsEl.style.display = sheetNames.length > 1 ? 'flex' : 'none';
@@ -1226,6 +1509,21 @@ function adminUpload(section) {
   input.click();
 }
 
+function _workerUploadUrl(section) {
+  if (_user.role === 'super_admin' && _currentWorker) {
+    return API + '/api/super/workers/' + _currentWorker.worker_id + '/files/' + section + '/upload';
+  }
+  return API + '/api/admin/worker/files/' + section + '/upload';
+}
+
+function _workerFileOpUrl(section, op) {
+  // op: 'file' | 'folder' | 'rename' | 'move'
+  if (_user.role === 'super_admin' && _currentWorker) {
+    return API + '/api/super/workers/' + _currentWorker.worker_id + '/files/' + section + '/' + op;
+  }
+  return API + '/api/admin/worker/files/' + section + '/' + op;
+}
+
 async function handleFileUpload(event) {
   var files = Array.from(event.target.files);
   var section = _uploadSection;
@@ -1233,7 +1531,7 @@ async function handleFileUpload(event) {
     var form = new FormData();
     form.append('file', f);
     try {
-      var r = await fetch(API + '/api/admin/upload?section=' + section, {
+      var r = await fetch(_workerUploadUrl(section), {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + _token },
         body: form
@@ -1254,9 +1552,9 @@ async function adminNewFolder(section) {
   var name = prompt('Folder name:');
   if (!name || !name.trim()) return;
   try {
-    var r = await fetch(API + '/api/admin/folder', {
+    var r = await fetch(_workerFileOpUrl(section, 'folder'), {
       method: 'POST', headers: authHeaders(),
-      body: JSON.stringify({ section, path: name.trim() })
+      body: JSON.stringify({ path: name.trim() })
     });
     if (r.ok) { showToast('Folder created', 'success'); loadFileTree(section); }
     else { var d = await r.json(); showToast(d.detail || 'Error', 'error'); }
@@ -1268,28 +1566,18 @@ async function adminNewFile(section) {
   if (!name) return;
   if (!name.endsWith('.md')) name += '.md';
   try {
-    var r = await fetch(API + '/api/admin/file', {
-      method: 'POST', headers: authHeaders(),
-      body: JSON.stringify({ section, filename: name })
+    var r = await fetch(_workerFileOpUrl(section, 'file'), {
+      method: 'PATCH', headers: authHeaders(),
+      body: JSON.stringify({ path: name, content: '' })
     });
     if (r.ok) { showToast('File created', 'success'); loadFileTree(section); }
     else { var d = await r.json(); showToast(d.detail || 'Error', 'error'); }
   } catch(e) { showToast('Error', 'error'); }
 }
 
-async function renameItem(e, section, path, isDir) {
+function renameItem(e, section, path, isDir) {
   e.stopPropagation();
-  var name = path.split('/').pop();
-  var newName = prompt('New name:', name);
-  if (!newName || newName === name) return;
-  try {
-    var r = await fetch(API + '/api/admin/rename', {
-      method: 'PATCH', headers: authHeaders(),
-      body: JSON.stringify({ section, path, new_name: newName })
-    });
-    if (r.ok) { showToast('Renamed', 'success'); loadFileTree(section); }
-    else { var d = await r.json(); showToast(d.detail || 'Rename failed', 'error'); }
-  } catch(e) { showToast('Error', 'error'); }
+  startInlineRename(section, path, isDir);
 }
 
 async function deleteItem(e, section, path, isDir, name) {
@@ -1297,10 +1585,17 @@ async function deleteItem(e, section, path, isDir, name) {
   var msg = isDir ? `Delete folder "${name}" and all its contents?` : `Delete "${name}"?`;
   if (!confirm(msg)) return;
   try {
-    var r = await fetch(API + '/api/admin/item', {
-      method: 'DELETE', headers: authHeaders(),
-      body: JSON.stringify({ section, path, recursive: isDir })
-    });
+    var r;
+    if (isDir) {
+      r = await fetch(_workerFileOpUrl(section, 'folder'), {
+        method: 'DELETE', headers: authHeaders(),
+        body: JSON.stringify({ path, recursive: true })
+      });
+    } else {
+      r = await fetch(_workerFileOpUrl(section, 'file') + '?path=' + encodeURIComponent(path), {
+        method: 'DELETE', headers: authHeaders()
+      });
+    }
     if (r.ok) { showToast('Deleted', 'success'); loadFileTree(section); }
     else { var d = await r.json(); showToast(d.detail || 'Delete failed', 'error'); }
   } catch(e) { showToast('Error', 'error'); }
@@ -1327,15 +1622,34 @@ function toggleSelectMode(section) {
 async function bulkDelete(section) {
   var items = _selectedItems[section];
   if (!items || items.size === 0) return;
-  if (!confirm(`Delete ${items.size} items? This cannot be undone.`)) return;
+  var confirmed = await new Promise(resolve => {
+    showModal(
+      'Delete ' + items.size + ' item' + (items.size > 1 ? 's' : ''),
+      'This action cannot be undone.',
+      '<p style="color:var(--text-m);font-size:13px">Are you sure you want to permanently delete ' + items.size + ' selected item' + (items.size > 1 ? 's' : '') + '?</p>',
+      [
+        { label: 'Cancel',  action: 'closeModalFn(); window._bulkDeleteResolve(false)' },
+        { label: 'Delete',  primary: true, action: 'closeModalFn(); window._bulkDeleteResolve(true)' }
+      ]
+    );
+    window._bulkDeleteResolve = resolve;
+  });
+  if (!confirmed) return;
   var count = 0;
   for (var path of items) {
     var isDir = path.endsWith('/') || _treesData[section] && isPathDir(path, _treesData[section]);
     try {
-      var r = await fetch(API + '/api/admin/item', {
-        method: 'DELETE', headers: authHeaders(),
-        body: JSON.stringify({ section, path, recursive: true })
-      });
+      var r;
+      if (isDir) {
+        r = await fetch(_workerFileOpUrl(section, 'folder'), {
+          method: 'DELETE', headers: authHeaders(),
+          body: JSON.stringify({ path, recursive: true })
+        });
+      } else {
+        r = await fetch(_workerFileOpUrl(section, 'file') + '?path=' + encodeURIComponent(path), {
+          method: 'DELETE', headers: authHeaders()
+        });
+      }
       if (r.ok) count++;
     } catch(e) {}
   }
@@ -1411,23 +1725,36 @@ async function loadUsers() {
 async function resetPassword(userId) {
   if (!confirm(`Reset password for ${userId}?`)) return;
   try {
-    var r = await fetch(API + '/api/super/users/' + userId + '/reset-password', { method: 'POST', headers: authHeaders() });
+    var url = _user.role === 'super_admin'
+      ? API + '/api/super/users/' + userId + '/reset-password'
+      : API + '/api/admin/worker/users/' + userId + '/reset-password';
+    var r = await fetch(url, { method: 'POST', headers: authHeaders() });
     if (r.ok) {
       var d = await r.json();
       showModal('Password Reset', `Temporary password for <strong>${userId}</strong>:`, `
         <div style="background:rgba(255,255,255,0.06);border-radius:8px;padding:12px;font-family:monospace;font-size:16px;text-align:center;letter-spacing:2px">${d.temp_password}</div>
         <div style="font-size:12px;color:var(--text-m);margin-top:8px">Share this with the user. They will be prompted to change it on next login.</div>
       `, [{ label: 'Close', action: 'closeModal()' }]);
+    } else {
+      var d = await r.json().catch(() => ({}));
+      showToast('Error: ' + (d.detail || 'Password reset failed'), 'error');
     }
   } catch(e) { showToast('Error', 'error'); }
 }
 
 async function toggleUserEnabled(userId, newState) {
   try {
-    var r = await fetch(API + '/api/super/users/' + userId, {
+    var url = _user.role === 'super_admin'
+      ? API + '/api/super/users/' + userId
+      : API + '/api/admin/worker/users/' + userId;
+    var r = await fetch(url, {
       method: 'PUT', headers: authHeaders(), body: JSON.stringify({ enabled: newState })
     });
     if (r.ok) { showToast(newState ? 'User enabled' : 'User disabled', 'success'); loadUsers(); }
+    else {
+      var d = await r.json().catch(() => ({}));
+      showToast('Error: ' + (d.detail || 'Update failed'), 'error');
+    }
   } catch(e) { showToast('Error', 'error'); }
 }
 
@@ -1468,12 +1795,15 @@ async function createUser() {
     role: document.getElementById('cu-role').value,
     worker_id: document.getElementById('cu-worker') ? document.getElementById('cu-worker').value : null,
   };
-  if (!body.user_id || !body.display_name || !body.password) { alert('Username, display name, and password are required.'); return; }
+  if (!body.user_id || !body.display_name || !body.password) { showToast('Username, display name, and password are required.', 'error'); return; }
   try {
-    var r = await fetch(API + '/api/super/users', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    var url = _user.role === 'super_admin'
+      ? API + '/api/super/users'
+      : API + '/api/admin/worker/users';
+    var r = await fetch(url, { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
     if (r.ok) { closeModalFn(); showToast('User created', 'success'); loadUsers(); }
-    else { var d = await r.json(); alert(d.detail || 'Error creating user'); }
-  } catch(e) { alert('Network error'); }
+    else { var d = await r.json().catch(() => ({})); showToast(d.detail || 'Error creating user', 'error'); }
+  } catch(e) { showToast('Network error', 'error'); }
 }
 
 // ── Workers management ─────────────────────────────────────────────────────────
@@ -1528,6 +1858,547 @@ function closeModal(e) {
   closeModalFn();
 }
 function closeModalFn() { document.getElementById('modal-overlay').classList.add('hidden'); }
+
+// ── Audit Log ─────────────────────────────────────────────────────────────────
+var _auditEntries = [];
+var _auditOffset  = 0;
+var _auditLimit   = 200;
+var _auditTotal   = 0;
+
+async function loadAudit(offset) {
+  if (offset === undefined) offset = _auditOffset;
+  _auditOffset = offset;
+  var tbody = document.getElementById('audit-tbody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-m);text-align:center;padding:24px">Loading…</td></tr>';
+  try {
+    var wf = (document.getElementById('audit-filter-worker').value || '');
+    var uf = (document.getElementById('audit-filter-user').value || '');
+    var url = API + '/api/super/audit?limit=' + _auditLimit + '&offset=' + offset;
+    if (wf) url += '&worker_id=' + encodeURIComponent(wf);
+    if (uf) url += '&user_id='   + encodeURIComponent(uf);
+    var r = await fetch(url, { headers: authHeaders() });
+    if (!r.ok) { tbody.innerHTML = '<tr><td colspan="6" style="color:#aaaaaa;text-align:center;padding:24px">Error loading audit log</td></tr>'; return; }
+    var data = await r.json();
+    _auditEntries = data.entries || [];
+    _auditTotal   = data.total_matched != null ? data.total_matched : _auditEntries.length;
+    renderAuditTable(_auditEntries);
+    updateAuditPagination();
+  } catch(e) {
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="color:#aaaaaa;text-align:center;padding:24px">Failed to load</td></tr>';
+  }
+}
+
+function filterAuditTable() {
+  _auditOffset = 0;
+  loadAudit(0);
+}
+
+function updateAuditPagination() {
+  var pg = document.getElementById('audit-pagination');
+  var info = document.getElementById('audit-page-info');
+  var prev = document.getElementById('audit-prev-btn');
+  var next = document.getElementById('audit-next-btn');
+  if (!pg) return;
+  if (_auditTotal <= _auditLimit) { pg.style.display = 'none'; return; }
+  pg.style.display = 'flex';
+  var from = _auditOffset + 1;
+  var to   = Math.min(_auditOffset + _auditEntries.length, _auditTotal);
+  info.textContent = from + '–' + to + ' of ' + _auditTotal;
+  prev.disabled = (_auditOffset === 0);
+  next.disabled = (_auditOffset + _auditEntries.length >= _auditTotal);
+}
+
+function auditPagePrev() { if (_auditOffset > 0) loadAudit(Math.max(0, _auditOffset - _auditLimit)); }
+function auditPageNext() { if (_auditOffset + _auditEntries.length < _auditTotal) loadAudit(_auditOffset + _auditLimit); }
+
+function renderAuditTable(entries) {
+  var tbody = document.getElementById('audit-tbody');
+  if (!tbody) return;
+  if (!entries.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-m);text-align:center;padding:24px">No entries</td></tr>';
+    return;
+  }
+  tbody.innerHTML = entries.map(e => {
+    var rawTs = e.timestamp || e.ts || e.called_at || e.time || null;
+    var ts = rawTs ? new Date(rawTs).toLocaleString() : '—';
+    var toolName = e.tool_name || e.tool || '—';
+    var statusCls = e.status === 'ok' || e.status === 'success' ? 'pill-green' : e.status === 'error' ? 'pill-red' : 'pill-grey';
+    var dur = e.duration_ms != null ? e.duration_ms + ' ms' : '—';
+    return `<tr>
+      <td style="font-size:11px;color:var(--text-m)">${ts}</td>
+      <td style="font-size:12px">${e.worker_id || '—'}</td>
+      <td style="font-size:12px">${e.user_id || '—'}</td>
+      <td style="font-family:monospace;font-size:11px">${toolName}</td>
+      <td><span class="pill ${statusCls}">${e.status || '—'}</span></td>
+      <td style="font-size:12px;color:var(--text-m)">${dur}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── External file drop zone ───────────────────────────────────────────────────
+function handleExternalDragOver(e, section) {
+  // Only handle drops from outside the browser (files), not internal tree drags
+  if (_drag) return;
+  if (e.dataTransfer.types && (e.dataTransfer.types.indexOf('Files') !== -1 || e.dataTransfer.types.indexOf('files') !== -1)) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    var treeId = section === 'verified_workflows' ? 'tree-verified_workflows' : 'tree-domain_data';
+    document.getElementById(treeId).classList.add('drop-active');
+  }
+}
+
+function handleExternalDragLeave(e, treeId) {
+  var el = document.getElementById(treeId);
+  if (el && !el.contains(e.relatedTarget)) el.classList.remove('drop-active');
+}
+
+async function handleExternalDrop(e, section, treeId) {
+  e.preventDefault();
+  document.getElementById(treeId).classList.remove('drop-active');
+  if (_drag) return; // internal move — handled by tree item drop
+  var files = Array.from(e.dataTransfer.files);
+  if (!files.length) return;
+  var destFolder = '';
+  // If dropped on a folder item, extract path
+  var target = e.target.closest('.tree-item[data-type="dir"]');
+  if (target) destFolder = target.dataset.path + '/';
+  var successCount = 0, errorCount = 0;
+  for (var f of files) {
+    var form = new FormData();
+    form.append('file', f);
+    var uploadPath = destFolder + f.name;
+    try {
+      var r = await fetch(_workerUploadUrl(section) + '?path=' + encodeURIComponent(uploadPath), {
+        method: 'POST', headers: { 'Authorization': 'Bearer ' + _token }, body: form
+      });
+      if (r.ok) { successCount++; }
+      else {
+        var d = await r.json().catch(() => ({}));
+        if (d.detail && d.detail.includes('already exists')) {
+          if (confirm(f.name + ' already exists. Overwrite?')) {
+            var r2 = await fetch(_workerUploadUrl(section) + '?path=' + encodeURIComponent(uploadPath) + '&overwrite=true', {
+              method: 'POST', headers: { 'Authorization': 'Bearer ' + _token }, body: form
+            });
+            if (r2.ok) successCount++; else errorCount++;
+          }
+        } else { errorCount++; showToast('Error: ' + (d.detail || r.status), 'error'); }
+      }
+    } catch(err) { errorCount++; showToast('Upload error: ' + f.name, 'error'); }
+  }
+  if (successCount) showToast('Uploaded ' + successCount + ' file' + (successCount > 1 ? 's' : ''), 'success');
+  if (errorCount)   showToast(errorCount + ' upload(s) failed', 'error');
+  loadFileTree(section);
+}
+
+// ── Context menu ──────────────────────────────────────────────────────────────
+var _ctxMenu = null;
+
+function showContextMenu(e, section, path, isDir, name) {
+  closeContextMenu();
+  e.preventDefault();
+  e.stopPropagation();
+  var menu = document.createElement('div');
+  menu.className = 'context-menu';
+  menu.id = 'ctx-menu';
+  var items = [];
+  if (!isDir) items.push({ label: '👁 Preview', action: () => previewFile(e, section, path, name) });
+  items.push({ label: '✏️ Rename',  action: () => startInlineRename(section, path, isDir) });
+  if (!isDir) items.push({ label: '⬇️ Download', action: () => downloadFile(section, path, name) });
+  items.push({ sep: true });
+  items.push({ label: '🗑 Delete', action: () => deleteItem(e, section, path, isDir, name), danger: true });
+  items.forEach(item => {
+    if (item.sep) { var s = document.createElement('div'); s.className = 'context-menu-sep'; menu.appendChild(s); return; }
+    var el = document.createElement('div');
+    el.className = 'context-menu-item' + (item.danger ? ' danger' : '');
+    el.textContent = item.label;
+    el.onclick = (ev) => { ev.stopPropagation(); closeContextMenu(); item.action(); };
+    menu.appendChild(el);
+  });
+  // Position near cursor, keep inside viewport
+  var x = e.clientX, y = e.clientY;
+  document.body.appendChild(menu);
+  if (x + 160 > window.innerWidth)  x = window.innerWidth  - 164;
+  if (y + menu.offsetHeight > window.innerHeight) y = y - menu.offsetHeight;
+  menu.style.left = x + 'px';
+  menu.style.top  = y + 'px';
+  _ctxMenu = menu;
+  setTimeout(() => document.addEventListener('click', closeContextMenu, { once: true }), 0);
+}
+
+function closeContextMenu() {
+  if (_ctxMenu) { _ctxMenu.remove(); _ctxMenu = null; }
+}
+
+async function downloadFile(section, path, name) {
+  var r = await fetch(_workerFileOpUrl(section, 'file') + '?path=' + encodeURIComponent(path), { headers: authHeaders() });
+  if (!r.ok) { showToast('Download failed', 'error'); return; }
+  var data = await r.json();
+  var content = data.encoding === 'base64' ? atob(data.content || '') : (data.content || '');
+  var blob = new Blob([content]);
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+}
+
+// ── Inline rename (dblclick) ──────────────────────────────────────────────────
+function startInlineRename(section, path, isDir) {
+  // Find the tree item by data-path
+  var treeId = section === 'verified_workflows' ? 'tree-verified_workflows' : 'tree-domain_data';
+  var treeEl = document.getElementById(treeId);
+  if (!treeEl) return;
+  var item = treeEl.querySelector('[data-path="' + CSS.escape(path) + '"]');
+  if (!item) { renameItem({ stopPropagation: () => {} }, section, path, isDir); return; }
+  var nameSpan = item.querySelector('.item-name');
+  if (!nameSpan) return;
+  var oldName = nameSpan.textContent;
+  var input = document.createElement('input');
+  input.className = 'tree-rename-input';
+  input.value = '';
+  nameSpan.replaceWith(input);
+  input.focus();
+  input.value = oldName;
+  input.select();
+  var committed = false;
+  async function commit() {
+    if (committed) return;
+    committed = true;
+    var newName = input.value.trim();
+    if (!newName || newName === oldName) { input.replaceWith(nameSpan); return; }
+    try {
+      var r = await fetch(_workerFileOpUrl(section, 'rename'), {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify({ path, new_name: newName })
+      });
+      if (r.ok) { showToast('Renamed', 'success'); loadFileTree(section); }
+      else { var d = await r.json(); showToast(d.detail || 'Rename failed', 'error'); input.replaceWith(nameSpan); }
+    } catch(err) { showToast('Error', 'error'); input.replaceWith(nameSpan); }
+  }
+  input.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter')  { ev.preventDefault(); commit(); }
+    if (ev.key === 'Escape') { committed = true; input.replaceWith(nameSpan); }
+  });
+  input.addEventListener('blur', commit);
+}
+
+// ── Connectors ───────────────────────────────────────────────────────────────
+
+var _connectorToolsAll = [];
+var _currentConnTab = 'overview';
+
+function switchConnectorTab(tab) {
+  _currentConnTab = tab;
+  ['overview', 'tools', 'workers'].forEach(function(t) {
+    var btn = document.getElementById('ctab-' + t);
+    var panel = document.getElementById('ctab-panel-' + t);
+    if (btn) {
+      btn.style.borderBottomColor = t === tab ? 'var(--accent)' : 'transparent';
+      btn.style.color = t === tab ? 'var(--text)' : 'var(--text-m)';
+    }
+    if (panel) panel.style.display = t === tab ? 'block' : 'none';
+  });
+  if (tab === 'overview') loadConnectors();
+  else if (tab === 'tools') loadConnectorTools();
+  else if (tab === 'workers') loadWorkerMappingTab();
+}
+
+var _connectorIcons = {
+  microsoft_azure: '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+  atlassian: '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>',
+};
+
+var _connectorStatusColors = {
+  connected:      { bg: 'rgba(255,255,255,0.08)', color: '#cccccc', label: 'Connected' },
+  disconnected:   { bg: 'rgba(255,200,100,0.10)', color: '#ccaa66', label: 'Disconnected' },
+  not_configured: { bg: 'rgba(255,255,255,0.05)', color: 'var(--text-d)', label: 'Not Configured' },
+};
+
+async function loadConnectors() {
+  var grid = document.getElementById('connectors-grid');
+  if (!grid) return;
+  grid.innerHTML = '<div style="color:var(--text-m);font-size:13px">Loading…</div>';
+  try {
+    var r = await fetch(API + '/api/super/connectors', { headers: authHeaders() });
+    if (!r.ok) { grid.innerHTML = '<div style="color:#aaaaaa;font-size:13px">Error loading connectors.</div>'; return; }
+    var data = await r.json();
+    renderConnectorsGrid(data.connectors || []);
+  } catch(e) {
+    grid.innerHTML = '<div style="color:#aaaaaa;font-size:13px">Failed to load connectors.</div>';
+  }
+}
+
+function renderConnectorsGrid(connectors) {
+  var grid = document.getElementById('connectors-grid');
+  if (!connectors.length) { grid.innerHTML = '<div style="color:var(--text-m);font-size:13px">No connectors defined.</div>'; return; }
+  grid.innerHTML = connectors.map(function(c) {
+    var st = _connectorStatusColors[c.status] || _connectorStatusColors.not_configured;
+    var icon = _connectorIcons[c.connector_type] || '';
+    return [
+      '<div style="background:var(--navy-l);border:1px solid var(--border);border-radius:var(--radius);padding:20px">',
+        '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">',
+          '<div style="color:var(--text-m)">' + icon + '</div>',
+          '<div style="flex:1">',
+            '<div style="font-size:15px;font-weight:600">' + (c.display_name || c.connector_type) + '</div>',
+            '<div style="font-size:11px;color:var(--text-m);margin-top:2px">' + (c.tool_count || 0) + ' tools</div>',
+          '</div>',
+          '<span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:' + st.bg + ';color:' + st.color + '">' + st.label + '</span>',
+        '</div>',
+        '<div style="display:flex;gap:8px">',
+          '<button class="btn btn-secondary btn-sm" style="flex:1" onclick="openConnectorModal(\'' + c.connector_type + '\')">Configure</button>',
+          '<button class="btn btn-secondary btn-sm" onclick="testConnector(\'' + c.connector_type + '\', this)">Test</button>',
+        '</div>',
+      '</div>'
+    ].join('');
+  }).join('');
+}
+
+function openConnectorModal(connectorType) {
+  var title, sub, bodyHtml;
+  document.getElementById('conn-modal-result').style.display = 'none';
+  if (connectorType === 'microsoft_azure') {
+    title = 'Configure Microsoft 365';
+    sub = 'Enter your Azure AD app registration credentials';
+    bodyHtml = [
+      '<div class="form-row"><label class="form-label">Display Name</label><input class="form-input" id="cm-display-name" value="Microsoft 365" placeholder="Microsoft 365"></div>',
+      '<div class="form-row"><label class="form-label">Tenant ID</label><input class="form-input" id="cm-tenant-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></div>',
+      '<div class="form-row"><label class="form-label">Client ID</label><input class="form-input" id="cm-client-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></div>',
+      '<div class="form-row"><label class="form-label">Client Secret</label><input class="form-input" id="cm-client-secret" type="password" placeholder="Your app secret"></div>',
+    ].join('');
+  } else if (connectorType === 'atlassian') {
+    title = 'Configure Atlassian';
+    sub = 'Enter your Atlassian API credentials';
+    bodyHtml = [
+      '<div class="form-row"><label class="form-label">Display Name</label><input class="form-input" id="cm-display-name" value="Atlassian" placeholder="Atlassian"></div>',
+      '<div class="form-row"><label class="form-label">Email</label><input class="form-input" id="cm-atlassian-email" placeholder="user@company.com" type="email"></div>',
+      '<div class="form-row"><label class="form-label">API Token</label><input class="form-input" id="cm-api-token" type="password" placeholder="Your Atlassian API token"></div>',
+      '<div class="form-row"><label class="form-label">Confluence URL</label><input class="form-input" id="cm-confluence-url" placeholder="https://company.atlassian.net/wiki"></div>',
+      '<div class="form-row"><label class="form-label">Jira URL</label><input class="form-input" id="cm-jira-url" placeholder="https://company.atlassian.net"></div>',
+    ].join('');
+  } else {
+    return;
+  }
+  document.getElementById('conn-modal-title').textContent = title;
+  document.getElementById('conn-modal-sub').textContent = sub;
+  document.getElementById('conn-modal-body').innerHTML = bodyHtml;
+  document.getElementById('conn-modal-actions').innerHTML = [
+    '<button class="btn btn-secondary" onclick="closeConnModalFn()">Cancel</button>',
+    '<button class="btn btn-secondary" onclick="testConnectorFromModal(\'' + connectorType + '\')">Test Connection</button>',
+    '<button class="btn btn-primary" onclick="saveConnector(\'' + connectorType + '\')">Save</button>',
+  ].join('');
+  document.getElementById('conn-modal-overlay').classList.remove('hidden');
+}
+
+function closeConnModal(e) {
+  if (e && e.target !== document.getElementById('conn-modal-overlay')) return;
+  closeConnModalFn();
+}
+function closeConnModalFn() { document.getElementById('conn-modal-overlay').classList.add('hidden'); }
+
+async function saveConnector(connectorType) {
+  var body = { display_name: (document.getElementById('cm-display-name') || {}).value || '' };
+  if (connectorType === 'microsoft_azure') {
+    body.tenant_id     = (document.getElementById('cm-tenant-id')     || {}).value || '';
+    body.client_id     = (document.getElementById('cm-client-id')     || {}).value || '';
+    body.client_secret = (document.getElementById('cm-client-secret') || {}).value || '';
+  } else if (connectorType === 'atlassian') {
+    body.email         = (document.getElementById('cm-atlassian-email') || {}).value || '';
+    body.api_token     = (document.getElementById('cm-api-token')       || {}).value || '';
+    body.confluence_url = (document.getElementById('cm-confluence-url') || {}).value || '';
+    body.jira_url      = (document.getElementById('cm-jira-url')        || {}).value || '';
+  }
+  try {
+    var r = await fetch(API + '/api/super/connectors/' + connectorType, {
+      method: 'PUT', headers: authHeaders(), body: JSON.stringify(body)
+    });
+    if (r.ok) {
+      closeConnModalFn();
+      showToast('Connector saved', 'success');
+      loadConnectors();
+    } else {
+      var d = await r.json().catch(() => ({}));
+      showToast('Error: ' + (d.detail || 'Save failed'), 'error');
+    }
+  } catch(e) { showToast('Network error', 'error'); }
+}
+
+async function testConnector(connectorType, btn) {
+  var orig = btn ? btn.textContent : '';
+  if (btn) { btn.textContent = 'Testing…'; btn.disabled = true; }
+  try {
+    var r = await fetch(API + '/api/super/connectors/' + connectorType + '/test', {
+      method: 'POST', headers: authHeaders()
+    });
+    var d = await r.json().catch(() => ({}));
+    showToast((d.ok ? 'OK: ' : 'Failed: ') + (d.message || ''), d.ok ? 'success' : 'error');
+  } catch(e) { showToast('Network error', 'error'); }
+  finally { if (btn) { btn.textContent = orig; btn.disabled = false; } }
+}
+
+async function testConnectorFromModal(connectorType) {
+  var resEl = document.getElementById('conn-modal-result');
+  resEl.style.display = 'block';
+  resEl.textContent = 'Testing…';
+  resEl.style.color = 'var(--text-m)';
+  try {
+    var r = await fetch(API + '/api/super/connectors/' + connectorType + '/test', {
+      method: 'POST', headers: authHeaders()
+    });
+    var d = await r.json().catch(() => ({}));
+    resEl.textContent = (d.ok ? 'OK: ' : 'Failed: ') + (d.message || '');
+    resEl.style.color = d.ok ? '#cccccc' : '#f08080';
+  } catch(e) {
+    resEl.textContent = 'Network error: ' + e.message;
+    resEl.style.color = '#f08080';
+  }
+}
+
+// ── Connector Tool Library ──────────────────────────────────────────────────
+var _connToolGroups = {
+  microsoft_azure: [
+    { name: 'teams_list_channels', desc: 'List channels in the configured Teams team', write: false },
+    { name: 'teams_send_message', desc: 'Post a message to a Teams channel', write: true },
+    { name: 'teams_read_messages', desc: 'Read recent messages from a Teams channel', write: false },
+    { name: 'teams_create_meeting', desc: 'Create a Teams meeting', write: true },
+    { name: 'teams_list_members', desc: 'List members of a Teams team or channel', write: false },
+    { name: 'teams_get_files', desc: 'Get files shared in a Teams channel', write: false },
+    { name: 'sharepoint_list_sites', desc: 'List SharePoint sites accessible to the connector', write: false },
+    { name: 'sharepoint_get_files', desc: 'Browse files in a SharePoint document library', write: false },
+    { name: 'sharepoint_read_file', desc: 'Download and read a SharePoint file', write: false },
+    { name: 'sharepoint_upload_file', desc: 'Upload a file to SharePoint', write: true },
+    { name: 'sharepoint_search', desc: 'Full-text search across SharePoint content', write: false },
+    { name: 'sharepoint_list_items', desc: 'Read rows from a SharePoint list', write: false },
+    { name: 'powerbi_list_reports', desc: 'List Power BI reports in the configured workspace', write: false },
+    { name: 'powerbi_get_report', desc: 'Get metadata and embed URL for a Power BI report', write: false },
+    { name: 'powerbi_run_query', desc: 'Execute a DAX query against a Power BI dataset', write: false },
+    { name: 'powerbi_list_datasets', desc: 'List datasets in the Power BI workspace', write: false },
+    { name: 'powerbi_refresh_dataset', desc: 'Trigger a dataset refresh in Power BI', write: true },
+    { name: 'powerbi_export_report', desc: 'Export a Power BI report to PDF or PPTX', write: true },
+    { name: 'outlook_read_emails', desc: 'Read emails from the configured mailbox', write: false },
+    { name: 'outlook_send_email', desc: 'Send an email via Outlook', write: true },
+    { name: 'outlook_list_calendar', desc: 'List calendar events', write: false },
+    { name: 'outlook_create_event', desc: 'Create a calendar event', write: true },
+    { name: 'outlook_search_emails', desc: 'Search emails by subject, sender, or body', write: false },
+    { name: 'outlook_get_attachments', desc: 'Download email attachments', write: false },
+  ],
+  atlassian: [
+    { name: 'confluence_get_page', desc: 'Get content of a Confluence page by ID or title', write: false },
+    { name: 'confluence_search', desc: 'Full-text search across Confluence spaces', write: false },
+    { name: 'confluence_list_pages', desc: 'List pages in a Confluence space', write: false },
+    { name: 'confluence_create_page', desc: 'Create a new Confluence page', write: true },
+    { name: 'confluence_update_page', desc: 'Update an existing Confluence page', write: true },
+    { name: 'jira_get_issue', desc: 'Get details of a Jira issue', write: false },
+    { name: 'jira_list_issues', desc: 'List issues in a Jira project with JQL filter', write: false },
+    { name: 'jira_create_issue', desc: 'Create a new Jira issue', write: true },
+    { name: 'jira_update_issue', desc: 'Update fields or status of a Jira issue', write: true },
+    { name: 'jira_add_comment', desc: 'Add a comment to a Jira issue', write: true },
+    { name: 'jira_search_issues', desc: 'Search Jira issues with JQL', write: false },
+    { name: 'jira_list_projects', desc: 'List Jira projects accessible to the connector', write: false },
+  ],
+};
+
+var _connGroupLabels = {
+  microsoft_azure: 'Microsoft 365 (Teams, SharePoint, Power BI, Outlook)',
+  atlassian: 'Atlassian (Confluence, Jira)',
+};
+
+async function loadConnectorTools() {
+  var container = document.getElementById('connector-tools-container');
+  if (!container) return;
+  renderConnectorTools('');
+}
+
+function renderConnectorTools(filter) {
+  var container = document.getElementById('connector-tools-container');
+  if (!container) return;
+  var fl = filter.toLowerCase();
+  var html = Object.entries(_connToolGroups).map(function([groupKey, tools]) {
+    var visible = tools.filter(function(t) {
+      return !fl || t.name.toLowerCase().includes(fl) || t.desc.toLowerCase().includes(fl);
+    });
+    if (!visible.length) return '';
+    return [
+      '<div style="margin-bottom:24px">',
+        '<div class="tool-category-header">',
+          '<div class="tool-category-name">' + (_connGroupLabels[groupKey] || groupKey) + '</div>',
+        '</div>',
+        '<div style="display:flex;flex-direction:column;gap:4px">',
+        visible.map(function(t) {
+          return [
+            '<div style="display:flex;align-items:center;padding:10px 14px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;gap:12px">',
+              '<div style="flex:1">',
+                '<div style="font-size:13px;font-weight:600;font-family:monospace">' + t.name + '</div>',
+                '<div style="font-size:11px;color:var(--text-m);margin-top:2px">' + t.desc + '</div>',
+              '</div>',
+              t.write ? '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;background:rgba(200,160,60,0.15);color:#ccaa66">Write</span>' : '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;background:rgba(255,255,255,0.06);color:var(--text-d)">Read</span>',
+            '</div>'
+          ].join('');
+        }).join(''),
+        '</div>',
+      '</div>'
+    ].join('');
+  }).join('');
+  container.innerHTML = html || '<div style="color:var(--text-m);font-size:13px">No tools match search.</div>';
+}
+
+function filterConnectorTools(val) { renderConnectorTools(val); }
+
+// ── Worker Mapping Tab ────────────────────────────────────────────────────────
+async function loadWorkerMappingTab() {
+  var sel = document.getElementById('cw-worker-select');
+  if (!sel) return;
+  if (sel.options.length <= 1) {
+    // Populate from cached workers
+    await loadSuperAdminWorkers();
+    sel.innerHTML = '<option value="">— choose a worker —</option>' +
+      _allWorkers.map(function(w) { return '<option value="' + w.worker_id + '">' + w.name + '</option>'; }).join('');
+  }
+}
+
+async function loadWorkerConnectorScope(workerId) {
+  var form = document.getElementById('cw-scope-form');
+  if (!workerId) { if (form) form.style.display = 'none'; return; }
+  if (form) form.style.display = 'block';
+  try {
+    var r = await fetch(API + '/api/super/workers/' + workerId + '/connector-scope', { headers: authHeaders() });
+    if (!r.ok) return;
+    var data = await r.json();
+    var scope = data.connector_scope || {};
+    var ms = scope.microsoft_azure || {};
+    var at = scope.atlassian || {};
+    var setVal = function(id, val) { var el = document.getElementById(id); if (el) el.value = val || ''; };
+    setVal('cw-teams-id', ms.teams_team_id);
+    setVal('cw-sp-url', ms.sharepoint_site_url);
+    setVal('cw-sp-siteid', ms.sharepoint_site_id);
+    setVal('cw-pbi-workspace', ms.powerbi_workspace_id);
+    setVal('cw-outlook-email', ms.outlook_user_email);
+    setVal('cw-conf-space', at.confluence_space_key);
+    setVal('cw-jira-project', at.jira_project_key);
+  } catch(e) {}
+}
+
+async function saveConnectorScope(connectorType) {
+  var workerId = document.getElementById('cw-worker-select').value;
+  if (!workerId) { showToast('Select a worker first', 'error'); return; }
+  var body = {};
+  if (connectorType === 'microsoft_azure') {
+    body = {
+      teams_team_id:         document.getElementById('cw-teams-id').value.trim(),
+      sharepoint_site_url:   document.getElementById('cw-sp-url').value.trim(),
+      sharepoint_site_id:    document.getElementById('cw-sp-siteid').value.trim(),
+      powerbi_workspace_id:  document.getElementById('cw-pbi-workspace').value.trim(),
+      outlook_user_email:    document.getElementById('cw-outlook-email').value.trim(),
+    };
+  } else if (connectorType === 'atlassian') {
+    body = {
+      confluence_space_key: document.getElementById('cw-conf-space').value.trim(),
+      jira_project_key:     document.getElementById('cw-jira-project').value.trim(),
+    };
+  }
+  try {
+    var r = await fetch(API + '/api/super/workers/' + workerId + '/connector-scope/' + connectorType, {
+      method: 'PUT', headers: authHeaders(), body: JSON.stringify(body)
+    });
+    if (r.ok) { showToast('Connector scope saved', 'success'); }
+    else { var d = await r.json().catch(() => ({})); showToast('Error: ' + (d.detail || 'Save failed'), 'error'); }
+  } catch(e) { showToast('Network error', 'error'); }
+}
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 initWorkerContext();

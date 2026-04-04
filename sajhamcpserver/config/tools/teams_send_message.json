@@ -1,0 +1,14 @@
+{
+  "name": "teams_send_message",
+  "description": "Send a message to a Microsoft Teams channel. Requires confirmation.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "microsoft_azure",
+  "implementation": "sajha.tools.impl.teams_tools.TeamsSendMessageTool",
+  "metadata": {
+    "connector": "teams",
+    "access": "write",
+    "confirmation_required": true,
+    "category": "collaboration"
+  }
+}

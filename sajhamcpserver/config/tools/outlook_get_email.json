@@ -1,0 +1,13 @@
+{
+  "name": "outlook_get_email",
+  "description": "Get a specific email message by ID from an Outlook mailbox.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "microsoft_azure",
+  "implementation": "sajha.tools.impl.outlook_tools.OutlookGetEmailTool",
+  "metadata": {
+    "connector": "outlook",
+    "access": "read",
+    "category": "communication"
+  }
+}

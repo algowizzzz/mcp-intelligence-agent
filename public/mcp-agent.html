@@ -1785,6 +1785,92 @@
     }
 
     /* ================================================================
+       SETTINGS MODAL
+       ================================================================ */
+    .settings-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 300;
+    }
+
+    .settings-modal-box {
+      background: var(--bg-user-bubble);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      min-width: 300px;
+      max-width: 380px;
+      width: 90%;
+    }
+
+    .settings-modal-box h3 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .settings-modal-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+
+    .settings-modal-row:last-of-type {
+      border-bottom: none;
+    }
+
+    .settings-modal-row label {
+      color: var(--text-primary);
+    }
+
+    .settings-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .settings-modal-close {
+      padding: 6px 16px;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-primary);
+      transition: background var(--transition);
+    }
+
+    .settings-modal-close:hover { background: var(--bg-hover); }
+
+    .settings-clear-btn {
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid #c0392b;
+      background: transparent;
+      color: #e74c3c;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    .settings-clear-btn:hover {
+      background: #c0392b;
+      color: white;
+    }
+
+    /* ================================================================
        PRINT
        ================================================================ */
     @media print {
@@ -2855,7 +2941,7 @@
           </svg>
           <span id="theme-btn-label">Light Theme</span>
         </button>
-        <button class="sidebar-bottom-btn" onclick="clearAllConversations()">
+        <button class="sidebar-bottom-btn" onclick="openSettingsModal()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -3697,6 +3783,39 @@
       };
 
       document.body.appendChild(overlay);
+    }
+
+    function openSettingsModal() {
+      var modal = document.createElement('div');
+      modal.className = 'settings-modal';
+      var isDark = document.body.classList.contains('dark');
+      modal.innerHTML =
+        '<div class="settings-modal-box">' +
+          '<h3>Settings</h3>' +
+          '<div class="settings-modal-row">' +
+            '<label>Theme</label>' +
+            '<button class="sidebar-bottom-btn" id="settings-theme-btn" onclick="toggleTheme(); _settingsUpdateThemeBtn()" style="padding:4px 10px;font-size:12px;">' +
+              (isDark ? 'Dark Theme' : 'Light Theme') +
+            '</button>' +
+          '</div>' +
+          '<div class="settings-modal-row" style="border-bottom:none;padding-top:14px;">' +
+            '<label style="color:var(--text-secondary);font-size:12px;">Danger zone</label>' +
+            '<button class="settings-clear-btn" onclick="this.closest(\'.settings-modal\').remove(); clearAllConversations();">Clear All Conversations</button>' +
+          '</div>' +
+          '<div class="settings-modal-actions">' +
+            '<button class="settings-modal-close" onclick="this.closest(\'.settings-modal\').remove()">Close</button>' +
+          '</div>' +
+        '</div>';
+
+      modal.onclick = function(e) {
+        if (e.target === modal) modal.remove();
+      };
+      document.body.appendChild(modal);
+    }
+
+    function _settingsUpdateThemeBtn() {
+      var btn = document.getElementById('settings-theme-btn');
+      if (btn) btn.textContent = document.body.classList.contains('dark') ? 'Dark Theme' : 'Light Theme';
     }
 
     function resetChatState() {
@@ -4827,7 +4946,7 @@
         fetch(_agentBase + '/api/fs/' + _activeWorkflow.section + '/file/used?path=' + encodeURIComponent(_activeWorkflow.path), {
           method: 'PATCH',
           headers: reqHeaders
-        }).catch(function() {});
+        }).catch(function(e) { console.warn('file/used:', e); });
       }
 
       fetch(API_URL, {
@@ -4933,6 +5052,14 @@
 
     function _ftHeaders() {
       var h = { 'Content-Type': 'application/json' };
+      var _tok = sessionStorage.getItem('rg_token');
+      if (_tok) h['Authorization'] = 'Bearer ' + _tok;
+      return h;
+    }
+
+    function _ftAuthHeader() {
+      // Auth-only header (no Content-Type) — use for multipart/FormData requests
+      var h = {};
       var _tok = sessionStorage.getItem('rg_token');
       if (_tok) h['Authorization'] = 'Bearer ' + _tok;
       return h;
@@ -5090,9 +5217,10 @@
 
     function ftFileClick(section, path, name, isWf, isEditable) {
       if (isWf) {
-        // Open in canvas AND select workflow for chat
-        ftPreviewWorkflow(section, path, name, isEditable);
-        _ftSelectWorkflowForChat(section, path, name);
+        // Open in canvas AND select workflow for chat — single fetch via _ftSelectWorkflowForChat
+        _ftSelectWorkflowForChat(section, path, name, function(content) {
+          ftPreviewWorkflow(section, path, name, isEditable, content);
+        });
       } else {
         // Open in canvas AND add to selected files for chat
         ftPreviewFile(section, path, name);
@@ -5100,12 +5228,13 @@
       }
     }
 
-    function _ftSelectWorkflowForChat(section, path, name) {
+    function _ftSelectWorkflowForChat(section, path, name, onFetched) {
       // If already active, deselect; otherwise fetch content and set active
       if (_activeWorkflow && _activeWorkflow.section === section && _activeWorkflow.path === path) {
         _activeWorkflow = null;
         Object.keys(_FT_SECTIONS).forEach(function(s) { ftRenderTree(s); });
         renderContextBar();
+        if (onFetched) onFetched('');
         return;
       }
       var url = _agentBase + '/api/fs/' + section + '/file?path=' + encodeURIComponent(path);
@@ -5113,10 +5242,12 @@
         .then(function(r) { return r.ok ? r.json() : null; })
         .then(function(data) {
           if (!data) return;
-          _activeWorkflow = { section: section, path: path, name: name, content: data.content || '' };
+          var content = data.content || '';
+          _activeWorkflow = { section: section, path: path, name: name, content: content };
           Object.keys(_FT_SECTIONS).forEach(function(s) { ftRenderTree(s); });
           renderContextBar();
           showToast('Workflow added: ' + name, 1800);
+          if (onFetched) onFetched(content);
         });
     }
 
@@ -5138,40 +5269,48 @@
       _ftAddFileToChat(section, path, name);
     }
 
-    function ftPreviewWorkflow(section, path, name, isEditable) {
+    function ftPreviewWorkflow(section, path, name, isEditable, prefetchedContent) {
+      // If content was already fetched (e.g. by _ftSelectWorkflowForChat), skip the network call
+      if (prefetchedContent !== undefined) {
+        _renderWorkflowCanvas(section, path, name, prefetchedContent);
+        return;
+      }
       var url = _agentBase + '/api/fs/' + section + '/file?path=' + encodeURIComponent(path);
       fetch(url, { headers: _ftHeaders() })
         .then(function(r) { return r.ok ? r.json() : null; })
         .then(function(data) {
           if (!data) { showToast('Could not load workflow', 2000); return; }
-          var content = data.content || '';
-          _canvasPreviewWorkflow = { section: section, path: path, name: name };
-          _canvasMarkdown = content;
-          var titleEl = document.getElementById('canvas-title');
-          titleEl.textContent = name + ' \u2014 Preview';
-          titleEl.contentEditable = 'false';
-          var badge = document.getElementById('canvas-readonly-badge');
-          if (badge) badge.style.display = '';
-          renderCanvas(content);
-          document.body.classList.add('canvas-active');
-          var exportBtn = document.getElementById('canvas-export-btn');
-          if (exportBtn) exportBtn.style.display = 'none';
-          document.getElementById('canvas-content').scrollTop = 0;
-          var saveBtn = document.getElementById('canvas-save-btn');
-          if (saveBtn) saveBtn.style.display = '';
-          // Update select bar — workflow is being added to context in parallel, poll once
-          setTimeout(function() {
-            var bar = document.getElementById('canvas-wf-select-bar');
-            var btn = document.getElementById('canvas-wf-select-btn');
-            if (bar && btn) {
-              var isActive = _activeWorkflow && _activeWorkflow.section === section && _activeWorkflow.path === path;
-              btn.textContent = isActive ? 'Deselect Workflow' : 'Select this Workflow';
-              btn.style.background = isActive ? 'var(--text-muted)' : '#2a2a2a';
-              bar.style.display = '';
-            }
-          }, 400);
+          _renderWorkflowCanvas(section, path, name, data.content || '');
         })
         .catch(function() { showToast('Failed to load workflow', 2000); });
+    }
+
+    function _renderWorkflowCanvas(section, path, name, content) {
+      _canvasPreviewWorkflow = { section: section, path: path, name: name };
+      _canvasMarkdown = content;
+      var titleEl = document.getElementById('canvas-title');
+      titleEl.textContent = name + ' \u2014 Preview';
+      titleEl.contentEditable = 'false';
+      var badge = document.getElementById('canvas-readonly-badge');
+      if (badge) badge.style.display = '';
+      renderCanvas(content);
+      document.body.classList.add('canvas-active');
+      var exportBtn = document.getElementById('canvas-export-btn');
+      if (exportBtn) exportBtn.style.display = 'none';
+      document.getElementById('canvas-content').scrollTop = 0;
+      var saveBtn = document.getElementById('canvas-save-btn');
+      if (saveBtn) saveBtn.style.display = '';
+      // Update select bar
+      setTimeout(function() {
+        var bar = document.getElementById('canvas-wf-select-bar');
+        var btn = document.getElementById('canvas-wf-select-btn');
+        if (bar && btn) {
+          var isActive = _activeWorkflow && _activeWorkflow.section === section && _activeWorkflow.path === path;
+          btn.textContent = isActive ? 'Deselect Workflow' : 'Select this Workflow';
+          btn.style.background = isActive ? 'var(--text-muted)' : '#2a2a2a';
+          bar.style.display = '';
+        }
+      }, 400);
     }
 
     function ftPreviewFile(section, path, name) {
@@ -5384,8 +5523,7 @@
       if (!_mdEditorDirty || !_mdEditorSection || !_mdEditorPath) return;
       var ta = document.getElementById('md-editor-textarea');
       if (!ta) return;
-      var h = { 'Content-Type': 'application/json' };
-      if (FRONTEND_API_KEY) h['Authorization'] = 'Bearer ' + FRONTEND_API_KEY;
+      var h = _ftHeaders();
       fetch(_agentBase + '/api/fs/' + _mdEditorSection + '/file', {
         method: 'PATCH',
         headers: h,
@@ -5443,8 +5581,7 @@
             if (!_FT_SECTIONS[targetSection] || !_FT_SECTIONS[targetSection].writable) { showToast('This section is read-only', 2000); return; }
             var srcName = dragData.path.split('/').pop();
             var dst = targetPath + '/' + srcName;
-            var h = { 'Content-Type': 'application/json' };
-            if (FRONTEND_API_KEY) h['Authorization'] = 'Bearer ' + FRONTEND_API_KEY;
+            var h = _ftHeaders();
             fetch(_agentBase + '/api/fs/' + targetSection + '/move', {
               method: 'POST',
               headers: h,
@@ -5475,10 +5612,8 @@
           if (!name) { inputRow.remove(); return; }
           var fullPath = parentPath ? parentPath + '/' + name : name;
           inputRow.remove();
-          var h = { 'Content-Type': 'application/json' };
-          if (FRONTEND_API_KEY) h['Authorization'] = 'Bearer ' + FRONTEND_API_KEY;
           fetch(_agentBase + '/api/fs/' + section + '/folder', {
-            method: 'POST', headers: h,
+            method: 'POST', headers: _ftHeaders(),
             body: JSON.stringify({ path: fullPath })
           }).then(function(r) { if (r.ok) ftLoad(section); else showToast('Create folder failed', 2000); });
         } else if (e.key === 'Escape') {
@@ -5504,10 +5639,8 @@
           if (!name.endsWith('.md')) name += '.md';
           var fullPath = parentPath ? parentPath + '/' + name : name;
           inputRow.remove();
-          var h = { 'Content-Type': 'application/json' };
-          if (FRONTEND_API_KEY) h['Authorization'] = 'Bearer ' + FRONTEND_API_KEY;
           fetch(_agentBase + '/api/fs/' + section + '/file', {
-            method: 'PATCH', headers: h,
+            method: 'PATCH', headers: _ftHeaders(),
             body: JSON.stringify({ path: fullPath, content: '# ' + name.replace('.md','') + '\n\n' })
           }).then(function(r) {
             if (r.ok) { ftLoad(section); ftOpenMdEditor(section, fullPath, name); }
@@ -5522,8 +5655,7 @@
     function ftUploadFiles(section, folderPath, input) {
       var files = Array.from(input.files);
       if (!files.length) return;
-      var h = {};
-      if (FRONTEND_API_KEY) h['Authorization'] = 'Bearer ' + FRONTEND_API_KEY;
+      var h = _ftAuthHeader();
       var url = _agentBase + '/api/fs/' + section + '/upload' + (folderPath ? '?path=' + encodeURIComponent(folderPath) : '');
       Promise.all(files.map(function(f) {
         var fd = new FormData();
@@ -5538,10 +5670,8 @@
 
     function ftDeleteFile(section, path) {
       if (!confirm('Delete ' + path + '?')) return;
-      var h = { 'Content-Type': 'application/json' };
-      if (FRONTEND_API_KEY) h['Authorization'] = 'Bearer ' + FRONTEND_API_KEY;
       fetch(_agentBase + '/api/fs/' + section + '/file?path=' + encodeURIComponent(path), {
-        method: 'DELETE', headers: h
+        method: 'DELETE', headers: _ftHeaders()
       }).then(function(r) {
         if (r.ok) {
           // Clear if active workflow
@@ -5557,10 +5687,8 @@
 
     function ftDeleteFolder(section, path) {
       if (!confirm('Delete folder ' + path + '? (Must be empty)')) return;
-      var h = { 'Content-Type': 'application/json' };
-      if (FRONTEND_API_KEY) h['Authorization'] = 'Bearer ' + FRONTEND_API_KEY;
       fetch(_agentBase + '/api/fs/' + section + '/folder?path=' + encodeURIComponent(path), {
-        method: 'DELETE', headers: h
+        method: 'DELETE', headers: _ftHeaders()
       }).then(function(r) {
         if (r.ok) ftLoad(section);
         else r.json().then(function(d) { showToast(d.detail || 'Delete failed', 2000); });
@@ -5622,19 +5750,17 @@
         var newName = prompt('Rename to:', _ctxTarget.name);
         if (!newName || newName === _ctxTarget.name) return;
         if (_ctxTarget.isAdmin) {
-          fetch(_agentBase + '/api/admin/rename', {
-            method: 'PATCH',
+          fetch(_adminFileOpUrl(_ctxTarget.section, 'rename'), {
+            method: 'POST',
             headers: _adminJsonHeaders(),
-            body: JSON.stringify({ section: _ctxTarget.section, path: _ctxTarget.path, new_name: newName })
+            body: JSON.stringify({ path: _ctxTarget.path, new_name: newName })
           }).then(function(r) {
             if (r.ok) { adminLoad(_ctxTarget.section); showToast('Renamed to ' + newName, 2000); }
             else { showToast('Rename failed', 2000); }
           });
         } else {
-          var h = { 'Content-Type': 'application/json' };
-          if (FRONTEND_API_KEY) h['Authorization'] = 'Bearer ' + FRONTEND_API_KEY;
           fetch(_agentBase + '/api/fs/' + _ctxTarget.section + '/rename', {
-            method: 'POST', headers: h,
+            method: 'POST', headers: _ftHeaders(),
             body: JSON.stringify({ path: _ctxTarget.path, new_name: newName })
           }).then(function(r) { if (r.ok) ftLoad(_ctxTarget.section); else showToast('Rename failed', 2000); });
         }
@@ -5804,6 +5930,19 @@
       return h;
     }
 
+    function _adminFileOpUrl(section, op) {
+      // Route to worker-scoped endpoints (G-03 / G-04)
+      // op: 'file' | 'folder' | 'rename' | 'move' | 'upload' | '' (tree)
+      var u = _authUser || {};
+      var workerId = _activeWorkerId || u.worker_id;
+      if (u.role === 'super_admin' && workerId) {
+        var base = _agentBase + '/api/super/workers/' + workerId + '/files/' + section;
+        return op ? base + '/' + op : base;
+      }
+      var base = _agentBase + '/api/admin/worker/files/' + section;
+      return op ? base + '/' + op : base;
+    }
+
     function _decodeJwt(token) {
       try {
         var parts = token.split('.');
@@ -5842,7 +5981,7 @@
     }
 
     function adminLoad(section) {
-      fetch(_agentBase + '/api/admin/tree/' + section, { headers: _adminHeaders() })
+      fetch(_adminFileOpUrl(section, ''), { headers: _adminHeaders() })
         .then(function(r) { return r.ok ? r.json() : null; })
         .then(function(data) {
           if (!data) return;
@@ -6032,10 +6171,10 @@
 
     function adminMoveItem(srcSection, srcPath, destSection, destFolder, name) {
       if (srcSection !== destSection) { showToast('Cannot move between sections', 2000); return; }
-      fetch(_agentBase + '/api/admin/move', {
+      fetch(_adminFileOpUrl(srcSection, 'move'), {
         method: 'POST',
         headers: _adminJsonHeaders(),
-        body: JSON.stringify({ section: srcSection, src_path: srcPath, dest_folder: destFolder })
+        body: JSON.stringify({ src: srcPath, dest_folder: destFolder })
       }).then(function(r) {
         if (r.ok) {
           adminLoad(srcSection);
@@ -6094,10 +6233,10 @@
           if (!name) { inputRow.remove(); return; }
           var fullPath = parentPath ? parentPath + '/' + name : name;
           inputRow.remove();
-          fetch(_agentBase + '/api/admin/folder', {
+          fetch(_adminFileOpUrl(section, 'folder'), {
             method: 'POST',
             headers: _adminJsonHeaders(),
-            body: JSON.stringify({ section: section, path: fullPath })
+            body: JSON.stringify({ path: fullPath })
           }).then(function(r) {
             if (r.ok) { adminLoad(section); showToast('Folder "' + name + '" created', 2000); }
             else { showToast('Create folder failed', 2000); }
@@ -6130,11 +6269,21 @@
       if (bodyEl) bodyEl.innerHTML = body;
       if (modal) modal.classList.add('visible');
       _adminConfirmCb = function() {
-        fetch(_agentBase + '/api/admin/item', {
-          method: 'DELETE',
-          headers: _adminJsonHeaders(),
-          body: JSON.stringify({ section: section, path: path, recursive: childCount > 0 })
-        }).then(function(r) {
+        var isDir = type !== 'file';
+        var req;
+        if (isDir) {
+          req = fetch(_adminFileOpUrl(section, 'folder'), {
+            method: 'DELETE',
+            headers: _adminJsonHeaders(),
+            body: JSON.stringify({ path: path, recursive: childCount > 0 })
+          });
+        } else {
+          req = fetch(_adminFileOpUrl(section, 'file') + '?path=' + encodeURIComponent(path), {
+            method: 'DELETE',
+            headers: _adminHeaders()
+          });
+        }
+        req.then(function(r) {
           if (r.ok) {
             adminLoad(section);
             showToast(esc(name) + ' deleted', 2000);
@@ -6180,47 +6329,45 @@
       meta.textContent = 'Loading…';
       body.innerHTML = '<div style="color:var(--text-muted);padding:20px">Loading…</div>';
 
-      var url = _agentBase + '/api/admin/file?section=' + encodeURIComponent(section) + '&path=' + encodeURIComponent(path);
+      var url = _adminFileOpUrl(section, 'file') + '?path=' + encodeURIComponent(path);
       var ext = name.split('.').pop().toLowerCase();
 
-      if (['pdf','docx','doc','xlsx','xls'].indexOf(ext) >= 0) {
-        // Binary: fetch as blob and render in iframe
-        fetch(url, { headers: _adminHeaders() })
-          .then(function(r) {
-            meta.textContent = r.headers.get('X-File-Size') ? _fmtSize(+r.headers.get('X-File-Size')) : '';
-            return r.blob();
-          })
-          .then(function(blob) {
-            if (ext === 'pdf') {
-              var blobUrl = URL.createObjectURL(blob);
-              body.innerHTML = '<iframe src="' + blobUrl + '" style="width:100%;height:100%;min-height:500px;border:none"></iframe>';
-            } else if (ext === 'xlsx' || ext === 'xls') {
-              _adminPreviewExcel(blob, body);
-            } else if (ext === 'docx' || ext === 'doc') {
-              _adminPreviewDocx(blob, body);
-            }
-          }).catch(function() { body.innerHTML = '<div style="color:#aaaaaa;padding:20px">Preview failed</div>'; });
-        return;
+      // Helper: decode base64 string → ArrayBuffer
+      function _b64ToAb(b64) {
+        var bin = atob(b64);
+        var ab = new ArrayBuffer(bin.length);
+        var u8 = new Uint8Array(ab);
+        for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+        return ab;
       }
 
-      // Text-based
+      // All endpoints return JSON: { path, encoding, content, size_bytes }
       fetch(url, { headers: _adminHeaders() })
-        .then(function(r) {
-          var size = r.headers.get('X-File-Size');
-          var trunc = r.headers.get('X-Truncated');
-          meta.textContent = (size ? _fmtSize(+size) : '') + (trunc ? ' · truncated at 2MB' : '');
-          return r.text();
-        })
-        .then(function(text) {
-          if (ext === 'md') {
-            body.innerHTML = (typeof marked !== 'undefined') ? marked.parse(text) : '<pre>' + esc(text) + '</pre>';
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          var sz = data.size_bytes || 0;
+          meta.textContent = sz ? _fmtSize(sz) : '';
+          var content = data.content || '';
+
+          if (['pdf','docx','doc','xlsx','xls'].indexOf(ext) >= 0) {
+            var ab = _b64ToAb(content);
+            if (ext === 'pdf') {
+              var blobUrl = URL.createObjectURL(new Blob([ab], {type:'application/pdf'}));
+              body.innerHTML = '<iframe src="' + blobUrl + '" style="width:100%;height:100%;min-height:500px;border:none"></iframe>';
+            } else if (ext === 'xlsx' || ext === 'xls') {
+              _adminPreviewExcel(new Blob([ab]), body);
+            } else if (ext === 'docx' || ext === 'doc') {
+              _adminPreviewDocx(new Blob([ab]), body);
+            }
+          } else if (ext === 'md') {
+            body.innerHTML = (typeof marked !== 'undefined') ? marked.parse(content) : '<pre>' + esc(content) + '</pre>';
           } else if (ext === 'json') {
-            try { text = JSON.stringify(JSON.parse(text), null, 2); } catch(ex) {}
-            body.innerHTML = '<pre>' + esc(text) + '</pre>';
+            try { content = JSON.stringify(JSON.parse(content), null, 2); } catch(ex) {}
+            body.innerHTML = '<pre>' + esc(content) + '</pre>';
           } else if (ext === 'csv' || ext === 'tsv') {
-            _adminPreviewCsv(text, ext, body);
+            _adminPreviewCsv(content, ext, body);
           } else {
-            body.innerHTML = '<pre>' + esc(text) + '</pre>';
+            body.innerHTML = '<pre>' + esc(content) + '</pre>';
           }
         }).catch(function() { body.innerHTML = '<div style="color:#aaaaaa;padding:20px">Preview failed</div>'; });
     }
@@ -6309,10 +6456,10 @@
         if (!newName || newName === oldText || newName.includes('/') || newName.includes('\\')) {
           inp.replaceWith(nameEl); return;
         }
-        fetch(_agentBase + '/api/admin/rename', {
-          method: 'PATCH',
+        fetch(_adminFileOpUrl(section, 'rename'), {
+          method: 'POST',
           headers: _adminJsonHeaders(),
-          body: JSON.stringify({ section: section, path: path, new_name: newName })
+          body: JSON.stringify({ path: path, new_name: newName })
         }).then(function(r) {
           if (r.ok) { adminLoad(section); showToast('Renamed to "' + newName + '"', 2000); }
           else { r.json().then(function(d) { showToast(d.detail || 'Rename failed', 2000); }); inp.replaceWith(nameEl); }
@@ -6390,11 +6537,31 @@
             return;
           }
           var p = paths.shift();
-          fetch(_agentBase + '/api/admin/item', {
-            method: 'DELETE',
-            headers: _adminJsonHeaders(),
-            body: JSON.stringify({ section: section, path: p, recursive: true })
-          }).then(function(r) {
+          // Folders in bulk are identified by path ending '/' or via tree data; use folder endpoint
+          var isDir = p.endsWith('/') || (function() {
+            var t = _adminTrees[section];
+            if (!t) return false;
+            function findType(nodes, target) {
+              for (var i = 0; i < (nodes||[]).length; i++) {
+                if (nodes[i].path === target) return nodes[i].type === 'folder';
+                var r = findType(nodes[i].children, target);
+                if (r !== undefined) return r;
+              }
+            }
+            return !!findType(t.tree, p);
+          })();
+          var req;
+          if (isDir) {
+            req = fetch(_adminFileOpUrl(section, 'folder'), {
+              method: 'DELETE', headers: _adminJsonHeaders(),
+              body: JSON.stringify({ path: p, recursive: true })
+            });
+          } else {
+            req = fetch(_adminFileOpUrl(section, 'file') + '?path=' + encodeURIComponent(p), {
+              method: 'DELETE', headers: _adminHeaders()
+            });
+          }
+          req.then(function(r) {
             if (r.ok) done++; else failed++;
             next();
           }).catch(function() { failed++; next(); });
@@ -6494,7 +6661,7 @@
       fd.append('path', next.folder);
       var xhr = new XMLHttpRequest();
       _adminXhr = xhr;
-      xhr.open('POST', _agentBase + '/api/admin/upload?section=' + encodeURIComponent(next.section) + '&path=' + encodeURIComponent(next.folder));
+      xhr.open('POST', _adminFileOpUrl(next.section, 'upload') + '?path=' + encodeURIComponent(next.folder));
       if (_adminToken) xhr.setRequestHeader('Authorization', 'Bearer ' + _adminToken);
       xhr.upload.onprogress = function(e) {
         if (e.lengthComputable) {
@@ -6566,7 +6733,7 @@
       fd.append('file', item.file);
       var xhr = new XMLHttpRequest();
       _adminXhr = xhr;
-      xhr.open('POST', _agentBase + '/api/admin/upload?section=' + encodeURIComponent(item.section) + '&path=' + encodeURIComponent(item.folder) + '&overwrite=true');
+      xhr.open('POST', _adminFileOpUrl(item.section, 'upload') + '?path=' + encodeURIComponent(item.folder) + '&overwrite=true');
       if (_adminToken) xhr.setRequestHeader('Authorization', 'Bearer ' + _adminToken);
       xhr.upload.onprogress = function(e) {
         if (e.lengthComputable) {
@@ -6769,8 +6936,9 @@
           var agentBase = window.AGENT_BASE_URL || 'http://localhost:8000';
           try {
             var headers = {};
-            if (FRONTEND_API_KEY) {
-              headers['Authorization'] = 'Bearer ' + FRONTEND_API_KEY;
+            var _uploadTok = sessionStorage.getItem('rg_token') || FRONTEND_API_KEY;
+            if (_uploadTok) {
+              headers['Authorization'] = 'Bearer ' + _uploadTok;
             }
             var res = await fetch(agentBase + '/api/files/upload', {
               method: 'POST',
@@ -6805,7 +6973,8 @@
           reader.onload = function(ev) {
             var content = ev.target.result;
             var headers = { 'Content-Type': 'application/json' };
-            if (FRONTEND_API_KEY) headers['Authorization'] = 'Bearer ' + FRONTEND_API_KEY;
+            var tok = sessionStorage.getItem('rg_token') || FRONTEND_API_KEY;
+            if (tok) headers['Authorization'] = 'Bearer ' + tok;
             fetch(_agentBase + '/api/workflows', {
               method: 'POST',
               headers: headers,

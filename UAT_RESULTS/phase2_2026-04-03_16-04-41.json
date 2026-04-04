@@ -1,0 +1,698 @@
+{
+  "run_id": "phase2_2026-04-03_16-04-41",
+  "phase": "phase2",
+  "generated_at": "2026-04-03T21:06:12.826014Z",
+  "summary": {
+    "total": 76,
+    "pass": 12,
+    "fail": 1,
+    "skip": 63,
+    "error": 0
+  },
+  "results": [
+    {
+      "id": "C-01",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.484771Z"
+    },
+    {
+      "id": "C-02",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.485342Z"
+    },
+    {
+      "id": "C-03",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.485538Z"
+    },
+    {
+      "id": "C-04",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.485690Z"
+    },
+    {
+      "id": "C-05",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.485833Z"
+    },
+    {
+      "id": "C-06",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.485962Z"
+    },
+    {
+      "id": "C-07",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.486288Z"
+    },
+    {
+      "id": "C-08",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.486430Z"
+    },
+    {
+      "id": "C-09",
+      "module": "Module 5 \u2014 Chat & Agent",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.486556Z"
+    },
+    {
+      "id": "T-01",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.486705Z"
+    },
+    {
+      "id": "T-02",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.486838Z"
+    },
+    {
+      "id": "T-03",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.486972Z"
+    },
+    {
+      "id": "T-04",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.487282Z"
+    },
+    {
+      "id": "T-05",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.487584Z"
+    },
+    {
+      "id": "T-06",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.487744Z"
+    },
+    {
+      "id": "T-07",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.487893Z"
+    },
+    {
+      "id": "T-08",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.488087Z"
+    },
+    {
+      "id": "T-09",
+      "module": "Module 6A \u2014 IRIS CCR Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.488316Z"
+    },
+    {
+      "id": "T-10",
+      "module": "Module 6B \u2014 OSFI Regulatory Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.488513Z"
+    },
+    {
+      "id": "T-11",
+      "module": "Module 6B \u2014 OSFI Regulatory Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.488889Z"
+    },
+    {
+      "id": "T-12",
+      "module": "Module 6B \u2014 OSFI Regulatory Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.489165Z"
+    },
+    {
+      "id": "T-13",
+      "module": "Module 6B \u2014 OSFI Regulatory Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.489396Z"
+    },
+    {
+      "id": "T-14",
+      "module": "Module 6B \u2014 OSFI Regulatory Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.489610Z"
+    },
+    {
+      "id": "T-15",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.489832Z"
+    },
+    {
+      "id": "T-16",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.490202Z"
+    },
+    {
+      "id": "T-17",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.490416Z"
+    },
+    {
+      "id": "T-18",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.490639Z"
+    },
+    {
+      "id": "T-19",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.490858Z"
+    },
+    {
+      "id": "T-20",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.491081Z"
+    },
+    {
+      "id": "T-21",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.491311Z"
+    },
+    {
+      "id": "T-22",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.491683Z"
+    },
+    {
+      "id": "T-23",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.491910Z"
+    },
+    {
+      "id": "T-24",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.492157Z"
+    },
+    {
+      "id": "T-25",
+      "module": "Module 6C \u2014 EDGAR / SEC Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.492392Z"
+    },
+    {
+      "id": "T-26",
+      "module": "Module 6D \u2014 Tavily / IR / News Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.492646Z"
+    },
+    {
+      "id": "T-27",
+      "module": "Module 6D \u2014 Tavily / IR / News Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.492924Z"
+    },
+    {
+      "id": "T-28",
+      "module": "Module 6D \u2014 Tavily / IR / News Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.493165Z"
+    },
+    {
+      "id": "T-29",
+      "module": "Module 6D \u2014 Tavily / IR / News Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.493697Z"
+    },
+    {
+      "id": "T-30",
+      "module": "Module 6D \u2014 Tavily / IR / News Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.493996Z"
+    },
+    {
+      "id": "T-31",
+      "module": "Module 6D \u2014 Tavily / IR / News Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.494391Z"
+    },
+    {
+      "id": "T-32",
+      "module": "Module 6D \u2014 Tavily / IR / News Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.494678Z"
+    },
+    {
+      "id": "T-33",
+      "module": "Module 6D \u2014 Tavily / IR / News Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.494926Z"
+    },
+    {
+      "id": "T-34",
+      "module": "Module 6E \u2014 DuckDB / SQL Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.495218Z"
+    },
+    {
+      "id": "T-35",
+      "module": "Module 6E \u2014 DuckDB / SQL Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.495476Z"
+    },
+    {
+      "id": "T-36",
+      "module": "Module 6E \u2014 DuckDB / SQL Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.495730Z"
+    },
+    {
+      "id": "T-37",
+      "module": "Module 6E \u2014 DuckDB / SQL Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.495997Z"
+    },
+    {
+      "id": "T-38",
+      "module": "Module 6E \u2014 DuckDB / SQL Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.496310Z"
+    },
+    {
+      "id": "T-39",
+      "module": "Module 6E \u2014 DuckDB / SQL Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.496586Z"
+    },
+    {
+      "id": "T-40",
+      "module": "Module 6E \u2014 DuckDB / SQL Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.496910Z"
+    },
+    {
+      "id": "T-41",
+      "module": "Module 6E \u2014 DuckDB / SQL Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.497218Z"
+    },
+    {
+      "id": "T-42",
+      "module": "Module 6F \u2014 MS Document Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.497514Z"
+    },
+    {
+      "id": "T-43",
+      "module": "Module 6F \u2014 MS Document Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.497806Z"
+    },
+    {
+      "id": "T-44",
+      "module": "Module 6F \u2014 MS Document Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.498100Z"
+    },
+    {
+      "id": "T-45",
+      "module": "Module 6F \u2014 MS Document Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.498401Z"
+    },
+    {
+      "id": "T-46",
+      "module": "Module 6F \u2014 MS Document Tools",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:41.498748Z"
+    },
+    {
+      "id": "T-47",
+      "module": "Module 6G \u2014 Utility Tools",
+      "scenario": "list_uploaded_files \u2014 list uploads",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 3958,
+      "timestamp": "2026-04-03T21:04:45.457093Z"
+    },
+    {
+      "id": "T-48",
+      "module": "Module 6G \u2014 Utility Tools",
+      "scenario": "pdf_read \u2014 extract text from PDF",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 5812,
+      "timestamp": "2026-04-03T21:04:51.282581Z"
+    },
+    {
+      "id": "T-49",
+      "module": "Module 6G \u2014 Utility Tools",
+      "scenario": "parquet_read (skipped: requires pre-uploaded .parquet \u2014 manual test)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:04:51.303054Z"
+    },
+    {
+      "id": "T-50",
+      "module": "Module 6G \u2014 Utility Tools",
+      "scenario": "md_save \u2014 save analysis to markdown",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 2711,
+      "timestamp": "2026-04-03T21:04:54.014391Z"
+    },
+    {
+      "id": "T-51",
+      "module": "Module 6G \u2014 Utility Tools",
+      "scenario": "md_to_docx \u2014 convert markdown to Word",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 4657,
+      "timestamp": "2026-04-03T21:04:58.671814Z"
+    },
+    {
+      "id": "T-52",
+      "module": "Module 6G \u2014 Utility Tools",
+      "scenario": "generate_chart \u2014 create a chart",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 6327,
+      "timestamp": "2026-04-03T21:05:04.999688Z"
+    },
+    {
+      "id": "T-53",
+      "module": "Module 6G \u2014 Utility Tools",
+      "scenario": "fill_template \u2014 fill a workflow template",
+      "status": "FAIL",
+      "detail": "expected one of ['fill_template', 'workflow_get', 'workflow_list'], got ['search_files', 'edgar_company_brief', 'list_uploaded_files', 'md_save']",
+      "duration_ms": 28880,
+      "timestamp": "2026-04-03T21:05:33.880643Z"
+    },
+    {
+      "id": "T-54",
+      "module": "Module 6G \u2014 Utility Tools",
+      "scenario": "search_files \u2014 keyword search in uploads",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 3768,
+      "timestamp": "2026-04-03T21:05:37.650205Z"
+    },
+    {
+      "id": "T-55",
+      "module": "Module 6H \u2014 CCR Exposure Tools",
+      "scenario": "get_counterparty_exposure \u2014 by counterparty",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 5645,
+      "timestamp": "2026-04-03T21:05:43.296135Z"
+    },
+    {
+      "id": "T-56",
+      "module": "Module 6H \u2014 CCR Exposure Tools",
+      "scenario": "get_credit_limits \u2014 limits table",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 5615,
+      "timestamp": "2026-04-03T21:05:48.912160Z"
+    },
+    {
+      "id": "T-57",
+      "module": "Module 6H \u2014 CCR Exposure Tools",
+      "scenario": "get_trade_inventory \u2014 trade-level details",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 7690,
+      "timestamp": "2026-04-03T21:05:56.602758Z"
+    },
+    {
+      "id": "T-58",
+      "module": "Module 6H \u2014 CCR Exposure Tools",
+      "scenario": "get_var_contribution \u2014 VaR attribution",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 4512,
+      "timestamp": "2026-04-03T21:06:01.115709Z"
+    },
+    {
+      "id": "T-59",
+      "module": "Module 6H \u2014 CCR Exposure Tools",
+      "scenario": "get_historical_exposure \u2014 time series",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 6118,
+      "timestamp": "2026-04-03T21:06:07.234173Z"
+    },
+    {
+      "id": "T-60",
+      "module": "Module 6H \u2014 CCR Exposure Tools",
+      "scenario": "CCR tool on worker with no iris data: graceful response",
+      "status": "PASS",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:06:12.818682Z"
+    },
+    {
+      "id": "WF-01",
+      "module": "Module 7 \u2014 Workflows",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:06:12.820059Z"
+    },
+    {
+      "id": "WF-02",
+      "module": "Module 7 \u2014 Workflows",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:06:12.821079Z"
+    },
+    {
+      "id": "WF-03",
+      "module": "Module 7 \u2014 Workflows",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:06:12.822298Z"
+    },
+    {
+      "id": "WF-04",
+      "module": "Module 7 \u2014 Workflows",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:06:12.823251Z"
+    },
+    {
+      "id": "WF-05",
+      "module": "Module 7 \u2014 Workflows",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:06:12.823975Z"
+    },
+    {
+      "id": "WF-06",
+      "module": "Module 7 \u2014 Workflows",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:06:12.824671Z"
+    },
+    {
+      "id": "WF-07",
+      "module": "Module 7 \u2014 Workflows",
+      "scenario": "(skipped: module excluded)",
+      "status": "SKIP",
+      "detail": "",
+      "duration_ms": 0.0,
+      "timestamp": "2026-04-03T21:06:12.825335Z"
+    }
+  ]
+}

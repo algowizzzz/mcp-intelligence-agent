@@ -1,0 +1,13 @@
+{
+  "name": "confluence_list_pages",
+  "description": "List pages in a Confluence space.",
+  "version": "1.0.0",
+  "enabled": true,
+  "connector_id": "atlassian",
+  "implementation": "sajha.tools.impl.confluence_tools.ConfluenceListPagesTool",
+  "metadata": {
+    "connector": "confluence",
+    "access": "read",
+    "category": "collaboration"
+  }
+}
