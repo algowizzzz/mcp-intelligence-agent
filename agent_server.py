@@ -1245,6 +1245,18 @@ def _resolve_fs_path(worker: dict, user_id: str, section: str, rel: str = '') ->
     return _resolve_worker_path(worker, section, rel)
 
 
+@app.get('/api/fs/quota')
+async def fs_quota(payload: dict = Depends(require_jwt)):
+    worker = _fs_worker(payload)
+    uid = payload['user_id']
+    my_data_root = _resolve_fs_path(worker, uid, 'uploads')
+    used_bytes = sum(f.stat().st_size for f in my_data_root.rglob('*') if f.is_file()) if my_data_root.exists() else 0
+    # Default quota: 5 GB. Could be configurable via properties.
+    limit_bytes = 5 * 1024 * 1024 * 1024
+    used_pct = round((used_bytes / limit_bytes) * 100, 2) if limit_bytes > 0 else 0
+    return {'used_bytes': used_bytes, 'limit_bytes': limit_bytes, 'used_pct': used_pct}
+
+
 @app.get('/api/fs/{section}/tree')
 async def fs_tree(section: str, payload: dict = Depends(require_jwt)):
     worker = _fs_worker(payload)
@@ -1362,6 +1374,63 @@ async def fs_rename(section: str, req: FsRenameRequest, payload: dict = Depends(
     full.rename(new_full)
     build_index(str(root))
     return {'ok': True}
+
+
+class FsCopyRequest(BaseModel):
+    src_path: str
+    dest_section: str
+    dest_path: str
+
+@app.post('/api/fs/{section}/copy')
+async def fs_copy(section: str, req: FsCopyRequest, payload: dict = Depends(require_jwt)):
+    worker = _fs_worker(payload)
+    uid = payload['user_id']
+    if req.dest_section not in _WRITABLE_SECTIONS:
+        raise HTTPException(status_code=403, detail='Destination section is read-only')
+    src_full = _resolve_fs_path(worker, uid, section, req.src_path)
+    if not src_full.exists() or not src_full.is_file():
+        raise HTTPException(status_code=404, detail='Source file not found')
+    dst_full = _resolve_fs_path(worker, uid, req.dest_section, req.dest_path)
+    if dst_full.exists():
+        raise HTTPException(status_code=409, detail='Destination already exists')
+    dst_full.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(str(src_full), str(dst_full))
+    dst_root = _resolve_fs_path(worker, uid, req.dest_section)
+    build_index(str(dst_root))
+    return {'ok': True, 'dest_path': req.dest_path}
+
+
+class FsBatchDeleteRequest(BaseModel):
+    paths: list
+    include_dirs: bool = False
+
+@app.post('/api/fs/{section}/batch-delete')
+async def fs_batch_delete(section: str, req: FsBatchDeleteRequest, payload: dict = Depends(require_jwt)):
+    if section not in _WRITABLE_SECTIONS:
+        raise HTTPException(status_code=403, detail='Section is read-only')
+    worker = _fs_worker(payload)
+    uid = payload['user_id']
+    root = _resolve_fs_path(worker, uid, section)
+    deleted = []
+    errors = []
+    for p in req.paths:
+        try:
+            full = _resolve_fs_path(worker, uid, section, p)
+            if not full.exists():
+                errors.append({'path': p, 'error': 'Not found'})
+                continue
+            if full.is_dir():
+                if not req.include_dirs:
+                    errors.append({'path': p, 'error': 'Is a directory; set include_dirs=true'})
+                    continue
+                shutil.rmtree(str(full))
+            else:
+                full.unlink()
+            deleted.append(p)
+        except Exception as e:
+            errors.append({'path': p, 'error': str(e)})
+    build_index(str(root))
+    return {'deleted': deleted, 'errors': errors}
 
 
 @app.patch('/api/fs/{section}/file/used')

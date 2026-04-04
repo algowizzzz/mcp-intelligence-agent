@@ -223,6 +223,9 @@
     // Drag state
     this._drag = null;  // { path, isDir }
 
+    // Search
+    this._searchQuery = '';
+
     // Closed-over ref for event handlers
     var self = this;
     // Dismiss context menu on click outside
@@ -325,11 +328,29 @@
     this._bindExternalDrop(el);
   };
 
+  BPulseFileTree.prototype._matchesSearch = function (node) {
+    var q = this._searchQuery;
+    if (!q) return true;
+    if (node.type !== 'folder' && node.type !== 'directory') {
+      return node.name.toLowerCase().indexOf(q) >= 0;
+    }
+    // Folder matches if any descendant matches
+    var self = this;
+    if (node.name.toLowerCase().indexOf(q) >= 0) return true;
+    if (node.children) {
+      for (var i = 0; i < node.children.length; i++) {
+        if (self._matchesSearch(node.children[i])) return true;
+      }
+    }
+    return false;
+  };
+
   BPulseFileTree.prototype._renderNodes = function (nodes, depth) {
     if (!nodes || !nodes.length) return '';
     var self = this;
     var html = '';
     nodes.forEach(function (node) {
+      if (self._searchQuery && !self._matchesSearch(node)) return;
       var indent = depth * 14;
       var isDir = node.type === 'folder' || node.type === 'directory';
       if (isDir) {
@@ -372,6 +393,14 @@
           html += '<input type="checkbox" class="bpft-bulk-cb" ' + (inBulk ? 'checked' : '') + ' style="margin-right:4px">';
         }
         html += '<span class="ft-row-name">' + esc(node.name) + '</span>';
+        if (node.size_bytes != null) {
+          var sizeStr = node.size_bytes > 1048576
+            ? (node.size_bytes / 1048576).toFixed(1) + ' MB'
+            : node.size_bytes > 1024
+              ? Math.round(node.size_bytes / 1024) + ' KB'
+              : node.size_bytes + ' B';
+          html += '<span class="ft-row-meta">' + sizeStr + '</span>';
+        }
         if (isWritable) {
           html += '<div class="ft-row-actions">' +
             '<button class="ft-action-btn danger" title="Delete" data-action="delfile" data-apath="' + esc(node.path) + '" data-aname="' + esc(node.name) + '">' +
@@ -1002,6 +1031,45 @@
       }
     }
     next();
+  };
+
+  /* ------------------------------------------------------------
+     search / clearSearch (F-SEARCH-01)
+     ------------------------------------------------------------ */
+  BPulseFileTree.prototype.search = function (query) {
+    this._searchQuery = (query || '').toLowerCase().trim();
+    this._render();
+  };
+
+  BPulseFileTree.prototype.clearSearch = function () {
+    this._searchQuery = '';
+    this._render();
+  };
+
+  /* ------------------------------------------------------------
+     loadQuota — render storage quota bar into a container
+     ------------------------------------------------------------ */
+  BPulseFileTree.prototype.loadQuota = function (containerId) {
+    var self = this;
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    // Extract base URL from apiPrefix (strip section)
+    var base = this._prefix.replace(/\/[^\/]+$/, '');
+    fetch(base + '/quota', { headers: self._headers(false) })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data) return;
+        var pct = data.used_pct || 0;
+        var color = pct >= 95 ? '#ef4444' : pct >= 80 ? '#f59e0b' : '#22c55e';
+        var used = data.used_bytes > 1048576
+          ? (data.used_bytes / 1048576).toFixed(1) + ' MB'
+          : Math.round(data.used_bytes / 1024) + ' KB';
+        el.innerHTML = '<div style="font-size:10px;color:var(--text-muted,#888);margin-bottom:3px">' + used + ' used</div>' +
+          '<div style="height:3px;background:rgba(255,255,255,0.1);border-radius:2px">' +
+          '<div style="height:100%;width:' + Math.min(pct, 100) + '%;background:' + color + ';border-radius:2px;transition:width 0.4s"></div>' +
+          '</div>';
+      })
+      .catch(function () {});
   };
 
   /* ============================================================
