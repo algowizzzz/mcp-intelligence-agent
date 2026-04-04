@@ -1,7 +1,6 @@
 # REQ-05 — Summarization Engine: Claude Code-Style Context Management
 **Status:** Pending Implementation
-**Version:** 1.0
-**Date:** 2026-04-04
+**Version:** 1.1 (Updated 2026-04-04 — 180k trigger, SQLite in /data, gauge in both UIs, permanent system notice)
 **Scope:** Replace the current reactive, single-level summarization with a robust rolling compression engine modeled after Claude Code's approach — automated, conservative, transparent to the user, and keeping context utilization below 20% after each compression.
 
 ---
@@ -17,7 +16,7 @@ The platform already has a summarization scaffold. Key components:
 | `SummarisationMiddleware` | `agent/summariser.py` | Implemented but has significant gaps |
 | `MessageTrimmer` | `agent/agent.py` lines 14–51 | Character-based trimming (200k chars) |
 | Token counting | `agent/summariser.py` line 16–17 | Heuristic: `len(str(content)) // 4` |
-| Trigger threshold | `CONTEXT_WARN_TOKENS=120000` | Environment variable, defaults to 120k estimated |
+| Trigger threshold | `CONTEXT_WARN_TOKENS=120000` | Defaults to 120k — too aggressive |
 | Tail preserve | `_TAIL_KEEP = 10` messages | Last 10 messages always kept verbatim |
 | Persistence | `MemorySaver` in-memory | Lost on server restart |
 | Frontend awareness | Token counter in header | Cumulative only, no context fullness gauge |
@@ -31,13 +30,13 @@ Maximum output: **8,192 tokens** (configurable)
 ### 1.3 Current Gaps
 
 1. **Inaccurate token counting** — character/4 heuristic is off by 20–30%
-2. **Single-level compression** — one summary replaces head; no rolling/multi-level approach
-3. **Frontend unaware** — client only sees cumulative tokens, not context fullness
+2. **Single-level compression** — one summary replaces head; no rolling approach
+3. **Frontend unaware** — client only sees cumulative tokens, not context fullness %
 4. **No preemptive trigger** — summarization fires on the NEXT request, potentially too late if a single tool result is very large
-5. **Tool result pairs may split** — MessageTrimmer can remove a `tool_result` while keeping the `tool_use`, causing agent confusion
+5. **Tool result pairs may split** — `MessageTrimmer` can remove a `tool_result` while keeping `tool_use`, causing agent confusion
 6. **In-memory only** — conversation state lost on restart; no long-term history
 7. **No user visibility** — no indication in chat that summarization occurred
-8. **Too aggressive at 120k** — fires at 60% of context; goal is to fire conservatively and bring usage back to <20%
+8. **Triggers too early at 120k** — fires at 60% of context; should be 90% (180k tokens)
 
 ---
 
@@ -45,14 +44,14 @@ Maximum output: **8,192 tokens** (configurable)
 
 The new engine must behave like Claude Code's context management:
 
-1. **Conservative triggering** — only summarize when approaching a meaningful threshold (target: 80% of context window = 160,000 tokens)
+1. **Conservative triggering** — only summarize at 90% of context window (180,000 tokens)
 2. **Aggressive compression** — after summarization, context usage must drop to ≤20% (40,000 tokens)
-3. **Transparent to user** — a compact notice appears in chat ("💡 Conversation summarized — context refreshed")
+3. **Transparent to user** — a compact permanent system notice appears in chat (like Claude Code's "Context compacted" inline notice — not a banner, not dismissable, just part of the thread)
 4. **Accurate token counting** — use the actual Claude tokenizer approximation, not char/4
 5. **Tool pair integrity** — never split a `tool_use` / `tool_result` pair during compression
-6. **Persistent state** — conversation history survives server restarts (SQLite checkpoint)
-7. **Frontend gauge** — the header token counter shows context utilization as a progress indicator
-8. **Not too frequent** — after one summarization event, at least 20 full exchanges should be possible before the next
+6. **Persistent state** — conversation history survives server restarts (SQLite in `/data/`)
+7. **Frontend gauge in both UIs** — context gauge shown in `mcp-agent.html` header AND `admin.html` header
+8. **Not too frequent** — after one summarization event, at least 20 full exchanges should pass before the next
 
 ---
 
@@ -60,42 +59,31 @@ The new engine must behave like Claude Code's context management:
 
 ### 3.1 Replace Heuristic with Anthropic-Aligned Estimator
 
-The `claude-sonnet-4-20250514` model uses the same tokenizer as other Claude models. A reliable approximation:
-
 ```python
 # Replace in agent/summariser.py and agent/agent.py:
 
 def count_tokens_accurate(messages: list) -> int:
     """
     Accurate token count for Claude models.
-    Anthropic uses a variant of cl100k_base; average is ~3.8 chars/token for English.
-    For system prompts and tool schemas (JSON), ratio is ~2.5 chars/token.
-    We use a weighted approach: text at 4 chars/token, JSON at 2.5 chars/token.
+    Weighted approach: text at 4 chars/token, JSON/tool content at 2.5 chars/token.
     """
     total = 0
     for msg in messages:
         content = msg.content if hasattr(msg, 'content') else str(msg)
         if isinstance(content, list):
-            # Multi-part message (tool_use + tool_result blocks)
             for block in content:
                 if isinstance(block, dict):
                     text = json.dumps(block)
-                    # JSON is denser
-                    total += max(1, len(text) // 2)
+                    total += max(1, len(text) // 2)   # JSON is denser
                 else:
                     total += max(1, len(str(block)) // 4)
         elif isinstance(content, str):
             total += max(1, len(content) // 4)
-        # Add per-message overhead (role prefix, separators)
-        total += 4
-    # Add system prompt estimate if available
+        total += 4  # per-message overhead
     return total
 ```
 
-**Optionally** install `tiktoken` for better accuracy:
-```bash
-pip install tiktoken
-```
+**Optionally** install `tiktoken` for better accuracy (`pip install tiktoken`):
 ```python
 import tiktoken
 _enc = tiktoken.get_encoding("cl100k_base")
@@ -106,24 +94,21 @@ def count_tokens_accurate(messages: list) -> int:
         content = msg.content if hasattr(msg, 'content') else ''
         if isinstance(content, list):
             content = json.dumps(content)
-        total += len(_enc.encode(str(content))) + 4  # +4 for message overhead
+        total += len(_enc.encode(str(content))) + 4
     return total
 ```
 
-### 3.2 Track System Prompt Tokens
+### 3.2 Track System Prompt and Tool Schema Tokens
 
-The system prompt is injected fresh on each request. It must be counted as part of context usage:
+System prompt and tool schemas are injected fresh on each request and must be counted:
 
 ```python
 def get_total_context_tokens(system_prompt: str, messages: list) -> int:
     system_tokens = count_tokens_accurate([{'content': system_prompt}])
     message_tokens = count_tokens_accurate(messages)
-    # Tool schema tokens (approximate — schemas are static per session)
-    tool_schema_tokens = _cached_tool_schema_tokens()
+    tool_schema_tokens = _cached_tool_schema_tokens()  # estimated once at startup
     return system_tokens + message_tokens + tool_schema_tokens
 ```
-
-Tool schema tokens should be estimated once at startup and cached.
 
 ---
 
@@ -132,80 +117,62 @@ Tool schema tokens should be estimated once at startup and cached.
 ### 4.1 Thresholds
 
 ```python
-# Environment variables (add to .env / deployment config)
-CONTEXT_MAX_TOKENS = 200000       # Claude Sonnet 4 context window
-CONTEXT_TRIGGER_PCT = 0.80        # Trigger at 80% = 160,000 tokens
-CONTEXT_TARGET_PCT  = 0.18        # Target after summarization = 18% = 36,000 tokens
-CONTEXT_TAIL_MESSAGES = 6         # Always keep last 6 complete exchanges verbatim
-CONTEXT_MIN_EXCHANGES_BETWEEN_SUMMARIES = 20  # Don't summarize more than once per 20 exchanges
+# Environment variables (add to .env)
+CONTEXT_MAX_TOKENS = 200000          # Claude Sonnet 4 context window
+CONTEXT_TRIGGER_TOKENS = 180000      # Trigger at 180,000 tokens (90% of window)
+CONTEXT_TARGET_PCT = 0.18            # Target after summarization = 18% = ~36,000 tokens
+CONTEXT_TAIL_MESSAGES = 6            # Always keep last 6 complete exchange units verbatim
+CONTEXT_MIN_EXCHANGES_BETWEEN_SUMMARIES = 20  # Anti-frequency guard
 
-# Derived constants (computed from above)
-_TRIGGER_TOKENS = int(CONTEXT_MAX_TOKENS * CONTEXT_TRIGGER_PCT)  # 160,000
-_TARGET_TOKENS  = int(CONTEXT_MAX_TOKENS * CONTEXT_TARGET_PCT)   # 36,000
+# Derived
+_TARGET_TOKENS = int(CONTEXT_MAX_TOKENS * CONTEXT_TARGET_PCT)  # ~36,000
 ```
 
 ### 4.2 Message Grouping: Exchange Units
 
-Before any trimming or summarization, messages must be grouped into **exchange units** — logical pairs (or groups) that must not be split:
+Before any trimming, group messages into **exchange units** — logical groups that must never be split:
 
 ```python
 class ExchangeUnit:
     """
-    An atomic unit of conversation that should not be split.
-    An exchange consists of:
-    - 1 user message
-    - 1 or more tool_use AI messages
-    - Corresponding tool_result messages
-    - 1 final AI response to the user
+    An atomic unit: 1 user message + all associated AI tool_use messages
+    + all corresponding tool_result messages + 1 final AI response.
     """
     messages: List[BaseMessage]
     token_count: int
     has_tool_calls: bool
 ```
 
-The grouping algorithm:
+Algorithm:
 1. Walk messages in order
 2. When a `HumanMessage` is seen, start a new exchange unit
-3. All subsequent `AIMessage` and `ToolMessage` entries until the next `HumanMessage` belong to the same unit
-4. A unit with tool calls includes both the `tool_use` AIMessage AND all corresponding `tool_result` ToolMessages
+3. All `AIMessage` and `ToolMessage` entries until the next `HumanMessage` belong to the same unit
 
 **CRITICAL INVARIANT:** `tool_use` and `tool_result` messages are NEVER in different exchange units and are NEVER separated during compression.
 
-### 4.3 The Compression Algorithm
+### 4.3 Compression Algorithm
 
 ```python
 def compress_context(messages: list, system_prompt: str) -> tuple[list, str | None]:
-    """
-    Returns (new_messages, summary_text_or_None).
-    new_messages is the compressed list to replace state['messages'].
-    summary_text is the text of what was summarized (for UI display).
-    """
     total = get_total_context_tokens(system_prompt, messages)
 
-    if total < _TRIGGER_TOKENS:
+    if total < CONTEXT_TRIGGER_TOKENS:
         return messages, None  # No compression needed
 
-    # Group into exchange units
     units = group_into_exchanges(messages)
 
-    # Always keep last CONTEXT_TAIL_MESSAGES exchange units verbatim
     tail_units = units[-CONTEXT_TAIL_MESSAGES:]
     head_units = units[:-CONTEXT_TAIL_MESSAGES]
 
     if not head_units:
-        # Can't compress — all messages are in the tail
-        # MessageTrimmer will handle overflow via hard truncation
-        return messages, None
+        return messages, None  # Can't compress — all in tail; MessageTrimmer handles overflow
 
-    # Estimate tokens after compression
     tail_tokens = sum(u.token_count for u in tail_units)
-    target_summary_tokens = max(2000, _TARGET_TOKENS - tail_tokens - system_tokens)
+    target_summary_tokens = max(2000, _TARGET_TOKENS - tail_tokens)
 
-    # Summarize the head exchanges
     head_messages = [m for u in head_units for m in u.messages]
     summary = call_summarizer_llm(head_messages, max_summary_tokens=target_summary_tokens)
 
-    # Build new message list: [SystemMessage(summary)] + tail_messages
     summary_msg = SystemMessage(
         content=f"## Conversation Summary\n\n{summary}\n\n"
                 f"---\n*{len(head_messages)} earlier messages summarized — "
@@ -214,16 +181,12 @@ def compress_context(messages: list, system_prompt: str) -> tuple[list, str | No
     tail_messages = [m for u in tail_units for m in u.messages]
     new_messages = [summary_msg] + tail_messages
 
-    # Verify compression achieved target
-    new_total = get_total_context_tokens(system_prompt, new_messages)
-    assert new_total <= _TARGET_TOKENS * 1.2, f"Compression insufficient: {new_total} > {_TARGET_TOKENS}"
-
     return new_messages, summary
 ```
 
-### 4.4 Summarization Prompt (Enhanced)
+### 4.4 Summarization Prompt
 
-Replace the current `SUMMARISE_PROMPT` in `agent/prompt.py`:
+Replace `SUMMARISE_PROMPT` in `agent/prompt.py`:
 
 ```python
 SUMMARISE_PROMPT = """You are a context compressor for a financial risk intelligence session on the B-Pulse platform.
@@ -254,22 +217,19 @@ Output only the summary text, no preamble."""
 
 ### 4.5 Anti-Frequency Guard
 
-Track the exchange count since last summarization. Do not trigger again until at least `CONTEXT_MIN_EXCHANGES_BETWEEN_SUMMARIES` exchanges have occurred:
-
 ```python
 class SummarisationMiddleware:
     def __init__(self):
-        self._last_summary_exchange_count: dict[str, int] = {}  # thread_id → exchange count at last summary
-        self._exchange_counts: dict[str, int] = {}              # thread_id → total exchange count
+        self._last_summary_exchange_count: dict[str, int] = {}
+        self._exchange_counts: dict[str, int] = {}
 
     def before_agent(self, state, runtime):
         thread_id = runtime.config.get('configurable', {}).get('thread_id', '')
         self._exchange_counts[thread_id] = self._exchange_counts.get(thread_id, 0) + 1
         last = self._last_summary_exchange_count.get(thread_id, 0)
-        exchanges_since_last = self._exchange_counts[thread_id] - last
 
-        if exchanges_since_last < CONTEXT_MIN_EXCHANGES_BETWEEN_SUMMARIES:
-            return None  # Too soon — skip
+        if (self._exchange_counts[thread_id] - last) < CONTEXT_MIN_EXCHANGES_BETWEEN_SUMMARIES:
+            return None  # Too soon
 
         new_messages, summary = compress_context(state['messages'], get_system_prompt())
         if summary:
@@ -287,7 +247,7 @@ class SummarisationMiddleware:
 **File:** `agent/agent.py`
 
 ```python
-# Current (in-memory only):
+# Current (in-memory, lost on restart):
 checkpointer = MemorySaver()
 
 # Replace with:
@@ -299,19 +259,17 @@ checkpointer = SqliteSaver.from_conn_string(_DB_PATH)
 
 Install: `pip install langgraph-checkpoint-sqlite`
 
-This gives conversation persistence across server restarts at no additional infrastructure cost. When PostgreSQL is deployed (REQ-07), the checkpointer should migrate to `langgraph-checkpoint-postgres`.
+SQLite file location: `sajhamcpserver/data/checkpoints.db`. Added to `.gitignore` (runtime artifact — do not commit).
+
+When PostgreSQL is deployed (REQ-07), migrate to `langgraph-checkpoint-postgres`.
 
 ### 5.2 Thread Cleanup Policy
 
-Add a background task that runs daily to clean up old threads:
-
 ```python
-# In agent_server.py, add a startup background task:
 @app.on_event('startup')
 async def cleanup_old_threads():
     cutoff = datetime.utcnow() - timedelta(days=int(os.getenv('THREAD_RETENTION_DAYS', '30')))
-    # Delete threads older than cutoff from SQLite checkpoint DB
-    # Delete corresponding entries from threads.jsonl
+    # Delete threads older than cutoff from checkpoints.db and threads.jsonl
     pass
 ```
 
@@ -319,18 +277,17 @@ async def cleanup_old_threads():
 
 ## 6. SSE Events for Context Status
 
-### 6.1 New Event Type: `context_status`
+### 6.1 `context_status` Event
 
-After each LLM response, emit a `context_status` event with the current token usage:
+After each LLM response, emit token usage:
 
 ```python
-# In agent_server.py, after on_chat_model_end:
 yield f"data: {json.dumps({'type': 'context_status', 'tokens_used': total_tokens, 'tokens_max': 200000, 'pct': round(total_tokens / 200000 * 100, 1)})}\n\n"
 ```
 
-### 6.2 New Event Type: `summary_occurred`
+### 6.2 `summary_occurred` Event
 
-When `SummarisationMiddleware` compresses the context, emit:
+When compression fires:
 
 ```python
 yield f"data: {json.dumps({'type': 'summary_occurred', 'exchanges_compressed': N, 'tokens_before': X, 'tokens_after': Y})}\n\n"
@@ -340,9 +297,9 @@ yield f"data: {json.dumps({'type': 'summary_occurred', 'exchanges_compressed': N
 
 ## 7. Frontend Requirements
 
-### 7.1 Context Gauge in Header
+### 7.1 Context Gauge — Both `mcp-agent.html` and `admin.html`
 
-Replace the current plain token counter `<span id="token-display">0 tok</span>` with a progress indicator:
+Add the context gauge to the header of **both** HTML files. It replaces (or extends) the existing token counter.
 
 ```html
 <div id="context-gauge-wrap">
@@ -369,13 +326,11 @@ Replace the current plain token counter `<span id="token-display">0 tok</span>` 
 }
 #context-gauge-fill {
     height: 100%;
-    background: #4ade80;  /* green */
+    background: #4ade80;
     transition: width 0.5s ease, background 0.3s ease;
 }
-/* Warning state: 60–80% */
-#context-gauge-fill.warn { background: #facc15; }
-/* Critical state: >80% */
-#context-gauge-fill.critical { background: #f87171; }
+#context-gauge-fill.warn     { background: #facc15; }  /* 60–90% */
+#context-gauge-fill.critical { background: #f87171; }  /* >90%   */
 ```
 
 ```javascript
@@ -384,33 +339,36 @@ function updateContextGauge(tokensUsed, tokensMax) {
     var fill = $('context-gauge-fill');
     var label = $('context-gauge-label');
     fill.style.width = pct + '%';
-    fill.className = pct >= 80 ? 'critical' : pct >= 60 ? 'warn' : '';
+    fill.className = pct >= 90 ? 'critical' : pct >= 60 ? 'warn' : '';
     label.textContent = pct + '%';
     $('token-display').textContent = formatTokens(tokensUsed) + ' tok';
 }
 
-// Handle new SSE event:
+// In SSE handler:
 else if (type === 'context_status') {
     updateContextGauge(evt.tokens_used, evt.tokens_max);
 }
 ```
 
-### 7.2 Summary Notice in Chat
+### 7.2 Summary Notice in Chat (Permanent System Message)
 
-When a `summary_occurred` SSE event is received, insert a system notice into the chat:
+When a `summary_occurred` SSE event is received, insert a permanent inline notice — **not dismissable, not a banner**, styled like Claude Code's "Context compacted" notice. It sits in the thread as part of the conversation history:
 
 ```javascript
 else if (type === 'summary_occurred') {
     var notice = document.createElement('div');
     notice.className = 'summary-notice';
     notice.innerHTML =
-        '<span class="summary-icon">💡</span>' +
-        '<span class="summary-text">Conversation context compressed — ' +
-            evt.exchanges_compressed + ' earlier exchanges summarized. ' +
-            'Context usage reset from ' + Math.round(evt.tokens_before / 2000) + '% to ' +
+        '<span class="summary-icon">⬡</span>' +
+        '<span class="summary-text">Context compacted — ' +
+            evt.exchanges_compressed + ' earlier exchanges compressed. ' +
+            'Context reset from ' +
+            Math.round(evt.tokens_before / 2000) + '% to ' +
             Math.round(evt.tokens_after / 2000) + '%.' +
         '</span>';
     $('chat-messages').appendChild(notice);
+    // Scroll into view
+    notice.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 ```
 
@@ -419,31 +377,34 @@ else if (type === 'summary_occurred') {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
-    margin: 8px 0;
-    background: rgba(74, 222, 128, 0.06);
-    border: 1px solid rgba(74, 222, 128, 0.15);
-    border-radius: 6px;
-    font-size: 12px;
-    color: #9ca3af;
+    padding: 6px 12px;
+    margin: 6px 0;
+    background: rgba(74, 222, 128, 0.04);
+    border-left: 2px solid rgba(74, 222, 128, 0.3);
+    font-size: 11.5px;
+    color: #6b7280;
     font-style: italic;
+    user-select: none;
 }
-.summary-icon { font-size: 14px; }
+.summary-icon {
+    font-size: 11px;
+    color: #4ade80;
+    opacity: 0.7;
+}
 ```
 
-### 7.3 Context Warning Banner (Optional, for >80%)
+### 7.3 Context Warning at >90%
 
-When context gauge reaches >80%, show a dismissible banner above the chat input:
+When the gauge hits >90%, add a subtle warning line above the chat input (dismissable):
 
 ```javascript
 function showContextWarning() {
-    if ($('context-warning-banner')) return;  // Only show once
+    if ($('context-warning-banner')) return;
     var banner = document.createElement('div');
     banner.id = 'context-warning-banner';
     banner.className = 'context-warning';
     banner.innerHTML =
-        'Context nearing limit — this conversation will be automatically compressed on the next message. ' +
-        '<a href="#" onclick="archiveAndContinue()">Archive & start fresh</a> ' +
+        'Context nearing limit — will auto-compress on next message. ' +
         '<button onclick="this.parentNode.remove()" class="dismiss-btn">✕</button>';
     $('chat-input-area').prepend(banner);
 }
@@ -453,24 +414,24 @@ function showContextWarning() {
 
 ## 8. Environment Configuration
 
-Add the following to `.env` and document in deployment guide:
-
 ```bash
 # Summarization Engine
 CONTEXT_MAX_TOKENS=200000
-CONTEXT_TRIGGER_PCT=0.80              # Trigger compression at 80%
-CONTEXT_TARGET_PCT=0.18               # Target ≤18% after compression
-CONTEXT_TAIL_MESSAGES=6               # Exchange units to preserve verbatim
+CONTEXT_TRIGGER_TOKENS=180000         # Trigger at 180k (90% of window)
+CONTEXT_TARGET_PCT=0.18               # Compress to ≤18%
+CONTEXT_TAIL_MESSAGES=6               # Verbatim tail exchange units
 CONTEXT_MIN_EXCHANGES_BETWEEN_SUMMARIES=20
 
 # Persistence
-CHECKPOINT_BACKEND=sqlite             # 'sqlite' or 'postgres' (see REQ-07)
+CHECKPOINT_BACKEND=sqlite
 CHECKPOINT_DB_PATH=./sajhamcpserver/data/checkpoints.db
 THREAD_RETENTION_DAYS=30
 
 # Token counting
-USE_TIKTOKEN=true                     # Use tiktoken for accuracy (requires pip install tiktoken)
+USE_TIKTOKEN=true
 ```
+
+`checkpoints.db` is added to `.gitignore` — it is a runtime file, not committed to git.
 
 ---
 
@@ -478,59 +439,57 @@ USE_TIKTOKEN=true                     # Use tiktoken for accuracy (requires pip 
 
 ### 9.1 MessageTrimmer (Hard Fallback)
 
-`MessageTrimmer` in `agent/agent.py` remains as a **last-resort hard fallback**. It should only fire if `SummarisationMiddleware` failed or if a single message is so large it exceeds the target:
+`MessageTrimmer` in `agent/agent.py` remains as a **last-resort fallback** only. Change its character limit from `200_000` to `800_000` (200k tokens × 4 chars) to avoid premature triggering. It must only fire if the summarizer failed or a single message exceeds the budget.
 
-- Change its character limit from `200_000` to `800_000` (200k tokens × 4 chars/token) to avoid premature triggering
-- It only removes AI messages that are NOT part of a tool pair
-- Log a warning whenever it fires (it should be rare after the summarizer is working)
+### 9.2 Agent Server Token Injection
 
-### 9.2 Agent Server Context Count Injection
-
-The `agent_server.py` must pass the current conversation length to the frontend after each response. This requires counting messages in the LangGraph state after the run completes:
+After each agent run, emit context status:
 
 ```python
-# After agent.astream_events() completes:
 final_state = await agent.aget_state(config)
 if final_state and final_state.values:
-    msg_count = len(final_state.values.get('messages', []))
     total_tokens = count_tokens_accurate(final_state.values.get('messages', []))
-    yield f"data: {json.dumps({'type': 'context_status', 'tokens_used': total_tokens, 'tokens_max': 200000, 'pct': round(total_tokens / 200000 * 100, 1), 'message_count': msg_count})}\n\n"
+    yield f"data: {json.dumps({'type': 'context_status', 'tokens_used': total_tokens, 'tokens_max': 200000, 'pct': round(total_tokens / 200000 * 100, 1)})}\n\n"
 ```
 
 ---
 
 ## 10. Testing Plan
 
-| Test | Scenario | Expected Result |
+| Test ID | Scenario | Expected Result |
 |---|---|---|
-| SUM-TEST-001 | Send 5 short messages | No compression triggered (well below threshold) |
-| SUM-TEST-002 | Send 20 messages with large tool outputs totalling >160k tokens | Compression triggered; summary notice appears in chat; gauge resets to <20% |
-| SUM-TEST-003 | After compression in TEST-002, ask "what did we discuss earlier?" | Agent correctly references the prior conversation summary |
-| SUM-TEST-004 | Verify tool pairs not split | Create a conversation with many tool calls; after compression, confirm no orphaned tool_use messages |
-| SUM-TEST-005 | Restart server mid-conversation | With SQLite checkpoint: conversation resumes with same context (no data loss) |
-| SUM-TEST-006 | Send message immediately after compression | Second compression does NOT trigger (anti-frequency guard) |
-| SUM-TEST-007 | Context gauge accuracy | After each response, gauge % matches actual token usage within ±5% |
-| SUM-TEST-008 | >80% context warning | Banner appears when gauge exceeds 80% |
+| SUM-TEST-001 | Send 5 short messages | No compression triggered |
+| SUM-TEST-002 | Messages totalling >180k tokens | Compression triggered; summary notice in chat; gauge resets to <20% |
+| SUM-TEST-003 | After compression: "what did we discuss earlier?" | Agent references prior summary correctly |
+| SUM-TEST-004 | Verify tool pairs not split | After compression, no orphaned `tool_use` messages in state |
+| SUM-TEST-005 | Restart server mid-conversation | Conversation resumes with same context (SQLite persistence) |
+| SUM-TEST-006 | Message immediately after compression | Second compression does NOT trigger (anti-frequency guard) |
+| SUM-TEST-007 | Context gauge accuracy | After each response, gauge % matches actual tokens within ±5% |
+| SUM-TEST-008 | >90% context | Warning line appears above chat input |
+| SUM-TEST-009 | Admin.html gauge | Gauge visible and updating in admin panel header |
 
 ---
 
 ## 11. Acceptance Criteria
 
-- [ ] Summarization triggers at ≥80% context usage (160k tokens), not before
-- [ ] After summarization, context usage is ≤20% (40k tokens)
-- [ ] Tool use / tool result message pairs are never split during compression
+- [ ] Summarization triggers at ≥180k tokens, not before
+- [ ] After summarization, context usage is ≤20% (~40k tokens)
+- [ ] Tool use / tool result pairs are never split
 - [ ] Compression fires at most once per 20 exchanges (anti-frequency guard)
-- [ ] Summary notice appears in chat UI after each compression event
-- [ ] Context gauge in header shows accurate percentage with color coding (green/yellow/red)
-- [ ] Conversation persists across server restarts (SQLite checkpointing)
+- [ ] Permanent summary notice appears in chat thread — styled like Claude Code, not dismissable
+- [ ] Context gauge in `mcp-agent.html` header: accurate %, green/yellow/red
+- [ ] Context gauge in `admin.html` header: accurate %, same styling
+- [ ] Conversation persists across server restarts (SQLite in `sajhamcpserver/data/`)
 - [ ] `context_status` SSE event emitted after every LLM response
-- [ ] SUM-TEST-001 through SUM-TEST-008: All pass
+- [ ] `summary_occurred` SSE event emitted after each compression
+- [ ] `checkpoints.db` added to `.gitignore`
+- [ ] SUM-TEST-001 through SUM-TEST-009 all pass
 
 ---
 
 ## 12. Out of Scope
 
-- Multi-session context sharing (separate conversations cannot share context)
-- User-initiated "Archive & Continue" (nice-to-have, Phase 2)
-- Hierarchical multi-level summaries (Phase 2 — single level is sufficient for 200k context)
-- Per-user summary storage in cloud (covered by REQ-07 DB migration)
+- Multi-session context sharing
+- User-initiated "Archive & Continue"
+- Hierarchical multi-level summaries
+- Per-user summary storage in cloud (covered by REQ-07)

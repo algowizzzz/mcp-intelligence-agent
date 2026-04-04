@@ -1,6 +1,6 @@
 {
   "root": "/Users/saadahmed/Desktop/react_agent/sajhamcpserver/data/workers/w-market-risk/domain_data",
-  "built_at": "2026-04-04T15:11:25.236785+00:00",
+  "built_at": "2026-04-04T16:46:29.174444+00:00",
   "tree": [
     {
       "type": "folder",
@@ -49,7 +49,7 @@
           "name": "credit_limits.json",
           "path": "counterparties/credit_limits.json",
           "size_bytes": 7000,
-          "modified_at": "2026-04-03T18:05:32.806294+00:00",
+          "modified_at": "2026-04-04T15:16:29.044193+00:00",
           "mime": "application/json"
         },
         {
@@ -57,7 +57,7 @@
           "name": "exposure.json",
           "path": "counterparties/exposure.json",
           "size_bytes": 2776,
-          "modified_at": "2026-04-03T18:05:32.805912+00:00",
+          "modified_at": "2026-04-04T15:16:29.044723+00:00",
           "mime": "application/json"
         },
         {
@@ -70,7 +70,7 @@
               "name": "2025-03-31.json",
               "path": "counterparties/historical/2025-03-31.json",
               "size_bytes": 2376,
-              "modified_at": "2026-04-03T18:05:32.805549+00:00",
+              "modified_at": "2026-04-04T15:16:29.045746+00:00",
               "mime": "application/json"
             },
             {
@@ -78,7 +78,7 @@
               "name": "2025-06-30.json",
               "path": "counterparties/historical/2025-06-30.json",
               "size_bytes": 2376,
-              "modified_at": "2026-04-03T18:05:32.804487+00:00",
+              "modified_at": "2026-04-04T15:16:29.046788+00:00",
               "mime": "application/json"
             },
             {
@@ -86,7 +86,7 @@
               "name": "2025-09-30.json",
               "path": "counterparties/historical/2025-09-30.json",
               "size_bytes": 2376,
-              "modified_at": "2026-04-03T18:05:32.804828+00:00",
+              "modified_at": "2026-04-04T15:16:29.047098+00:00",
               "mime": "application/json"
             },
             {
@@ -94,7 +94,7 @@
               "name": "2025-12-31.json",
               "path": "counterparties/historical/2025-12-31.json",
               "size_bytes": 2376,
-              "modified_at": "2026-04-03T18:05:32.805203+00:00",
+              "modified_at": "2026-04-04T15:16:29.047605+00:00",
               "mime": "application/json"
             }
           ]
@@ -104,7 +104,7 @@
           "name": "trades.json",
           "path": "counterparties/trades.json",
           "size_bytes": 10463,
-          "modified_at": "2026-04-03T18:05:32.803360+00:00",
+          "modified_at": "2026-04-04T15:16:29.048258+00:00",
           "mime": "application/json"
         },
         {
@@ -112,7 +112,7 @@
           "name": "var.json",
           "path": "counterparties/var.json",
           "size_bytes": 1938,
-          "modified_at": "2026-04-03T18:05:32.803741+00:00",
+          "modified_at": "2026-04-04T15:16:29.048841+00:00",
           "mime": "application/json"
         }
       ]
@@ -174,7 +174,7 @@
           "name": "IRIS_ALL_PROD_UTIL_2026-02-27.csv",
           "path": "iris/IRIS_ALL_PROD_UTIL_2026-02-27.csv",
           "size_bytes": 7528,
-          "modified_at": "2026-04-03T18:05:32.795022+00:00",
+          "modified_at": "2026-04-04T15:16:29.049222+00:00",
           "mime": "text/csv"
         },
         {
@@ -182,7 +182,7 @@
           "name": "IRIS_ALL_PROD_UTIL_2026-03-26.csv",
           "path": "iris/IRIS_ALL_PROD_UTIL_2026-03-26.csv",
           "size_bytes": 7514,
-          "modified_at": "2026-04-03T18:05:32.794357+00:00",
+          "modified_at": "2026-04-04T15:16:29.049526+00:00",
           "mime": "text/csv"
         },
         {
@@ -190,7 +190,7 @@
           "name": "IRIS_ALL_PROD_UTIL_2026-03-27.csv",
           "path": "iris/IRIS_ALL_PROD_UTIL_2026-03-27.csv",
           "size_bytes": 7560,
-          "modified_at": "2026-04-03T18:05:32.793884+00:00",
+          "modified_at": "2026-04-04T15:16:29.049972+00:00",
           "mime": "text/csv"
         },
         {
@@ -198,7 +198,7 @@
           "name": "_generate_test_data.py",
           "path": "iris/_generate_test_data.py",
           "size_bytes": 16394,
-          "modified_at": "2026-04-03T18:05:32.795444+00:00",
+          "modified_at": "2026-04-04T15:16:29.050759+00:00",
           "mime": "text/x-python"
         },
         {
@@ -206,7 +206,7 @@
           "name": "combine_iris.py",
           "path": "iris/combine_iris.py",
           "size_bytes": 701,
-          "modified_at": "2026-04-03T18:05:32.792331+00:00",
+          "modified_at": "2026-04-04T15:16:29.051031+00:00",
           "mime": "text/x-python"
         },
         {
@@ -214,7 +214,7 @@
           "name": "iris_combined.csv",
           "path": "iris/iris_combined.csv",
           "size_bytes": 35948,
-          "modified_at": "2026-04-03T18:05:32.793374+00:00",
+          "modified_at": "2026-04-04T15:16:29.051867+00:00",
           "mime": "text/csv"
         }
       ]

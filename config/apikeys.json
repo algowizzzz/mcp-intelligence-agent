@@ -1,0 +1,12 @@
+{
+  "apikeys": [],
+  "settings": {
+    "key_prefix": "sja_",
+    "key_length": 32,
+    "default_rate_limit": {
+      "requests_per_minute": 60,
+      "requests_per_hour": 1000
+    },
+    "max_keys_per_user": 10
+  }
+}

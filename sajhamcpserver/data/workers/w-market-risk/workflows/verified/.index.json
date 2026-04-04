@@ -1,13 +1,13 @@
 {
   "root": "/Users/saadahmed/Desktop/react_agent/sajhamcpserver/data/workers/w-market-risk/workflows/verified",
-  "built_at": "2026-04-04T15:11:25.223478+00:00",
+  "built_at": "2026-04-04T16:46:29.186546+00:00",
   "tree": [
     {
       "type": "file",
       "name": "counterparty_exposure_trend.md",
       "path": "counterparty_exposure_trend.md",
       "size_bytes": 3672,
-      "modified_at": "2026-04-03T18:05:32.817467+00:00",
+      "modified_at": "2026-04-04T15:16:29.056984+00:00",
       "mime": "text/markdown"
     },
     {
@@ -15,7 +15,7 @@
       "name": "counterparty_intelligence.md",
       "path": "counterparty_intelligence.md",
       "size_bytes": 3716,
-      "modified_at": "2026-04-03T18:05:32.820793+00:00",
+      "modified_at": "2026-04-04T15:16:29.057626+00:00",
       "mime": "text/markdown"
     },
     {
@@ -23,7 +23,7 @@
       "name": "cpty_intelligence_new_tools.md",
       "path": "cpty_intelligence_new_tools.md",
       "size_bytes": 11007,
-      "modified_at": "2026-04-03T18:05:32.818979+00:00",
+      "modified_at": "2026-04-04T15:16:29.058494+00:00",
       "mime": "text/markdown"
     },
     {
@@ -31,7 +31,7 @@
       "name": "data_file_analysis.md",
       "path": "data_file_analysis.md",
       "size_bytes": 5020,
-      "modified_at": "2026-04-03T18:05:32.821256+00:00",
+      "modified_at": "2026-04-04T15:16:29.059283+00:00",
       "mime": "text/markdown"
     },
     {
@@ -39,7 +39,7 @@
       "name": "data_quality_report.md",
       "path": "data_quality_report.md",
       "size_bytes": 3857,
-      "modified_at": "2026-04-03T18:05:32.818405+00:00",
+      "modified_at": "2026-04-04T15:16:29.061675+00:00",
       "mime": "text/markdown"
     },
     {
@@ -47,7 +47,7 @@
       "name": "financial_institution_credit_profile.md",
       "path": "financial_institution_credit_profile.md",
       "size_bytes": 2960,
-      "modified_at": "2026-04-03T18:05:32.822511+00:00",
+      "modified_at": "2026-04-04T15:16:29.062469+00:00",
       "mime": "text/markdown"
     },
     {
@@ -55,7 +55,7 @@
       "name": "limit_breach_escalation.md",
       "path": "limit_breach_escalation.md",
       "size_bytes": 2197,
-      "modified_at": "2026-04-03T18:05:32.819989+00:00",
+      "modified_at": "2026-04-04T15:16:29.062817+00:00",
       "mime": "text/markdown"
     },
     {
@@ -63,7 +63,7 @@
       "name": "market_credit_intelligence.md",
       "path": "market_credit_intelligence.md",
       "size_bytes": 4445,
-      "modified_at": "2026-04-03T18:05:32.822168+00:00",
+      "modified_at": "2026-04-04T15:16:29.063538+00:00",
       "mime": "text/markdown"
     },
     {
@@ -71,7 +71,7 @@
       "name": "op_risk_controls.md",
       "path": "op_risk_controls.md",
       "size_bytes": 3097,
-      "modified_at": "2026-04-03T18:05:32.817917+00:00",
+      "modified_at": "2026-04-04T15:16:29.064221+00:00",
       "mime": "text/markdown"
     },
     {
@@ -79,7 +79,7 @@
       "name": "op_risk_kri_monitoring.md",
       "path": "op_risk_kri_monitoring.md",
       "size_bytes": 4072,
-      "modified_at": "2026-04-03T18:05:32.820354+00:00",
+      "modified_at": "2026-04-04T15:16:29.064868+00:00",
       "mime": "text/markdown"
     },
     {
@@ -87,7 +87,7 @@
       "name": "osfi_regulatory_watch.md",
       "path": "osfi_regulatory_watch.md",
       "size_bytes": 2336,
-      "modified_at": "2026-04-03T18:05:32.821637+00:00",
+      "modified_at": "2026-04-04T15:16:29.065280+00:00",
       "mime": "text/markdown"
     },
     {
@@ -95,7 +95,7 @@
       "name": "portfolio_concentration_report.md",
       "path": "portfolio_concentration_report.md",
       "size_bytes": 2052,
-      "modified_at": "2026-04-03T18:05:32.816968+00:00",
+      "modified_at": "2026-04-04T15:16:29.065980+00:00",
       "mime": "text/markdown"
     }
   ]

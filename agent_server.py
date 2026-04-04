@@ -2318,6 +2318,27 @@ async def list_tools_for_admin(user: dict = Depends(require_admin)):
         return {'tools': [], 'error': str(e)}
 
 
+# ── Documentation screenshot helper ────────────────────────────────────────────
+import base64 as _b64
+
+class _ScreenshotPayload(BaseModel):
+    name: str
+    data: str
+
+@app.post('/api/dev/screenshot')
+async def save_dev_screenshot(payload: _ScreenshotPayload):
+    """Accept a base64 screenshot from the browser and save it to Documentation/screenshots/."""
+    save_dir = pathlib.Path(__file__).parent / 'Documentation' / 'screenshots'
+    save_dir.mkdir(parents=True, exist_ok=True)
+    img_data = payload.data
+    if ',' in img_data:
+        img_data = img_data.split(',', 1)[1]
+    filepath = save_dir / f"{payload.name}.png"
+    with open(str(filepath), 'wb') as f:
+        f.write(_b64.b64decode(img_data))
+    return {'saved': str(filepath)}
+
+
 # ── Static frontend (dev: one port; Docker: nginx serves this instead) ─────────
 _PUBLIC = pathlib.Path(__file__).parent / 'public'
 if _PUBLIC.is_dir():
