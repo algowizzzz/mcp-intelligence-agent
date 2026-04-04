@@ -42,7 +42,15 @@ class OutlookReadEmailsTool(BaseMCPTool):
             return {'error': 'user_email required — provide as parameter or configure outlook_user_email in worker connector_scope'}
         try:
             client = get_ms_client(worker_ctx)
-            result = client.get(f'users/{user_email}/mailFolders/{folder}/messages?$top={top}&$orderby=receivedDateTime desc')
+            try:
+                result = client.get(f'users/{user_email}/mailFolders/{folder}/messages?$top={top}&$orderby=receivedDateTime desc')
+            except Exception as folder_err:
+                if '404' in str(folder_err) or 'MailboxNotEnabledForRESTAPI' in str(folder_err):
+                    # Fallback: use /messages directly (works on newly provisioned mailboxes
+                    # where /mailFolders/{name}/messages returns 404)
+                    result = client.get(f'users/{user_email}/messages?$top={top}&$orderby=receivedDateTime desc')
+                else:
+                    raise
             messages = result.get('value', [])
             return {'messages': messages, 'count': len(messages), 'folder': folder}
         except Exception as e:
