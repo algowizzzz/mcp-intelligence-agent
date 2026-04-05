@@ -13,7 +13,8 @@
 | UI Audit fixes v1 (Playwright) | 40 | 37 | 0 | 3† | `run_ui_audit_tests.mjs` |
 | Regression v2 (Playwright) | 14 | 14 | 0 | 0 | `run_regression_v2_tests.mjs` |
 | Gap Fixes (architectural — CI + BT) | 19 | 19 | 0 | 0 | Python inline |
-| **Total** | **186** | **183** | **0** | **3** | |
+| REQ-09 BM25 Document Search (CI) | 10 | 10 | 0 | 0 | Python inline |
+| **Total** | **196** | **193** | **0** | **3** | |
 
 † 3 skips are environment-only (empty domain-data tree in admin context; no `.md` files in test worker `my_workflows`). Same functionality verified via equivalent tests.
 
@@ -34,6 +35,8 @@
 | [REQ-04b_backend_test_results.md](REQ-04b_backend_test_results.md) | Quant lib backend test output (exit codes, stdout) | ✅ PASS | 4 tests |
 | [GAP_Fixes_UAT_Plan.md](GAP_Fixes_UAT_Plan.md) | 5 architectural gap fixes (storage migration, WorkerRepository, serve_file, data retirement) | ✅ PASS | 14 CI + 5 BT |
 | [GAP_Fixes_UAT_Results.md](GAP_Fixes_UAT_Results.md) | Gap fix test results — 19/19 PASS | ✅ PASS | 19 tests |
+| [REQ-09_UAT_Plan.md](REQ-09_UAT_Plan.md) | BM25 document search — chunking, ranking, cache, file-type filter, OSFI retirement | ✅ 10/10 CI PASS | 10 CI + 7 BT (BT pending server) |
+| [REQ-09_UAT_Results.md](REQ-09_UAT_Results.md) | REQ-09 test results | ✅ CI PASS / BT PENDING | 10 CI tests |
 
 † REQ-03 VIZ-TEST-001: PARTIAL PASS — agent chose `python_execute` over `generate_chart` for chart generation; canvas pipeline verified via direct `openCanvasChart()` call. All 6 component fixes confirmed working.
 

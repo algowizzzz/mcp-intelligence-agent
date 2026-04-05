@@ -3,7 +3,8 @@
   "implementation": "sajha.tools.impl.osfi_tools.OsfiFetchAnnouncementsTool",
   "description": "Fetch latest content from live OSFI announcement and guidance pages using Tavily. Filter by category: news, quarterly_release, guideline, schedule, risk_outlook, dsb. Use for latest OSFI news, quarterly releases, upcoming guidance.",
   "version": "1.0.0",
-  "enabled": true,
+  "enabled": false,
+  "retired_by": "document_search (REQ-09)",
   "cacheTTL": 0,
   "inputSchema": {
     "type": "object",

@@ -3,7 +3,8 @@
   "implementation": "sajha.tools.impl.osfi_tools.OsfiSearchGuidanceTool",
   "description": "Search across all local OSFI guideline documents for a keyword or topic. Returns matching section headings and excerpts with character offsets. Use this before osfi_read_document to find exactly where to read.",
   "version": "1.0.0",
-  "enabled": true,
+  "enabled": false,
+  "retired_by": "document_search (REQ-09)",
   "data_path": "${data.osfi_docs_dir}",
   "inputSchema": {
     "type": "object",

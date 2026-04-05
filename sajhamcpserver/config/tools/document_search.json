@@ -1,0 +1,69 @@
+{
+  "name": "document_search",
+  "implementation": "sajha.tools.impl.bm25_search_tool.DocumentSearchTool",
+  "description": "BM25 full-text search across all worker documents (domain_data + my_data). Returns ranked results with relevance scores and content excerpts. Supports .md, .txt, .py, .json, .csv, .docx, .pdf, .xlsx. Use top_n_full_content to retrieve full text of top matches. Use force_refresh to rebuild the index if recently uploaded files are not appearing.",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "query": {
+        "type": "string",
+        "description": "Search query — keywords or a short phrase to find relevant documents"
+      },
+      "top_k": {
+        "type": "integer",
+        "description": "Maximum number of results to return (default: 10)",
+        "default": 10
+      },
+      "top_n_full_content": {
+        "type": "integer",
+        "description": "Return full chunk text for the top N results (default: 0 = excerpts only). Use 1-3 for deep reading of the best matches.",
+        "default": 0
+      },
+      "force_refresh": {
+        "type": "boolean",
+        "description": "Rebuild the in-memory index from disk before searching. Use when files have changed recently (default: false).",
+        "default": false
+      },
+      "file_types": {
+        "type": "array",
+        "items": {"type": "string"},
+        "description": "Optional list of file extensions to restrict search to, e.g. [\".pdf\", \".docx\"]. Omit for all types."
+      }
+    },
+    "required": ["query"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "query": {"type": "string"},
+      "total_results": {"type": "integer"},
+      "index_size": {"type": "integer", "description": "Total number of chunks in the index"},
+      "cache_age_seconds": {"type": "integer"},
+      "results": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "rank": {"type": "integer"},
+            "file_name": {"type": "string"},
+            "file_path": {"type": "string"},
+            "chunk_index": {"type": "integer"},
+            "total_chunks": {"type": "integer"},
+            "score": {"type": "number"},
+            "excerpt": {"type": "string"},
+            "full_content": {"type": "string", "description": "Present only when top_n_full_content > rank-1"}
+          }
+        }
+      }
+    }
+  },
+  "metadata": {
+    "author": "Saad Ahmed",
+    "category": "Document Intelligence",
+    "tags": ["bm25", "search", "documents", "retrieval", "full-text"],
+    "rateLimit": 30,
+    "cacheTTL": 600
+  }
+}

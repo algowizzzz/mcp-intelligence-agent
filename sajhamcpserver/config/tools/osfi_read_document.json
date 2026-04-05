@@ -3,7 +3,8 @@
   "implementation": "sajha.tools.impl.osfi_tools.OsfiReadDocumentTool",
   "description": "Read a targeted chunk from a specific OSFI guideline document. Never returns the full document — always targeted by chapter, keyword, or char_offset. Use osfi_search_guidance first to identify char_offset for precise reads.",
   "version": "1.0.0",
-  "enabled": true,
+  "enabled": false,
+  "retired_by": "document_search (REQ-09)",
   "data_path": "${data.osfi_docs_dir}",
   "inputSchema": {
     "type": "object",
