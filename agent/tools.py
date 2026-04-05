@@ -123,7 +123,7 @@ async def _call_sajha(tool_name: str, args: dict) -> dict:
     t0 = time.time()
     status = 'success'
     try:
-        async with httpx.AsyncClient(timeout=30.0) as c:
+        async with httpx.AsyncClient(timeout=30.0, trust_env=False) as c:
             r = await c.post(f'{SAJHA_BASE}/api/tools/execute',
                 headers=_service_headers(),
                 json={'tool': tool_name, 'arguments': args})
@@ -254,11 +254,15 @@ def discover_sajha_tools() -> list:
     import httpx as _httpx
 
     try:
+        # trust_env=False prevents httpx from picking up system SOCKS/HTTP proxy env vars.
+        # Without this, if ALL_PROXY or HTTPS_PROXY is set to a socks5:// URL and the
+        # 'socksio' package is not installed, tool discovery fails silently.
         list_r = _httpx.post(
             f'{SAJHA_BASE}/api/mcp',
             headers={'Authorization': _SAJHA_API_KEY},
             json={'jsonrpc': '2.0', 'id': '1', 'method': 'tools/list', 'params': {}},
-            timeout=10.0
+            timeout=10.0,
+            trust_env=False,
         )
         tools_data = list_r.json().get('result', {}).get('tools', [])
 

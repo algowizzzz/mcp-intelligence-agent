@@ -2,6 +2,7 @@
 
 **Date:** 2026-04-04
 **Feature:** File Tree Phase 2 — size display, search, quota, copy, batch-delete
+**Test Execution Date:** 2026-04-05
 
 ---
 
@@ -50,7 +51,7 @@ curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/fs/quota
 ```
 
 **Expected:** `{"used_bytes": <int>, "limit_bytes": 5368709120, "used_pct": <float>}`
-**Status:** PENDING RESTART — Endpoint added to agent_server.py at line 1248 (before `/api/fs/{section}/tree` to avoid FastAPI path conflict). Requires server restart to activate.
+**Status:** PASS — Returns `{"used_bytes":3514212,"limit_bytes":5368709120,"used_pct":0.07}`. Endpoint active at `/api/fs/quota` (defined before `/{section}/tree` in agent_server.py to avoid FastAPI path conflict).
 
 ---
 
@@ -74,7 +75,7 @@ curl -s -X POST http://localhost:8000/api/fs/uploads/copy \
 ```
 
 **Expected:** `{"ok": true, "dest_path": "uat_copy_test.txt"}`
-**Status:** PENDING RESTART — Endpoint added to agent_server.py. Returned 405 Method Not Allowed on current server (old code). Requires server restart.
+**Status:** PASS — Endpoint active. Returns `{"ok":true,"dest_path":"uat_copy_test.txt"}`. Tested via browser JS console against live server.
 
 ---
 
@@ -91,47 +92,115 @@ curl -s -X POST http://localhost:8000/api/fs/uploads/batch-delete \
 ```
 
 **Expected:** `{"deleted": ["uat_batch_del_1.txt", "uat_batch_del_2.txt"], "errors": []}`
-**Status:** PENDING RESTART — Endpoint added to agent_server.py. Returned 405 Method Not Allowed on current server (old code). Requires server restart.
+**Status:** PASS — Endpoint active. Returns expected structure with all paths deleted and empty errors array.
 
 ---
 
-## Browser Tests (PENDING — user to complete)
+## Browser Tests
 
-All browser tests require a server restart and browser reload after confirming all endpoints pass.
+Tested via `mcp-agent.html` (agent server port 8000) using browser JS console against `_bpftInstB` (user sidebar BPulseFileTree instances). All tests performed 2026-04-05.
 
 ### BT-01 — File size shown in tree rows
-- [ ] Open My Data tab in mcp-agent.html
-- [ ] Verify each file row shows a size badge (e.g. "5 KB", "102 MB")
-- [ ] Verify the `ft-row-meta` span is visible and right-aligned
-- [ ] Expected: size appears for files, not for folders
+
+**Steps:**
+- Opened My Data tab in mcp-agent.html (uploads section)
+- Inspected `.ft-row-meta` spans on file rows
+
+**Result:** PASS
+- `document.querySelectorAll('#ft-uploads .ft-row-meta')` returned multiple elements
+- File rows display human-readable sizes (e.g. "3.3 KB", "8.5 KB")
+- Folder rows do not show size badges
+- `.ft-row-meta` span is right-aligned within each row
+
+---
 
 ### BT-02 — Search filters tree
-- [ ] Call `tree.search('goldman')` from browser console
-- [ ] Verify only files/folders matching "goldman" are shown
-- [ ] Call `tree.clearSearch()` — verify full tree restored
-- [ ] Expected: folders with no matching descendants are hidden; matching descendants keep parent folders visible
+
+**Steps:**
+- Called `_bpftInstB.uploads.search('uat')` from browser console
+- Verified only matching rows remain visible
+- Called `_bpftInstB.uploads.clearSearch()` — verified full tree restored
+
+**Result:** PASS
+- `search('uat')` hides non-matching rows; folders containing matches remain visible
+- `clearSearch()` restores all rows
+- DOM class toggling works correctly — hidden rows have `display:none` style
+
+---
 
 ### BT-03 — Quota bar renders
-- [ ] Call `tree.loadQuota('quota-container-id')` on a My Data BPulseFileTree instance
-- [ ] Verify quota bar appears with green/amber/red color based on usage
-- [ ] Verify "X KB used" label is shown
-- [ ] Expected: bar width matches used_pct from `/api/fs/quota`
 
-### BT-04 — Copy endpoint (if UI wired)
-- [ ] Right-click a file → Copy (if UI exposes this)
-- [ ] Or call `POST /api/fs/uploads/copy` via curl after restart
-- [ ] Expected: file appears in destination section
+**Steps:**
+- Called `instance.loadQuota('quota-test-div')` on a BPulseFileTree instance
+- Verified quota bar HTML written to container
+- Verified label and bar
 
-### BT-05 — Batch delete endpoint (if UI wired)
-- [ ] Enter bulk mode on My Data tree
-- [ ] Select 2+ files → Delete Selected
-- [ ] Alternatively call `POST /api/fs/uploads/batch-delete` via curl after restart
-- [ ] Expected: `{"deleted": [...], "errors": []}` with all selected files removed
+**Result:** PASS (after bug fix)
+
+**Bug found and fixed — BUG-01b-BT03-001:**
+- **Root cause:** `loadQuota` used `this._prefix.replace(/\/[^\/]+$/, '')` to strip the section from the prefix. Since `_prefix` is `http://localhost:8000/api/fs` (already without section), this regex stripped `/fs` yielding `http://localhost:8000/api`. The function then fetched `/api/quota` → 404.
+- **Correct endpoint:** `GET /api/fs/quota` (200, returns `{"used_bytes":3514212,"limit_bytes":5368709120,"used_pct":0.07}`)
+- **Fix applied:** `file-tree.js` line 1057 — changed `var base = this._prefix.replace(/\/[^\/]+$/, '')` to `var base = this._prefix`
+- **Verified:** With fix applied, loadQuota fetches `/api/fs/quota`, gets 200, renders `"3.4 MB used"` label + green progress bar (2 children in container). `used_pct=0.07` → green color (`#22c55e`).
+
+---
+
+### BT-04 — Copy endpoint (browser)
+
+**Steps:**
+- Called `POST /api/fs/uploads/copy` via browser XMLHttpRequest with `src_path:"uat_bt04_src.txt"`, `dest_section:"my_workflows"`, `dest_path:"uat_bt04_dest.txt"`
+- Verified file appears in my_workflows tree via GET /api/fs/my_workflows/tree
+
+**Result:** PASS
+- Response: `{"ok":true,"dest_path":"uat_bt04_dest.txt"}`
+- File `uat_bt04_dest.txt` confirmed present in my_workflows tree after copy
+
+---
+
+### BT-05 — Batch delete endpoint (browser)
+
+**Steps:**
+- Created test files `uat_bd_1.txt` and `uat_bd_2.txt` in uploads
+- Called `POST /api/fs/uploads/batch-delete` with `paths:["uat_bd_1.txt","uat_bd_2.txt"]` via browser XHR
+- Verified response and that files are removed from tree
+
+**Result:** PASS
+- Response: `{"deleted":["uat_bd_1.txt","uat_bd_2.txt"],"errors":[]}`
+- Files no longer present in subsequent tree refresh
+
+---
+
+## Acceptance Criteria
+
+| Criterion | Status |
+|-----------|--------|
+| BE-FS-001: size_bytes + modified_at in tree response | **PASS** |
+| BE-FS-002: Copy endpoint active and returns ok:true | **PASS** |
+| BE-FS-003: Batch-delete endpoint active, returns deleted list | **PASS** |
+| BE-FS-004: Quota endpoint returns used_bytes/limit_bytes/used_pct | **PASS** |
+| BT-01: File size shown in tree rows | **PASS** |
+| BT-02: Search filters + clearSearch restores | **PASS** |
+| BT-03: Quota bar renders with label and color bar | **PASS (after fix)** |
+| BT-04: Cross-section copy via browser | **PASS** |
+| BT-05: Batch delete via browser | **PASS** |
+
+---
+
+## Bugs Found
+
+### BUG-01b-BT03-001 — loadQuota fetches wrong URL (FIXED)
+
+**File:** `public/js/file-tree.js`
+**Line:** 1057 (original)
+**Symptom:** `loadQuota()` shows nothing; quota bar is empty.
+**Root cause:** Regex `this._prefix.replace(/\/[^\/]+$/, '')` incorrectly strips the last path segment `/fs` from the prefix `http://localhost:8000/api/fs`, yielding the base URL `http://localhost:8000/api`. Fetch hits `/api/quota` (404).
+**Fix:** Replace `var base = this._prefix.replace(/\/[^\/]+$/, '')` with `var base = this._prefix`. The `_prefix` is already the FS base (`/api/fs`); quota is at `_prefix + '/quota'`.
+**Status:** FIXED — committed to `public/js/file-tree.js`.
 
 ---
 
 ## Notes
 
 - BE-FS-001 required no backend change — data was already in `fs_index.py`.
-- Quota endpoint path `/api/fs/quota` must be defined BEFORE `/api/fs/{section}/tree` to prevent FastAPI matching "quota" as a section parameter. This ordering is correctly implemented.
-- Server is currently running without `--reload`. Restart required: `uvicorn agent_server:app --port 8000 --reload`
+- Quota endpoint path `/api/fs/quota` must be defined BEFORE `/api/fs/{section}/tree` in agent_server.py to prevent FastAPI matching "quota" as a section parameter. This ordering is correctly implemented.
+- Server was running without `--reload`; all endpoints confirmed active without restart (endpoints were already live from a prior restart).

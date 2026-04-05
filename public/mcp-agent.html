@@ -2227,6 +2227,8 @@
       text-overflow: ellipsis;
     }
     .ft-row:hover .ft-row-name { color: var(--text-primary); }
+    /* UI-ADMIN-009: push size badge to right with spacing so text doesn't concatenate */
+    .ft-row-meta { margin-left: auto; padding-left: 6px; flex-shrink: 0; font-size: 10px; color: var(--text-muted); white-space: nowrap; }
 
     .ft-row-actions {
       display: none;
@@ -3013,7 +3015,7 @@
       </div>
     </aside>
 
-    <div id="sidebar-drag" class="drag-handle" title="Drag to resize sidebar"></div>
+    <div id="sidebar-drag" class="drag-handle" title="Drag to resize sidebar" aria-label="Resize sidebar" role="separator" aria-orientation="vertical"></div>
 
     <!-- ============================================================
          MAIN CHAT AREA
@@ -3855,14 +3857,14 @@
     function openSettingsModal() {
       var modal = document.createElement('div');
       modal.className = 'settings-modal';
-      var isDark = document.body.classList.contains('dark');
+      var isLight = document.body.classList.contains('light-theme');
       modal.innerHTML =
         '<div class="settings-modal-box">' +
           '<h3>Settings</h3>' +
           '<div class="settings-modal-row">' +
             '<label>Theme</label>' +
             '<button class="sidebar-bottom-btn" id="settings-theme-btn" onclick="toggleTheme(); _settingsUpdateThemeBtn()" style="padding:4px 10px;font-size:12px;">' +
-              (isDark ? 'Dark Theme' : 'Light Theme') +
+              (isLight ? 'Dark Theme' : 'Light Theme') +
             '</button>' +
           '</div>' +
           '<div class="settings-modal-row" style="border-bottom:none;padding-top:14px;">' +
@@ -3882,7 +3884,7 @@
 
     function _settingsUpdateThemeBtn() {
       var btn = document.getElementById('settings-theme-btn');
-      if (btn) btn.textContent = document.body.classList.contains('dark') ? 'Dark Theme' : 'Light Theme';
+      if (btn) btn.textContent = document.body.classList.contains('light-theme') ? 'Dark Theme' : 'Light Theme';
     }
 
     function resetChatState() {
@@ -4180,8 +4182,18 @@
         outputEl.textContent = truncateJSON(outputStr, 5000);
       }
 
-      // REQ-03: If chart_ready, add "Open Chart" button to tool card header
-      if (output && typeof output === 'object' && output._chart_ready && output.html_file) {
+      // REQ-03: If chart_ready OR python figures, add "Open Chart" button to tool card header
+      var _chartUrlForCard = null, _chartTitleForCard = null;
+      if (output && typeof output === 'object') {
+        if (output._chart_ready && output.html_file) {
+          _chartUrlForCard = '/api/fs/charts/' + output.html_file;
+          _chartTitleForCard = output.title || name;
+        } else if (output._python_ready && output.figures && output.figures.length > 0) {
+          _chartUrlForCard = output.figures[0].url;
+          _chartTitleForCard = 'Python Chart';
+        }
+      }
+      if (_chartUrlForCard) {
         var card = $('tool-card-' + runId);
         if (card) {
           var hdr = card.querySelector('.tool-card-header');
@@ -4190,12 +4202,9 @@
             chartBtn.className = 'btn-open-chart btn-view-canvas';
             chartBtn.style.cssText = 'margin-left:8px;font-size:11px;padding:3px 8px';
             chartBtn.textContent = 'Open Chart';
-            var capturedFile = output.html_file, capturedTitle = output.title || name;
-            var capturedChartUrl = '/api/fs/charts/' + capturedFile;
-            chartBtn.onclick = function(e) {
-              e.stopPropagation();
-              openCanvasChart(capturedTitle, capturedChartUrl);
-            };
+            (function(u, t) {
+              chartBtn.onclick = function(e) { e.stopPropagation(); openCanvasChart(t, u); };
+            })(_chartUrlForCard, _chartTitleForCard);
             hdr.appendChild(chartBtn);
           }
         }
@@ -4883,6 +4892,7 @@
       else if (type === 'canvas') {
         if (evt.canvas_type === 'chart' && evt.chart_url) {
           openCanvasChart(evt.title, evt.chart_url);
+          renderInlineChart(evt.title, evt.chart_url);
         } else {
           openCanvas(evt.title, evt.content);
         }
@@ -5152,6 +5162,27 @@
     function _bpftToken() { return sessionStorage.getItem('rg_token') || ''; }
     function _bpftToast(msg) { showToast(msg, 2000); }
 
+    // BUG-009: custom confirm modal — avoids native window.confirm() CDP/browser freeze
+    function _bpftConfirm(msg, cb) {
+      var existing = document.getElementById('bpft-confirm-overlay');
+      if (existing) existing.remove();
+      var overlay = document.createElement('div');
+      overlay.id = 'bpft-confirm-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:center;justify-content:center;';
+      overlay.innerHTML =
+        '<div style="background:var(--bg-panel,#1a2535);border:1px solid var(--border,rgba(255,255,255,0.1));border-radius:10px;padding:24px 28px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.5);">' +
+          '<p style="margin:0 0 20px;font-size:14px;color:var(--text-primary,#e0e8f0);line-height:1.5">' + msg + '</p>' +
+          '<div style="display:flex;gap:8px;justify-content:flex-end">' +
+            '<button id="bpft-confirm-cancel" style="padding:7px 16px;border-radius:6px;border:1px solid var(--border,rgba(255,255,255,0.1));background:transparent;color:var(--text-secondary,#8899aa);cursor:pointer;font-size:13px;font-family:inherit">Cancel</button>' +
+            '<button id="bpft-confirm-ok" style="padding:7px 16px;border-radius:6px;border:1px solid rgba(220,38,38,0.3);background:rgba(220,38,38,0.1);color:#f87171;cursor:pointer;font-size:13px;font-family:inherit">Delete</button>' +
+          '</div>' +
+        '</div>';
+      overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+      document.body.appendChild(overlay);
+      document.getElementById('bpft-confirm-cancel').onclick = function() { overlay.remove(); };
+      document.getElementById('bpft-confirm-ok').onclick    = function() { overlay.remove(); cb(); };
+    }
+
     var _bpftInstB = {};
     Object.keys(_FT_SECTIONS).forEach(function(section) {
       var cfg = _FT_SECTIONS[section];
@@ -5181,6 +5212,14 @@
           var key = section + ':' + path;
           return !!(_selectedFiles && _selectedFiles[key]);
         },
+        // UI-AGENT-002: update badge after async tree load completes
+        onLoad: (function(sec) {
+          return function(treeData) {
+            _ftTrees[sec] = treeData;
+            ftUpdateBadge(sec);
+          };
+        })(section),
+        onConfirm: _bpftConfirm,  // BUG-009: custom modal instead of window.confirm()
       });
     });
 
@@ -5785,7 +5824,7 @@
       if (mdTextarea) mdTextarea.addEventListener('input', mdOnChange);
     });
 
-    // canvasSaveToMyData — Save canvas markdown content to my_data/ via md_save tool
+    // canvasSaveToMyData — Save canvas markdown content directly via FS upload API (BUG-014: was LLM path)
     function canvasSaveToMyData() {
       var content = _canvasMarkdown || '';
       if (!content.trim()) { showToast('Nothing to save', 2000); return; }
@@ -5797,17 +5836,18 @@
       var saveBtn = document.getElementById('canvas-save-btn');
       if (saveBtn) { saveBtn.textContent = 'Saving…'; saveBtn.disabled = true; }
 
-      fetch(_agentBase + '/api/agent/run', {
+      // Direct multipart upload — no LLM involved
+      var fd = new FormData();
+      fd.append('file', new Blob([content], { type: 'text/markdown' }), filename);
+      var tok = sessionStorage.getItem('rg_token') || '';
+      var headers = tok ? { 'Authorization': 'Bearer ' + tok } : {};
+      fetch(_agentBase + '/api/fs/uploads/upload?path=canvas', {
         method: 'POST',
-        headers: Object.assign({ 'Content-Type': 'application/json' }, _ftHeaders()),
-        body: JSON.stringify({
-          query: 'Save the following markdown content to my_data using md_save tool. ' +
-            'filename: "' + filename + '", subfolder: "canvas", versioning: true. ' +
-            'Content:\n\n' + content
-        })
-      }).then(function() {
-        showToast('Saved to my_data/canvas/' + filename, 3000);
-        // Refresh uploads tree so file appears
+        headers: headers,
+        body: fd
+      }).then(function(r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        showToast('Saved to uploads/canvas/' + filename, 3000);
         ftLoad('uploads');
       }).catch(function() {
         showToast('Save failed', 2000);
@@ -5958,12 +5998,26 @@
       return new BPulseFileTree({
         containerId: 'admin-tree-' + section,
         section: section,
-        get apiPrefix() { return _adminTreeApiPrefix(section); },
+        apiPrefix: function() { return _adminTreeApiPrefix(section); },
         writable: true,
         workflowSection: false,
         token: function() { return _adminToken || sessionStorage.getItem('rg_token') || ''; },
         onToast: function(msg, type) { showToast(msg, 2000); },
+        onConfirm: _bpftConfirm,  // BUG-009
         onFileClick: function(sec, path, name) { adminPreviewFile(sec, path, name); },
+        onLoad: function(treeData) {  // BUG-012: update admin panel badges after tree loads
+          var badge = document.getElementById('admin-badge-' + section);
+          if (badge && treeData) {
+            var count = 0;
+            (function walk(nodes) {
+              (nodes || []).forEach(function(n) {
+                if (n.type === 'file') count++;
+                else if (n.children) walk(n.children);
+              });
+            })(treeData.tree || treeData.children || []);
+            badge.textContent = count;
+          }
+        },
       });
     }
 
@@ -6653,10 +6707,13 @@
         // Show logout
         var lb = document.getElementById('logout-btn');
         if (lb) lb.style.display = 'inline-block';
-        // Show admin console link for admin/super_admin
+        // Show admin console link and admin panel button for admin/super_admin
         if (u.role === 'admin' || u.role === 'super_admin') {
           var ab = document.getElementById('admin-console-banner');
           if (ab) ab.style.display = 'inline-block';
+          // UI-AGENT-001: .visible class was defined in CSS but never applied by JS
+          var adminBtn = document.getElementById('admin-tab-btn');
+          if (adminBtn) adminBtn.classList.add('visible');
         }
         // Set initial worker name
         _activeWorkerId = u.worker_id || null;
@@ -6664,6 +6721,9 @@
           var wn = document.getElementById('header-worker-name');
           if (wn) wn.textContent = u.worker_name;
           document.title = u.worker_name;
+          // UI-AGENT-004: welcome screen title was hardcoded
+          var wt = document.querySelector('.welcome-title');
+          if (wt) wt.textContent = u.worker_name;
         }
         // Super admin: load all workers and show switcher
         if (u.role === 'super_admin') {
@@ -6711,6 +6771,8 @@
             u.worker_name = w.name;
             sessionStorage.setItem('rg_user', JSON.stringify(u));
           } catch(e) {}
+          // Reload admin panel trees for new worker context
+          if (typeof adminLoadAll === 'function') adminLoadAll();
         }).catch(function() {});
     }
 
@@ -6937,6 +6999,31 @@
           actions.insertBefore(viewBtn, actions.firstChild);
         }
       }
+    }
+
+    // REQ-03: Render chart inline in the current agent message
+    function renderInlineChart(title, chartUrl) {
+      if (!_currentAgentMsg) return;
+      var tok = sessionStorage.getItem('rg_token') || '';
+      var authedUrl = chartUrl + (chartUrl.indexOf('?') === -1 ? '?' : '&') + 'token=' + encodeURIComponent(tok);
+      var existing = _currentAgentMsg.querySelector('.inline-chart-wrap');
+      if (existing) return; // only one inline chart per message
+      var wrap = document.createElement('div');
+      wrap.className = 'inline-chart-wrap';
+      wrap.style.cssText = 'margin-top:12px;border:1px solid var(--border-color,#e2e8f0);border-radius:8px;overflow:hidden;background:#fff';
+      var bar = document.createElement('div');
+      bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--bg-secondary,#f8fafc);border-bottom:1px solid var(--border-color,#e2e8f0);font-size:12px;color:var(--text-secondary,#64748b)';
+      bar.innerHTML = '<span>📊 ' + (title || 'Chart') + '</span><button onclick="this.closest(\'.inline-chart-wrap\').querySelector(\'iframe\').style.display=this.closest(\'.inline-chart-wrap\').querySelector(\'iframe\').style.display===\'none\'?\'block\':\'none\';this.textContent=this.textContent===\'Hide\'?\'Show\':\'Hide\'" style="font-size:11px;padding:2px 7px;cursor:pointer">Hide</button>';
+      var iframe = document.createElement('iframe');
+      iframe.src = authedUrl;
+      iframe.style.cssText = 'width:100%;height:380px;border:none;display:block';
+      iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+      iframe.setAttribute('allowfullscreen', '');
+      wrap.appendChild(bar);
+      wrap.appendChild(iframe);
+      var synthesis = _currentAgentMsg.querySelector('.synthesis');
+      if (synthesis) synthesis.after(wrap);
+      else _currentAgentMsg.querySelector('.msg-body').appendChild(wrap);
     }
 
     // REQ-05: Update context gauge bar

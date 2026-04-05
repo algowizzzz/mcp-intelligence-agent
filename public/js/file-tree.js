@@ -205,6 +205,9 @@
     this._onToast        = config.onToast || null;
     this._isFileActive   = config.isFileActive || null;
     this._isFileSelected = config.isFileSelected || null;
+    this._onLoad         = config.onLoad || null;   // UI-AGENT-002: callback after tree data arrives
+    // BUG-009: configurable confirm — default uses native confirm; pages can override to avoid CDP/browser freeze
+    this._confirmFn      = config.onConfirm || function (msg, cb) { if (window.confirm(msg)) cb(); };
     this._readOnly       = false;
 
     // Tree state
@@ -288,6 +291,8 @@
         try {
           self._tree = JSON.parse(xhr.responseText);
           self._render();
+          // UI-AGENT-002: fire onLoad callback so callers can update badges
+          if (self._onLoad) self._onLoad(self._tree, self._section);
         } catch (e) {
           if (el) el.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:#888">Error loading tree</div>';
         }
@@ -365,10 +370,10 @@
           '<span class="ft-row-name">' + esc(node.name) + '</span>';
         if (isWritable) {
           html += '<div class="ft-row-actions">' +
-            '<button class="ft-action-btn" title="New File" data-action="newfile" data-apath="' + esc(node.path) + '">' +
+            '<button class="ft-action-btn" title="New File" aria-label="New file in ' + esc(node.name) + '" data-action="newfile" data-apath="' + esc(node.path) + '">' +
               '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>' +
             '</button>' +
-            '<button class="ft-action-btn danger" title="Delete folder" data-action="delfolder" data-apath="' + esc(node.path) + '" data-aname="' + esc(node.name) + '">' +
+            '<button class="ft-action-btn danger" title="Delete folder" aria-label="Delete folder ' + esc(node.name) + '" data-action="delfolder" data-apath="' + esc(node.path) + '" data-aname="' + esc(node.name) + '">' +
               '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14H6L5 6"></path></svg>' +
             '</button>' +
           '</div>';
@@ -399,11 +404,11 @@
             : node.size_bytes > 1024
               ? Math.round(node.size_bytes / 1024) + ' KB'
               : node.size_bytes + ' B';
-          html += '<span class="ft-row-meta">' + sizeStr + '</span>';
+          html += ' <span class="ft-row-meta">' + sizeStr + '</span>';
         }
         if (isWritable) {
           html += '<div class="ft-row-actions">' +
-            '<button class="ft-action-btn danger" title="Delete" data-action="delfile" data-apath="' + esc(node.path) + '" data-aname="' + esc(node.name) + '">' +
+            '<button class="ft-action-btn danger" title="Delete" aria-label="Delete ' + esc(node.name) + '" data-action="delfile" data-apath="' + esc(node.path) + '" data-aname="' + esc(node.name) + '">' +
               '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14H6L5 6"></path></svg>' +
             '</button>' +
           '</div>';
@@ -756,11 +761,15 @@
     var inp = document.createElement('input');
     inp.type = 'text';
     inp.style.cssText = 'background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.2);border-radius:3px;padding:2px 6px;font-size:12px;color:#cccccc;outline:none;width:140px';
-    // BUG-FS-001 fix: set value THEN immediately select
+    // BUG-FS-001 fix: set value THEN select
+    // SA-FT-06 fix: defer select() so it fires after browser focus settles;
+    // synchronous select() can be cancelled by the layout pass that follows
+    // replaceWith(), leaving the cursor at end of text — typing then appends
+    // instead of replacing the selected old name.
     inp.value = oldName;
     nameEl.replaceWith(inp);
     inp.focus();
-    inp.select();
+    setTimeout(function () { inp.select(); }, 0);
 
     var committed = false;
     function commit() {
@@ -795,20 +804,21 @@
      ------------------------------------------------------------ */
   BPulseFileTree.prototype.deleteFile = function (path, name) {
     var self = this;
-    if (!confirm('Delete "' + (name || path) + '"?')) return;
-    var xhr = new XMLHttpRequest();
-    xhr.open('DELETE', self._url('file') + '?path=' + encodeURIComponent(path));
-    var h = self._headers(false);
-    for (var k in h) { if (Object.prototype.hasOwnProperty.call(h, k)) xhr.setRequestHeader(k, h[k]); }
-    xhr.onload = function () {
-      if (xhr.status >= 200 && xhr.status < 300) { self._toast('Deleted', 'success'); self.load(); }
-      else {
-        try { var d = JSON.parse(xhr.responseText); self._toast(d.detail || 'Delete failed', 'error'); }
-        catch (ex) { self._toast('Delete failed', 'error'); }
-      }
-    };
-    xhr.onerror = function () { self._toast('Delete failed', 'error'); };
-    xhr.send();
+    self._confirmFn('Delete "' + (name || path) + '"?', function () {
+      var xhr = new XMLHttpRequest();
+      xhr.open('DELETE', self._url('file') + '?path=' + encodeURIComponent(path));
+      var h = self._headers(false);
+      for (var k in h) { if (Object.prototype.hasOwnProperty.call(h, k)) xhr.setRequestHeader(k, h[k]); }
+      xhr.onload = function () {
+        if (xhr.status >= 200 && xhr.status < 300) { self._toast('Deleted', 'success'); self.load(); }
+        else {
+          try { var d = JSON.parse(xhr.responseText); self._toast(d.detail || 'Delete failed', 'error'); }
+          catch (ex) { self._toast('Delete failed', 'error'); }
+        }
+      };
+      xhr.onerror = function () { self._toast('Delete failed', 'error'); };
+      xhr.send();
+    });
   };
 
   /* ------------------------------------------------------------
@@ -816,20 +826,21 @@
      ------------------------------------------------------------ */
   BPulseFileTree.prototype.deleteFolder = function (path, name) {
     var self = this;
-    if (!confirm('Delete folder "' + (name || path) + '" and all its contents?')) return;
-    var xhr = new XMLHttpRequest();
-    xhr.open('DELETE', self._url('folder'));
-    var h = self._headers(true);
-    for (var k in h) { if (Object.prototype.hasOwnProperty.call(h, k)) xhr.setRequestHeader(k, h[k]); }
-    xhr.onload = function () {
-      if (xhr.status >= 200 && xhr.status < 300) { self._toast('Deleted', 'success'); self.load(); }
-      else {
-        try { var d = JSON.parse(xhr.responseText); self._toast(d.detail || 'Delete failed', 'error'); }
-        catch (ex) { self._toast('Delete failed', 'error'); }
-      }
-    };
-    xhr.onerror = function () { self._toast('Delete failed', 'error'); };
-    xhr.send(JSON.stringify({ path: path, recursive: true }));
+    self._confirmFn('Delete folder "' + (name || path) + '" and all its contents?', function () {
+      var xhr = new XMLHttpRequest();
+      xhr.open('DELETE', self._url('folder'));
+      var h = self._headers(true);
+      for (var k in h) { if (Object.prototype.hasOwnProperty.call(h, k)) xhr.setRequestHeader(k, h[k]); }
+      xhr.onload = function () {
+        if (xhr.status >= 200 && xhr.status < 300) { self._toast('Deleted', 'success'); self.load(); }
+        else {
+          try { var d = JSON.parse(xhr.responseText); self._toast(d.detail || 'Delete failed', 'error'); }
+          catch (ex) { self._toast('Delete failed', 'error'); }
+        }
+      };
+      xhr.onerror = function () { self._toast('Delete failed', 'error'); };
+      xhr.send(JSON.stringify({ path: path, recursive: true }));
+    });
   };
 
   /* ------------------------------------------------------------
@@ -985,7 +996,7 @@
     var self = this;
     var paths = Object.keys(self._bulkSelected);
     if (!paths.length) { self._toast('Nothing selected', 'info'); return; }
-    if (!confirm('Delete ' + paths.length + ' selected item(s)?')) return;
+    self._confirmFn('Delete ' + paths.length + ' selected item(s)?', function () {
 
     var tree = self._tree;
     function isDir(path) {
@@ -1031,6 +1042,7 @@
       }
     }
     next();
+    }); // end _confirmFn callback
   };
 
   /* ------------------------------------------------------------
@@ -1053,8 +1065,8 @@
     var self = this;
     var el = document.getElementById(containerId);
     if (!el) return;
-    // Extract base URL from apiPrefix (strip section)
-    var base = this._prefix.replace(/\/[^\/]+$/, '');
+    // _prefix is already the base (e.g. /api/fs); quota lives at /api/fs/quota
+    var base = this._prefix;
     fetch(base + '/quota', { headers: self._headers(false) })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (data) {

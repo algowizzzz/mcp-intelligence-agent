@@ -196,8 +196,8 @@
     .btn-primary:hover { background: #333333; }
     .btn-secondary { background: var(--bg-input); border: 1px solid var(--border); color: var(--text); }
     .btn-secondary:hover { background: rgba(255,255,255,0.08); }
-    .btn-danger { background: rgba(200,200,200,0.08); border: 1px solid rgba(200,200,200,0.18); color: #aaaaaa; }
-    .btn-danger:hover { background: rgba(200,200,200,0.14); }
+    .btn-danger { background: rgba(220,38,38,0.10); border: 1px solid rgba(220,38,38,0.30); color: #f87171; }
+    .btn-danger:hover { background: rgba(220,38,38,0.18); }
     .btn-sm { padding: 5px 12px; font-size: 12px; }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
@@ -395,6 +395,109 @@
     .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
     .section-title { font-size: 20px; font-weight: 700; }
     .section-sub { font-size: 13px; color: var(--text-m); margin-top: 2px; }
+
+    /* ================================================================
+       FILE TREE ROWS — shared with mcp-agent.html (BUG-FIX: was missing)
+       ================================================================ */
+    .ft-row {
+      display: flex;
+      align-items: center;
+      padding: 3px 4px 3px 0;
+      cursor: pointer;
+      border-radius: 4px;
+      margin: 0 4px;
+      gap: 0;
+      position: relative;
+      user-select: none;
+    }
+    .ft-row:hover { background: var(--bg-h); }
+    .ft-row.selected { background: rgba(255,255,255,0.08); }
+    .ft-row.admin-drop-target { background: rgba(255,255,255,0.10); outline: 1px solid rgba(255,255,255,0.20); border-radius: 4px; }
+    .ft-row.wf-active { background: rgba(255,255,255,0.08); }
+    .ft-row.drag-over { outline: 1px solid rgba(255,255,255,0.18); border-radius: 4px; }
+
+    .ft-indent { flex-shrink: 0; }
+
+    .ft-row-chevron {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      color: var(--text-m);
+      transition: transform 150ms ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ft-row-chevron.open svg { transform: rotate(90deg); }
+    .ft-row-chevron svg { transition: transform 150ms ease; }
+
+    .ft-icon {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+      margin-right: 5px;
+      margin-left: 2px;
+    }
+
+    .ft-row-name {
+      font-size: 12px;
+      color: var(--text-m);
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ft-row:hover .ft-row-name { color: var(--text); }
+
+    /* UI-ADMIN-009: push size badge to right */
+    .ft-row-meta { margin-left: auto; padding-left: 6px; flex-shrink: 0; font-size: 11px; color: var(--text-d); white-space: nowrap; }
+
+    .ft-row-actions {
+      display: none;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+    .ft-row:hover .ft-row-actions { display: flex; }
+
+    .ft-action-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--text-d);
+      padding: 2px;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      transition: color var(--transition), background var(--transition);
+    }
+    .ft-action-btn:hover { color: var(--text); background: rgba(255,255,255,0.08); }
+    .ft-action-btn.danger:hover { color: var(--red); }
+
+    /* Inline rename/create input */
+    .ft-inline-input {
+      display: flex;
+      align-items: center;
+      padding: 3px 8px;
+      margin: 2px 4px;
+      gap: 6px;
+    }
+    .ft-inline-input input {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 4px;
+      color: var(--text);
+      font-size: 12px;
+      padding: 3px 6px;
+      outline: none;
+    }
+
+    /* Upload drop-zone highlight */
+    .ft-body.drag-target {
+      outline: 1px dashed rgba(255,255,255,0.18);
+      outline-offset: -2px;
+    }
   </style>
 </head>
 <body>
@@ -597,7 +700,7 @@
               <button class="btn btn-secondary btn-sm" onclick="document.getElementById('bpft-upload-input-dd').click()" title="Upload files">↑ Upload</button>
               <button class="btn btn-secondary btn-sm" onclick="window._bpft_dd && window._bpft_dd.mkdir()" title="New folder">+ Folder</button>
               <button class="btn btn-secondary btn-sm" id="dd-select-btn" onclick="window._bpft_dd && (window._bpft_dd.toggleBulkMode(),this.textContent=window._bpft_dd._bulkMode?'Cancel':'Select')">Select</button>
-              <button class="btn btn-danger btn-sm" id="dd-bulk-delete-btn" onclick="window._bpft_dd && window._bpft_dd.bulkDelete()">Delete</button>
+              <button class="btn btn-danger btn-sm" id="dd-bulk-delete-btn" onclick="window._bpft_dd && window._bpft_dd.bulkDelete()" disabled>Delete</button>
             </div>
             <input type="file" id="bpft-upload-input-dd" multiple style="display:none">
             <div class="filetree-body" id="tree-domain_data"></div>
@@ -633,7 +736,7 @@
               <button class="btn btn-secondary btn-sm" onclick="document.getElementById('bpft-upload-input-wf').click()">↑ Upload .md</button>
               <button class="btn btn-secondary btn-sm" onclick="window._bpft_wf && window._bpft_wf.createMd('')">+ New</button>
               <button class="btn btn-secondary btn-sm" id="wf-select-btn" onclick="window._bpft_wf && (window._bpft_wf.toggleBulkMode(),this.textContent=window._bpft_wf._bulkMode?'Cancel':'Select')">Select</button>
-              <button class="btn btn-danger btn-sm" id="wf-bulk-delete-btn" onclick="window._bpft_wf && window._bpft_wf.bulkDelete()">Delete</button>
+              <button class="btn btn-danger btn-sm" id="wf-bulk-delete-btn" onclick="window._bpft_wf && window._bpft_wf.bulkDelete()" disabled>Delete</button>
             </div>
             <input type="file" id="bpft-upload-input-wf" accept=".md" multiple style="display:none">
             <div class="filetree-body" id="tree-verified_workflows"></div>
@@ -779,6 +882,7 @@
               <option value="">— choose a worker —</option>
             </select>
           </div>
+          <div id="cw-scope-hint" style="font-size:13px;color:var(--text-m);padding:8px 0 16px">Select a worker above to configure its connector scope.</div>
           <div id="cw-scope-form" style="display:none;max-width:700px">
             <!-- Microsoft 365 scope -->
             <div style="margin-bottom:24px">
@@ -878,23 +982,26 @@ if (!_token || !_user) {
   window.location.href = 'login.html';
 }
 
-// Role gate: users shouldn't be here
-if (_user && _user.role === 'user') {
-  window.location.href = 'mcp-agent.html';
-}
+// Guard all init code — window.location.href does NOT stop JS execution synchronously
+if (_user) {
+  // Role gate: users shouldn't be here
+  if (_user.role === 'user') {
+    window.location.href = 'mcp-agent.html';
+  }
 
-// Set up sidebar
-document.getElementById('sidebar-avatar').textContent = (_user && _user.avatar_initials) || '?';
-document.getElementById('sidebar-name').textContent = (_user && _user.display_name) || _user.user_id;
-var roleLabel = _user.role === 'super_admin' ? 'Super Admin' : 'Admin';
-document.getElementById('sidebar-role').textContent = roleLabel;
-if (_user.role === 'super_admin') {
-  document.getElementById('super-nav').style.display = 'block';
-} else {
-  // Hide worker-creation controls from non-super-admin users (BUG-ADMIN-001)
-  document.querySelectorAll('[onclick="openCreateWorkerModal()"]').forEach(function(el) {
-    el.style.display = 'none';
-  });
+  // Set up sidebar
+  document.getElementById('sidebar-avatar').textContent = _user.avatar_initials || '?';
+  document.getElementById('sidebar-name').textContent = _user.display_name || _user.user_id || '';
+  var roleLabel = _user.role === 'super_admin' ? 'Super Admin' : 'Admin';
+  document.getElementById('sidebar-role').textContent = roleLabel;
+  if (_user.role === 'super_admin') {
+    document.getElementById('super-nav').style.display = 'block';
+  } else {
+    // Hide worker-creation controls from non-super-admin users (BUG-ADMIN-001)
+    document.querySelectorAll('[onclick="openCreateWorkerModal()"]').forEach(function(el) {
+      el.style.display = 'none';
+    });
+  }
 }
 
 function authHeaders() { return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _token }; }
@@ -1054,8 +1161,8 @@ function renderWorkersGrid(workers, containerId) {
       </div>
       <div class="worker-card-desc">${w.description || 'No description'}</div>
       <div class="worker-card-meta">
-        <span>${w.user_count || 0} users</span>
-        <span>${w.admin_count || 0} admins</span>
+        <span>${w.user_count || 0} ${(w.user_count || 0) === 1 ? 'user' : 'users'}</span>
+        <span>${w.admin_count || 0} ${(w.admin_count || 0) === 1 ? 'admin' : 'admins'}</span>
       </div>
     </div>
   `).join('');
@@ -1205,10 +1312,10 @@ function filterTools(val) { renderTools(val.toLowerCase()); }
 
 function toggleCategory(cat, state) {
   document.querySelectorAll('[data-tool]').forEach(cb => {
-    // Find tools in this category
-    var card = cb.closest('.tool-card');
-    var toolCat = card.closest('[class]');
-    cb.checked = state;
+    var toolCards = cb.closest('.tool-cards');
+    var nameEl = toolCards && toolCards.previousElementSibling &&
+                 toolCards.previousElementSibling.querySelector('.tool-category-name');
+    if (nameEl && nameEl.textContent === cat) cb.checked = state;
   });
 }
 
@@ -1691,8 +1798,14 @@ async function loadWorkerMappingTab() {
 
 async function loadWorkerConnectorScope(workerId) {
   var form = document.getElementById('cw-scope-form');
-  if (!workerId) { if (form) form.style.display = 'none'; return; }
+  var hint = document.getElementById('cw-scope-hint');
+  if (!workerId) {
+    if (form) form.style.display = 'none';
+    if (hint) hint.style.display = 'block';
+    return;
+  }
   if (form) form.style.display = 'block';
+  if (hint) hint.style.display = 'none';
   try {
     var r = await fetch(API + '/api/super/workers/' + workerId + '/connector-scope', { headers: authHeaders() });
     if (!r.ok) return;
@@ -1738,11 +1851,338 @@ async function saveConnectorScope(connectorType) {
   } catch(e) { showToast('Network error', 'error'); }
 }
 
+// ── fetchUsers ────────────────────────────────────────────────────────────────
+// UI-ADMIN-001: was called but never defined
+async function fetchUsers() {
+  try {
+    var url = _user.role === 'super_admin'
+      ? API + '/api/super/users'
+      : API + '/api/admin/worker/users';
+    var r = await fetch(url, { headers: authHeaders() });
+    if (!r.ok) return [];
+    var data = await r.json();
+    return data.users || [];
+  } catch(e) { return []; }
+}
+
+// ── loadUsers ─────────────────────────────────────────────────────────────────
+// UI-ADMIN-003: was called but never defined
+async function loadUsers() {
+  var tbody = document.getElementById('users-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-m);text-align:center;padding:24px">Loading…</td></tr>';
+  var users = await fetchUsers();
+  if (_user.role !== 'super_admin' && _currentWorker) {
+    users = users.filter(function(u) { return u.worker_id === _currentWorker.worker_id; });
+  }
+  if (!users.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-m);text-align:center;padding:24px">No users found.</td></tr>';
+    return;
+  }
+  var workerMap = {};
+  _allWorkers.forEach(function(w) { workerMap[w.worker_id] = w.name; });
+  tbody.innerHTML = users.map(function(u) {
+    var rolePill   = u.role === 'super_admin' ? 'pill-blue' : u.role === 'admin' ? 'pill-amber' : 'pill-green';
+    var statusPill = u.enabled !== false ? 'pill-green' : 'pill-red';
+    var statusLabel = u.enabled !== false ? 'Active' : 'Disabled';
+    var workerName = (u.worker_id && workerMap[u.worker_id]) ? workerMap[u.worker_id] : (u.worker_id || '—');
+    function e(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    return '<tr>' +
+      '<td><div class="user-row-name">' + e(u.display_name || u.user_id) + '</div><div class="user-row-sub">' + e(u.email || u.user_id) + '</div></td>' +
+      '<td><span class="pill ' + rolePill + '">' + e(u.role) + '</span></td>' +
+      '<td>' + e(workerName) + '</td>' +
+      '<td><span class="pill ' + statusPill + '">' + statusLabel + '</span></td>' +
+      '<td style="display:flex;gap:6px">' +
+        '<button class="btn btn-secondary btn-sm" onclick="openEditUserModal(\'' + e(u.user_id) + '\')">Edit</button>' +
+        '<button class="btn btn-secondary btn-sm" onclick="resetUserPassword(\'' + e(u.user_id) + '\')">Reset PW</button>' +
+        (_user.role === 'super_admin' ? '<button class="btn btn-danger btn-sm" onclick="deleteUser(\'' + e(u.user_id) + '\',\'' + e(u.display_name || u.user_id) + '\')">Delete</button>' : '') +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+// ── Modal helpers (UI-ADMIN-004, UI-ADMIN-016) ────────────────────────────────
+function openModal(title, sub, bodyHtml, actionsHtml) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-sub').textContent = sub || '';
+  document.getElementById('modal-body').innerHTML = bodyHtml;
+  document.getElementById('modal-actions').innerHTML = actionsHtml;
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modal-overlay')) return;
+  closeModalFn();
+}
+
+function closeModalFn() {
+  document.getElementById('modal-overlay').classList.add('hidden');
+}
+
+// ── openCreateUserModal (UI-ADMIN-004) ────────────────────────────────────────
+function openCreateUserModal() {
+  function e(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  var workerOptions = '<option value="">— no worker —</option>' +
+    _allWorkers.map(function(w) {
+      var sel = _currentWorker && w.worker_id === _currentWorker.worker_id ? ' selected' : '';
+      return '<option value="' + e(w.worker_id) + '"' + sel + '>' + e(w.name) + '</option>';
+    }).join('');
+  openModal(
+    'Create User', 'Add a new user to this system',
+    '<div class="form-row"><label class="form-label">User ID</label><input class="form-input" id="cu-user-id" placeholder="e.g. jsmith"></div>' +
+    '<div class="form-row"><label class="form-label">Display Name</label><input class="form-input" id="cu-display-name" placeholder="e.g. John Smith"></div>' +
+    '<div class="form-row"><label class="form-label">Email</label><input class="form-input" id="cu-email" type="email" placeholder="john@company.com"></div>' +
+    '<div class="form-row"><label class="form-label">Password</label><input class="form-input" id="cu-password" type="password" placeholder="Minimum 8 characters"></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">' +
+      '<div class="form-row"><label class="form-label">Role</label><select class="form-select" id="cu-role"><option value="user">User</option><option value="admin">Admin</option></select></div>' +
+      '<div class="form-row"><label class="form-label">Assign to Worker</label><select class="form-select" id="cu-worker">' + workerOptions + '</select></div>' +
+    '</div>',
+    '<button class="btn btn-secondary" onclick="closeModalFn()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitCreateUser()">Create User</button>'
+  );
+}
+
+async function submitCreateUser() {
+  var body = {
+    user_id:      document.getElementById('cu-user-id').value.trim(),
+    display_name: document.getElementById('cu-display-name').value.trim(),
+    email:        document.getElementById('cu-email').value.trim(),
+    password:     document.getElementById('cu-password').value,
+    role:         document.getElementById('cu-role').value,
+    worker_id:    document.getElementById('cu-worker').value || null,
+  };
+  if (!body.user_id || !body.display_name || !body.password) {
+    showToast('User ID, display name and password are required', 'error'); return;
+  }
+  try {
+    var r = await fetch(API + '/api/super/users', {
+      method: 'POST', headers: authHeaders(), body: JSON.stringify(body)
+    });
+    var d = await r.json().catch(function() { return {}; });
+    if (r.ok) {
+      closeModalFn(); showToast('User created: ' + body.display_name, 'success');
+      loadUsers(); loadDashboard();
+    } else { showToast('Error: ' + (d.detail || 'Create failed'), 'error'); }
+  } catch(err) { showToast('Network error', 'error'); }
+}
+
+async function openEditUserModal(userId) {
+  var users = await fetchUsers();
+  var u = users.find(function(x) { return x.user_id === userId; });
+  if (!u) { showToast('User not found', 'error'); return; }
+  function e(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  var workerOptions = '<option value="">— no worker —</option>' +
+    _allWorkers.map(function(w) {
+      return '<option value="' + e(w.worker_id) + '"' + (w.worker_id === u.worker_id ? ' selected' : '') + '>' + e(w.name) + '</option>';
+    }).join('');
+  openModal(
+    'Edit User', e(u.display_name || u.user_id),
+    '<div class="form-row"><label class="form-label">Display Name</label><input class="form-input" id="eu-display-name" value="' + e(u.display_name || '') + '"></div>' +
+    '<div class="form-row"><label class="form-label">Email</label><input class="form-input" id="eu-email" type="email" value="' + e(u.email || '') + '"></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">' +
+      '<div class="form-row"><label class="form-label">Role</label><select class="form-select" id="eu-role"><option value="user"' + (u.role==='user'?' selected':'') + '>User</option><option value="admin"' + (u.role==='admin'?' selected':'') + '>Admin</option></select></div>' +
+      '<div class="form-row"><label class="form-label">Worker</label><select class="form-select" id="eu-worker">' + workerOptions + '</select></div>' +
+    '</div>' +
+    '<div class="form-row"><label class="form-label">Status</label><select class="form-select" id="eu-enabled"><option value="true"' + (u.enabled!==false?' selected':'') + '>Active</option><option value="false"' + (u.enabled===false?' selected':'') + '>Disabled</option></select></div>',
+    '<button class="btn btn-secondary" onclick="closeModalFn()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitEditUser(\'' + e(userId) + '\')">Save Changes</button>'
+  );
+}
+
+async function submitEditUser(userId) {
+  var body = {
+    display_name: document.getElementById('eu-display-name').value.trim(),
+    email:        document.getElementById('eu-email').value.trim(),
+    role:         document.getElementById('eu-role').value,
+    worker_id:    document.getElementById('eu-worker').value || null,
+    enabled:      document.getElementById('eu-enabled').value === 'true',
+  };
+  try {
+    var r = await fetch(API + '/api/super/users/' + encodeURIComponent(userId), {
+      method: 'PUT', headers: authHeaders(), body: JSON.stringify(body)
+    });
+    var d = await r.json().catch(function() { return {}; });
+    if (r.ok) { closeModalFn(); showToast('User updated', 'success'); loadUsers(); }
+    else { showToast('Error: ' + (d.detail || 'Update failed'), 'error'); }
+  } catch(err) { showToast('Network error', 'error'); }
+}
+
+async function deleteUser(userId, displayName) {
+  if (!confirm('Delete user "' + displayName + '"? This cannot be undone.')) return;
+  try {
+    var r = await fetch(API + '/api/super/users/' + encodeURIComponent(userId), {
+      method: 'DELETE', headers: authHeaders()
+    });
+    if (r.ok) { showToast('User deleted', 'success'); loadUsers(); loadDashboard(); }
+    else { var d = await r.json().catch(function() { return {}; }); showToast('Error: ' + (d.detail || 'Delete failed'), 'error'); }
+  } catch(err) { showToast('Network error', 'error'); }
+}
+
+async function resetUserPassword(userId) {
+  if (!confirm('Reset password for "' + userId + '"?')) return;
+  try {
+    var r = await fetch(API + '/api/super/users/' + encodeURIComponent(userId) + '/reset-password', {
+      method: 'POST', headers: authHeaders()
+    });
+    var d = await r.json().catch(function() { return {}; });
+    if (r.ok) { showToast('Password reset', 'success'); }
+    else { showToast('Error: ' + (d.detail || 'Reset failed'), 'error'); }
+  } catch(err) { showToast('Network error', 'error'); }
+}
+
+// ── loadWorkers (UI-ADMIN-005) ────────────────────────────────────────────────
+function loadWorkers() {
+  renderWorkersGrid(_allWorkers, 'workers-grid');
+  if (_user.role === 'super_admin') {
+    loadSuperAdminWorkers().then(function() {
+      renderWorkersGrid(_allWorkers, 'workers-grid');
+    });
+  }
+}
+
+// ── openCreateWorkerModal (UI-ADMIN-006) ──────────────────────────────────────
+function openCreateWorkerModal() {
+  function e(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  openModal(
+    'Create Worker', 'Set up a new digital worker',
+    '<div class="form-row"><label class="form-label">Worker Name</label><input class="form-input" id="cwnew-name" placeholder="e.g. Credit Risk Agent"></div>' +
+    '<div class="form-row"><label class="form-label">Description</label><input class="form-input" id="cwnew-desc" placeholder="Brief description"></div>' +
+    '<div class="form-row"><label class="form-label">System Prompt (optional)</label><textarea class="form-textarea" id="cwnew-prompt" rows="5" placeholder="Enter system prompt…"></textarea></div>' +
+    '<div class="form-row"><label class="form-label">Clone from (optional)</label><select class="form-select" id="cwnew-clone"><option value="">— start blank —</option>' +
+    _allWorkers.map(function(w) { return '<option value="' + e(w.worker_id) + '">' + e(w.name) + '</option>'; }).join('') +
+    '</select></div>',
+    '<button class="btn btn-secondary" onclick="closeModalFn()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitCreateWorker()">Create Worker</button>'
+  );
+}
+
+async function submitCreateWorker() {
+  var name = document.getElementById('cwnew-name').value.trim();
+  if (!name) { showToast('Worker name is required', 'error'); return; }
+  var body = {
+    name:          name,
+    description:   document.getElementById('cwnew-desc').value.trim(),
+    system_prompt: document.getElementById('cwnew-prompt').value,
+    clone_from:    document.getElementById('cwnew-clone').value || null,
+    enabled_tools: ['*'],
+  };
+  try {
+    var r = await fetch(API + '/api/super/workers', {
+      method: 'POST', headers: authHeaders(), body: JSON.stringify(body)
+    });
+    var d = await r.json().catch(function() { return {}; });
+    if (r.ok) {
+      closeModalFn(); showToast('Worker created: ' + name, 'success');
+      await loadSuperAdminWorkers();
+      renderWorkersGrid(_allWorkers, 'workers-grid');
+      renderWorkersGrid(_allWorkers, 'dash-workers-grid');
+    } else { showToast('Error: ' + (d.detail || 'Create failed'), 'error'); }
+  } catch(err) { showToast('Network error', 'error'); }
+}
+
+// ── Audit Log (UI-ADMIN-013) ──────────────────────────────────────────────────
+var _auditOffset = 0;
+var _auditLimit  = 50;
+var _auditTotal  = 0;
+
+async function loadAudit(offset) {
+  if (offset === undefined) offset = _auditOffset;
+  _auditOffset = offset;
+  var tbody      = document.getElementById('audit-tbody');
+  var pagination = document.getElementById('audit-pagination');
+  var pageInfo   = document.getElementById('audit-page-info');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-m);text-align:center;padding:24px">Loading…</td></tr>';
+  var workerFilter = (document.getElementById('audit-filter-worker') || {}).value || '';
+  var userFilter   = (document.getElementById('audit-filter-user')   || {}).value || '';
+  var qs = '?limit=' + _auditLimit + '&offset=' + offset;
+  if (workerFilter) qs += '&worker_id=' + encodeURIComponent(workerFilter);
+  if (userFilter)   qs += '&user_id='   + encodeURIComponent(userFilter);
+  try {
+    var r = await fetch(API + '/api/super/audit' + qs, { headers: authHeaders() });
+    if (!r.ok) {
+      tbody.innerHTML = '<tr><td colspan="6" style="color:#aaa;text-align:center;padding:24px">Error loading audit log.</td></tr>';
+      return;
+    }
+    var data = await r.json();
+    var entries = data.entries || [];
+    _auditTotal = data.total_matched || 0;
+    if (!entries.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-m);text-align:center;padding:24px">No audit entries found.</td></tr>';
+      if (pagination) pagination.style.display = 'none';
+      return;
+    }
+    function e(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    tbody.innerHTML = entries.map(function(entry) {
+      var ts = entry.timestamp ? new Date(entry.timestamp).toLocaleString() : '—';
+      var statusCls = entry.status === 'success' ? 'pill-green' : 'pill-red';
+      return '<tr>' +
+        '<td style="font-size:12px;white-space:nowrap">' + e(ts) + '</td>' +
+        '<td>' + e(entry.worker_id || '—') + '</td>' +
+        '<td>' + e(entry.user_id || '—') + '</td>' +
+        '<td style="font-family:monospace;font-size:12px">' + e(entry.tool_name || '—') + '</td>' +
+        '<td><span class="pill ' + statusCls + '">' + e(entry.status || '—') + '</span></td>' +
+        '<td style="font-size:12px">' + (entry.duration_ms != null ? Math.round(entry.duration_ms) : '—') + '</td>' +
+      '</tr>';
+    }).join('');
+    if (pagination && _auditTotal > _auditLimit) {
+      pagination.style.display = 'flex';
+      if (pageInfo) {
+        var from = offset + 1;
+        var to   = Math.min(offset + entries.length, _auditTotal);
+        pageInfo.textContent = from + '–' + to + ' of ' + _auditTotal;
+      }
+      var prevBtn = document.getElementById('audit-prev-btn');
+      var nextBtn = document.getElementById('audit-next-btn');
+      if (prevBtn) prevBtn.disabled = offset === 0;
+      if (nextBtn) nextBtn.disabled = offset + _auditLimit >= _auditTotal;
+    } else {
+      if (pagination) pagination.style.display = 'none';
+    }
+  } catch(err) {
+    tbody.innerHTML = '<tr><td colspan="6" style="color:#aaa;text-align:center;padding:24px">Failed to load audit log.</td></tr>';
+  }
+}
+
+var _auditFilterTimer = null;
+function filterAuditTable() {
+  clearTimeout(_auditFilterTimer);
+  _auditFilterTimer = setTimeout(function() { loadAudit(0); }, 350);
+}
+
+function auditPagePrev() {
+  if (_auditOffset >= _auditLimit) loadAudit(_auditOffset - _auditLimit);
+}
+
+function auditPageNext() {
+  if (_auditOffset + _auditLimit < _auditTotal) loadAudit(_auditOffset + _auditLimit);
+}
+
+// ── switchSheet (UI-ADMIN-015) ────────────────────────────────────────────────
+function switchSheet(tabEl, sheetName, wb) {
+  var tabs = tabEl.parentElement.querySelectorAll('.sheet-tab');
+  tabs.forEach(function(t) { t.classList.remove('active'); });
+  tabEl.classList.add('active');
+  var pb = document.getElementById('preview-body');
+  if (pb && typeof renderSheet === 'function') renderSheet(wb, sheetName, pb);
+}
+
 // ── Init ─────────────────────────────────────────────────────────────────────
-initWorkerContext();
+// Guard: window.location.href doesn't stop JS execution — only init when authenticated
+if (_user) initWorkerContext();
 </script>
 <script src="/js/file-tree.js"></script>
 <script>
+// BUG-009: shared confirm helper for BPulseFileTree — uses openModal instead of window.confirm
+function _bpftConfirm(msg, cb) {
+  window._bpftConfirmCb = cb;
+  openModal(
+    'Confirm Delete', msg, '',
+    '<button class="btn btn-danger" onclick="closeModalFn(); window._bpftConfirmCb && window._bpftConfirmCb()">Delete</button>' +
+    '<button class="btn btn-secondary" onclick="closeModalFn()">Cancel</button>'
+  );
+}
+
 // Initialize BPulseFileTree instances for admin.html (runs after file-tree.js loads)
 (function() {
   function _getToken() { return (typeof _token !== 'undefined' ? _token : '') || sessionStorage.getItem('rg_token') || ''; }
@@ -1757,11 +2197,12 @@ initWorkerContext();
   window._bpft_dd = new BPulseFileTree({
     containerId: 'tree-domain_data',
     section: 'domain_data',
-    get apiPrefix() { return _apiPrefix(); },
+    apiPrefix: _apiPrefix,
     writable: true,
     workflowSection: false,
     token: _getToken,
     onToast: _toast,
+    onConfirm: _bpftConfirm,
     onFileClick: function(section, path, name) {
       if (typeof previewFile === 'function') previewFile({ stopPropagation: function(){} }, section, path, name);
     },
@@ -1770,11 +2211,12 @@ initWorkerContext();
   window._bpft_wf = new BPulseFileTree({
     containerId: 'tree-verified_workflows',
     section: 'verified_workflows',
-    get apiPrefix() { return _apiPrefix(); },
+    apiPrefix: _apiPrefix,
     writable: true,
     workflowSection: false,
     token: _getToken,
     onToast: _toast,
+    onConfirm: _bpftConfirm,
     onFileClick: function(section, path, name) {
       if (typeof previewFile === 'function') previewFile({ stopPropagation: function(){} }, section, path, name);
     },
@@ -1785,6 +2227,29 @@ initWorkerContext();
   if (ddInput) ddInput.onchange = function() { window._bpft_dd && window._bpft_dd.upload(Array.from(this.files), ''); this.value = ''; };
   var wfInput = document.getElementById('bpft-upload-input-wf');
   if (wfInput) wfInput.onchange = function() { window._bpft_wf && window._bpft_wf.upload(Array.from(this.files), ''); this.value = ''; };
+
+  // UI-ADMIN-008: wire Select buttons to enable/disable Delete button based on bulk mode
+  var ddSelectBtn = document.getElementById('dd-select-btn');
+  var ddDeleteBtn = document.getElementById('dd-bulk-delete-btn');
+  if (ddSelectBtn && ddDeleteBtn) {
+    var _origDdClick = ddSelectBtn.onclick;
+    ddSelectBtn.onclick = function() {
+      window._bpft_dd && window._bpft_dd.toggleBulkMode();
+      var inBulk = window._bpft_dd && window._bpft_dd._bulkMode;
+      this.textContent = inBulk ? 'Cancel' : 'Select';
+      ddDeleteBtn.disabled = !inBulk;
+    };
+  }
+  var wfSelectBtn = document.getElementById('wf-select-btn');
+  var wfDeleteBtn = document.getElementById('wf-bulk-delete-btn');
+  if (wfSelectBtn && wfDeleteBtn) {
+    wfSelectBtn.onclick = function() {
+      window._bpft_wf && window._bpft_wf.toggleBulkMode();
+      var inBulk = window._bpft_wf && window._bpft_wf._bulkMode;
+      this.textContent = inBulk ? 'Cancel' : 'Select';
+      wfDeleteBtn.disabled = !inBulk;
+    };
+  }
 
   // Patch loadFileTree to use BPulseFileTree instances
   var _origLoadFileTree = window.loadFileTree;

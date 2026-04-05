@@ -24,6 +24,7 @@ _METADATA_FILE = _WORKFLOWS_DIR / '.metadata.json'
 
 _sys.path.insert(0, str(pathlib.Path(__file__).parent / 'sajhamcpserver'))
 from sajha.tools.impl.fs_index import build_index, get_index
+from sajha.worker_repository import WorkerRepository as _WorkerRepository
 
 _JWT_SECRET = os.getenv('JWT_SECRET', 'sajha-dev-secret-change-in-prod')
 _SAJHA_USERS_FILE  = pathlib.Path('sajhamcpserver/config/users.json')
@@ -31,11 +32,14 @@ _SAJHA_WORKERS_FILE = pathlib.Path('sajhamcpserver/config/workers.json')
 
 _STORAGE_BACKEND = _os.environ.get('STORAGE_BACKEND', 'local')
 
+# WorkerRepository singleton — all worker config reads go through this (REQ-PREP-06)
+_worker_repo = _WorkerRepository(config_path=str(_SAJHA_WORKERS_FILE))
 
-def serve_file(path: str) -> Response:
-    """Serve a file. Local: FileResponse. S3: pre-signed URL (not implemented locally)."""
+
+def serve_file(path: str, media_type: str = None) -> Response:
+    """Serve a file. Local: FileResponse. S3: pre-signed URL (not implemented locally). (REQ-PREP-07)"""
     if _STORAGE_BACKEND == 'local':
-        return FileResponse(path)
+        return FileResponse(path, media_type=media_type) if media_type else FileResponse(path)
     else:
         raise NotImplementedError("S3 file serving not configured")
 
@@ -102,21 +106,19 @@ def _find_user(user_id: str) -> Optional[dict]:
 
 
 def _load_workers() -> list:
-    try:
-        return json.loads(_SAJHA_WORKERS_FILE.read_text()).get('workers', [])
-    except Exception:
-        return []
+    """Return all workers via WorkerRepository (REQ-PREP-06)."""
+    return _worker_repo.list()
 
 
 def _save_workers(workers: list):
+    """Persist workers to disk, then reload the repository cache (REQ-PREP-06)."""
     _SAJHA_WORKERS_FILE.write_text(json.dumps({'workers': workers}, indent=2))
+    _worker_repo.reload()
 
 
 def _find_worker(worker_id: str) -> Optional[dict]:
-    for w in _load_workers():
-        if w.get('worker_id') == worker_id:
-            return w
-    return None
+    """Find a worker by ID via WorkerRepository (REQ-PREP-06)."""
+    return _worker_repo.find(worker_id)
 
 
 def _verify_password(plain: str, user: dict) -> bool:
@@ -186,20 +188,16 @@ def _clone_worker_folder(src_id: str, dst_id: str):
 load_dotenv()
 
 _DATA_ROOT     = pathlib.Path('sajhamcpserver/data')
-_DOMAIN_DATA   = _DATA_ROOT / 'domain_data'
-_MY_DATA       = _DATA_ROOT / 'uploads'
-_VERIFIED_WF   = _DATA_ROOT / 'workflows' / 'verified'
-_MY_WF         = _DATA_ROOT / 'workflows' / 'my'
 _COMMON_DATA   = _DATA_ROOT / 'common'
 _AUDIT_LOG     = _DATA_ROOT / 'audit' / 'tool_calls.jsonl'
 
 # Sections that users may write to (uploads, my-docs, personal workflows)
 _WRITABLE_SECTIONS = {'uploads', 'my_workflows', 'my_data'}
 
-_ADMIN_SECTION_ROOTS = {
-    'domain_data':        _DOMAIN_DATA,
-    'verified_workflows': _VERIFIED_WF,
-}
+# REQ-WF-01/REQ-DD-01/REQ-DD-02: global _DOMAIN_DATA, _MY_DATA, _VERIFIED_WF, _MY_WF constants
+# retired — global directories migrated to worker-scoped paths. Legacy admin endpoints now
+# route through _admin_section_roots_for_worker() or worker-scoped paths directly.
+_ADMIN_SECTION_ROOTS: dict = {}  # no global sections remain; kept for legacy endpoint compatibility
 
 # Thread ownership registry — maps thread_id → {user_id, worker_id, created_at}
 _THREAD_REGISTRY_FILE = _DATA_ROOT / 'threads.jsonl'
@@ -1563,8 +1561,8 @@ async def serve_chart(filename: str, token: str = '', payload: dict = None,
     if not chart_path.exists():
         raise HTTPException(status_code=404, detail='Chart not found')
     if chart_path.suffix == '.png':
-        return FileResponse(str(chart_path), media_type='image/png')
-    return FileResponse(str(chart_path), media_type='text/html')
+        return serve_file(str(chart_path), media_type='image/png')
+    return serve_file(str(chart_path), media_type='text/html')
 
 
 # ── Admin API ──────────────────────────────────────────────────────────────────
@@ -1864,19 +1862,25 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
                         output = output.content
                     if not isinstance(output, (str, dict, list)):
                         output = str(output)
+                    # LangGraph may serialize ToolMessage content as a JSON string — parse it back
+                    if isinstance(output, str):
+                        try:
+                            _parsed = json.loads(output)
+                            if isinstance(_parsed, dict):
+                                output = _parsed
+                        except (ValueError, TypeError):
+                            pass
                     yield f"data: {json.dumps({'type': 'tool_end', 'name': event['name'], 'output': output, 'run_id': event['run_id']})}\n\n"
-                    if isinstance(output, dict):
-                        # REQ-03: Viz tool chart ready — emit canvas SSE event
-                        if output.get('_chart_ready') and output.get('html_file'):
-                            chart_filename = output['html_file']
+                    if isinstance(output, dict) and output.get('_chart_ready'):
+                        # Unified chart-ready SSE: covers generate_chart (html_file) and python_execute (figures)
+                        if output.get('html_file'):
                             chart_title = output.get('title', 'Chart')
-                            yield f"data: {json.dumps({'type': 'canvas', 'title': chart_title, 'content': '', 'canvas_type': 'chart', 'chart_url': f'/api/fs/charts/{chart_filename}'})}\n\n"
-                        # REQ-04a: Python figure detection — emit canvas SSE event for captured figures
-                        elif event['name'] in ('python_execute', 'python_run_script'):
-                            figures = output.get('figures', [])
-                            if figures:
-                                first_fig = figures[0]
-                                yield f"data: {json.dumps({'type': 'canvas', 'title': 'Python Output', 'canvas_type': 'chart', 'chart_url': first_fig['url']})}\n\n"
+                            chart_url = '/api/fs/charts/' + output['html_file']
+                            yield f"data: {json.dumps({'type': 'canvas', 'title': chart_title, 'content': '', 'canvas_type': 'chart', 'chart_url': chart_url})}\n\n"
+                        elif output.get('figures'):
+                            first_fig = output['figures'][0]
+                            chart_title = output.get('title', 'Python Chart')
+                            yield f"data: {json.dumps({'type': 'canvas', 'title': chart_title, 'canvas_type': 'chart', 'chart_url': first_fig['url']})}\n\n"
                 elif t == 'on_interrupt':
                     yield f"data: {json.dumps({'type': 'hitl', 'question': event['data'].get('question', ''), 'options': event['data'].get('options', []), 'thread_id': thread_id})}\n\n"
                 elif t == 'on_chat_model_end':
@@ -1946,6 +1950,7 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
 # ── Super Admin — Worker-scoped file browser ──────────────────────────────────
 
 @app.get('/api/super/workers/{worker_id}/files/{section}')
+@app.get('/api/super/workers/{worker_id}/files/{section}/tree')
 async def super_worker_tree(worker_id: str, section: str, _: dict = Depends(require_super_admin)):
     """Browse any worker's file tree (super_admin only). Uses admin resolver (REQ-WF-03)."""
     w = _find_worker(worker_id)
@@ -1991,6 +1996,7 @@ async def super_worker_upload(
 # ── Admin — Own worker file browser ───────────────────────────────────────────
 
 @app.get('/api/admin/worker/files/{section}')
+@app.get('/api/admin/worker/files/{section}/tree')
 async def admin_worker_tree(section: str, payload: dict = Depends(require_admin)):
     """Browse the admin's own worker file tree."""
     w = _get_admin_worker(payload)
@@ -2519,7 +2525,7 @@ async def set_worker_connector_scope(
 async def list_tools_for_admin(user: dict = Depends(require_admin)):
     """Return all tools from SAJHA with their config (for admin tool library view)."""
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=10.0, trust_env=False) as client:
             from agent.tools import SAJHA_BASE, _service_headers
             r = await client.get(SAJHA_BASE + '/api/tools/list', headers=_service_headers())
         if r.status_code == 200:

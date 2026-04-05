@@ -52,7 +52,7 @@
       },
       "width":     { "type": "integer", "default": 900, "description": "Chart width in pixels." },
       "height":    { "type": "integer", "default": 500, "description": "Chart height in pixels." },
-      "save_html": { "type": "boolean", "default": false, "description": "Save chart as standalone .html file to my_data/ and return html_file path." },
+      "save_html": { "type": "boolean", "default": true, "description": "Save chart as standalone .html file to my_data/ and return html_file path." },
       "save_png":  { "type": "boolean", "default": false, "description": "Export PNG at 2x resolution via Kaleido. Returns png_path." },
       "filename":  { "type": "string", "description": "Output filename (no extension). Defaults to chart_{type}_{timestamp}." }
     },

@@ -1,0 +1,36 @@
+{
+  "root": "/Users/saadahmed/Desktop/react_agent/sajhamcpserver/data/workers/w-7bde3869/domain_data",
+  "built_at": "2026-04-05T07:44:38.801291+00:00",
+  "tree": [
+    {
+      "type": "folder",
+      "name": "analytics",
+      "path": "analytics",
+      "children": []
+    },
+    {
+      "type": "folder",
+      "name": "counterparties",
+      "path": "counterparties",
+      "children": []
+    },
+    {
+      "type": "folder",
+      "name": "iris",
+      "path": "iris",
+      "children": []
+    },
+    {
+      "type": "folder",
+      "name": "market_data",
+      "path": "market_data",
+      "children": []
+    },
+    {
+      "type": "folder",
+      "name": "uploads",
+      "path": "uploads",
+      "children": []
+    }
+  ]
+}

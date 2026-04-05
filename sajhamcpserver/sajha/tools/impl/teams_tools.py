@@ -261,6 +261,9 @@ class TeamsSendMessageTool(BaseMCPTool):
                     'content': message,
                 }
             }
+            # NOTE: ChannelMessage.Send does not exist as an Application permission in Microsoft Graph.
+            # App-only channel posting requires a registered Teams Bot (via Bot Framework / Azure Bot Service).
+            # This call will succeed only if the app is also registered as a Bot and added to the team.
             result = client.post(f'teams/{team_id}/channels/{channel_id}/messages', body)
             return {'ok': True, 'message_id': result.get('id'), 'created_at': result.get('createdDateTime')}
         except Exception as e:

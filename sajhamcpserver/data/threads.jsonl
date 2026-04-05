@@ -413,3 +413,12 @@
 {"thread_id": "576b92be-ed8a-4e9e-bd7c-5df8ce72296a", "user_id": "risk_agent", "worker_id": "w-market-risk", "created_at": "2026-04-03T22:56:06.834272Z"}
 {"thread_id": "f28d2091-b283-41ab-a45e-76dbf4d7e0d2", "user_id": "test_user", "worker_id": "w-market-risk", "created_at": "2026-04-04T00:21:09.789973Z"}
 {"thread_id": "731c3b62-319b-46ed-9063-2092e377db60", "user_id": "risk_agent", "worker_id": "w-market-risk", "created_at": "2026-04-04T14:56:23.917686Z"}
+{"thread_id": "6c8098db-2481-4f1f-b567-e29d9e8f248a", "user_id": "risk_agent", "worker_id": "w-market-risk", "created_at": "2026-04-04T18:04:10.571725Z"}
+{"thread_id": "b523a3ad-b73c-40bd-b742-ace563681dfa", "user_id": "risk_agent", "worker_id": "w-market-risk", "created_at": "2026-04-04T19:25:32.414427Z"}
+{"thread_id": "70f3a435-bd88-45f4-916c-fef50c3ab491", "user_id": "risk_agent", "worker_id": "w-market-risk", "created_at": "2026-04-04T20:15:45.719028Z"}
+{"thread_id": "380121a3-4e29-4f8e-a89c-348fa56c4adb", "user_id": "risk_agent", "worker_id": "w-market-risk", "created_at": "2026-04-05T04:06:34.833079Z"}
+{"thread_id": "d639b90f-848b-4004-890c-6eb5f79b2c99", "user_id": "risk_agent", "worker_id": "w-market-risk", "created_at": "2026-04-05T04:09:48.532806Z"}
+{"thread_id": "9ed3378b-46d9-43ac-895f-9e04547aac50", "user_id": "risk_agent", "worker_id": "w-market-risk", "created_at": "2026-04-05T04:19:30.661664Z"}
+{"thread_id": "5d82a0d2-a525-4542-803a-3b828081dee7", "user_id": "risk_agent", "worker_id": "w-market-risk", "created_at": "2026-04-05T04:22:32.335518Z"}
+{"thread_id": "cc09d1e2-8a8d-494d-be8c-32ad389b18f7", "user_id": "risk_agent", "worker_id": "w-market-risk", "created_at": "2026-04-05T04:32:52.941964Z"}
+{"thread_id": "89f13786-f7be-4323-bca6-129c8792e796", "user_id": "risk_agent", "worker_id": "w-market-risk", "created_at": "2026-04-05T07:05:47.221071Z"}

@@ -1,6 +1,6 @@
 {
   "root": "/Users/saadahmed/Desktop/react_agent/sajhamcpserver/data/workers/w-market-risk/workflows/my",
-  "built_at": "2026-04-04T16:46:29.189107+00:00",
+  "built_at": "2026-04-05T07:57:12.900522+00:00",
   "tree": [
     {
       "type": "folder",
@@ -30,6 +30,22 @@
       "name": "T&O Risk",
       "path": "T&O Risk",
       "children": []
+    },
+    {
+      "type": "file",
+      "name": "uat_bt04_dest.txt",
+      "path": "uat_bt04_dest.txt",
+      "size_bytes": 22,
+      "modified_at": "2026-04-05T02:55:21.873554+00:00",
+      "mime": "text/plain"
+    },
+    {
+      "type": "file",
+      "name": "uat_copy_result.txt",
+      "path": "uat_copy_result.txt",
+      "size_bytes": 5,
+      "modified_at": "2026-04-03T22:27:42.620511+00:00",
+      "mime": "text/plain"
     }
   ]
 }

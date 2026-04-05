@@ -1,22 +1,77 @@
 {
   "root": "/Users/saadahmed/Desktop/react_agent/sajhamcpserver/data/workers/w-market-risk/my_data/risk_agent",
-  "built_at": "2026-04-04T16:46:29.179697+00:00",
+  "built_at": "2026-04-05T07:57:12.892106+00:00",
   "tree": [
     {
       "type": "file",
-      "name": "UAT9D_test_245c1a.md",
-      "path": "UAT9D_test_245c1a.md",
-      "size_bytes": 19,
-      "modified_at": "2026-04-03T22:50:28.361384+00:00",
-      "mime": "text/markdown"
+      "name": "Admin_User_Guide.docx",
+      "path": "Admin_User_Guide.docx",
+      "size_bytes": 1064274,
+      "modified_at": "2026-04-04T20:37:38.603254+00:00",
+      "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     },
     {
       "type": "file",
-      "name": "UAT9D_test_ecc727.md",
-      "path": "UAT9D_test_ecc727.md",
-      "size_bytes": 19,
-      "modified_at": "2026-04-03T22:51:14.948422+00:00",
-      "mime": "text/markdown"
+      "name": "Connectors_Guide.docx",
+      "path": "Connectors_Guide.docx",
+      "size_bytes": 133469,
+      "modified_at": "2026-04-04T20:37:38.677396+00:00",
+      "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    },
+    {
+      "type": "file",
+      "name": "Deployment_Guide.docx",
+      "path": "Deployment_Guide.docx",
+      "size_bytes": 14956,
+      "modified_at": "2026-04-04T20:37:38.945011+00:00",
+      "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    },
+    {
+      "type": "file",
+      "name": "End_User_Guide_Market_Risk.docx",
+      "path": "End_User_Guide_Market_Risk.docx",
+      "size_bytes": 253420,
+      "modified_at": "2026-04-04T20:37:38.901381+00:00",
+      "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    },
+    {
+      "type": "file",
+      "name": "QA_Results_Summary.docx",
+      "path": "QA_Results_Summary.docx",
+      "size_bytes": 18442,
+      "modified_at": "2026-04-04T20:37:38.658909+00:00",
+      "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    },
+    {
+      "type": "file",
+      "name": "Super_Admin_Guide.docx",
+      "path": "Super_Admin_Guide.docx",
+      "size_bytes": 1424308,
+      "modified_at": "2026-04-04T20:37:38.545036+00:00",
+      "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    },
+    {
+      "type": "file",
+      "name": "Technical_Documentation.docx",
+      "path": "Technical_Documentation.docx",
+      "size_bytes": 23347,
+      "modified_at": "2026-04-04T20:37:38.988396+00:00",
+      "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    },
+    {
+      "type": "folder",
+      "name": "canvas",
+      "path": "canvas",
+      "children": [
+        {
+          "type": "file",
+          "name": "uat_canvas_test.md",
+          "path": "canvas/uat_canvas_test.md",
+          "size_bytes": 53,
+          "modified_at": "2026-04-05T07:03:09.357526+00:00",
+          "mime": "text/markdown"
+        }
+      ]
     },
     {
       "type": "folder",
@@ -181,6 +236,70 @@
           "path": "charts/chart_line_20260403_205231.html",
           "size_bytes": 8657,
           "modified_at": "2026-04-03T22:27:42.589753+00:00",
+          "mime": "text/html"
+        },
+        {
+          "type": "file",
+          "name": "chart_line_20260404_180913.html",
+          "path": "charts/chart_line_20260404_180913.html",
+          "size_bytes": 8547,
+          "modified_at": "2026-04-04T18:09:13.823283+00:00",
+          "mime": "text/html"
+        },
+        {
+          "type": "file",
+          "name": "chart_line_20260405_040655.html",
+          "path": "charts/chart_line_20260405_040655.html",
+          "size_bytes": 8614,
+          "modified_at": "2026-04-05T04:06:55.887767+00:00",
+          "mime": "text/html"
+        },
+        {
+          "type": "file",
+          "name": "chart_line_20260405_041941.html",
+          "path": "charts/chart_line_20260405_041941.html",
+          "size_bytes": 8606,
+          "modified_at": "2026-04-05T04:19:41.452323+00:00",
+          "mime": "text/html"
+        },
+        {
+          "type": "file",
+          "name": "chart_line_20260405_043255.html",
+          "path": "charts/chart_line_20260405_043255.html",
+          "size_bytes": 8621,
+          "modified_at": "2026-04-05T04:32:55.105131+00:00",
+          "mime": "text/html"
+        },
+        {
+          "type": "file",
+          "name": "chart_line_20260405_043441.html",
+          "path": "charts/chart_line_20260405_043441.html",
+          "size_bytes": 8630,
+          "modified_at": "2026-04-05T04:34:41.339701+00:00",
+          "mime": "text/html"
+        },
+        {
+          "type": "file",
+          "name": "chart_line_20260405_043538.html",
+          "path": "charts/chart_line_20260405_043538.html",
+          "size_bytes": 8878,
+          "modified_at": "2026-04-05T04:35:38.750797+00:00",
+          "mime": "text/html"
+        },
+        {
+          "type": "file",
+          "name": "chart_line_20260405_043542.html",
+          "path": "charts/chart_line_20260405_043542.html",
+          "size_bytes": 8882,
+          "modified_at": "2026-04-05T04:35:42.148233+00:00",
+          "mime": "text/html"
+        },
+        {
+          "type": "file",
+          "name": "chart_line_20260405_071129.html",
+          "path": "charts/chart_line_20260405_071129.html",
+          "size_bytes": 8648,
+          "modified_at": "2026-04-05T07:11:29.341804+00:00",
           "mime": "text/html"
         },
         {
@@ -540,6 +659,54 @@
       "size_bytes": 44,
       "modified_at": "2026-04-03T22:27:42.631205+00:00",
       "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "uat_bt04_src.txt",
+      "path": "uat_bt04_src.txt",
+      "size_bytes": 22,
+      "modified_at": "2026-04-05T02:55:21.873554+00:00",
+      "mime": "text/plain"
+    },
+    {
+      "type": "file",
+      "name": "uat_chat_attach.csv",
+      "path": "uat_chat_attach.csv",
+      "size_bytes": 28,
+      "modified_at": "2026-04-05T07:51:26.977692+00:00",
+      "mime": "text/csv"
+    },
+    {
+      "type": "file",
+      "name": "uat_chat_attach_20260405_075302.csv",
+      "path": "uat_chat_attach_20260405_075302.csv",
+      "size_bytes": 28,
+      "modified_at": "2026-04-05T07:53:02.707344+00:00",
+      "mime": "text/csv"
+    },
+    {
+      "type": "file",
+      "name": "uat_chat_attach_20260405_075422.csv",
+      "path": "uat_chat_attach_20260405_075422.csv",
+      "size_bytes": 28,
+      "modified_at": "2026-04-05T07:54:22.625266+00:00",
+      "mime": "text/csv"
+    },
+    {
+      "type": "file",
+      "name": "uat_size_test.md",
+      "path": "uat_size_test.md",
+      "size_bytes": 6,
+      "modified_at": "2026-04-05T07:02:52.986809+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "uat_toast_test.txt",
+      "path": "uat_toast_test.txt",
+      "size_bytes": 21,
+      "modified_at": "2026-04-05T07:54:19.608540+00:00",
+      "mime": "text/plain"
     }
   ]
 }

@@ -4,11 +4,12 @@ Microsoft Document Tools MCP Tool Implementation - Refactored with Individual To
 """
 
 import os
+import io
 import json
 from typing import Dict, Any, List, Optional
-from pathlib import Path
 from sajha.tools.base_mcp_tool import BaseMCPTool
 from sajha.core.properties_configurator import PropertiesConfigurator
+from sajha.storage import storage
 
 
 class MsDocBaseTool(BaseMCPTool):
@@ -23,48 +24,52 @@ class MsDocBaseTool(BaseMCPTool):
         # Set docs directory from config or use default
         self.docs_directory = (config.get('docs_directory') if config else None) or PropertiesConfigurator().get('tool.msdoc.docs_directory', 'data/msdocs')
         
-        # Ensure directory exists
-        Path(self.docs_directory).mkdir(parents=True, exist_ok=True)
-    
-    def _get_file_path(self, filename: str) -> Path:
+    def _get_file_path(self, filename: str) -> str:
         """Get full path for a file"""
-        return Path(self.docs_directory) / filename
-    
+        return os.path.join(self.docs_directory, filename)
+
     def _list_files_by_type(self, file_type: str = 'all') -> List[Dict]:
-        """List files by type"""
+        """List files by type using storage abstraction (REQ-PREP-03)."""
         files = []
-        
         try:
-            for file_path in Path(self.docs_directory).iterdir():
-                if file_path.is_file():
-                    extension = file_path.suffix.lower()
-                    
-                    # Filter by type
-                    if file_type == 'word' and extension not in ['.docx', '.doc']:
-                        continue
-                    elif file_type == 'excel' and extension not in ['.xlsx', '.xls', '.xlsm']:
-                        continue
-                    
-                    files.append({
-                        'filename': file_path.name,
-                        'path': str(file_path),
-                        'extension': extension,
-                        'size': file_path.stat().st_size,
-                        'modified': file_path.stat().st_mtime
-                    })
-            
+            import pathlib
+            for rel_path in storage.list_prefix(self.docs_directory):
+                # list_prefix returns relative paths; skip nested directories
+                if os.sep in rel_path or '/' in rel_path:
+                    continue
+                extension = os.path.splitext(rel_path)[1].lower()
+                if file_type == 'word' and extension not in ['.docx', '.doc']:
+                    continue
+                elif file_type == 'excel' and extension not in ['.xlsx', '.xls', '.xlsm']:
+                    continue
+                abs_path = os.path.join(self.docs_directory, rel_path)
+                try:
+                    import pathlib as _pl
+                    stat = _pl.Path(abs_path).stat()
+                    size = stat.st_size
+                    modified = stat.st_mtime
+                except Exception:
+                    size = 0
+                    modified = 0.0
+                files.append({
+                    'filename': rel_path,
+                    'path': abs_path,
+                    'extension': extension,
+                    'size': size,
+                    'modified': modified,
+                })
             return sorted(files, key=lambda x: x['modified'], reverse=True)
-            
         except Exception as e:
             self.logger.error(f"Failed to list files: {e}")
             return []
-    
-    def _read_word_document(self, file_path: Path) -> Dict:
-        """Read Word document"""
+
+    def _read_word_document(self, file_path: str) -> Dict:
+        """Read Word document via storage abstraction (REQ-PREP-03)."""
         try:
             from docx import Document
-            
-            doc = Document(str(file_path))
+
+            raw = storage.read_bytes(file_path)
+            doc = Document(io.BytesIO(raw))
             
             # Extract text from paragraphs
             paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
@@ -79,7 +84,7 @@ class MsDocBaseTool(BaseMCPTool):
                 tables.append(table_data)
             
             return {
-                'filename': file_path.name,
+                'filename': os.path.basename(file_path),
                 'paragraphs': paragraphs,
                 'paragraph_count': len(paragraphs),
                 'tables': tables,
@@ -90,15 +95,16 @@ class MsDocBaseTool(BaseMCPTool):
             raise ValueError("python-docx library not installed. Install with: pip install python-docx")
         except Exception as e:
             raise ValueError(f"Failed to read Word document: {str(e)}")
-    
-    def _read_excel_document(self, file_path: Path, sheet_name: Optional[str] = None, 
+
+    def _read_excel_document(self, file_path: str, sheet_name: Optional[str] = None,
                             sheet_index: Optional[int] = None, max_rows: int = 100,
                             include_formulas: bool = False) -> Dict:
-        """Read Excel document"""
+        """Read Excel document via storage abstraction (REQ-PREP-03)."""
         try:
             from openpyxl import load_workbook
-            
-            wb = load_workbook(str(file_path), data_only=not include_formulas)
+
+            raw = storage.read_bytes(file_path)
+            wb = load_workbook(io.BytesIO(raw), data_only=not include_formulas)
             
             # Get sheet
             if sheet_name:
@@ -116,7 +122,7 @@ class MsDocBaseTool(BaseMCPTool):
                 data.append(list(row))
             
             result = {
-                'filename': file_path.name,
+                'filename': os.path.basename(file_path),
                 'sheet_name': sheet.title,
                 'data': data,
                 'row_count': len(data),
@@ -273,7 +279,7 @@ class MsDocReadWordTool(MsDocBaseTool):
         filename = arguments['filename']
         file_path = self._get_file_path(filename)
         
-        if not file_path.exists():
+        if not storage.exists(file_path):
             raise ValueError(f"File not found: {filename}")
 
         result = self._read_word_document(file_path)
@@ -367,7 +373,7 @@ class MsDocReadExcelTool(MsDocBaseTool):
         filename = arguments['filename']
         file_path = self._get_file_path(filename)
         
-        if not file_path.exists():
+        if not storage.exists(file_path):
             raise ValueError(f"File not found: {filename}")
 
         result = self._read_excel_document(
@@ -441,7 +447,7 @@ class MsDocSearchWordTool(MsDocBaseTool):
         search_term = arguments['search_term'].lower()
         file_path = self._get_file_path(filename)
         
-        if not file_path.exists():
+        if not storage.exists(file_path):
             raise ValueError(f"File not found: {filename}")
         
         doc_content = self._read_word_document(file_path)
@@ -530,7 +536,7 @@ class MsDocSearchExcelTool(MsDocBaseTool):
         sheet_name = arguments.get('sheet_name')
         file_path = self._get_file_path(filename)
         
-        if not file_path.exists():
+        if not storage.exists(file_path):
             raise ValueError(f"File not found: {filename}")
         
         excel_content = self._read_excel_document(
@@ -612,13 +618,14 @@ class MsDocGetWordMetadataTool(MsDocBaseTool):
         filename = arguments['filename']
         file_path = self._get_file_path(filename)
         
-        if not file_path.exists():
+        if not storage.exists(file_path):
             raise ValueError(f"File not found: {filename}")
         
         try:
             from docx import Document
             
-            doc = Document(str(file_path))
+            raw = storage.read_bytes(file_path)
+            doc = Document(io.BytesIO(raw))
             core_props = doc.core_properties
             
             return {
@@ -692,7 +699,7 @@ class MsDocGetExcelMetadataTool(MsDocBaseTool):
         filename = arguments['filename']
         file_path = self._get_file_path(filename)
         
-        if not file_path.exists():
+        if not storage.exists(file_path):
             raise ValueError(f"File not found: {filename}")
         
         try:
@@ -768,7 +775,7 @@ class MsDocExtractTextTool(MsDocBaseTool):
         filename = arguments['filename']
         file_path = self._get_file_path(filename)
         
-        if not file_path.exists():
+        if not storage.exists(file_path):
             raise ValueError(f"File not found: {filename}")
         
         extension = file_path.suffix.lower()
@@ -847,7 +854,7 @@ class MsDocGetExcelSheetsTool(MsDocBaseTool):
         filename = arguments['filename']
         file_path = self._get_file_path(filename)
         
-        if not file_path.exists():
+        if not storage.exists(file_path):
             raise ValueError(f"File not found: {filename}")
         
         try:
@@ -945,7 +952,7 @@ class MsDocReadExcelSheetTool(MsDocBaseTool):
         filename = arguments['filename']
         file_path = self._get_file_path(filename)
         
-        if not file_path.exists():
+        if not storage.exists(file_path):
             raise ValueError(f"File not found: {filename}")
 
         result = self._read_excel_document(
