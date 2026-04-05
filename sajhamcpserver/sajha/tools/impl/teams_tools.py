@@ -261,10 +261,22 @@ class TeamsSendMessageTool(BaseMCPTool):
                     'content': message,
                 }
             }
-            # NOTE: ChannelMessage.Send does not exist as an Application permission in Microsoft Graph.
-            # App-only channel posting requires a registered Teams Bot (via Bot Framework / Azure Bot Service).
-            # This call will succeed only if the app is also registered as a Bot and added to the team.
             result = client.post(f'teams/{team_id}/channels/{channel_id}/messages', body)
-            return {'ok': True, 'message_id': result.get('id'), 'created_at': result.get('createdDateTime')}
-        except Exception as e:
-            return {'error': str(e)}
+            return {'ok': True, 'message_id': result.get('id'), 'created_at': result.get('createdDateTime'), 'method': 'channel'}
+        except Exception as primary_err:
+            if '403' in str(primary_err) or 'Forbidden' in str(primary_err):
+                # ChannelMessage.Send does not exist as an Application permission in MS Graph.
+                # Fallback: try sending to a group chat using the channel_id as chat_id.
+                # This only works if channel_id is a group chat ID (@thread.v2), not a channel ID (@thread.tacv2).
+                try:
+                    result = client.post(f'chats/{channel_id}/messages', body)
+                    return {'ok': True, 'message_id': result.get('id'), 'created_at': result.get('createdDateTime'), 'method': 'chat_fallback'}
+                except Exception:
+                    return {
+                        'error': (
+                            'Cannot send to Teams channel as app-only: ChannelMessage.Send does not exist as an '
+                            'Application permission in Microsoft Graph. Fix: register a Teams Bot via Azure Bot Service '
+                            'and add it to the team, or use a group chat ID (@thread.v2) instead of a channel ID.'
+                        )
+                    }
+            return {'error': str(primary_err)}
