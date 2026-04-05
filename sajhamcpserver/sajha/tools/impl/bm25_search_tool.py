@@ -200,6 +200,19 @@ class DocumentSearchTool(BaseMCPTool):
             './data/workers/w-market-risk/my_data/risk_agent',
         )
 
+    def _common_dir(self) -> str:
+        try:
+            from flask import g as _g
+            root = getattr(_g, 'worker_common_root', None)
+            if root:
+                return root.rstrip('/')
+        except RuntimeError:
+            pass
+        return PropertiesConfigurator().get(
+            'data.common_data.dir',
+            './data/common',
+        )
+
     def execute(self, arguments: dict) -> dict:
         query = str(arguments.get('query', '')).strip()
         if not query:
@@ -214,15 +227,16 @@ class DocumentSearchTool(BaseMCPTool):
 
         domain_dir = self._domain_dir()
         my_data_dir = self._my_data_dir()
-        cache_key = f"{domain_dir}|{my_data_dir}"
+        common_dir = self._common_dir()
+        cache_key = f"{domain_dir}|{my_data_dir}|{common_dir}"
 
         # ── Fingerprint check — rebuild only when files changed ──────
-        current_fp = _fingerprint([domain_dir, my_data_dir])
+        current_fp = _fingerprint([domain_dir, my_data_dir, common_dir])
         cached = _INDEX_CACHE.get(cache_key)
         rebuilt = False
 
         if cached is None or cached['fingerprint'] != current_fp:
-            bm25, docs = _build_index([domain_dir, my_data_dir])
+            bm25, docs = _build_index([domain_dir, my_data_dir, common_dir])
             _INDEX_CACHE[cache_key] = {
                 'fingerprint': current_fp,
                 'bm25': bm25,

@@ -1,7 +1,7 @@
 {
   "name": "document_search",
   "implementation": "sajha.tools.impl.bm25_search_tool.DocumentSearchTool",
-  "description": "BM25 full-text search across all worker documents (domain_data + my_data). Returns ranked results with relevance scores and content excerpts. Supports .md, .txt, .py, .json, .csv, .docx, .pdf, .xlsx. One entry per document — no chunking. Index is automatically rebuilt when files change (no wait needed after uploads).",
+  "description": "BM25 full-text search across all worker documents (domain_data + my_data + common shared library). Returns ranked results with relevance scores and content excerpts. Supports .md, .txt, .py, .json, .csv, .docx, .pdf, .xlsx. One entry per document — no chunking. Index is automatically rebuilt when files change (no wait needed after uploads).",
   "version": "1.0.0",
   "enabled": true,
   "inputSchema": {

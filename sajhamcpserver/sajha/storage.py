@@ -54,6 +54,21 @@ class LocalStorageBackend:
         dst_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)
 
+    async def write_stream(self, path: str, stream, chunk_size: int = 65536) -> int:
+        """Write from async file-like stream. Returns bytes written. (REQ-11)"""
+        import aiofiles
+        p = pathlib.Path(path)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        total = 0
+        async with aiofiles.open(p, 'wb') as f:
+            while True:
+                chunk = await stream.read(chunk_size)
+                if not chunk:
+                    break
+                await f.write(chunk)
+                total += len(chunk)
+        return total
+
 
 class S3StorageBackend:
     """S3 storage backend (stub — not activated locally).
@@ -90,6 +105,13 @@ class S3StorageBackend:
 
     def copy(self, src: str, dst: str) -> None:
         raise NotImplementedError
+
+    async def write_stream(self, path: str, stream, chunk_size: int = 5242880) -> int:
+        """S3 multipart upload stub. 5 MB parts (S3 minimum for multipart). (REQ-11)"""
+        raise NotImplementedError(
+            "S3 streaming upload not yet implemented. "
+            "Set STORAGE_BACKEND=s3 and implement boto3 multipart upload."
+        )
 
 
 _STORAGE_BACKEND_TYPE = os.environ.get('STORAGE_BACKEND', 'local')

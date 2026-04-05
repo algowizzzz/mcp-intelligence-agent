@@ -218,10 +218,10 @@
     this._bulkMode     = false;
     this._bulkSelected = {};  // { path: bool }
 
-    // Upload queue
-    this._uploadQueue  = [];  // array of { file, destFolder, id, status, progress, error }
-    this._uploading    = false;
-    this._uploadXhr    = null;
+    // Upload queue (REQ-11: parallel concurrent uploads)
+    this._uploadQueue       = [];  // array of { file, destFolder, id, status, progress, bytesLoaded, error, _xhr }
+    this._currentBatchId    = '';
+    this._uploadConcurrency = opts.uploadConcurrency || 4;
 
     // Drag state
     this._drag = null;  // { path, isDir }
@@ -871,44 +871,70 @@
   };
 
   /* ------------------------------------------------------------
-     upload — XHR per-file with progress (BUG-FS-003 fix)
+     upload — concurrent parallel XHR with progress (REQ-11)
+     Supports up to _uploadConcurrency (default 4) simultaneous uploads.
+     Client-side size validation, batch_id for deferred reindex.
      ------------------------------------------------------------ */
   BPulseFileTree.prototype.upload = function (files, destFolder) {
     var self = this;
     if (!files || !files.length) return;
     destFolder = destFolder || '';
+    var MAX_SIZE = 50 * 1024 * 1024;
+    var rejected = [];
     files.forEach(function (f) {
+      if (f.size > MAX_SIZE) {
+        rejected.push(f.name);
+        return;
+      }
       self._uploadQueue.push({
         file: f,
         destFolder: destFolder,
         id: Math.random().toString(36).slice(2),
         status: 'queued',
         progress: 0,
-        error: null
+        bytesLoaded: 0,
+        error: null,
+        _xhr: null,
       });
     });
+    if (rejected.length) {
+      self._toast(rejected.length + ' file(s) exceed 50 MB limit', 'error');
+    }
+    self._currentBatchId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2);
     self._renderUploadQueue();
     self._processUploadQueue();
   };
 
   BPulseFileTree.prototype._processUploadQueue = function () {
     var self = this;
-    if (self._uploading) return;
-    var next = null;
-    for (var i = 0; i < self._uploadQueue.length; i++) {
-      if (self._uploadQueue[i].status === 'queued') { next = self._uploadQueue[i]; break; }
+    var MAX = self._uploadConcurrency || 4;
+    var active = self._uploadQueue.filter(function (i) { return i.status === 'uploading'; }).length;
+    while (active < MAX) {
+      var next = null;
+      for (var i = 0; i < self._uploadQueue.length; i++) {
+        if (self._uploadQueue[i].status === 'queued') { next = self._uploadQueue[i]; break; }
+      }
+      if (!next) break;
+      self._startUpload(next);
+      active++;
     }
-    if (!next) return;
-    self._uploading = true;
-    next.status = 'uploading';
+  };
+
+  BPulseFileTree.prototype._startUpload = function (item) {
+    var self = this;
+    item.status = 'uploading';
     self._renderUploadQueue();
 
     var fd = new FormData();
-    fd.append('file', next.file);
-    var uploadUrl = self._url('upload') + (next.destFolder ? '?path=' + encodeURIComponent(next.destFolder) : '');
+    fd.append('file', item.file);
+    var batchId = self._currentBatchId || '';
+    var uploadUrl = self._url('upload')
+      + '?path=' + encodeURIComponent(item.destFolder || '')
+      + (batchId ? '&batch_id=' + encodeURIComponent(batchId) : '');
 
     var xhr = new XMLHttpRequest();
-    self._uploadXhr = xhr;
     xhr.open('POST', uploadUrl);
     var tok = self._token();
     if (tok) xhr.setRequestHeader('Authorization', 'Bearer ' + tok);
@@ -916,45 +942,127 @@
     // BUG-FS-003: XHR upload progress
     xhr.upload.onprogress = function (e) {
       if (e.lengthComputable) {
-        next.progress = Math.round(e.loaded / e.total * 100);
-        self._renderUploadQueueItem(next);
+        item.progress = Math.round(e.loaded / e.total * 100);
+        item.bytesLoaded = e.loaded;
+        self._renderUploadQueue();
+        self._renderBatchProgress();
       }
     };
 
     xhr.onload = function () {
-      self._uploading = false;
-      self._uploadXhr = null;
       if (xhr.status >= 200 && xhr.status < 300) {
-        next.status = 'done';
-        next.progress = 100;
-        self._toast('Uploaded ' + next.file.name, 'success');
-        self.load();
-        var queue = self._uploadQueue;
-        setTimeout(function () {
-          self._uploadQueue = queue.filter(function (i) { return i !== next; });
-          self._renderUploadQueue();
-        }, 3000);
+        item.status = 'done';
+        item.progress = 100;
+        item.bytesLoaded = item.file.size;
       } else {
-        next.status = 'error';
-        try {
-          var resp = JSON.parse(xhr.responseText);
-          next.error = resp.detail || ('Upload failed: HTTP ' + xhr.status);
-        } catch (ex) { next.error = 'Upload failed: HTTP ' + xhr.status; }
-        self._toast('Upload failed: ' + next.file.name, 'error');
+        item.status = 'error';
+        try { item.error = JSON.parse(xhr.responseText).detail; }
+        catch (e) { item.error = 'HTTP ' + xhr.status; }
       }
       self._renderUploadQueue();
       self._processUploadQueue();
+      self._checkBatchComplete();
     };
+
     xhr.onerror = function () {
-      self._uploading = false;
-      self._uploadXhr = null;
-      next.status = 'error';
-      next.error = 'Network error';
-      self._toast('Upload error: ' + next.file.name, 'error');
+      item.status = 'error';
+      item.error = 'Network error';
       self._renderUploadQueue();
       self._processUploadQueue();
+      self._checkBatchComplete();
     };
+
+    item._xhr = xhr;
     xhr.send(fd);
+  };
+
+  BPulseFileTree.prototype._checkBatchComplete = function () {
+    var self = this;
+    var q = self._uploadQueue;
+    var remaining = q.filter(function (i) { return i.status === 'queued' || i.status === 'uploading'; });
+    if (remaining.length > 0) return;
+
+    var done   = q.filter(function (i) { return i.status === 'done'; }).length;
+    var failed = q.filter(function (i) { return i.status === 'error'; }).length;
+    self._toast(
+      'Upload complete: ' + done + ' succeeded' + (failed ? ', ' + failed + ' failed' : ''),
+      done > 0 ? 'success' : 'error'
+    );
+
+    if (done > 0) {
+      // POST reindex once, then refresh tree
+      fetch(self._url('reindex'), {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + self._token() }
+      }).then(function () { self.load(); }).catch(function () { self.load(); });
+    }
+
+    setTimeout(function () {
+      self._uploadQueue = q.filter(function (i) { return i.status === 'error'; });
+      self._currentBatchId = '';
+      self._renderUploadQueue();
+    }, 5000);
+  };
+
+  BPulseFileTree.prototype._renderBatchProgress = function () {
+    var q = this._uploadQueue;
+    if (!q.length) return;
+    var total      = q.length;
+    var done       = q.filter(function (i) { return i.status === 'done'; }).length;
+    var failed     = q.filter(function (i) { return i.status === 'error'; }).length;
+    var active     = q.filter(function (i) { return i.status === 'uploading'; }).length;
+    var totalBytes = q.reduce(function (s, i) { return s + (i.file.size || 0); }, 0);
+    var loadedBytes = q.reduce(function (s, i) {
+      if (i.status === 'done') return s + (i.file.size || 0);
+      return s + (i.bytesLoaded || 0);
+    }, 0);
+    var pct    = totalBytes > 0 ? Math.round(loadedBytes / totalBytes * 100) : 0;
+    var mbDone  = (loadedBytes / 1048576).toFixed(1);
+    var mbTotal = (totalBytes / 1048576).toFixed(1);
+
+    var el = document.getElementById(this._containerId + '-batch-progress');
+    if (el) {
+      el.innerHTML = '<div style="font-size:11px;color:#aaa;padding:4px 8px">' +
+        done + '/' + total + ' files \xb7 ' + mbDone + ' / ' + mbTotal + ' MB \xb7 ' +
+        active + ' active' + (failed ? ' \xb7 <span style="color:#f87171">' + failed + ' failed</span>' : '') +
+        '<div style="height:3px;background:#333;border-radius:2px;margin-top:4px">' +
+          '<div style="height:100%;width:' + pct + '%;background:#3b82f6;border-radius:2px;transition:width 0.3s"></div>' +
+        '</div></div>';
+    }
+  };
+
+  BPulseFileTree.prototype.cancelBatch = function () {
+    var self = this;
+    self._uploadQueue.forEach(function (item) {
+      if (item.status === 'uploading' && item._xhr) {
+        item._xhr.abort();
+        item.status = 'cancelled';
+      } else if (item.status === 'queued') {
+        item.status = 'cancelled';
+      }
+    });
+    self._uploadQueue = self._uploadQueue.filter(function (i) { return i.status === 'done'; });
+    self._currentBatchId = '';
+    self._renderUploadQueue();
+    self._toast('Upload cancelled', 'info');
+    self.load();
+  };
+
+  BPulseFileTree.prototype.retryFailed = function () {
+    var self = this;
+    self._uploadQueue.forEach(function (item) {
+      if (item.status === 'error') {
+        item.status = 'queued';
+        item.progress = 0;
+        item.error = null;
+        item.bytesLoaded = 0;
+      }
+    });
+    self._currentBatchId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2);
+    self._renderUploadQueue();
+    self._processUploadQueue();
   };
 
   BPulseFileTree.prototype._renderUploadQueue = function () {
@@ -963,8 +1071,8 @@
     var queue = this._uploadQueue;
     if (!queue.length) { queueEl.innerHTML = ''; return; }
     queueEl.innerHTML = queue.map(function (item) {
-      var statusColor = item.status === 'done' ? '#5c5' : item.status === 'error' ? '#c55' : '#aaa';
-      var label = item.status === 'queued' ? 'Queued' : item.status === 'uploading' ? 'Uploading' : item.status === 'done' ? 'Done' : 'Error';
+      var statusColor = item.status === 'done' ? '#5c5' : item.status === 'error' ? '#c55' : item.status === 'cancelled' ? '#888' : '#aaa';
+      var label = item.status === 'queued' ? 'Queued' : item.status === 'uploading' ? 'Uploading' : item.status === 'done' ? 'Done' : item.status === 'cancelled' ? 'Cancelled' : 'Error';
       return '<div style="padding:4px 8px;font-size:11px;display:flex;align-items:center;gap:6px">' +
         '<span style="color:' + statusColor + ';min-width:60px">' + label + '</span>' +
         '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#ccc">' + esc(item.file.name) + '</span>' +
@@ -975,7 +1083,6 @@
   };
 
   BPulseFileTree.prototype._renderUploadQueueItem = function (item) {
-    // Lightweight per-item progress update (no full re-render)
     this._renderUploadQueue();
   };
 

@@ -537,6 +537,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
         Domain Data
       </div>
+      <div class="nav-item" onclick="showSection('common-data')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>
+        Shared Library
+      </div>
       <div class="nav-item" onclick="showSection('workflows')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         Workflows
@@ -713,6 +717,41 @@
             </div>
             <div id="preview-sheet-tabs" class="sheet-tabs" style="display:none"></div>
             <div class="preview-body" id="preview-body">
+              <div class="preview-empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <p>Click a file to preview</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Common Data (Shared Library) — REQ-10 ── -->
+      <div class="section-panel" id="section-common-data">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Shared Library</div>
+            <div class="section-sub">Cross-worker reference data: regulatory docs, policies, templates</div>
+          </div>
+        </div>
+        <div class="filetree-layout">
+          <div class="filetree-sidebar">
+            <div class="filetree-toolbar">
+              <button class="btn btn-secondary btn-sm" onclick="document.getElementById('bpft-upload-input-common').click()" title="Upload files">↑ Upload</button>
+              <button class="btn btn-secondary btn-sm" onclick="window._bpft_common && window._bpft_common.mkdir()" title="New folder">+ Folder</button>
+              <button class="btn btn-secondary btn-sm" id="common-select-btn" onclick="window._bpft_common && (window._bpft_common.toggleBulkMode(),this.textContent=window._bpft_common._bulkMode?'Cancel':'Select')">Select</button>
+              <button class="btn btn-danger btn-sm" id="common-bulk-delete-btn" onclick="window._bpft_common && window._bpft_common.bulkDelete()" disabled>Delete</button>
+            </div>
+            <input type="file" id="bpft-upload-input-common" multiple style="display:none">
+            <div class="filetree-body" id="tree-common"></div>
+          </div>
+          <div class="preview-panel" id="preview-panel-common">
+            <div class="preview-header">
+              <div class="preview-file-name" id="preview-file-name-common">No file selected</div>
+              <div class="preview-meta" id="preview-file-meta-common"></div>
+              <button class="btn btn-secondary btn-sm" onclick="closePreview('common')">×</button>
+            </div>
+            <div class="preview-body" id="preview-body-common">
               <div class="preview-empty">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 <p>Click a file to preview</p>
@@ -1041,7 +1080,7 @@ function showSection(name) {
   _currentSection = name;
   var titles = {
     dashboard: 'Dashboard', 'worker-config': 'Worker Configuration',
-    tools: 'Tools', 'domain-data': 'Domain Data', workflows: 'Workflows',
+    tools: 'Tools', 'domain-data': 'Domain Data', 'common-data': 'Shared Library', workflows: 'Workflows',
     users: 'Users', workers: 'Manage Workers', connectors: 'Connectors', audit: 'Audit Log'
   };
   document.getElementById('topbar-title').textContent = titles[name] || name;
@@ -1050,6 +1089,7 @@ function showSection(name) {
   else if (name === 'worker-config') loadWorkerConfig();
   else if (name === 'tools') loadTools();
   else if (name === 'domain-data') loadFileTree('domain_data');
+  else if (name === 'common-data') loadFileTree('common');
   else if (name === 'workflows') loadFileTree('verified_workflows');
   else if (name === 'users') loadUsers();
   else if (name === 'workers') loadWorkers();
@@ -2222,11 +2262,42 @@ function _bpftConfirm(msg, cb) {
     },
   });
 
+  // Common Data (Shared Library) — REQ-10
+  // Upload goes to /api/admin/common/upload (or super via /api/super/workers/{id}/files/common/upload)
+  function _commonApiPrefix() {
+    if (typeof _user !== 'undefined' && _user && _user.role === 'super_admin' && typeof _currentWorker !== 'undefined' && _currentWorker) {
+      return (typeof API !== 'undefined' ? API : '') + '/api/super/workers/' + _currentWorker.worker_id + '/files';
+    }
+    return (typeof API !== 'undefined' ? API : '') + '/api/admin/worker/files';
+  }
+  window._bpft_common = new BPulseFileTree({
+    containerId: 'tree-common',
+    section: 'common',
+    apiPrefix: _commonApiPrefix,
+    writable: true,
+    workflowSection: false,
+    token: _getToken,
+    onToast: _toast,
+    onConfirm: _bpftConfirm,
+    onFileClick: function(section, path, name) {
+      if (typeof previewFile === 'function') previewFile({ stopPropagation: function(){} }, section, path, name);
+    },
+  });
+  // Hide Delete/Select for non-super_admin (REQ-10 access model)
+  if (typeof _user !== 'undefined' && _user && _user.role !== 'super_admin') {
+    var _cs = document.getElementById('common-select-btn');
+    var _cd = document.getElementById('common-bulk-delete-btn');
+    if (_cs) _cs.style.display = 'none';
+    if (_cd) _cd.style.display = 'none';
+  }
+
   // Wire upload inputs
   var ddInput = document.getElementById('bpft-upload-input-dd');
   if (ddInput) ddInput.onchange = function() { window._bpft_dd && window._bpft_dd.upload(Array.from(this.files), ''); this.value = ''; };
   var wfInput = document.getElementById('bpft-upload-input-wf');
   if (wfInput) wfInput.onchange = function() { window._bpft_wf && window._bpft_wf.upload(Array.from(this.files), ''); this.value = ''; };
+  var commonInput = document.getElementById('bpft-upload-input-common');
+  if (commonInput) commonInput.onchange = function() { window._bpft_common && window._bpft_common.upload(Array.from(this.files), ''); this.value = ''; };
 
   // UI-ADMIN-008: wire Select buttons to enable/disable Delete button based on bulk mode
   var ddSelectBtn = document.getElementById('dd-select-btn');
@@ -2250,12 +2321,23 @@ function _bpftConfirm(msg, cb) {
       wfDeleteBtn.disabled = !inBulk;
     };
   }
+  var commonSelectBtn = document.getElementById('common-select-btn');
+  var commonDeleteBtn = document.getElementById('common-bulk-delete-btn');
+  if (commonSelectBtn && commonDeleteBtn) {
+    commonSelectBtn.onclick = function() {
+      window._bpft_common && window._bpft_common.toggleBulkMode();
+      var inBulk = window._bpft_common && window._bpft_common._bulkMode;
+      this.textContent = inBulk ? 'Cancel' : 'Select';
+      commonDeleteBtn.disabled = !inBulk;
+    };
+  }
 
   // Patch loadFileTree to use BPulseFileTree instances
   var _origLoadFileTree = window.loadFileTree;
   window.loadFileTree = function(section) {
     if (section === 'domain_data' && window._bpft_dd) { window._bpft_dd.load(); return; }
     if (section === 'verified_workflows' && window._bpft_wf) { window._bpft_wf.load(); return; }
+    if (section === 'common' && window._bpft_common) { window._bpft_common.load(); return; }
     if (_origLoadFileTree) _origLoadFileTree(section);
   };
 })();

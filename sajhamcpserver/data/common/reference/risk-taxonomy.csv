@@ -1,0 +1,13 @@
+risk_category,risk_type,description,regulatory_reference
+Market Risk,Interest Rate Risk,Risk of loss due to adverse changes in interest rates,Basel III IRRBB
+Market Risk,Equity Risk,Risk of loss from changes in equity prices,Basel III FRTB
+Market Risk,FX Risk,Risk from adverse foreign exchange rate movements,Basel III FRTB SA
+Market Risk,Commodity Risk,Risk from changes in commodity prices,Basel III FRTB SA
+Credit Risk,Counterparty Credit Risk,Risk that a counterparty defaults before settlement,Basel III SA-CCR
+Credit Risk,Concentration Risk,Risk from excessive exposure to single counterparty or sector,OSFI Guideline B-7
+Credit Risk,Credit Spread Risk,Risk from changes in credit spreads on bonds/CDS,Basel III FRTB
+Liquidity Risk,Funding Liquidity Risk,Risk of inability to meet funding obligations,Basel III NSFR
+Liquidity Risk,Market Liquidity Risk,Risk of inability to liquidate position without large price impact,Basel III LCR
+Operational Risk,Model Risk,Risk from model errors or misuse,OSFI E-23
+Operational Risk,Conduct Risk,Risk from inappropriate behaviour or conflicts of interest,OSFI Corporate Governance Guideline
+Operational Risk,Cyber Risk,Risk from cyber attacks or data breaches,OSFI B-10

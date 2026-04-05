@@ -1,4 +1,5 @@
 import os, json, uuid, pathlib, base64, sys as _sys, hmac, hashlib, time, shutil
+import aiofiles
 import os as _os
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
@@ -312,13 +313,14 @@ def _admin_section_roots_for_worker(worker: dict) -> dict:
 
     Only exposes sections that admin/super-admin may browse and mutate.
     my_data is intentionally excluded (user-owned, REQ-MD-01).
-    common_data is intentionally excluded (platform read-only, REQ-CD-01).
+    common is writable by admin+ and read-only for users (REQ-10).
     """
     base = pathlib.Path('sajhamcpserver')
-    dd   = base / worker.get('domain_data_path',    './data/domain_data').lstrip('./')
-    wf   = base / worker.get('workflows_path',       './data/workflows/verified').lstrip('./')
-    mywf = base / worker.get('my_workflows_path',    './data/workflows/my').lstrip('./')
-    return {'domain_data': dd, 'verified_workflows': wf, 'my_workflows': mywf}
+    dd     = base / worker.get('domain_data_path',  './data/domain_data').lstrip('./')
+    wf     = base / worker.get('workflows_path',     './data/workflows/verified').lstrip('./')
+    mywf   = base / worker.get('my_workflows_path',  './data/workflows/my').lstrip('./')
+    common = base / worker.get('common_data_path',   './data/common').lstrip('./')
+    return {'domain_data': dd, 'verified_workflows': wf, 'my_workflows': mywf, 'common': common}
 
 
 def _resolve_admin_path_for_worker(worker: dict, section: str, rel: str = '') -> pathlib.Path:
@@ -1034,6 +1036,31 @@ async def admin_delete_worker_user(user_id: str, payload: dict = Depends(require
 
 _UPLOAD_ALLOWED_EXT = {'pdf', 'docx', 'xlsx', 'csv', 'txt', 'parquet', 'md', 'json', 'png', 'jpg', 'jpeg'}
 _UPLOAD_MAX_MB = 50
+_UPLOAD_CHUNK_SIZE = 65536        # 64 KB streaming chunk (REQ-11)
+_UPLOAD_MAX_BYTES  = 50 * 1024 * 1024  # 50 MB hard limit (REQ-11)
+
+
+async def _stream_upload(file: UploadFile, dest: pathlib.Path) -> int:
+    """Stream upload to disk in 64 KB chunks. Returns bytes written.
+    Raises HTTP 413 if file exceeds 50 MB. Cleans up partial file on error. (REQ-11)"""
+    bytes_written = 0
+    try:
+        async with aiofiles.open(dest, 'wb') as f:
+            while True:
+                chunk = await file.read(_UPLOAD_CHUNK_SIZE)
+                if not chunk:
+                    break
+                await f.write(chunk)
+                bytes_written += len(chunk)
+                if bytes_written > _UPLOAD_MAX_BYTES:
+                    raise HTTPException(status_code=413, detail='File exceeds 50 MB limit')
+    except HTTPException:
+        dest.unlink(missing_ok=True)
+        raise
+    except Exception as exc:
+        dest.unlink(missing_ok=True)
+        raise HTTPException(status_code=500, detail=f'Upload failed: {exc}')
+    return bytes_written
 
 @app.post('/api/files/upload')
 async def upload_file(file: UploadFile = File(...), payload: dict = Depends(require_jwt)):
@@ -1070,11 +1097,7 @@ async def upload_file(file: UploadFile = File(...), payload: dict = Depends(requ
             safe_name = f'{stem}_{ts}.{suffix}' if suffix else f'{stem}_{ts}'
             dest = user_dir / safe_name
 
-        content = await file.read()
-        if len(content) > _UPLOAD_MAX_MB * 1024 * 1024:
-            raise HTTPException(status_code=413, detail=f'File exceeds {_UPLOAD_MAX_MB} MB limit')
-
-        dest.write_bytes(content)
+        await _stream_upload(file, dest)
         build_index(str(user_dir))   # refresh tree cache immediately
         stat = dest.stat()
         return JSONResponse(content={
@@ -1283,6 +1306,7 @@ async def fs_file(section: str, path: str = '', payload: dict = Depends(require_
 async def fs_upload(
     section: str,
     path: str = '',
+    batch_id: str = '',
     file: UploadFile = File(...),
     payload: dict = Depends(require_jwt),
 ):
@@ -1294,8 +1318,9 @@ async def fs_upload(
     folder = _resolve_fs_path(worker, uid, section, path) if path else root
     folder.mkdir(parents=True, exist_ok=True)
     dest = folder / pathlib.Path(file.filename).name
-    dest.write_bytes(await file.read())
-    build_index(str(root))
+    await _stream_upload(file, dest)
+    if not batch_id:
+        build_index(str(root))
     return {'ok': True, 'path': str(dest.relative_to(root)).replace('\\', '/')}
 
 
@@ -1966,6 +1991,7 @@ async def super_worker_upload(
     section: str,
     path: str = '',
     overwrite: bool = False,
+    batch_id: str = '',
     file: UploadFile = File(...),
     _: dict = Depends(require_super_admin),
 ):
@@ -1979,11 +2005,9 @@ async def super_worker_upload(
     dest = folder / pathlib.Path(file.filename).name
     if dest.exists() and not overwrite:
         raise HTTPException(status_code=409, detail='File already exists')
-    content = await file.read()
-    if len(content) > 50 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail='File exceeds 50 MB limit')
-    dest.write_bytes(content)
-    build_index(str(root))
+    await _stream_upload(file, dest)
+    if not batch_id:
+        build_index(str(root))
     from datetime import datetime, timezone
     stat = dest.stat()
     return {
@@ -1991,6 +2015,35 @@ async def super_worker_upload(
         'size_bytes': stat.st_size,
         'modified_at': datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
     }
+
+
+def _count_files_in_tree(tree: list) -> int:
+    """Recursively count file entries in an .index.json tree. (REQ-11)"""
+    count = 0
+    for item in tree:
+        if item.get('type') == 'file':
+            count += 1
+        elif item.get('type') == 'folder':
+            count += _count_files_in_tree(item.get('children', []))
+    return count
+
+
+@app.post('/api/super/workers/{worker_id}/files/{section}/reindex')
+async def super_worker_reindex(
+    worker_id: str,
+    section: str,
+    _: dict = Depends(require_super_admin),
+):
+    """Rebuild .index.json for a section. Called once after batch upload completes. (REQ-11)"""
+    w = _find_worker(worker_id)
+    if not w:
+        raise HTTPException(status_code=404, detail='Worker not found')
+    root = _resolve_admin_path_for_worker(w, section)
+    t0 = time.time()
+    idx = build_index(str(root))
+    elapsed = round((time.time() - t0) * 1000, 1)
+    file_count = _count_files_in_tree(idx.get('tree', []))
+    return {'indexed_files': file_count, 'elapsed_ms': elapsed, 'section': section}
 
 
 # ── Admin — Own worker file browser ───────────────────────────────────────────
@@ -2011,6 +2064,7 @@ async def admin_worker_upload(
     section: str,
     path: str = '',
     overwrite: bool = False,
+    batch_id: str = '',
     file: UploadFile = File(...),
     payload: dict = Depends(require_admin),
 ):
@@ -2024,15 +2078,57 @@ async def admin_worker_upload(
     dest = folder / pathlib.Path(file.filename).name
     if dest.exists() and not overwrite:
         raise HTTPException(status_code=409, detail='File already exists')
-    content = await file.read()
-    if len(content) > 50 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail='File exceeds 50 MB limit')
-    dest.write_bytes(content)
-    build_index(str(root))
+    await _stream_upload(file, dest)
+    if not batch_id:
+        build_index(str(root))
     from datetime import datetime, timezone
     stat = dest.stat()
     return {
         'path': str(dest.relative_to(root)).replace('\\', '/'),
+        'size_bytes': stat.st_size,
+        'modified_at': datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+    }
+
+
+@app.post('/api/admin/worker/files/{section}/reindex')
+async def admin_worker_reindex(section: str, payload: dict = Depends(require_admin)):
+    """Rebuild .index.json for a section. Called once after batch upload completes. (REQ-11)"""
+    w = _get_admin_worker(payload)
+    if not w:
+        raise HTTPException(status_code=404, detail='Worker not found')
+    root = _resolve_worker_path(w, section)
+    t0 = time.time()
+    idx = build_index(str(root))
+    elapsed = round((time.time() - t0) * 1000, 1)
+    file_count = _count_files_in_tree(idx.get('tree', []))
+    return {'indexed_files': file_count, 'elapsed_ms': elapsed, 'section': section}
+
+
+@app.post('/api/admin/common/upload')
+async def admin_common_upload(
+    path: str = '',
+    overwrite: bool = False,
+    batch_id: str = '',
+    file: UploadFile = File(...),
+    payload: dict = Depends(require_admin),
+):
+    """Upload a file to common shared data (admin + super_admin). (REQ-10)"""
+    w = _get_admin_worker(payload)
+    if not w:
+        raise HTTPException(status_code=404, detail='Worker not found')
+    common_root = _resolve_worker_path(w, 'common')
+    folder = _resolve_worker_path(w, 'common', path) if path else common_root
+    folder.mkdir(parents=True, exist_ok=True)
+    dest = folder / pathlib.Path(file.filename).name
+    if dest.exists() and not overwrite:
+        raise HTTPException(status_code=409, detail='File already exists')
+    await _stream_upload(file, dest)
+    if not batch_id:
+        build_index(str(common_root))
+    from datetime import datetime, timezone
+    stat = dest.stat()
+    return {
+        'path': str(dest.relative_to(common_root)).replace('\\', '/'),
         'size_bytes': stat.st_size,
         'modified_at': datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
     }
@@ -2213,12 +2309,16 @@ async def admin_worker_delete_file(section: str, path: str = '', payload: dict =
     w = _get_admin_worker(payload)
     if not w: raise HTTPException(status_code=404, detail='Worker not found')
     if not path: raise HTTPException(status_code=400, detail='path required')
+    if section == 'common' and payload.get('role') != 'super_admin':
+        raise HTTPException(status_code=403, detail='Only super_admin can delete from common data')
     return _wf_delete_file(w, section, path)
 
 @app.delete('/api/admin/worker/files/{section}/folder')
 async def admin_worker_delete_folder(section: str, req: _WfDelete, payload: dict = Depends(require_admin)):
     w = _get_admin_worker(payload)
     if not w: raise HTTPException(status_code=404, detail='Worker not found')
+    if section == 'common' and payload.get('role') != 'super_admin':
+        raise HTTPException(status_code=403, detail='Only super_admin can delete from common data')
     return _wf_delete_folder(w, section, req.path, req.recursive)
 
 @app.post('/api/admin/worker/files/{section}/folder')
