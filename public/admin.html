@@ -1134,6 +1134,9 @@ async function loadSuperAdminWorkers() {
 
 function switchWorker(wid) {
   _currentWorker = _allWorkers.find(w => w.worker_id === wid);
+  // Update topbar badge to reflect newly selected worker
+  var badge = document.getElementById('topbar-worker-name');
+  if (badge && _currentWorker) badge.textContent = _currentWorker.name;
   // Reload current section for new worker context
   showSection(_currentSection);
 }
