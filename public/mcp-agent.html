@@ -6872,7 +6872,10 @@
     function initAuth() {
       var token = sessionStorage.getItem('rg_token');
       var userJson = sessionStorage.getItem('rg_user');
-      if (!token || !userJson) return;
+      if (!token || !userJson) {
+        window.location.replace('login.html');
+        return;
+      }
       try {
         _authUser = JSON.parse(userJson);
         var u = _authUser;
