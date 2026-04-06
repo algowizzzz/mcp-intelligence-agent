@@ -58,15 +58,51 @@ Additional libraries available in the sandbox:
 """
 
 
-def _augment_prompt(prompt: str) -> str:
-    """Append platform addenda (Python execution guidance) to a worker system prompt."""
-    return prompt + _PYTHON_ADDENDUM
+_MULTI_AGENT_ADDENDUM = """
+
+=== MULTI-AGENT ORCHESTRATION ===
+You have access to a `task` tool that spawns specialised sub-agents in parallel.
+Each sub-agent is a clone of you with a focused task prompt and access to the
+same worker data and tools (or a tool subset you specify).
+
+FREESTYLE MODE (no workflow file in context):
+  Use task() when:
+  - The query requires 3+ independent data sources
+  - "Full picture", "comprehensive analysis", "complete review" requests
+  - Independent sub-tasks that can run in parallel
+  Do NOT use task() for:
+  - Simple factual questions answerable with 1-2 tools
+  - Follow-up questions in an ongoing conversation
+  - Queries already focused on one data source
+  How to call task():
+    task(description="CCR exposure lookup",
+         prompt="Get the counterparty exposure, credit limits and VaR
+                 from IRIS. Return structured table with net MTM, limit util %.",
+         tools=["iris_*", "get_counterparty_*"])   # optional — omit for all tools
+  Multiple task() calls in one response run in parallel.
+  Sub-agents cannot call task() — no recursion.
+
+WORKFLOW-GUIDED MODE (workflow file attached with agent_mode: multi in frontmatter):
+  Read the YAML frontmatter from the workflow file.
+  Execute agents[] in order, respecting order and depends_on fields.
+  Substitute {id.result_summary} placeholders with completed agent results.
+  Do not deviate from the workflow plan unless an agent fails.
+  After all agents complete, synthesise results into the final answer.
+"""
+
+
+def _augment_prompt(prompt: str, agent_mode: str = 'single') -> str:
+    """Append platform addenda to a worker system prompt."""
+    result = prompt + _PYTHON_ADDENDUM
+    if agent_mode == 'multi':
+        result += _MULTI_AGENT_ADDENDUM
+    return result
 
 
 SYSTEM_PROMPT = _augment_prompt(_load_prompt_from_workers())
 
 
-def get_system_prompt(worker_id: str) -> str:
+def get_system_prompt(worker_id: str, agent_mode: str = 'single') -> str:
     """Load the system_prompt for a specific worker at call time (not cached).
     Called per-request so admin prompt updates take effect immediately.
     Appends platform addenda (Python guidance etc.) to the worker prompt.
@@ -78,10 +114,10 @@ def get_system_prompt(worker_id: str) -> str:
             if w.get('worker_id') == worker_id and w.get('enabled', True):
                 prompt = w.get('system_prompt', '').strip()
                 if prompt:
-                    return _augment_prompt(prompt)
+                    return _augment_prompt(prompt, agent_mode)
     except Exception:
         pass
-    return _augment_prompt(_load_prompt_from_workers())
+    return _augment_prompt(_load_prompt_from_workers(), agent_mode)
 
 
 SUMMARISE_PROMPT = """You are a context compressor for a financial risk intelligence session on the B-Pulse platform.

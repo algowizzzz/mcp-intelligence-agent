@@ -671,6 +671,51 @@
           </div>
           <div class="char-count"><span id="prompt-chars">0</span> characters</div>
         </div>
+        <!-- REQ-13: Agent Mode -->
+        <div class="form-row" style="max-width:900px;margin-top:20px">
+          <label class="form-label">Agent Mode</label>
+          <select class="form-input" id="wc-agent-mode" style="max-width:280px" onchange="toggleSubagentConcurrency()">
+            <option value="single">Single Agent (default)</option>
+            <option value="multi">Multi Agent (workflow-capable)</option>
+          </select>
+        </div>
+        <div id="wc-subagent-concurrency" style="display:none;max-width:900px;margin-top:12px">
+          <label class="form-label">Max Concurrent Sub-Agents</label>
+          <div style="display:flex;align-items:center;gap:12px">
+            <input type="range" id="wc-max-subagents" min="2" max="4" value="3"
+                   oninput="document.getElementById('wc-max-subagents-val').textContent=this.value" style="max-width:200px">
+            <span id="wc-max-subagents-val" style="font-weight:600;font-size:14px">3</span>
+          </div>
+        </div>
+        <!-- REQ-14: Token Budget -->
+        <div class="form-row" style="max-width:900px;margin-top:20px">
+          <label class="form-label">Max Tokens Per Query <span style="font-weight:400;color:var(--text-m)">(leave blank = no limit)</span></label>
+          <input class="form-input" id="wc-max-tokens" type="number" placeholder="e.g. 50000" style="max-width:200px">
+        </div>
+        <!-- REQ-14: HITL Triggers -->
+        <div class="form-row" style="max-width:900px;margin-top:20px">
+          <label class="form-label">HITL Trigger Patterns <span style="font-weight:400;color:var(--text-m)">(comma-separated glob patterns, e.g. delete_*, send_email_*)</span></label>
+          <input class="form-input" id="wc-hitl-triggers" placeholder="leave blank to disable HITL">
+        </div>
+        <!-- REQ-14: Memory -->
+        <div class="form-row" style="max-width:900px;margin-top:20px;display:flex;align-items:center;gap:12px">
+          <label class="form-label" style="margin-bottom:0">Enable Persistent Memory</label>
+          <input type="checkbox" id="wc-enable-memory" onchange="toggleMemoryConfig()" style="width:16px;height:16px">
+        </div>
+        <div id="wc-memory-config" style="display:none;max-width:900px;margin-top:8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div>
+            <label class="form-label">Memory TTL (days)</label>
+            <input class="form-input" id="wc-memory-ttl" type="number" value="90">
+          </div>
+          <div>
+            <label class="form-label">Max Memories Per Query</label>
+            <input class="form-input" id="wc-max-memories" type="number" value="5" min="1" max="10">
+          </div>
+          <div>
+            <label class="form-label">Min Similarity (0–1)</label>
+            <input class="form-input" id="wc-min-similarity" type="number" value="0.75" min="0" max="1" step="0.05">
+          </div>
+        </div>
       </div>
 
       <!-- ── Tools ── -->
@@ -1230,6 +1275,30 @@ async function loadWorkerConfig() {
   var enableBtn = document.getElementById('worker-enable-toggle');
   enableBtn.textContent = _currentWorker.enabled ? 'Disable Worker' : 'Enable Worker';
   enableBtn.className = 'btn btn-sm ' + (_currentWorker.enabled ? 'btn-danger' : 'btn-primary');
+  // REQ-13 / REQ-14 fields
+  var mode = _currentWorker.agent_mode || 'single';
+  document.getElementById('wc-agent-mode').value = mode;
+  document.getElementById('wc-max-subagents').value = _currentWorker.max_concurrent_subagents || 3;
+  document.getElementById('wc-max-subagents-val').textContent = _currentWorker.max_concurrent_subagents || 3;
+  document.getElementById('wc-subagent-concurrency').style.display = mode === 'multi' ? '' : 'none';
+  document.getElementById('wc-max-tokens').value = _currentWorker.max_tokens_per_query || '';
+  document.getElementById('wc-hitl-triggers').value = (_currentWorker.hitl_triggers || []).join(', ');
+  var memEnabled = !!_currentWorker.enable_memory;
+  document.getElementById('wc-enable-memory').checked = memEnabled;
+  document.getElementById('wc-memory-config').style.display = memEnabled ? 'grid' : 'none';
+  document.getElementById('wc-memory-ttl').value = _currentWorker.memory_ttl_days || 90;
+  document.getElementById('wc-max-memories').value = _currentWorker.max_memories_per_query || 5;
+  document.getElementById('wc-min-similarity').value = _currentWorker.min_memory_similarity || 0.75;
+}
+
+function toggleSubagentConcurrency() {
+  var mode = document.getElementById('wc-agent-mode').value;
+  document.getElementById('wc-subagent-concurrency').style.display = mode === 'multi' ? '' : 'none';
+}
+
+function toggleMemoryConfig() {
+  var enabled = document.getElementById('wc-enable-memory').checked;
+  document.getElementById('wc-memory-config').style.display = enabled ? 'grid' : 'none';
 }
 
 function updateCharCount() {
@@ -1239,10 +1308,21 @@ function updateCharCount() {
 
 async function saveWorkerConfig() {
   if (!_currentWorker) return;
+  var hitlRaw = document.getElementById('wc-hitl-triggers').value.trim();
+  var hitlTriggers = hitlRaw ? hitlRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+  var maxTokensRaw = document.getElementById('wc-max-tokens').value.trim();
   var body = {
     name: document.getElementById('wc-name').value.trim(),
     description: document.getElementById('wc-desc').value.trim(),
     system_prompt: document.getElementById('wc-prompt').value,
+    agent_mode: document.getElementById('wc-agent-mode').value,
+    max_concurrent_subagents: parseInt(document.getElementById('wc-max-subagents').value) || 3,
+    max_tokens_per_query: maxTokensRaw ? parseInt(maxTokensRaw) : null,
+    hitl_triggers: hitlTriggers,
+    enable_memory: document.getElementById('wc-enable-memory').checked,
+    memory_ttl_days: parseInt(document.getElementById('wc-memory-ttl').value) || 90,
+    max_memories_per_query: parseInt(document.getElementById('wc-max-memories').value) || 5,
+    min_memory_similarity: parseFloat(document.getElementById('wc-min-similarity').value) || 0.75,
   };
   try {
     var url = _user.role === 'super_admin'

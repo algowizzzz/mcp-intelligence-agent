@@ -68,19 +68,45 @@ def set_checkpointer(cp) -> None:
     checkpointer = cp
 
 
-def create_agent_for_worker(system_prompt: str, tools: list = None):
+def create_agent_for_worker(system_prompt: str, tools: list = None, extra_middleware: list = None, checkpointer_override=None):
     """Create an agent instance with a specific system prompt and tool allowlist.
 
     Uses the shared checkpointer so all thread state is preserved across
     requests regardless of which per-request agent instance is created.
     Each request gets a fresh agent with the worker's current prompt + tools.
+
+    Parameters
+    ----------
+    extra_middleware : list, optional
+        Additional middlewares inserted between MessageTrimmer and
+        LoopDetectionMiddleware (e.g. SubagentLimitMiddleware for multi-agent workers).
+    checkpointer_override : optional
+        Pass None to create an ephemeral sub-agent (no persistence).
+        Omit to use the shared global checkpointer (default for lead agents).
     """
+    from agent.middlewares import (
+        DanglingToolCallMiddleware,
+        LoopDetectionMiddleware,
+        ToolErrorHandlingMiddleware,
+    )
+    _cp = checkpointer if checkpointer_override is None else checkpointer_override
+    mw = [
+        DanglingToolCallMiddleware(),
+        SummarisationMiddleware(),
+        MessageTrimmer(),
+    ]
+    if extra_middleware:
+        mw.extend(extra_middleware)
+    mw += [
+        LoopDetectionMiddleware(),
+        ToolErrorHandlingMiddleware(),
+    ]
     return create_agent(
         model=llm,
         tools=tools if tools is not None else AGENT_TOOLS,
-        checkpointer=checkpointer,
+        checkpointer=_cp,
         system_prompt=system_prompt,
-        middleware=[SummarisationMiddleware(), MessageTrimmer()],
+        middleware=mw,
     )
 
 

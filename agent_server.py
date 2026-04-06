@@ -23,6 +23,10 @@ _WORKFLOWS_DIR = pathlib.Path('sajhamcpserver/data/workflows')
 _UPLOADS_DIR   = pathlib.Path('sajhamcpserver/data/uploads')
 _METADATA_FILE = _WORKFLOWS_DIR / '.metadata.json'
 
+# SSE writer ContextVar — set per-request so sub_agent_tool can forward events
+# into the active SSE stream without needing a reference to the stream generator.
+from agent.sub_agent_tool import set_stream_writer as _set_stream_writer
+
 _sys.path.insert(0, str(pathlib.Path(__file__).parent / 'sajhamcpserver'))
 from sajha.tools.impl.fs_index import build_index, get_index
 from sajha.worker_repository import WorkerRepository as _WorkerRepository
@@ -641,6 +645,17 @@ class WorkerUpdateRequest(BaseModel):
     system_prompt: Optional[str] = None
     enabled_tools: Optional[list] = None
     enabled: Optional[bool] = None
+    # REQ-13: Multi-agent
+    agent_mode: Optional[str] = None                 # "single" | "multi"
+    max_concurrent_subagents: Optional[int] = None   # clamped to [2, 4]
+    # REQ-14: Memory + budget + HITL
+    enable_memory: Optional[bool] = None
+    memory_ttl_days: Optional[int] = None
+    max_memories_per_query: Optional[int] = None
+    min_memory_similarity: Optional[float] = None
+    max_tokens_per_query: Optional[int] = None
+    hitl_triggers: Optional[list] = None
+    hitl_timeout_seconds: Optional[int] = None
 
 @app.put('/api/super/workers/{worker_id}')
 async def super_update_worker(worker_id: str, req: WorkerUpdateRequest, _: dict = Depends(require_super_admin)):
@@ -652,6 +667,16 @@ async def super_update_worker(worker_id: str, req: WorkerUpdateRequest, _: dict 
             if req.system_prompt is not None: w['system_prompt'] = req.system_prompt
             if req.enabled_tools is not None: w['enabled_tools'] = req.enabled_tools
             if req.enabled is not None: w['enabled'] = req.enabled
+            if req.agent_mode is not None: w['agent_mode'] = req.agent_mode
+            if req.max_concurrent_subagents is not None:
+                w['max_concurrent_subagents'] = max(2, min(4, req.max_concurrent_subagents))
+            if req.enable_memory is not None: w['enable_memory'] = req.enable_memory
+            if req.memory_ttl_days is not None: w['memory_ttl_days'] = req.memory_ttl_days
+            if req.max_memories_per_query is not None: w['max_memories_per_query'] = req.max_memories_per_query
+            if req.min_memory_similarity is not None: w['min_memory_similarity'] = req.min_memory_similarity
+            if req.max_tokens_per_query is not None: w['max_tokens_per_query'] = req.max_tokens_per_query
+            if req.hitl_triggers is not None: w['hitl_triggers'] = req.hitl_triggers
+            if req.hitl_timeout_seconds is not None: w['hitl_timeout_seconds'] = req.hitl_timeout_seconds
             _save_workers(workers)
             return w
     raise HTTPException(status_code=404, detail='Worker not found')
@@ -1845,9 +1870,48 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
         raise HTTPException(status_code=404, detail='No worker assigned to this user')
 
     # Per-request agent: fresh system prompt + filtered tools on every call (G-01 + G-02)
-    system_prompt = get_system_prompt(worker['worker_id'])
+    agent_mode = worker.get('agent_mode', 'single')
+    system_prompt = get_system_prompt(worker['worker_id'], agent_mode)
     tools = get_tools_for_worker(worker.get('enabled_tools', ['*']))
-    agent_instance = create_agent_for_worker(system_prompt, tools)
+
+    # REQ-14: build optional middlewares from worker config
+    from agent.middlewares import (
+        MemoryMiddleware, TokenBudgetMiddleware,
+        HumanInTheLoopMiddleware, AuditMiddleware,
+    )
+    extra_mw = []
+    if worker.get('enable_memory'):
+        extra_mw.append(MemoryMiddleware(
+            max_memories=worker.get('max_memories_per_query', 5),
+            min_similarity=worker.get('min_memory_similarity', 0.75),
+            ttl_days=worker.get('memory_ttl_days', 90),
+        ))
+    if worker.get('max_tokens_per_query'):
+        extra_mw.append(TokenBudgetMiddleware(max_tokens_per_query=worker['max_tokens_per_query']))
+    if agent_mode == 'multi':
+        from agent.middlewares import SubagentLimitMiddleware
+        extra_mw.append(SubagentLimitMiddleware(
+            max_concurrent=worker.get('max_concurrent_subagents', 3)
+        ))
+    if worker.get('hitl_triggers'):
+        extra_mw.append(HumanInTheLoopMiddleware(
+            triggers=worker['hitl_triggers'],
+            timeout_seconds=worker.get('hitl_timeout_seconds', 300),
+        ))
+    extra_mw.append(AuditMiddleware())
+
+    if agent_mode == 'multi':
+        from agent.sub_agent_tool import create_task_tool
+        import agent.agent as _ag
+        task_tool = create_task_tool(
+            parent_tools=tools,
+            parent_worker_ctx={**worker, 'user_id': payload['user_id']},
+            llm=_ag.llm,
+            create_agent_fn=create_agent_for_worker,
+        )
+        agent_instance = create_agent_for_worker(system_prompt, tools + [task_tool], extra_middleware=extra_mw)
+    else:
+        agent_instance = create_agent_for_worker(system_prompt, tools, extra_middleware=extra_mw)
 
     thread_id = req.thread_id or str(uuid.uuid4())
     config = {'configurable': {'thread_id': thread_id}}
@@ -1871,12 +1935,21 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
     async def stream():
         # Inject worker context into ContextVar for this async task (G-04 + G-13)
         ctx_token = _worker_ctx.set({**worker, 'user_id': payload['user_id']})
+        # REQ-13: SSE queue for sub-agent task events
+        import asyncio as _asyncio
+        _sse_queue = _asyncio.Queue()
+        _sse_token = _set_stream_writer(_sse_queue.put_nowait)
         try:
             yield f"data: {json.dumps({'type': 'session', 'thread_id': thread_id})}\n\n"
             inp = ({'messages': [{'role': 'user', 'content': req.query}]}
                    if not req.resume else {'resume': req.resume})
             full_text = []
+            from agent.middlewares.token_budget import BudgetExceededError
             async for event in agent_instance.astream_events(inp, config=config, version='v2'):
+                # Drain sub-agent SSE events accumulated during this iteration
+                while not _sse_queue.empty():
+                    sa_evt = _sse_queue.get_nowait()
+                    yield f"data: {json.dumps(sa_evt)}\n\n"
                 t = event['event']
                 if t == 'on_chat_model_stream':
                     chunk = event['data']['chunk']
@@ -1976,14 +2049,36 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
             except Exception:
                 pass
             yield 'data: [DONE]\n\n'
+        except BudgetExceededError as be:
+            yield f"data: {json.dumps({'type': 'budget_exceeded', 'used': be.used, 'budget': be.budget})}\n\n"
+            yield f"data: {json.dumps({'type': 'error', 'message': f'Token budget exceeded ({be.used}/{be.budget} tokens). Response may be incomplete.'})}\n\n"
+            yield 'data: [DONE]\n\n'
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
             yield 'data: [DONE]\n\n'
         finally:
+            from agent.sub_agent_tool import _sse_writer_ctx
+            _sse_writer_ctx.reset(_sse_token)
             _worker_ctx.reset(ctx_token)
 
     return StreamingResponse(stream(), media_type='text/event-stream',
                              headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
+
+
+# ── HITL response endpoint (REQ-14) ───────────────────────────────────────────
+
+class HitlResponseRequest(BaseModel):
+    hitl_id: str
+    approved: bool
+
+@app.post('/api/chat/hitl-response')
+async def hitl_response(req: HitlResponseRequest, payload: dict = Depends(require_jwt)):
+    """Receive user approval/rejection for a Human-in-the-Loop tool gate."""
+    from agent.middlewares.hitl import HumanInTheLoopMiddleware
+    ok = HumanInTheLoopMiddleware.respond(req.hitl_id, req.approved)
+    if not ok:
+        raise HTTPException(status_code=404, detail=f'HITL request {req.hitl_id} not found or already resolved')
+    return {'ok': True, 'hitl_id': req.hitl_id, 'approved': req.approved}
 
 
 # ── Super Admin — Worker-scoped file browser ──────────────────────────────────

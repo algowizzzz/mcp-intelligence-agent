@@ -1,7 +1,79 @@
 {
   "root": "/Users/saadahmed/Desktop/react_agent/sajhamcpserver/data/workers/w-market-risk/domain_data",
-  "built_at": "2026-04-05T18:49:25.383803+00:00",
+  "built_at": "2026-04-06T05:22:41.643442+00:00",
   "tree": [
+    {
+      "type": "file",
+      "name": "Admin_User_Guide.docx",
+      "path": "Admin_User_Guide.docx",
+      "size_bytes": 1064274,
+      "modified_at": "2026-04-06T04:25:31.491243+00:00",
+      "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    },
+    {
+      "type": "file",
+      "name": "BAC_domain_qa_23a5faa7.md",
+      "path": "BAC_domain_qa_23a5faa7.md",
+      "size_bytes": 1358117,
+      "modified_at": "2026-04-06T00:20:23.954338+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "BAC_domain_qa_46969614.md",
+      "path": "BAC_domain_qa_46969614.md",
+      "size_bytes": 1358117,
+      "modified_at": "2026-04-06T00:22:09.320235+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "Connectors_Guide.docx",
+      "path": "Connectors_Guide.docx",
+      "size_bytes": 133469,
+      "modified_at": "2026-04-06T04:25:31.511041+00:00",
+      "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    },
+    {
+      "type": "file",
+      "name": "Deployment_Guide.docx",
+      "path": "Deployment_Guide.docx",
+      "size_bytes": 14956,
+      "modified_at": "2026-04-06T04:25:31.527768+00:00",
+      "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    },
+    {
+      "type": "file",
+      "name": "End_User_Guide_Market_Risk.docx",
+      "path": "End_User_Guide_Market_Risk.docx",
+      "size_bytes": 253420,
+      "modified_at": "2026-04-06T04:25:31.519412+00:00",
+      "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    },
+    {
+      "type": "file",
+      "name": "QA_Results_Summary.docx",
+      "path": "QA_Results_Summary.docx",
+      "size_bytes": 18442,
+      "modified_at": "2026-04-06T04:25:31.502127+00:00",
+      "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    },
+    {
+      "type": "file",
+      "name": "Super_Admin_Guide.docx",
+      "path": "Super_Admin_Guide.docx",
+      "size_bytes": 1424308,
+      "modified_at": "2026-04-06T04:25:31.468022+00:00",
+      "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    },
+    {
+      "type": "file",
+      "name": "Technical_Documentation.docx",
+      "path": "Technical_Documentation.docx",
+      "size_bytes": 23347,
+      "modified_at": "2026-04-06T04:25:31.440252+00:00",
+      "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    },
     {
       "type": "folder",
       "name": "Test",
@@ -32,6 +104,142 @@
           "mime": "application/octet-stream"
         }
       ]
+    },
+    {
+      "type": "file",
+      "name": "UAT_Master_Index.md",
+      "path": "UAT_Master_Index.md",
+      "size_bytes": 10132,
+      "modified_at": "2026-04-06T04:19:59.338227+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "admin_panel_test.txt",
+      "path": "admin_panel_test.txt",
+      "size_bytes": 88,
+      "modified_at": "2026-04-06T04:53:00.055591+00:00",
+      "mime": "text/plain"
+    },
+    {
+      "type": "file",
+      "name": "conc-qa-00.md",
+      "path": "conc-qa-00.md",
+      "size_bytes": 62,
+      "modified_at": "2026-04-06T00:13:54.889282+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "conc-qa-01.md",
+      "path": "conc-qa-01.md",
+      "size_bytes": 62,
+      "modified_at": "2026-04-06T00:13:54.889551+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "conc-qa-02.md",
+      "path": "conc-qa-02.md",
+      "size_bytes": 62,
+      "modified_at": "2026-04-06T00:13:54.889756+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "conc-qa-03.md",
+      "path": "conc-qa-03.md",
+      "size_bytes": 62,
+      "modified_at": "2026-04-06T00:13:54.889751+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "conc-qa-04.md",
+      "path": "conc-qa-04.md",
+      "size_bytes": 62,
+      "modified_at": "2026-04-06T00:13:54.889994+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "conc-qa-23a5faa7-00.md",
+      "path": "conc-qa-23a5faa7-00.md",
+      "size_bytes": 32,
+      "modified_at": "2026-04-06T00:20:23.924208+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "conc-qa-23a5faa7-01.md",
+      "path": "conc-qa-23a5faa7-01.md",
+      "size_bytes": 32,
+      "modified_at": "2026-04-06T00:20:23.925012+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "conc-qa-23a5faa7-02.md",
+      "path": "conc-qa-23a5faa7-02.md",
+      "size_bytes": 32,
+      "modified_at": "2026-04-06T00:20:23.924357+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "conc-qa-23a5faa7-03.md",
+      "path": "conc-qa-23a5faa7-03.md",
+      "size_bytes": 32,
+      "modified_at": "2026-04-06T00:20:23.924298+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "conc-qa-23a5faa7-04.md",
+      "path": "conc-qa-23a5faa7-04.md",
+      "size_bytes": 32,
+      "modified_at": "2026-04-06T00:20:23.924369+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "conc-qa-46969614-00.md",
+      "path": "conc-qa-46969614-00.md",
+      "size_bytes": 32,
+      "modified_at": "2026-04-06T00:22:09.289714+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "conc-qa-46969614-01.md",
+      "path": "conc-qa-46969614-01.md",
+      "size_bytes": 32,
+      "modified_at": "2026-04-06T00:22:09.289725+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "conc-qa-46969614-02.md",
+      "path": "conc-qa-46969614-02.md",
+      "size_bytes": 32,
+      "modified_at": "2026-04-06T00:22:09.290918+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "conc-qa-46969614-03.md",
+      "path": "conc-qa-46969614-03.md",
+      "size_bytes": 32,
+      "modified_at": "2026-04-06T00:22:09.289767+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "conc-qa-46969614-04.md",
+      "path": "conc-qa-46969614-04.md",
+      "size_bytes": 32,
+      "modified_at": "2026-04-06T00:22:09.289868+00:00",
+      "mime": "text/markdown"
     },
     {
       "type": "folder",
@@ -149,6 +357,30 @@
           "mime": "text/csv"
         }
       ]
+    },
+    {
+      "type": "file",
+      "name": "empty-qa-23a5faa7.txt",
+      "path": "empty-qa-23a5faa7.txt",
+      "size_bytes": 0,
+      "modified_at": "2026-04-06T00:20:23.933401+00:00",
+      "mime": "text/plain"
+    },
+    {
+      "type": "file",
+      "name": "empty-qa-46969614.txt",
+      "path": "empty-qa-46969614.txt",
+      "size_bytes": 0,
+      "modified_at": "2026-04-06T00:22:09.299689+00:00",
+      "mime": "text/plain"
+    },
+    {
+      "type": "file",
+      "name": "empty-qa.txt",
+      "path": "empty-qa.txt",
+      "size_bytes": 0,
+      "modified_at": "2026-04-06T00:13:54.870380+00:00",
+      "mime": "text/plain"
     },
     {
       "type": "folder",
@@ -279,6 +511,14 @@
       ]
     },
     {
+      "type": "file",
+      "name": "rtest_domain.txt",
+      "path": "rtest_domain.txt",
+      "size_bytes": 41,
+      "modified_at": "2026-04-06T04:36:57.430834+00:00",
+      "mime": "text/plain"
+    },
+    {
       "type": "folder",
       "name": "sqlselect",
       "path": "sqlselect",
@@ -310,6 +550,54 @@
       ]
     },
     {
+      "type": "file",
+      "name": "stream-qa-001.md",
+      "path": "stream-qa-001.md",
+      "size_bytes": 10,
+      "modified_at": "2026-04-06T00:14:23.152487+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "stream-qa-002.md",
+      "path": "stream-qa-002.md",
+      "size_bytes": 20,
+      "modified_at": "2026-04-06T00:13:54.610230+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "stream-qa-23a5faa7-001.md",
+      "path": "stream-qa-23a5faa7-001.md",
+      "size_bytes": 11,
+      "modified_at": "2026-04-06T00:20:23.937873+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "stream-qa-23a5faa7-002.md",
+      "path": "stream-qa-23a5faa7-002.md",
+      "size_bytes": 35,
+      "modified_at": "2026-04-06T00:20:23.623591+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "stream-qa-46969614-001.md",
+      "path": "stream-qa-46969614-001.md",
+      "size_bytes": 11,
+      "modified_at": "2026-04-06T00:22:09.304355+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "stream-qa-46969614-002.md",
+      "path": "stream-qa-46969614-002.md",
+      "size_bytes": 35,
+      "modified_at": "2026-04-06T00:22:08.983062+00:00",
+      "mime": "text/markdown"
+    },
+    {
       "type": "folder",
       "name": "templates",
       "path": "templates",
@@ -319,7 +607,7 @@
           "name": "cpty_intel_brief.md",
           "path": "templates/cpty_intel_brief.md",
           "size_bytes": 2697,
-          "modified_at": "2026-04-05T18:47:58.784617+00:00",
+          "modified_at": "2026-04-05T18:54:10.811196+00:00",
           "mime": "text/markdown"
         }
       ]
@@ -329,6 +617,30 @@
       "name": "test_ccr",
       "path": "test_ccr",
       "children": []
+    },
+    {
+      "type": "file",
+      "name": "uat-admin-html-upload-test.md",
+      "path": "uat-admin-html-upload-test.md",
+      "size_bytes": 25,
+      "modified_at": "2026-04-06T04:24:07.183266+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "uat-admin-panel-upload-1775449314582.md",
+      "path": "uat-admin-panel-upload-1775449314582.md",
+      "size_bytes": 39,
+      "modified_at": "2026-04-06T04:21:54.593049+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "uat-reindex-test-1775449373591.md",
+      "path": "uat-reindex-test-1775449373591.md",
+      "size_bytes": 14,
+      "modified_at": "2026-04-06T04:22:53.596443+00:00",
+      "mime": "text/markdown"
     },
     {
       "type": "folder",
