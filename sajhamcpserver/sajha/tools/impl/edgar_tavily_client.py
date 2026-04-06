@@ -77,7 +77,7 @@ def stream_sec_section(filing_url: str, section_marker: str, content_kb: int = 1
     )
 
     try:
-        with urllib.request.urlopen(req, timeout=45) as r:
+        with urllib.request.urlopen(req, timeout=90) as r:
             buf = b''
             occurrences = []
             max_scan_bytes = 15 * 1024 * 1024  # scan up to 15 MB

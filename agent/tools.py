@@ -56,6 +56,16 @@ _TOOL_OUTPUT_LIMITS: dict = {
     'file_read': 60_000,  # document reads — 60k chars (~15k tokens) for filing sections
 }
 
+# Per-tool HTTP timeouts (override 30s default for tools that hit large external docs)
+_TOOL_TIMEOUTS: dict = {
+    'edgar_extract_section': 120.0,  # streams up to 15MB SEC filing HTML
+    'edgar_get_statements':   90.0,
+    'edgar_risk_summary':     90.0,
+    'edgar_earnings_brief':   90.0,
+    'edgar_company_brief':    90.0,
+    'stream_sec_section':    120.0,
+}
+
 # Tools that return large HTML content — strip html field, set _chart_ready flag instead
 _HTML_OUTPUT_TOOLS = {'generate_chart', 'create_report', 'render_document', 'create_dashboard',
                       'python_execute', 'python_run_script'}
@@ -128,8 +138,9 @@ def _log_audit(tool_name: str, duration_ms: float, status: str):
 async def _call_sajha(tool_name: str, args: dict) -> dict:
     t0 = time.time()
     status = 'success'
+    timeout = _TOOL_TIMEOUTS.get(tool_name, 30.0)
     try:
-        async with httpx.AsyncClient(timeout=30.0, trust_env=False) as c:
+        async with httpx.AsyncClient(timeout=timeout, trust_env=False) as c:
             r = await c.post(f'{SAJHA_BASE}/api/tools/execute',
                 headers=_service_headers(),
                 json={'tool': tool_name, 'arguments': args})
@@ -138,7 +149,7 @@ async def _call_sajha(tool_name: str, args: dict) -> dict:
             return _truncate_result(result, tool_name)
     except httpx.TimeoutException:
         status = 'timeout'
-        return {'error': f'{tool_name} timed out after 30s'}
+        return {'error': f'{tool_name} timed out after {int(timeout)}s'}
     except httpx.HTTPStatusError as e:
         status = f'http_{e.response.status_code}'
         return {'error': f'{tool_name} returned HTTP {e.response.status_code}'}
