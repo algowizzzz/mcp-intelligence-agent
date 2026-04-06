@@ -1,6 +1,6 @@
 {
     "name": "duckdb_sql",
-    "description": "Execute SQL queries directly on CSV data files. Available tables: customers (50 rows), orders (80 rows), products (27 rows). Use standard SQL syntax.",
+    "description": "Execute SQL queries directly on CSV data files across all data layers (domain_data, my_data, common). Use standard SQL syntax. Views auto-created from files in all layers.",
     "category": "Data Analytics",
     "version": "2.9.8",
     "enabled": true,

@@ -1,7 +1,7 @@
 {
   "name": "duckdb_list_tables",
   "implementation": "sajha.tools.impl.duckdb_olap_tools_refactored.DuckDbListTablesTool",
-  "description": "List all available tables and views in the DuckDB database",
+  "description": "List all available tables and views in the DuckDB database. Views are auto-created from data files across all layers (domain_data, my_data, common).",
   "version": "2.9.8",
   "enabled": true,
   "data_directory": "${data.duckdb.dir}",

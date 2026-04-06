@@ -1,7 +1,7 @@
 {
   "name": "duckdb_describe_table",
   "implementation": "sajha.tools.impl.duckdb_olap_tools_refactored.DuckDbDescribeTableTool",
-  "description": "Get detailed schema information for a specific table or view including column types and constraints",
+  "description": "Get detailed schema information for a specific table or view including column types and constraints. Tables/views sourced from all data layers (domain_data, my_data, common).",
   "version": "2.9.8",
   "enabled": true,
   "data_directory": "${data.duckdb.dir}",

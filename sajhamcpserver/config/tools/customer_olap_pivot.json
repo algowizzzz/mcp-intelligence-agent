@@ -1,6 +1,6 @@
 {
     "name": "customer_olap_pivot",
-    "description": "Create pivot tables for customer analytics - analyze customer segments, regions, products, and revenue with multi-dimensional grouping",
+    "description": "Create pivot tables for customer analytics - analyze customer segments, regions, products, and revenue with multi-dimensional grouping. Data sourced from all layers (domain_data, my_data, common).",
     "category": "OLAP Analytics",
     "version": "2.9.8",
     "enabled": true,

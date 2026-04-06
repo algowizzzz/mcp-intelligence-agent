@@ -1,6 +1,6 @@
 {
     "name": "olap_pivot_table",
-    "description": "Create interactive pivot tables for multi-dimensional analysis with rows, columns, values, and automatic totals",
+    "description": "Create interactive pivot tables for multi-dimensional analysis with rows, columns, values, and automatic totals. Data sourced from all layers (domain_data, my_data, common).",
     "category": "OLAP Analytics",
     "version": "2.9.8",
     "enabled": true,

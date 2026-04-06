@@ -1,6 +1,6 @@
 {
     "name": "olap_time_series",
-    "description": "Analyze time series data with flexible granularity, gap filling, and period-over-period comparisons",
+    "description": "Analyze time series data with flexible granularity, gap filling, and period-over-period comparisons. Data sourced from all layers (domain_data, my_data, common).",
     "category": "OLAP Analytics",
     "version": "2.9.8",
     "enabled": true,

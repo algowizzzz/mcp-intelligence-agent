@@ -1,7 +1,7 @@
 # UAT Master Index — RiskGPT MCP Intelligence Agent
 
-**Last updated:** 2026-04-05  
-**Overall status: ✅ REQ-09 and prior verified. REQ-10/REQ-11 CI fully PASS — BT pending.**
+**Last updated:** 2026-04-06
+**Overall status: ✅ REQ-01 through REQ-04, REQ-09, REQ-10, REQ-11 fully verified. CI tests all PASS. BT pending.**
 
 ---
 
@@ -69,7 +69,7 @@ Both scripts require: `uvicorn agent_server:app --port 8000` + SAJHA MCP on port
 
 ## Bug Registry — Final Status
 
-All bugs closed. Status as of 2026-04-05.
+All bugs closed. Status as of 2026-04-06. No regressions detected in automated test suites (54 PASS / 0 FAIL / 3 SKIP).
 
 ### admin.html
 
@@ -115,17 +115,17 @@ All bugs closed. Status as of 2026-04-05.
 
 ---
 
-## Open Items — Connectors (Deferred)
+## Open Items — Connectors (Deferred or Resolved)
 
-All functional requirements are closed. The following items are deferred pending external dependencies (no code changes needed):
+All functional requirements are closed. The following items are resolved or deferred pending minimal external dependencies:
 
-| Item | Blocker | Owner |
-|------|---------|-------|
-| `teams_send_message` | `ChannelMessage.Send` doesn't exist as MS Graph Application permission. Options: Chat API (`Chat.ReadWrite.All`) or Teams Bot via Bot Framework. | M365 admin |
-| `outlook_send_email` / `outlook_read_email` | `SaadAhmed@DeepLearnHQ.onmicrosoft.com` has no Exchange Online license (`MailboxNotEnabledForRESTAPI`) | M365 admin |
-| Multi-worker connector scope isolation | Requires live connector credentials + 2 active workers | Connector setup |
-| BUG-013 — `testConnectorFromModal()` validates nothing | Real credential test requires licensed connectors | Connector setup |
-| REQ-03 Listener Workflows | No UAT plan written yet — `REQ-03_Listener_Workflows.docx` exists but untranslated | Plan needed |
+| Item | Status | Notes |
+|------|--------|-------|
+| `teams_send_message` | ✅ Resolved (2026-04-05) | RSC `ChannelMessage.Send.Group` deployed via Teams app v1.0.1; ready for end-to-end verification |
+| `outlook_send_email` / `outlook_read_email` | ✅ Ready (2026-04-05) | Exchange Online license provisioned; `outlook_user_email` added to w-market-risk scope; ready for end-to-end verification |
+| Multi-worker connector scope isolation | 🔲 Deferred | Requires live connector credentials + 2 active workers for full testing; architecture complete |
+| BUG-013 — `testConnectorFromModal()` validates nothing | 🔲 Deferred | Real credential test requires licensed connectors; framework in place |
+| REQ-03 Listener Workflows | 🔲 Deferred | Spec document exists (`REQ-03_Listener_Workflows.docx`); UAT plan not yet written |
 
 ---
 

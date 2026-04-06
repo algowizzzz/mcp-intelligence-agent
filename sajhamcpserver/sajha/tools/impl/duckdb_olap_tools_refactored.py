@@ -36,26 +36,58 @@ class DuckDbBaseTool(BaseMCPTool):
         """Initialize DuckDB base tool"""
         super().__init__(config)
 
-        # Data directory for CSV, Parquet, JSON files.
+        # Data directories for CSV, Parquet, JSON files.
+        # Searches all three data layers: domain_data, my_data, common.
         # REQ-PREP-04: resolved per-request from worker context via path_resolver;
         # static config used only as fallback at init time.
+        self.data_directories = []  # list of (section_name, path)
+        self.data_directory = ''    # primary dir (domain_data) for backward compat
+
         worker_ctx = _get_worker_ctx()
+        props = PropertiesConfigurator()
+
+        # domain_data (primary)
+        dd = ''
         if worker_ctx:
             try:
-                self.data_directory = path_resolve('domain_data', worker_ctx)
+                dd = path_resolve('domain_data', worker_ctx)
             except Exception:
-                self.data_directory = self.config.get(
-                    'data_directory',
-                    PropertiesConfigurator().get('tool.duckdb.data_directory', './data/duckdb')
-                )
-        else:
-            self.data_directory = self.config.get(
-                'data_directory',
-                PropertiesConfigurator().get('tool.duckdb.data_directory', './data/duckdb')
-            )
+                pass
+        if not dd:
+            dd = self.config.get('data_directory', props.get('tool.duckdb.data_directory', './data/duckdb'))
+        self.data_directory = dd
+        self.data_directories.append(('domain_data', dd))
 
-        # Ensure data directory exists
-        os.makedirs(self.data_directory, exist_ok=True)
+        # my_data
+        if worker_ctx:
+            try:
+                user_id = None
+                try:
+                    from flask import g as _g
+                    user_id = getattr(_g, 'user_id', None)
+                except RuntimeError:
+                    pass
+                if user_id:
+                    md = path_resolve('my_data', worker_ctx, user_id=user_id)
+                    self.data_directories.append(('my_data', md))
+            except Exception:
+                pass
+
+        # common
+        if worker_ctx:
+            try:
+                cd = path_resolve('common_data', worker_ctx)
+                self.data_directories.append(('common', cd))
+            except Exception:
+                pass
+        else:
+            cd = props.get('data.common_dir', './data/common')
+            if cd:
+                self.data_directories.append(('common', cd))
+
+        # Ensure all data directories exist
+        for _, d in self.data_directories:
+            os.makedirs(d, exist_ok=True)
 
         # REQ-PREP-04: in-memory DuckDB connection (no persistent db_path)
         # S3/httpfs stub: to activate S3 reads, uncomment and configure:
@@ -108,14 +140,17 @@ class DuckDbBaseTool(BaseMCPTool):
         return f"{size_bytes:.2f} PB"
 
     def _scan_data_files(self, file_type: str = 'all') -> List[Dict]:
-        """Scan data directory for supported file types.
-        REQ-PREP-04: data_directory resolved per-request from worker context.
+        """Scan all data layers (domain_data, my_data, common) for supported file types.
+        REQ-PREP-04: data directories resolved per-request from worker context.
         """
-        # Resolve data directory from current worker context if available
+        # Re-resolve data directories from current worker context if available
         worker_ctx = _get_worker_ctx()
         if worker_ctx:
             try:
                 self.data_directory = path_resolve('domain_data', worker_ctx)
+                # Update domain_data entry in data_directories
+                self.data_directories = [(n, p) if n != 'domain_data' else ('domain_data', self.data_directory)
+                                         for n, p in self.data_directories]
             except Exception:
                 pass  # Keep existing data_directory
 
@@ -132,51 +167,63 @@ class DuckDbBaseTool(BaseMCPTool):
             extensions = [ext for exts in supported_extensions.values() for ext in exts]
 
         files = []
+        seen_filenames = set()  # Avoid duplicate view names across layers
 
-        # REQ-PREP-04: use storage.list_prefix instead of os.listdir
-        # list_prefix returns relative paths under data_directory
-        relative_paths = storage.list_prefix(self.data_directory)
-        for rel_path in relative_paths:
-            # Only process top-level files (no subdirectory traversal for DuckDB views)
-            if os.sep in rel_path or '/' in rel_path:
-                continue
-            filename = rel_path
-            if filename.startswith('.') or filename.endswith('.db'):
+        for section_name, data_dir in self.data_directories:
+            if not os.path.isdir(data_dir):
                 continue
 
-            file_ext = os.path.splitext(filename)[1].lower()
-            if file_ext not in extensions:
-                continue
+            # REQ-PREP-04: use storage.list_prefix instead of os.listdir
+            relative_paths = storage.list_prefix(data_dir)
+            for rel_path in relative_paths:
+                # Only process top-level files (no subdirectory traversal for DuckDB views)
+                if os.sep in rel_path or '/' in rel_path:
+                    continue
+                filename = rel_path
+                if filename.startswith('.') or filename.endswith('.db'):
+                    continue
 
-            file_path = os.path.join(self.data_directory, filename)
+                file_ext = os.path.splitext(filename)[1].lower()
+                if file_ext not in extensions:
+                    continue
 
-            # Determine file type
-            if file_ext in ['.csv']:
-                ftype = 'csv'
-            elif file_ext in ['.parquet', '.pq']:
-                ftype = 'parquet'
-            elif file_ext in ['.json', '.jsonl']:
-                ftype = 'json'
-            elif file_ext in ['.tsv']:
-                ftype = 'tsv'
-            else:
-                continue
+                # If same filename exists in a higher-priority layer, prefix with section
+                unique_key = filename
+                if filename in seen_filenames:
+                    unique_key = f"{section_name}__{filename}"
 
-            file_info = {
-                'filename': filename,
-                'file_type': ftype,
-                'file_path': file_path
-            }
+                file_path = os.path.join(data_dir, filename)
 
-            try:
-                stat = os.stat(file_path)
-                file_info['file_size_bytes'] = stat.st_size
-                file_info['file_size_human'] = self._format_file_size(stat.st_size)
-                file_info['modified_date'] = datetime.fromtimestamp(stat.st_mtime).isoformat()
-            except Exception:
-                pass
+                # Determine file type
+                if file_ext in ['.csv']:
+                    ftype = 'csv'
+                elif file_ext in ['.parquet', '.pq']:
+                    ftype = 'parquet'
+                elif file_ext in ['.json', '.jsonl']:
+                    ftype = 'json'
+                elif file_ext in ['.tsv']:
+                    ftype = 'tsv'
+                else:
+                    continue
 
-            files.append(file_info)
+                file_info = {
+                    'filename': filename,
+                    'unique_key': unique_key,
+                    'section': section_name,
+                    'file_type': ftype,
+                    'file_path': file_path
+                }
+
+                try:
+                    stat = os.stat(file_path)
+                    file_info['file_size_bytes'] = stat.st_size
+                    file_info['file_size_human'] = self._format_file_size(stat.st_size)
+                    file_info['modified_date'] = datetime.fromtimestamp(stat.st_mtime).isoformat()
+                except Exception:
+                    pass
+
+                files.append(file_info)
+                seen_filenames.add(filename)
 
         return files
 
@@ -196,7 +243,8 @@ class DuckDbBaseTool(BaseMCPTool):
                 self.logger.info(f"No data files found in {self.data_directory}")
                 return
 
-            self.logger.info(f"Found {len(files)} data files in {self.data_directory}")
+            dirs_str = ', '.join(d for _, d in self.data_directories)
+            self.logger.info(f"Found {len(files)} data files across layers: {dirs_str}")
 
             # Create views for each file
             for file_info in files:
@@ -204,9 +252,10 @@ class DuckDbBaseTool(BaseMCPTool):
                     filename = file_info['filename']
                     file_path = file_info['file_path']
                     file_type = file_info['file_type']
+                    unique_key = file_info.get('unique_key', filename)
 
-                    # Generate view name from filename (remove extension and sanitize)
-                    view_name = os.path.splitext(filename)[0]
+                    # Generate view name from unique_key (remove extension and sanitize)
+                    view_name = os.path.splitext(unique_key)[0]
                     # Replace special characters with underscores
                     view_name = ''.join(c if c.isalnum() or c == '_' else '_' for c in view_name)
 

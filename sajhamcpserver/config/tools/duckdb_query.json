@@ -1,7 +1,7 @@
 {
   "name": "duckdb_query",
   "implementation": "sajha.tools.impl.duckdb_olap_tools_refactored.DuckDbQueryTool",
-  "description": "Execute SQL queries on CSV, Parquet, and JSON files using DuckDB analytics engine. Query the customers, orders, and products tables directly with SQL.",
+  "description": "Execute SQL queries on CSV, Parquet, and JSON files using DuckDB analytics engine. Loads data from all layers (domain_data, my_data, common) by default. Query available tables directly with SQL.",
   "version": "2.9.8",
   "enabled": true,
   "data_directory": "${data.duckdb.dir}",

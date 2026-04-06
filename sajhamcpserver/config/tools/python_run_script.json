@@ -1,7 +1,7 @@
 {
   "name": "python_run_script",
-  "description": "Run a .py script from domain_data or my_data sections. Pass script_path relative to the section root.",
-  "version": "1.0.0",
+  "description": "Run a .py script from any data layer (domain_data, my_data, or common). Pass script_path relative to the section root. Searches ALL three layers by default — tries domain_data first, then my_data, then common. IMPORTANT: When the user mentions a .py script by name (e.g. 'run stats_calculator.py'), call this tool DIRECTLY with the script name as script_path — do NOT search for it first.",
+  "version": "1.1.0",
   "enabled": true,
   "implementation": "sajha.tools.impl.python_executor.PythonRunScriptTool"
 }
