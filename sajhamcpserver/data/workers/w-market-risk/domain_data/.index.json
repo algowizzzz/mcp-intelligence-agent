@@ -1,6 +1,6 @@
 {
   "root": "/Users/saadahmed/Desktop/react_agent/sajhamcpserver/data/workers/w-market-risk/domain_data",
-  "built_at": "2026-04-06T05:22:41.643442+00:00",
+  "built_at": "2026-04-06T15:52:20.777993+00:00",
   "tree": [
     {
       "type": "file",
@@ -509,6 +509,22 @@
           "mime": "text/markdown"
         }
       ]
+    },
+    {
+      "type": "file",
+      "name": "rtest_dd_admin.txt",
+      "path": "rtest_dd_admin.txt",
+      "size_bytes": 35,
+      "modified_at": "2026-04-06T13:41:52.124670+00:00",
+      "mime": "text/plain"
+    },
+    {
+      "type": "file",
+      "name": "rtest_dom_upload.txt",
+      "path": "rtest_dom_upload.txt",
+      "size_bytes": 45,
+      "modified_at": "2026-04-06T13:43:07.121515+00:00",
+      "mime": "text/plain"
     },
     {
       "type": "file",

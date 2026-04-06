@@ -93,6 +93,108 @@
       "password_hash": "$2b$12$kMKRtTMSvGslU8tIkfxsi.on/LZyaLNXtM8pUj.hK2kYecojt0VbS",
       "enabled": true,
       "onboarding_complete": false
+    },
+    {
+      "user_id": "rtest_u_1775482923113",
+      "user_name": "Regression Test User",
+      "display_name": "Regression Test User",
+      "avatar_initials": "RTU",
+      "password_hash": "$2b$12$hqZa1YEkWtEKK9YV9geNyu60025pcqRUNRASitCvHJ9.o57RgjL76",
+      "role": "user",
+      "worker_id": "w-market-risk",
+      "tools": [
+        "*"
+      ],
+      "enabled": true,
+      "onboarding_complete": false,
+      "email": "",
+      "created_at": "2026-04-06T13:42:03.506462Z",
+      "last_login": null
+    },
+    {
+      "user_id": "rtest_u_1775484964082",
+      "user_name": "Regression Test User",
+      "display_name": "Regression Test User",
+      "avatar_initials": "RTU",
+      "password_hash": "$2b$12$wnD9w9ajMewQPtMCi56rcOoBdX5.f0zz/Pnh9pOhfg1RR5RkH9OtS",
+      "role": "user",
+      "worker_id": "w-market-risk",
+      "tools": [
+        "*"
+      ],
+      "enabled": true,
+      "onboarding_complete": false,
+      "email": "",
+      "created_at": "2026-04-06T14:16:04.472186Z",
+      "last_login": null
+    },
+    {
+      "user_id": "rtest_u_1775485719073",
+      "user_name": "Regression Test User",
+      "display_name": "Regression Test User",
+      "avatar_initials": "RTU",
+      "password_hash": "$2b$12$g2uFhMiXZTJZsjWEqnCcUebYwSdAAVACE8gUfQGWNOpY/QR.usZ7y",
+      "role": "user",
+      "worker_id": "w-market-risk",
+      "tools": [
+        "*"
+      ],
+      "enabled": true,
+      "onboarding_complete": false,
+      "email": "",
+      "created_at": "2026-04-06T14:28:39.460573Z",
+      "last_login": null
+    },
+    {
+      "user_id": "rtest_u_1775488372343",
+      "user_name": "Regression Test User",
+      "display_name": "Regression Test User",
+      "avatar_initials": "RTU",
+      "password_hash": "$2b$12$5eRwv7oQeNBYvy1DiJiyneuWOkXG6.Khd1TJchuz7mpn7TQqtDdka",
+      "role": "user",
+      "worker_id": "w-market-risk",
+      "tools": [
+        "*"
+      ],
+      "enabled": true,
+      "onboarding_complete": false,
+      "email": "",
+      "created_at": "2026-04-06T15:12:52.737442Z",
+      "last_login": null
+    },
+    {
+      "user_id": "rtest_u_1775488680341",
+      "user_name": "Regression Test User",
+      "display_name": "Regression Test User",
+      "avatar_initials": "RTU",
+      "password_hash": "$2b$12$0cyySo7rpwEyNWpI1Bx0eeLS6/YIfKl1aKS0kPUuhTm34zVCoqC42",
+      "role": "user",
+      "worker_id": "w-market-risk",
+      "tools": [
+        "*"
+      ],
+      "enabled": true,
+      "onboarding_complete": false,
+      "email": "",
+      "created_at": "2026-04-06T15:18:00.731570Z",
+      "last_login": null
+    },
+    {
+      "user_id": "rtest_u_1775488840341",
+      "user_name": "Regression Test User",
+      "display_name": "Regression Test User",
+      "avatar_initials": "RTU",
+      "password_hash": "$2b$12$sNzYcWIQSdLRJETFgvtZe.VpLpcSrNRfBUUuOoaq94Iugju5YnU7a",
+      "role": "user",
+      "worker_id": "w-market-risk",
+      "tools": [
+        "*"
+      ],
+      "enabled": true,
+      "onboarding_complete": false,
+      "email": "",
+      "created_at": "2026-04-06T15:20:40.731898Z",
+      "last_login": null
     }
   ]
 }

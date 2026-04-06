@@ -23,7 +23,13 @@
         "admin",
         "uat_usr_c7eb1422",
         "test_user",
-        "uat_usr_b48d7537"
+        "uat_usr_b48d7537",
+        "rtest_u_1775482923113",
+        "rtest_u_1775484964082",
+        "rtest_u_1775485719073",
+        "rtest_u_1775488372343",
+        "rtest_u_1775488680341",
+        "rtest_u_1775488840341"
       ],
       "my_workflows_path": "./data/workers/w-market-risk/workflows/my",
       "templates_path": "./data/workers/w-market-risk/templates",
@@ -43,7 +49,14 @@
           "jira_board_id": "35",
           "jira_site_url": "https://sa5425592.atlassian.net"
         }
-      }
+      },
+      "agent_mode": "multi",
+      "max_concurrent_subagents": 3,
+      "enable_memory": false,
+      "memory_ttl_days": 90,
+      "max_memories_per_query": 5,
+      "min_memory_similarity": 0.75,
+      "hitl_triggers": []
     },
     {
       "worker_id": "w-e74b5836",
@@ -284,6 +297,66 @@
       "my_workflows_path": "./data/workers/w-da082632/workflows/my",
       "templates_path": "./data/workers/w-da082632/templates",
       "my_data_path": "./data/workers/w-da082632/my_data",
+      "common_data_path": "./data/common",
+      "enabled_tools": [
+        "*"
+      ],
+      "assigned_admins": [],
+      "assigned_users": []
+    },
+    {
+      "worker_id": "w-76933a6b",
+      "name": "Regression Test Worker Tmp",
+      "description": "Created by regression suite",
+      "created_by": "risk_agent",
+      "created_at": "2026-04-06T13:42:25.119154Z",
+      "enabled": true,
+      "system_prompt": "Test prompt.",
+      "domain_data_path": "./data/workers/w-76933a6b/domain_data",
+      "workflows_path": "./data/workers/w-76933a6b/workflows/verified",
+      "my_workflows_path": "./data/workers/w-76933a6b/workflows/my",
+      "templates_path": "./data/workers/w-76933a6b/templates",
+      "my_data_path": "./data/workers/w-76933a6b/my_data",
+      "common_data_path": "./data/common",
+      "enabled_tools": [
+        "*"
+      ],
+      "assigned_admins": [],
+      "assigned_users": []
+    },
+    {
+      "worker_id": "w-c6806c15",
+      "name": "Regression Test Worker Tmp",
+      "description": "Created by regression suite",
+      "created_by": "risk_agent",
+      "created_at": "2026-04-06T14:23:06.082625Z",
+      "enabled": true,
+      "system_prompt": "Test prompt.",
+      "domain_data_path": "./data/workers/w-c6806c15/domain_data",
+      "workflows_path": "./data/workers/w-c6806c15/workflows/verified",
+      "my_workflows_path": "./data/workers/w-c6806c15/workflows/my",
+      "templates_path": "./data/workers/w-c6806c15/templates",
+      "my_data_path": "./data/workers/w-c6806c15/my_data",
+      "common_data_path": "./data/common",
+      "enabled_tools": [
+        "*"
+      ],
+      "assigned_admins": [],
+      "assigned_users": []
+    },
+    {
+      "worker_id": "w-0b5c90c2",
+      "name": "Regression Test Worker Tmp",
+      "description": "Created by regression suite",
+      "created_by": "risk_agent",
+      "created_at": "2026-04-06T15:21:00.353802Z",
+      "enabled": true,
+      "system_prompt": "Test prompt.",
+      "domain_data_path": "./data/workers/w-0b5c90c2/domain_data",
+      "workflows_path": "./data/workers/w-0b5c90c2/workflows/verified",
+      "my_workflows_path": "./data/workers/w-0b5c90c2/workflows/my",
+      "templates_path": "./data/workers/w-0b5c90c2/templates",
+      "my_data_path": "./data/workers/w-0b5c90c2/my_data",
       "common_data_path": "./data/common",
       "enabled_tools": [
         "*"

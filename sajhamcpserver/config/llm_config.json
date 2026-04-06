@@ -1,19 +1,19 @@
 {
   "provider": "xai",
   "anthropic": {
-    "model": "claude-sonnet-4-20250514",
-    "max_tokens": 8192,
-    "api_key": ""
+    "api_key": "",
+    "model": "claude-haiku-4-5-20251001",
+    "max_tokens": 8192
   },
   "xai": {
+    "api_key": "",
     "model": "grok-3",
-    "max_tokens": 8192,
-    "api_key": ""
+    "max_tokens": 8192
   },
   "huggingface": {
-    "model": "meta-llama/Llama-3.3-70B-Instruct",
-    "max_tokens": 4096,
-    "api_key": ""
+    "api_key": "",
+    "model": "Qwen/Qwen2.5-72B-Instruct",
+    "max_tokens": 4096
   },
   "bedrock": {
     "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
