@@ -51,6 +51,11 @@ async def _get_token() -> str:
 
 _MAX_TOOL_OUTPUT_CHARS = 12_000  # ~3k tokens per tool — keeps accumulated results well within context
 
+# Per-tool output limits (override _MAX_TOOL_OUTPUT_CHARS for tools that legitimately return large text)
+_TOOL_OUTPUT_LIMITS: dict = {
+    'file_read': 60_000,  # document reads — 60k chars (~15k tokens) for filing sections
+}
+
 # Tools that return large HTML content — strip html field, set _chart_ready flag instead
 _HTML_OUTPUT_TOOLS = {'generate_chart', 'create_report', 'render_document', 'create_dashboard',
                       'python_execute', 'python_run_script'}
@@ -87,14 +92,15 @@ def _truncate_result(result: dict, tool_name: str) -> dict:
             'figures': result.get('figures', []),
         }
 
+    limit = _TOOL_OUTPUT_LIMITS.get(tool_name, _MAX_TOOL_OUTPUT_CHARS)
     serialised = json.dumps(result)
-    if len(serialised) <= _MAX_TOOL_OUTPUT_CHARS:
+    if len(serialised) <= limit:
         return result
-    truncated = serialised[:_MAX_TOOL_OUTPUT_CHARS]
+    truncated = serialised[:limit]
     return {
         '_truncated': True,
         '_tool': tool_name,
-        '_note': f'Output truncated from {len(serialised):,} to {_MAX_TOOL_OUTPUT_CHARS:,} chars to stay within context limits.',
+        '_note': f'Output truncated from {len(serialised):,} to {limit:,} chars to stay within context limits.',
         'data': truncated,
     }
 

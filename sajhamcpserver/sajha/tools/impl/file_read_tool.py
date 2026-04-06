@@ -7,7 +7,44 @@ _TEXT_EXTS = {
     '.md', '.txt', '.csv', '.json', '.jsonl', '.xml', '.html',
     '.yaml', '.yml', '.log', '.tsv', '.rst', '.ini', '.toml',
 }
-_DEFAULT_MAX_CHARS = 40_000
+_DEFAULT_MAX_CHARS = 60_000
+
+
+def _extract_heading(content: str, heading: str) -> tuple:
+    """Extract the content block under a matching markdown heading.
+
+    Returns (extracted_text, matched_heading_line) or (None, None) if not found.
+    Matching is case-insensitive and partial (query anywhere in heading text).
+    """
+    import re
+    lines = content.splitlines(keepends=True)
+    heading_pat = re.compile(r'^(#{1,6})\s+(.+)', re.MULTILINE)
+    query = heading.strip().lower()
+
+    start_idx = None
+    start_level = None
+    matched_title = None
+
+    for i, line in enumerate(lines):
+        m = heading_pat.match(line)
+        if m and query in m.group(2).lower():
+            start_idx = i
+            start_level = len(m.group(1))
+            matched_title = line.rstrip()
+            break
+
+    if start_idx is None:
+        return None, None
+
+    # Collect until next heading at same or higher level
+    result_lines = [lines[start_idx]]
+    for line in lines[start_idx + 1:]:
+        m = heading_pat.match(line)
+        if m and len(m.group(1)) <= start_level:
+            break
+        result_lines.append(line)
+
+    return ''.join(result_lines).strip(), matched_title
 
 
 def _props():
@@ -58,13 +95,13 @@ class FileReadTool(BaseMCPTool):
         cfg = {
             'name': 'file_read',
             'description': (
-                'Read the full content of a text-based file (markdown, txt, csv, json, '
-                'xml, yaml, html, etc.) from domain_data, my_data, or common (shared '
-                'library). Returns the raw file content as a string. '
-                'Use section="domain_data" for domain knowledge files, '
-                'section="my_data" for user-uploaded/personal files, '
-                'section="common" for shared library files. '
-                'path is relative to the section root, e.g. "report.md" or "canvas/notes.md".'
+                'Read a text-based file (markdown, txt, csv, json, xml, yaml, etc.) '
+                'from domain_data, my_data, or common. '
+                'For large markdown filings, pass heading="Risk Factors" (or any section name) '
+                'to extract only that section — much faster than reading the whole file. '
+                'If the file is truncated, use heading= to target a specific section or '
+                'increase max_chars (up to 200,000). '
+                'path is relative to the section root, e.g. "report.md" or "gs/10k/GS_10K.md".'
             ),
             'version': '1.0.0',
             'enabled': True,
@@ -101,6 +138,15 @@ class FileReadTool(BaseMCPTool):
                         'Increase for large files, up to 200,000.'
                     ),
                 },
+                'heading': {
+                    'type': 'string',
+                    'description': (
+                        'For markdown files only: extract the section under this heading. '
+                        'Case-insensitive partial match, e.g. "Risk Factors" or "MD&A" or '
+                        '"Management\'s Discussion". Returns only that section\'s content, '
+                        'not the full file — ideal for large filings.'
+                    ),
+                },
             },
             'required': ['path', 'section'],
         }
@@ -112,6 +158,7 @@ class FileReadTool(BaseMCPTool):
         path = arguments.get('path', '').strip()
         section = arguments.get('section', '')
         max_chars = int(arguments.get('max_chars', _DEFAULT_MAX_CHARS))
+        heading = (arguments.get('heading') or '').strip()
 
         roots = {
             'domain_data': _domain_root,
@@ -166,6 +213,36 @@ class FileReadTool(BaseMCPTool):
         except Exception as exc:
             return {'error': f'Could not read file: {exc}'}
 
+        # Heading extraction — markdown only
+        if heading:
+            if suffix != '.md':
+                return {'error': f'heading parameter is only supported for .md files, got {suffix}'}
+            extracted, matched = _extract_heading(content, heading)
+            if extracted is None:
+                # List available headings to help the agent retry
+                import re
+                headings = [
+                    l.rstrip() for l in content.splitlines()
+                    if re.match(r'^#{1,6}\s+', l)
+                ]
+                return {
+                    'error': f'Heading "{heading}" not found in {path}',
+                    'available_headings': headings[:40],
+                }
+            limit = min(max(max_chars, 1), 200_000)
+            truncated = len(extracted) > limit
+            result = {
+                'path': str(target.relative_to(base)),
+                'section': section,
+                'matched_heading': matched,
+                'size_chars': len(extracted[:limit] if truncated else extracted),
+                'content': extracted[:limit] if truncated else extracted,
+            }
+            if truncated:
+                result['truncated'] = True
+                result['note'] = f'Section truncated at {limit:,} chars. Pass max_chars={limit * 2} to read more.'
+            return result
+
         limit = min(max(max_chars, 1), 200_000)
         truncated = len(content) > limit
         if truncated:
@@ -181,6 +258,7 @@ class FileReadTool(BaseMCPTool):
             result['truncated'] = True
             result['note'] = (
                 f'File truncated at {limit:,} chars. '
-                f'Pass max_chars={limit * 2} to read more.'
+                f'Use heading="<section name>" to read a specific section, '
+                f'or pass max_chars={limit * 2} to read more.'
             )
         return result
