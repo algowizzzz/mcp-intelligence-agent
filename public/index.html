@@ -1401,6 +1401,23 @@
        ============================================================ -->
   <script>
     /* ==============================================================
+       AUTH GUARD — redirect to login if no session; route by role
+       ============================================================== */
+    (function() {
+      var token = sessionStorage.getItem('rg_token');
+      var user  = null;
+      try { user = JSON.parse(sessionStorage.getItem('rg_user')); } catch(e) {}
+      if (!token || !user) {
+        window.location.replace('login.html');
+      } else if (user.role === 'super_admin' || user.role === 'admin') {
+        window.location.replace('admin.html');
+      } else {
+        // role === 'user' — stay on mcp-agent.html; index.html redirects there too
+        window.location.replace('mcp-agent.html');
+      }
+    })();
+
+    /* ==============================================================
        CONSTANTS & STATE
        ============================================================== */
     var TOOL_UI_META = {
