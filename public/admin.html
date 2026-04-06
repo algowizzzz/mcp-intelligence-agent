@@ -1227,8 +1227,19 @@ if (_user) {
 
 function authHeaders() { return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _token }; }
 
+function _handleUnauth(res) {
+  if (res && (res.status === 401 || res.status === 403)) {
+    sessionStorage.removeItem('rg_token');
+    sessionStorage.removeItem('rg_user');
+    window.location.replace('login.html');
+    return true;
+  }
+  return false;
+}
+
 function logout() {
-  sessionStorage.clear();
+  sessionStorage.removeItem('rg_token');
+  sessionStorage.removeItem('rg_user');
   window.location.href = 'login.html';
 }
 
@@ -1303,6 +1314,7 @@ async function initWorkerContext() {
 async function loadSuperAdminWorkers() {
   try {
     var r = await fetch(API + '/api/super/workers', { headers: authHeaders() });
+    if (_handleUnauth(r)) return;
     if (!r.ok) return;
     var data = await r.json();
     _allWorkers = data.workers;

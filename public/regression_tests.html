@@ -77,6 +77,15 @@
 <div id="log-panel"></div>
 
 <script>
+// ─── Auth guard — super_admin only ───────────────────────────────────────────
+(function() {
+  var token = sessionStorage.getItem('rg_token');
+  var user = null;
+  try { user = JSON.parse(sessionStorage.getItem('rg_user')); } catch(e) {}
+  if (!token || !user) { window.location.replace('login.html'); return; }
+  if (user.role !== 'super_admin') { window.location.replace('index.html'); return; }
+})();
+
 // ─── Config ───────────────────────────────────────────────────────────────────
 const BASE = 'http://localhost:8000';
 const CREDS = {

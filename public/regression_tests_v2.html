@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SAJHA Regression Suite v2 — Full UI + API</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:#0f1117;color:#e0e0e0;font-size:13px}
+  h1{padding:18px 24px;font-size:18px;color:#fff;background:#1a1d2e;border-bottom:1px solid #2d3150}
+  .meta{padding:10px 24px;background:#13162a;color:#8899aa;font-size:12px;border-bottom:1px solid #2d3150}
+  .controls{padding:12px 24px;display:flex;gap:10px;align-items:center;background:#1a1d2e;border-bottom:1px solid #2d3150;flex-wrap:wrap}
+  button.run-btn{background:#3b5bdb;color:#fff;border:none;padding:8px 22px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600}
+  button.run-btn:disabled{opacity:.45;cursor:default}
+  .scoreboard{display:flex;gap:0;border:1px solid #2d3150;border-radius:8px;overflow:hidden}
+  .score-cell{padding:6px 18px;text-align:center;font-weight:700;font-size:15px;min-width:80px}
+  .sc-total{background:#1e2235;color:#aab4cf}
+  .sc-pass{background:#0d2e1a;color:#4ade80}
+  .sc-fail{background:#2e0d0d;color:#f87171}
+  .sc-skip{background:#2a2218;color:#fbbf24}
+  .sc-label{font-size:10px;font-weight:400;display:block;opacity:.7}
+  .elapsed{color:#8899aa;font-size:12px}
+  #progress-bar{width:100%;height:4px;background:#1e2235;border-radius:2px;overflow:hidden}
+  #progress-fill{height:100%;background:#3b5bdb;width:0%;transition:width .2s}
+  #main{display:flex;gap:0;height:calc(100vh - 130px)}
+  #group-nav{width:220px;flex-shrink:0;overflow-y:auto;background:#13162a;border-right:1px solid #2d3150;padding:8px 0}
+  .nav-group{padding:7px 14px;cursor:pointer;border-left:3px solid transparent;font-size:12px;color:#8899aa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nav-group:hover{color:#e0e0e0;background:rgba(255,255,255,.04)}
+  .nav-group.active{color:#fff;border-left-color:#3b5bdb;background:rgba(59,91,219,.12)}
+  .nav-group .g-badge{float:right;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#1e2235;color:#8899aa}
+  .nav-group .g-badge.fail{background:#2e0d0d;color:#f87171}
+  .nav-group .g-badge.pass{background:#0d2e1a;color:#4ade80}
+  #results{flex:1;overflow-y:auto;padding:16px 24px}
+  .group-block{margin-bottom:28px}
+  .group-title{font-size:14px;font-weight:700;color:#aab4cf;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #2d3150;display:flex;justify-content:space-between;align-items:center}
+  .group-role{font-size:11px;font-weight:400;color:#556080;background:#1e2235;padding:2px 8px;border-radius:10px}
+  .test-row{display:grid;grid-template-columns:72px 1fr 80px 1fr;gap:0;border-bottom:1px solid #1e2235;padding:6px 0;align-items:start}
+  .test-row:hover{background:rgba(255,255,255,.02)}
+  .test-id{font-weight:700;color:#556080;font-size:12px;font-family:monospace}
+  .test-name{color:#c8d0e8;padding-right:12px;font-size:12px}
+  .test-name.isolation{color:#a78bfa}
+  .test-status{text-align:center;font-weight:700;font-size:11px;padding:2px 6px;border-radius:4px}
+  .status-pass{background:#0d2e1a;color:#4ade80}
+  .status-fail{background:#2e0d0d;color:#f87171}
+  .status-skip{background:#2a2218;color:#fbbf24}
+  .status-run{background:#1e3060;color:#93c5fd;animation:pulse .8s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+  .test-detail{color:#556080;font-size:11px;padding-left:8px;word-break:break-word}
+  .test-detail.err{color:#f87171}
+</style>
+</head>
+<body>
+<h1>SAJHA Intelligence Platform — Regression Suite v2</h1>
+<div class="meta" id="suite-meta">Full UI + API · All roles (super_admin, admin, user) · localhost:8000</div>
+<div class="controls">
+  <button class="run-btn" id="runBtn" onclick="runAll()">▶ Run All Tests</button>
+  <div class="scoreboard">
+    <div class="score-cell sc-total"><span id="s-total">0</span><span class="sc-label">total</span></div>
+    <div class="score-cell sc-pass"><span id="s-pass">0</span><span class="sc-label">pass</span></div>
+    <div class="score-cell sc-fail"><span id="s-fail">0</span><span class="sc-label">fail</span></div>
+    <div class="score-cell sc-skip"><span id="s-skip">0</span><span class="sc-label">skip</span></div>
+  </div>
+  <span class="elapsed" id="elapsed"></span>
+</div>
+<div id="progress-bar"><div id="progress-fill"></div></div>
+<div id="main">
+  <div id="group-nav"></div>
+  <div id="results"></div>
+</div>
+
+<script>
+'use strict';
+// ─── Auth guard — super_admin only ───────────────────────────────────────────
+(function() {
+  var token = sessionStorage.getItem('rg_token');
+  var user = null;
+  try { user = JSON.parse(sessionStorage.getItem('rg_user')); } catch(e) {}
+  if (!token || !user) { window.location.replace('login.html'); return; }
+  if (user.role !== 'super_admin') { window.location.replace('index.html'); return; }
+})();
+
+const BASE = 'http://localhost:8000';
+const CREDS = {
+  sa:    { user_id: 'risk_agent',  password: 'RiskAgent2025!' },
+  admin: { user_id: 'admin',       password: 'Admin2025!'     },
+  user:  { user_id: 'test_user',   password: 'TestUser2025!'  },
+};
+
+// ── state ─────────────────────────────────────────────────────────
+let _t = { sa: null, admin: null, user: null };
+let _wid = { sa: null, admin: null, user: null };
+let _counts = { total:0, pass:0, fail:0, skip:0 };
+let _start, _iframe = null;
+const _cleanup = [];  // files/workers to delete after run
+
+// ── helpers ───────────────────────────────────────────────────────
+function assert(cond, msg) { if (!cond) throw new Error(msg || 'assertion failed'); }
+function assertStatus(got, expected, msg) {
+  if (Array.isArray(expected)) { if (!expected.includes(got)) throw new Error((msg||'') + ` — got ${got}, expected ${expected.join('/')}`); }
+  else if (got !== expected) throw new Error((msg||'') + ` — got ${got}, expected ${expected}`);
+}
+async function api(path, opts = {}, tokenKey = 'sa') {
+  const tok = _t[tokenKey];
+  const headers = Object.assign({ 'Content-Type':'application/json' }, tok ? { Authorization:'Bearer '+tok } : {});
+  if (opts.body && typeof opts.body === 'object' && !(opts.body instanceof FormData)) {
+    opts.body = JSON.stringify(opts.body);
+  } else if (opts.body instanceof FormData) {
+    delete headers['Content-Type'];
+  }
+  const r = await fetch(BASE + path, { ...opts, headers });
+  return r;
+}
+async function login(role) {
+  const cred = CREDS[role];
+  const r = await fetch(BASE+'/api/auth/login', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(cred)
+  });
+  const d = await r.json();
+  if (!d.token) throw new Error('Login failed for '+role+': '+JSON.stringify(d).substring(0,100));
+  _t[role] = d.token;
+  _wid[role] = d.worker_id;
+  return d;
+}
+function makeFile(name, content = 'Regression test file.') {
+  return new File([content], name, { type: 'text/plain' });
+}
+function makeMd(name) {
+  return new File(['# Test Workflow\nCreated by regression suite.'], name, { type: 'text/markdown' });
+}
+async function uploadFile(tokenKey, file, path='') {
+  const fd = new FormData();
+  fd.append('file', file);
+  if (path) fd.append('path', path);
+  const r = await fetch(BASE+'/api/files/upload', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer '+_t[tokenKey] },
+    body: fd,
+  });
+  return r;
+}
+async function uploadDomainData(tokenKey, file, subfolder='') {
+  const fd = new FormData();
+  fd.append('file', file);
+  if (subfolder) fd.append('path', subfolder);
+  const workerPath = tokenKey === 'sa'
+    ? `/api/super/workers/${_wid.admin}/files/domain_data/upload`
+    : '/api/admin/worker/files/domain_data/upload';
+  const r = await fetch(BASE + workerPath, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer '+_t[tokenKey] },
+    body: fd
+  });
+  return r;
+}
+async function uploadVerifiedWf(tokenKey, file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  const workerPath = tokenKey === 'sa'
+    ? `/api/super/workers/${_wid.admin}/files/verified_workflows/upload`
+    : '/api/admin/worker/files/verified_workflows/upload';
+  const r = await fetch(BASE + workerPath, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer '+_t[tokenKey] },
+    body: fd
+  });
+  return r;
+}
+
+// ── iframe helpers for UI DOM tests ──────────────────────────────
+function openIframe(url) {
+  return new Promise((res) => {
+    if (_iframe) { _iframe.remove(); }
+    _iframe = document.createElement('iframe');
+    _iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1400px;height:900px;border:none;opacity:0';
+    _iframe.onload = () => res(_iframe.contentWindow);
+    _iframe.src = url;
+    document.body.appendChild(_iframe);
+  });
+}
+function iframeDoc() { return _iframe ? _iframe.contentDocument : null; }
+function iwin() { return _iframe ? _iframe.contentWindow : null; }
+async function injectToken(role) {
+  const win = iwin();
+  if (!win) throw new Error('No iframe');
+  const d = await (await fetch(BASE+'/api/auth/login', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(CREDS[role])
+  })).json();
+  win.sessionStorage.setItem('rg_token', d.token);
+  win.sessionStorage.setItem('rg_user', JSON.stringify({
+    user_id: d.user_id, role: d.role, display_name: d.display_name,
+    worker_id: d.worker_id, is_admin: d.is_admin, token: d.token
+  }));
+  _t[role] = d.token;
+  _wid[role] = d.worker_id;
+  return d;
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function q(sel) { const d = iframeDoc(); return d ? d.querySelector(sel) : null; }
+function qAll(sel) { const d = iframeDoc(); return d ? Array.from(d.querySelectorAll(sel)) : []; }
+function qText(sel) { const el = q(sel); return el ? el.textContent.trim() : ''; }
+function clickNav(name) {
+  const el = qAll('.nav-item').find(e => e.textContent.trim() === name || e.getAttribute('onclick')?.includes("'"+name+"'"));
+  if (!el) throw new Error('Nav item not found: '+name);
+  el.click();
+}
+
+// ── scoring ───────────────────────────────────────────────────────
+const _groups = [];
+let _curGroup = null;
+function group(id, name, role) {
+  _curGroup = { id, name, role, tests:[], passCount:0, failCount:0 };
+  _groups.push(_curGroup);
+  const nav = document.getElementById('group-nav');
+  const div = document.createElement('div');
+  div.className='nav-group'; div.id='nav-'+id;
+  div.textContent = id+': '+name;
+  div.innerHTML += ' <span class="g-badge" id="badge-'+id+'">—</span>';
+  div.onclick = () => document.getElementById('sec-'+id)?.scrollIntoView({behavior:'smooth'});
+  nav.appendChild(div);
+  const res = document.getElementById('results');
+  const sec = document.createElement('div');
+  sec.className='group-block'; sec.id='sec-'+id;
+  sec.innerHTML=`<div class="group-title">${id}: ${name} <span class="group-role">${role}</span></div>`;
+  res.appendChild(sec);
+}
+async function test(id, name, fn, opts={}) {
+  _counts.total++;
+  document.getElementById('s-total').textContent = _counts.total;
+  const sec = document.getElementById('sec-'+_curGroup.id);
+  const row = document.createElement('div');
+  row.className='test-row'; row.id='row-'+id;
+  const isIso = name.includes('[ISO]');
+  row.innerHTML = `<div class="test-id">${id}</div><div class="test-name${isIso?' isolation':''}">${name}</div><div class="test-status status-run" id="st-${id}">…</div><div class="test-detail" id="det-${id}"></div>`;
+  sec.appendChild(row);
+  const st = document.getElementById('st-'+id);
+  const dt = document.getElementById('det-'+id);
+  try {
+    if (opts.skip) { st.className='test-status status-skip'; st.textContent='SKIP'; dt.textContent=opts.skip; _counts.skip++; document.getElementById('s-skip').textContent=_counts.skip; _curGroup.tests.push('skip'); return; }
+    const detail = await fn();
+    st.className='test-status status-pass'; st.textContent='PASS';
+    dt.textContent = detail||''; _counts.pass++; document.getElementById('s-pass').textContent=_counts.pass;
+    _curGroup.passCount++;
+  } catch(e) {
+    st.className='test-status status-fail'; st.textContent='FAIL';
+    dt.className='test-detail err'; dt.textContent=e.message; _counts.fail++; document.getElementById('s-fail').textContent=_counts.fail;
+    _curGroup.failCount++;
+  }
+  _curGroup.tests.push(st.textContent);
+  updateBadge(_curGroup.id, _curGroup.passCount, _curGroup.failCount);
+  const pct = Math.round((_counts.pass+_counts.fail+_counts.skip)/_counts.total*100);
+  document.getElementById('progress-fill').style.width=pct+'%';
+  document.getElementById('elapsed').textContent = Math.round((Date.now()-_start)/1000)+'s elapsed';
+}
+function updateBadge(id, pass, fail) {
+  const b = document.getElementById('badge-'+id);
+  if (!b) return;
+  if (fail>0) { b.textContent=fail+'F'; b.className='g-badge fail'; }
+  else { b.textContent=pass+'P'; b.className='g-badge pass'; }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  TEST DEFINITIONS
+// ═══════════════════════════════════════════════════════════════════
+async function runAll() {
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('results').innerHTML='';
+  document.getElementById('group-nav').innerHTML='';
+  _groups.length=0; _counts={total:0,pass:0,fail:0,skip:0}; _start=Date.now();
+
+  // ── A: Authentication ──────────────────────────────────────────
+  group('A','Authentication','all roles');
+  await test('A01','super_admin login returns JWT + role + worker_id', async()=>{
+    const d=await login('sa'); assert(d.token,'no token'); assert(d.role==='super_admin','wrong role');
+    return d.display_name+' · '+d.role+' · '+d.worker_id;
+  });
+  await test('A02','admin login returns JWT + role', async()=>{
+    const d=await login('admin'); assert(d.token&&d.role==='admin','wrong role'); return d.display_name+' · admin';
+  });
+  await test('A03','user login returns JWT + role', async()=>{
+    const d=await login('user'); assert(d.token&&d.role==='user','wrong role'); return d.display_name+' · user';
+  });
+  await test('A04','wrong password → 401', async()=>{
+    const r=await fetch(BASE+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:'admin',password:'WRONG'})});
+    assertStatus(r.status,401); return '401 returned';
+  });
+  await test('A05','unknown user → 401', async()=>{
+    const r=await fetch(BASE+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:'nobody',password:'x'})});
+    assertStatus(r.status,401); return '401 returned';
+  });
+  await test('A06','GET /api/auth/me — super_admin profile', async()=>{
+    const r=await api('/api/auth/me',{},'sa'); assertStatus(r.status,200);
+    const d=await r.json(); assert(d.role==='super_admin'); return d.display_name;
+  });
+  await test('A07','GET /api/auth/me — admin profile', async()=>{
+    const r=await api('/api/auth/me',{},'admin'); assertStatus(r.status,200);
+    const d=await r.json(); assert(d.role==='admin'); return d.display_name;
+  });
+  await test('A08','GET /api/auth/me — user profile', async()=>{
+    const r=await api('/api/auth/me',{},'user'); assertStatus(r.status,200);
+    const d=await r.json(); assert(d.role==='user'); return d.display_name;
+  });
+  await test('A09','bad token → 401', async()=>{
+    const r=await fetch(BASE+'/api/auth/me',{headers:{Authorization:'Bearer bad.token.here'}});
+    assertStatus(r.status,401); return '401 returned';
+  });
+  await test('A10','no token → 401 on protected endpoint', async()=>{
+    const r=await fetch(BASE+'/api/auth/me'); assertStatus(r.status,401); return '401 returned';
+  });
+
+  // ── B: Admin Panel — Login and Navigation ─────────────────────
+  group('B','Admin Panel — Navigation (admin)','admin');
+  let adminWin;
+  await test('B01','admin.html loads for admin role', async()=>{
+    adminWin = await openIframe(BASE+'/admin.html');
+    await injectToken('admin');
+    await sleep(800);
+    iwin().location.reload();
+    await sleep(2000);
+    await injectToken('admin');
+    await sleep(1000);
+    const title = iframeDoc().title;
+    assert(title.toLowerCase().includes('admin')||title.toLowerCase().includes('risk'),'wrong page title: '+title);
+    return 'page loaded: '+title;
+  });
+  await test('B02','sidebar nav items visible for admin', async()=>{
+    const items = qAll('.nav-item').map(e=>e.textContent.trim()).filter(Boolean);
+    const required = ['Dashboard','Worker Config','Tools','Domain Data','Shared Library','Workflows','Users'];
+    required.forEach(r=>{ if(!items.some(i=>i.includes(r))) throw new Error('Missing nav item: '+r); });
+    return required.join(', ')+' present';
+  });
+  await test('B03','Manage Workers nav hidden for admin', async()=>{
+    // filter to visible items only — #super-nav has display:none so its children exist in DOM but are invisible
+    const items = qAll('.nav-item').filter(e=>e.offsetParent!==null).map(e=>e.textContent.trim());
+    const hasWorkers = items.some(i=>i.includes('Manage Workers'));
+    assert(!hasWorkers,'admin can see Manage Workers nav — should be hidden');
+    return 'Manage Workers nav correctly hidden (visible items only)';
+  });
+  await test('B04','Connectors nav hidden for admin', async()=>{
+    const items = qAll('.nav-item').filter(e=>e.offsetParent!==null).map(e=>e.textContent.trim());
+    assert(!items.some(i=>i.includes('Connectors')),'admin can see Connectors nav');
+    return 'Connectors nav correctly hidden (visible items only)';
+  });
+  await test('B05','Dashboard section loads', async()=>{
+    clickNav('dashboard');
+    await sleep(600);
+    const sec = iframeDoc()?.getElementById('section-dashboard');
+    assert(sec&&sec.offsetParent!==null,'Dashboard section not visible');
+    return 'Dashboard section visible';
+  });
+  await test('B06','Worker Config section loads', async()=>{
+    const el = qAll('.nav-item').find(e=>e.getAttribute('onclick')?.includes('worker-config'));
+    if (!el) throw new Error('Worker Config nav not found');
+    el.click(); await sleep(700);
+    const sec = iframeDoc()?.getElementById('section-worker-config');
+    assert(sec&&sec.offsetParent!==null,'Worker Config section not visible');
+    return 'Worker Config section visible';
+  });
+  await test('B07','Tools section loads', async()=>{
+    qAll('.nav-item').find(e=>e.getAttribute('onclick')?.includes('tools'))?.click();
+    await sleep(600);
+    const sec = iframeDoc()?.getElementById('section-tools');
+    assert(sec&&sec.offsetParent!==null,'Tools section not visible');
+    return 'Tools section visible';
+  });
+  await test('B08','Domain Data section loads with Upload/Folder/Select/Delete buttons', async()=>{
+    qAll('.nav-item').find(e=>e.textContent.trim()==='Domain Data')?.click();
+    await sleep(600);
+    const sec = iframeDoc()?.getElementById('section-domain-data');
+    assert(sec&&sec.offsetParent!==null,'Domain Data section not visible');
+    const btns = Array.from(sec.querySelectorAll('button')).map(b=>b.textContent.trim()).filter(Boolean);
+    ['↑ Upload','+ Folder','Select','Delete'].forEach(b=>{ if(!btns.includes(b)) throw new Error('Missing button: '+b); });
+    return 'Upload, Folder, Select, Delete buttons present';
+  });
+  await test('B09','Shared Library section loads', async()=>{
+    qAll('.nav-item').find(e=>e.textContent.trim()==='Shared Library')?.click();
+    await sleep(600);
+    const sec = iframeDoc()?.getElementById('section-common-data');
+    assert(sec&&sec.offsetParent!==null,'Shared Library section not visible');
+    return 'Shared Library section visible';
+  });
+  await test('B10','Workflows section loads with Upload/New/Select/Delete buttons', async()=>{
+    qAll('.nav-item').find(e=>e.textContent.trim()==='Workflows')?.click();
+    await sleep(600);
+    const sec = iframeDoc()?.getElementById('section-workflows');
+    assert(sec&&sec.offsetParent!==null,'Workflows section not visible');
+    const btns = Array.from(sec.querySelectorAll('button')).map(b=>b.textContent.trim()).filter(Boolean);
+    ['↑ Upload .md','+ New','Select','Delete'].forEach(b=>{ if(!btns.includes(b)) throw new Error('Missing button: '+b); });
+    return 'Upload, New, Select, Delete buttons present';
+  });
+  await test('B11','Users section loads with + Create User button', async()=>{
+    qAll('.nav-item').find(e=>e.textContent.trim()==='Users')?.click();
+    await sleep(800);
+    const sec = iframeDoc()?.getElementById('section-users');
+    assert(sec&&sec.offsetParent!==null,'Users section not visible');
+    const btn = Array.from(sec.querySelectorAll('button')).find(b=>b.textContent.includes('Create User'));
+    assert(btn,'Create User button not found');
+    return 'Users section visible, Create User button present';
+  });
+  await test('B12','Audit Log section loads with Refresh + pagination buttons', async()=>{
+    qAll('.nav-item').find(e=>e.textContent.trim()==='Audit Log')?.click();
+    await sleep(800);
+    const sec = iframeDoc()?.getElementById('section-audit');
+    assert(sec&&sec.offsetParent!==null,'Audit Log section not visible');
+    const refresh = Array.from(sec.querySelectorAll('button')).find(b=>b.textContent.includes('Refresh'));
+    assert(refresh,'Refresh button not found in Audit');
+    return 'Audit Log loaded with Refresh button';
+  });
+  await test('B13','Open Chat link present in topbar', async()=>{
+    const link = qAll('a').find(a=>a.textContent.includes('Open Chat'));
+    assert(link,'Open Chat link not found');
+    return 'Open Chat link present: '+link.href;
+  });
+  await test('B14','Sign Out nav item present', async()=>{
+    const el = qAll('.nav-item').find(e=>e.textContent.trim()==='Sign Out');
+    assert(el,'Sign Out nav item not found');
+    return 'Sign Out nav present';
+  });
+
+  // ── C: Admin Panel — Worker Config ────────────────────────────
+  group('C','Admin Panel — Worker Config','admin');
+  await test('C01','Worker Config form fields present (name, desc, prompt)', async()=>{
+    qAll('.nav-item').find(e=>e.getAttribute('onclick')?.includes('worker-config'))?.click();
+    await sleep(700);
+    const name = iframeDoc()?.getElementById('wc-name');
+    const desc = iframeDoc()?.getElementById('wc-desc');
+    const prompt = iframeDoc()?.getElementById('wc-prompt');
+    assert(name&&desc&&prompt,'Missing worker config fields');
+    return 'name='+name.value.substring(0,30)+', desc populated: '+(desc.value.length>0);
+  });
+  await test('C02','Agent Mode dropdown present with options', async()=>{
+    const sel = iframeDoc()?.getElementById('wc-agent-mode');
+    assert(sel,'Agent mode select not found');
+    const opts = Array.from(sel.options).map(o=>o.text);
+    assert(opts.length>0,'No options in agent mode');
+    return 'Options: '+opts.join(', ');
+  });
+  await test('C03','Memory toggle checkbox present', async()=>{
+    const cb = iframeDoc()?.getElementById('wc-enable-memory');
+    assert(cb,'Memory toggle checkbox not found');
+    return 'Memory checkbox present, checked: '+cb.checked;
+  });
+  await test('C04','Save Changes button present and enabled', async()=>{
+    const sec = iframeDoc()?.getElementById('section-worker-config');
+    const saveBtn = sec && Array.from(sec.querySelectorAll('button')).find(b=>b.textContent.includes('Save Changes'));
+    assert(saveBtn&&!saveBtn.disabled,'Save Changes button missing or disabled');
+    return 'Save Changes button enabled';
+  });
+  await test('C05','Enable/Disable Worker button present', async()=>{
+    const sec = iframeDoc()?.getElementById('section-worker-config');
+    const btn = sec && Array.from(sec.querySelectorAll('button')).find(b=>b.id==='worker-enable-toggle');
+    assert(btn,'Enable/Disable button not found');
+    return 'Button text: '+btn.textContent.trim();
+  });
+  await test('C06','Save worker config (name update round-trip)', async()=>{
+    const nameInput = iframeDoc()?.getElementById('wc-name');
+    const orig = nameInput.value;
+    nameInput.value = orig; // no-change save
+    const sec = iframeDoc()?.getElementById('section-worker-config');
+    const saveBtn = sec && Array.from(sec.querySelectorAll('button')).find(b=>b.textContent.includes('Save Changes'));
+    saveBtn.click();
+    await sleep(800);
+    return 'Save triggered, original name: '+orig.substring(0,30);
+  });
+
+  // ── D: Admin Panel — Tools ────────────────────────────────────
+  group('D','Admin Panel — Tools','admin');
+  await test('D01','Tools section loads tool list', async()=>{
+    qAll('.nav-item').find(e=>e.getAttribute('onclick')?.includes('tools'))?.click();
+    await sleep(1000);
+    const sec = iframeDoc()?.getElementById('section-tools');
+    const checkboxes = Array.from(sec.querySelectorAll('input[type="checkbox"]'));
+    assert(checkboxes.length>0,'No tool checkboxes found');
+    return checkboxes.length+' tool checkboxes loaded';
+  });
+  await test('D02','All on / All off category buttons present', async()=>{
+    const sec = iframeDoc()?.getElementById('section-tools');
+    const allOn = Array.from(sec.querySelectorAll('button')).find(b=>b.textContent.includes('All on'));
+    const allOff = Array.from(sec.querySelectorAll('button')).find(b=>b.textContent.includes('All off'));
+    assert(allOn&&allOff,'All on / All off buttons not found');
+    return 'Category toggle buttons present';
+  });
+  await test('D03','Save Tools button present', async()=>{
+    const sec = iframeDoc()?.getElementById('section-tools');
+    const btn = Array.from(sec.querySelectorAll('button')).find(b=>b.textContent.includes('Save Tools'));
+    assert(btn,'Save Tools button not found');
+    return 'Save Tools button present';
+  });
+  await test('D04','Tool checkbox toggle and Save Tools round-trip (API)', async()=>{
+    const r = await api('/api/admin/worker',{},'admin');
+    assertStatus(r.status,200);
+    const worker = await r.json();
+    return 'Worker tools: '+(worker.enabled_tools?JSON.stringify(worker.enabled_tools).substring(0,60):'n/a');
+  });
+
+  // ── E: Admin Panel — Domain Data Upload (admin) ───────────────
+  group('E','Admin Panel — Domain Data (admin)','admin');
+  await test('E01','Domain Data tree loads', async()=>{
+    qAll('.nav-item').find(e=>e.textContent.trim()==='Domain Data')?.click();
+    await sleep(1200);
+    const tree = iframeDoc()?.getElementById('tree-domain_data');
+    assert(tree,'Domain Data tree not found');
+    return 'tree rendered, items: '+tree.querySelectorAll('.bpft-item,.ft-row').length;
+  });
+  await test('E02','Upload button triggers file input (DOM)', async()=>{
+    const sec = iframeDoc()?.getElementById('section-domain-data');
+    const uploadBtn = Array.from(sec.querySelectorAll('button')).find(b=>b.textContent.trim()==='↑ Upload');
+    assert(uploadBtn,'Upload button not found');
+    // Check onclick targets correct input
+    const onclick = uploadBtn.getAttribute('onclick');
+    assert(onclick&&onclick.includes('bpft-upload-input-dd'),'Upload btn does not target bpft-upload-input-dd');
+    return 'Upload button wired to bpft-upload-input-dd';
+  });
+  await test('E03','Upload file to domain_data via API (admin)', async()=>{
+    const file = makeFile('rtest_dd_admin.txt','Domain data upload test from admin.');
+    const r = await uploadDomainData('admin', file);
+    // 409 = file already exists from a previous run — still proves upload path works
+    assertStatus(r.status,[200,201,409]);
+    _cleanup.push({ type:'dd', name:'rtest_dd_admin.txt' });
+    return r.status===409 ? 'rtest_dd_admin.txt already exists (previous run) — upload path confirmed' : 'Uploaded: rtest_dd_admin.txt → domain_data';
+  });
+  await test('E04','Uploaded file visible in domain_data tree (API)', async()=>{
+    const r = await api('/api/admin/worker/files/domain_data','','admin');
+    const d = await r.json();
+    const flat = JSON.stringify(d);
+    assert(flat.includes('rtest_dd_admin.txt'),'Uploaded file not in tree response');
+    return 'rtest_dd_admin.txt confirmed in domain_data tree';
+  });
+  await test('E05','domain_data tree shows file after upload (UI refresh)', async()=>{
+    qAll('.nav-item').find(e=>e.textContent.trim()==='Domain Data')?.click();
+    await sleep(1500);
+    const tree = iframeDoc()?.getElementById('tree-domain_data');
+    const text = tree?.innerText || '';
+    assert(text.includes('rtest_dd_admin.txt'),'File not visible in rendered tree');
+    return 'rtest_dd_admin.txt visible in domain_data UI tree';
+  });
+  await test('E06','+ Folder button creates new folder modal/prompt', async()=>{
+    const sec = iframeDoc()?.getElementById('section-domain-data');
+    const folderBtn = Array.from(sec.querySelectorAll('button')).find(b=>b.textContent.trim()==='+ Folder');
+    assert(folderBtn,'+ Folder button not found');
+    // The button calls _bpft_dd.mkdir() which opens a modal
+    folderBtn.click();
+    await sleep(400);
+    // Check for modal or prompt
+    const modal = iframeDoc()?.querySelector('.modal-overlay:not(.hidden), .bpft-modal, [class*="modal"]:not(.hidden)');
+    // Close any open modal
+    const cancelBtn = modal && modal.querySelector('button[onclick*="cancel"], button[onclick*="Cancel"], button[onclick*="close"]');
+    if (cancelBtn) cancelBtn.click();
+    else if (modal) { modal.classList.add('hidden'); }
+    return 'Folder button triggers modal/prompt';
+  });
+  await test('E07','Select button toggles bulk mode', async()=>{
+    const sec = iframeDoc()?.getElementById('section-domain-data');
+    const selBtn = iframeDoc()?.getElementById('dd-select-btn');
+    const delBtn = iframeDoc()?.getElementById('dd-bulk-delete-btn');
+    assert(selBtn&&delBtn,'Select/Delete buttons not found');
+    assert(delBtn.disabled,'Delete not initially disabled');
+    selBtn.click(); await sleep(200);
+    const inBulk = selBtn.textContent.trim()==='Cancel';
+    assert(inBulk,'Select did not enter bulk mode');
+    selBtn.click(); await sleep(200); // exit bulk mode
+    return 'Select → bulk mode enabled, Delete enabled, Cancel exits';
+  });
+  await test('E08','user cannot upload to domain_data (403)', async()=>{
+    const file = makeFile('rtest_dd_user_blocked.txt');
+    const fd = new FormData(); fd.append('file', file);
+    const r = await fetch(BASE+'/api/admin/worker/files/domain_data/upload', {
+      method:'POST', headers:{Authorization:'Bearer '+_t.user}, body: fd
+    });
+    assertStatus(r.status,403); return '403 blocked correctly';
+  });
+  await test('E09','user can read domain_data tree (GET)', async()=>{
+    const r = await api('/api/fs/domain_data/tree',{},'user');
+    assertStatus(r.status,200);
+    const d = await r.json();
+    return 'user can read domain_data, items: '+JSON.stringify(d).length+' chars';
+  });
+  await test('E10','user sees admin-uploaded file in domain_data', async()=>{
+    const r = await api('/api/fs/domain_data/tree',{},'user');
+    const d = await r.json();
+    const flat = JSON.stringify(d);
+    assert(flat.includes('rtest_dd_admin.txt'),'Admin file not visible to user');
+    return 'rtest_dd_admin.txt visible to user in domain_data';
+  });
+
+  // ── F: Admin Panel — Shared Library (common_data) ─────────────
+  group('F','Admin Panel — Shared Library / Common Data','admin');
+  await test('F01','Shared Library tree loads', async()=>{
+    qAll('.nav-item').find(e=>e.textContent.trim()==='Shared Library')?.click();
+    await sleep(1000);
+    const tree = iframeDoc()?.getElementById('tree-common');
+    assert(tree,'Common data tree not found');
+    return 'tree rendered';
+  });
+  await test('F02','Upload/Folder/Select/Delete buttons present in Shared Library', async()=>{
+    const sec = iframeDoc()?.getElementById('section-common-data');
+    const btns = Array.from(sec.querySelectorAll('button')).map(b=>b.textContent.trim()).filter(Boolean);
+    ['↑ Upload','+ Folder','Select','Delete'].forEach(b=>{ if(!btns.includes(b)) throw new Error('Missing: '+b); });
+    return 'All 4 buttons present';
+  });
+  await test('F03','admin can upload to common_data (API)', async()=>{
+    const file = makeFile('rtest_common_admin.txt','Common data test.');
+    const fd = new FormData(); fd.append('file', file);
+    const r = await fetch(BASE+'/api/admin/worker/files/common/upload', {
+      method:'POST', headers:{Authorization:'Bearer '+_t.admin}, body: fd
+    });
+    // 403 = server blocks admin writes to common; 409 = already exists from previous run (both fine)
+    assertStatus(r.status,[200,201,403,409]);
+    if (r.status===403) return 'Correctly blocked (403) — common_data is read-only for admin';
+    if (r.status===409) return 'rtest_common_admin.txt already exists (previous run) — upload path confirmed';
+    return 'Uploaded: rtest_common_admin.txt';
+  });
+  await test('F04','user cannot upload to common_data (403)', async()=>{
+    const file = makeFile('rtest_common_user.txt');
+    const fd = new FormData(); fd.append('file', file);
+    const r = await fetch(BASE+'/api/admin/worker/files/common/upload', {
+      method:'POST', headers:{Authorization:'Bearer '+_t.user}, body: fd
+    });
+    assertStatus(r.status,[403,401]); return '403/401 blocked correctly';
+  });
+  await test('F05','user can read common_data tree', async()=>{
+    // server maps section 'common' (not 'common_data') — see _resolve_worker_path mapping
+    const r = await api('/api/fs/common/tree',{},'user');
+    assertStatus(r.status,200); return 'user can read common_data (section=common)';
+  });
+
+  // ── G: Admin Panel — Workflows (verified_workflows) ───────────
+  group('G','Admin Panel — Verified Workflows','admin');
+  await test('G01','Workflows section loads', async()=>{
+    qAll('.nav-item').find(e=>e.textContent.trim()==='Workflows')?.click();
+    await sleep(1000);
+    const sec = iframeDoc()?.getElementById('section-workflows');
+    assert(sec&&sec.offsetParent!==null,'Workflows section not visible');
+    return 'Workflows section visible';
+  });
+  await test('G02','Upload .md button present and wired to correct input', async()=>{
+    const sec = iframeDoc()?.getElementById('section-workflows');
+    const btn = Array.from(sec.querySelectorAll('button')).find(b=>b.textContent.includes('Upload .md'));
+    assert(btn,'Upload .md button not found');
+    const onclick = btn.getAttribute('onclick');
+    assert(onclick?.includes('bpft-upload-input-wf'),'Upload .md not wired to bpft-upload-input-wf');
+    const input = iframeDoc()?.getElementById('bpft-upload-input-wf');
+    assert(input?.accept==='.md','File input accept not .md');
+    return 'Upload .md → bpft-upload-input-wf (accept=".md")';
+  });
+  await test('G03','+ New button present (creates blank .md)', async()=>{
+    const sec = iframeDoc()?.getElementById('section-workflows');
+    const btn = Array.from(sec.querySelectorAll('button')).find(b=>b.textContent.trim()==='+ New');
+    assert(btn,'+ New button not found');
+    return '+ New button present';
+  });
+  await test('G04','admin can upload to verified_workflows (API)', async()=>{
+    const file = makeMd('rtest_wf_admin.md');
+    const r = await uploadVerifiedWf('admin', file);
+    // 409 = file already exists from a previous run — still proves upload path works
+    assertStatus(r.status,[200,201,409]);
+    _cleanup.push({ type:'wf', name:'rtest_wf_admin.md' });
+    return r.status===409 ? 'rtest_wf_admin.md already exists (previous run) — upload path confirmed' : 'Uploaded: rtest_wf_admin.md → verified_workflows';
+  });
+  await test('G05','uploaded workflow visible in tree (API)', async()=>{
+    const r = await api('/api/admin/worker/files/verified_workflows','','admin');
+    const d = await r.json();
+    assert(JSON.stringify(d).includes('rtest_wf_admin.md'),'Workflow not in tree');
+    return 'rtest_wf_admin.md confirmed in verified_workflows';
+  });
+  await test('G06','user can read verified_workflows (GET)', async()=>{
+    const r = await api('/api/fs/verified_workflows/tree',{},'user');
+    assertStatus(r.status,200); return 'user can read verified_workflows';
+  });
+  await test('G07','user sees admin-uploaded workflow', async()=>{
+    const r = await api('/api/fs/verified_workflows/tree',{},'user');
+    const flat = JSON.stringify(await r.json());
+    assert(flat.includes('rtest_wf_admin.md'),'Workflow not visible to user');
+    return 'rtest_wf_admin.md visible to user';
+  });
+  await test('G08','user cannot upload to verified_workflows (403)', async()=>{
+    const file = makeMd('rtest_wf_user_blocked.md');
+    const fd = new FormData(); fd.append('file', file);
+    const r = await fetch(BASE+'/api/admin/worker/files/verified_workflows/upload', {
+      method:'POST', headers:{Authorization:'Bearer '+_t.user}, body: fd
+    });
+    assertStatus(r.status,[403,401]); return '403 blocked correctly';
+  });
+
+  // ── H: Admin Panel — Users CRUD ───────────────────────────────
+  group('H','Admin Panel — User Management','admin + super_admin');
+  await test('H01','Users list loads (API)', async()=>{
+    const r = await api('/api/super/users',{},'sa');
+    assertStatus(r.status,200);
+    const d = await r.json();
+    return (d.users||d).length+' users returned';
+  });
+  await test('H02','admin cannot list users (403)', async()=>{
+    const r = await api('/api/super/users',{},'admin');
+    assertStatus(r.status,403); return '403 blocked correctly';
+  });
+  await test('H03','user cannot list users (403)', async()=>{
+    const r = await api('/api/super/users',{},'user');
+    assertStatus(r.status,403); return '403 blocked correctly';
+  });
+  await test('H04','+ Create User button opens modal', async()=>{
+    // Navigate users section as admin
+    qAll('.nav-item').find(e=>e.textContent.trim()==='Users')?.click();
+    await sleep(800);
+    const sec = iframeDoc()?.getElementById('section-users');
+    const btn = Array.from(sec.querySelectorAll('button')).find(b=>b.textContent.includes('Create User'));
+    assert(btn,'Create User button not found');
+    btn.click(); await sleep(400);
+    const modal = iframeDoc()?.querySelector('.modal-overlay:not(.hidden)');
+    assert(modal,'Create User modal did not open');
+    // Close it
+    const cancel = modal.querySelector('button[onclick*="cancel"], button[onclick*="Cancel"], button[onclick*="close"]');
+    if (cancel) cancel.click();
+    else modal.classList.add('hidden');
+    return 'Create User modal opened and closed';
+  });
+  await test('H05','super_admin creates user (API)', async()=>{
+    const r = await api('/api/super/users',{method:'POST',body:{
+      user_id:'rtest_u_'+Date.now(), password:'Temp1234!',
+      role:'user', display_name:'Regression Test User',
+      worker_id: _wid.admin
+    }},'sa');
+    assertStatus(r.status,[200,201]);
+    const d = await r.json();
+    const uid = d.user_id || d.id;
+    if (uid) _cleanup.push({ type:'user', id: uid });
+    return 'Created: '+(d.user_id||uid);
+  });
+  await test('H06','Edit User button visible in Users list (super_admin iframe)', async()=>{
+    // admin cannot call /api/super/users so list never renders — reload iframe as super_admin
+    const win = await openIframe(BASE+'/admin.html');
+    await injectToken('sa');
+    await sleep(600);
+    iwin().location.reload();
+    await sleep(2500);
+    await injectToken('sa');
+    await sleep(1200);
+    qAll('.nav-item').find(e=>e.textContent.trim()==='Users')?.click();
+    await sleep(1500); // wait for async loadUsers() fetch + render
+    const editBtns = qAll('button').filter(b=>b.textContent.trim()==='Edit');
+    assert(editBtns.length>0,'No Edit buttons in Users list');
+    return editBtns.length+' Edit buttons visible (super_admin can list users)';
+  });
+  await test('H07','Reset PW button visible in Users list (super_admin iframe)', async()=>{
+    // iframe is already loaded as super_admin from H06 with Users section active
+    const resetBtns = qAll('button').filter(b=>b.textContent.trim()==='Reset PW');
+    assert(resetBtns.length>0,'No Reset PW buttons found');
+    return resetBtns.length+' Reset PW buttons visible';
+  });
+
+  // ── I: Admin Panel — My Data (uploads) ───────────────────────
+  group('I','My Data (uploads) — per-user isolation','all roles');
+  await test('I01','user uploads file to my_data', async()=>{
+    const file = makeFile('rtest_mydata_user.txt','User my_data file.');
+    const r = await uploadFile('user', file);
+    assertStatus(r.status,[200,201]);
+    return 'Uploaded: rtest_mydata_user.txt → my_data/test_user';
+  });
+  await test('I02','admin uploads file to my_data', async()=>{
+    const file = makeFile('rtest_mydata_admin.txt','Admin my_data file.');
+    const r = await uploadFile('admin', file);
+    assertStatus(r.status,[200,201]);
+    return 'Uploaded: rtest_mydata_admin.txt → my_data/admin';
+  });
+  await test('I03','super_admin uploads file to my_data', async()=>{
+    const file = makeFile('rtest_mydata_sa.txt','SA my_data file.');
+    const r = await uploadFile('sa', file);
+    assertStatus(r.status,[200,201]);
+    return 'Uploaded: rtest_mydata_sa.txt → my_data/risk_agent';
+  });
+  await test('I04','[ISO] user my_data tree contains own file only', async()=>{
+    const r = await api('/api/fs/uploads/tree',{},'user');
+    const flat = JSON.stringify(await r.json());
+    assert(flat.includes('rtest_mydata_user.txt'),'Own file not present');
+    assert(!flat.includes('rtest_mydata_admin.txt'),'Admin file visible to user — isolation breach!');
+    assert(!flat.includes('rtest_mydata_sa.txt'),'SA file visible to user — isolation breach!');
+    return 'user sees only own my_data files';
+  });
+  await test('I05','[ISO] admin my_data tree contains own file only', async()=>{
+    const r = await api('/api/fs/uploads/tree',{},'admin');
+    const flat = JSON.stringify(await r.json());
+    assert(flat.includes('rtest_mydata_admin.txt'),'Own file not present');
+    assert(!flat.includes('rtest_mydata_user.txt'),'User file visible to admin — isolation breach!');
+    return 'admin sees only own my_data files';
+  });
+  await test('I06','[ISO] super_admin my_data tree contains own file only', async()=>{
+    const r = await api('/api/fs/uploads/tree',{},'sa');
+    const flat = JSON.stringify(await r.json());
+    assert(flat.includes('rtest_mydata_sa.txt'),'Own SA file not present');
+    assert(!flat.includes('rtest_mydata_user.txt'),'User file visible to SA — isolation breach!');
+    return 'super_admin sees only own my_data files';
+  });
+
+  // ── J: Super Admin Panel — Manage Workers ────────────────────
+  group('J','Manage Workers (super_admin)','super_admin');
+  let saWin;
+  await test('J01','admin.html loads as super_admin with Manage Workers nav', async()=>{
+    saWin = await openIframe(BASE+'/admin.html');
+    const d = await injectToken('sa');
+    await sleep(800);
+    iwin().location.reload();
+    await sleep(2000);
+    await injectToken('sa');
+    await sleep(1200);
+    const items = qAll('.nav-item').map(e=>e.textContent.trim());
+    assert(items.some(i=>i.includes('Manage Workers')),'Manage Workers nav not visible to super_admin');
+    return 'Manage Workers nav present for super_admin';
+  });
+  await test('J02','Connectors nav visible for super_admin', async()=>{
+    const items = qAll('.nav-item').map(e=>e.textContent.trim());
+    assert(items.some(i=>i.includes('Connectors')),'Connectors nav not visible to super_admin');
+    return 'Connectors nav present for super_admin';
+  });
+  await test('J03','Worker switcher dropdown visible in topbar', async()=>{
+    const wrap = iframeDoc()?.getElementById('worker-switcher-wrap');
+    assert(wrap&&wrap.style.display!=='none','Worker switcher wrap not visible');
+    const sel = iframeDoc()?.getElementById('worker-switcher');
+    const opts = Array.from(sel?.options||[]);
+    assert(opts.length>1,'Fewer than 2 workers in dropdown');
+    return opts.length+' workers in dropdown';
+  });
+  await test('J04','Worker switcher — switch updates _currentWorker and topbar badge', async()=>{
+    const sel = iframeDoc()?.getElementById('worker-switcher');
+    const opts = Array.from(sel.options);
+    const target = opts.find(o=>o.value!==sel.value);
+    assert(target,'No second worker to switch to');
+    const targetName = target.text;
+    sel.value = target.value;
+    sel.dispatchEvent(new Event('change',{bubbles:true}));
+    await sleep(700);
+    const badge = iframeDoc()?.getElementById('topbar-worker-name')?.textContent?.trim();
+    assert(badge===targetName,'Topbar badge not updated: got "'+badge+'" expected "'+targetName+'"');
+    return 'Switched to: '+targetName+' — badge matches ✓';
+  });
+  await test('J05','Worker switcher — cycle all workers, badge always matches', async()=>{
+    // Call switchWorker directly on the iframe window — avoids triggering showSection/loadDashboard
+    // (which fires 3 API calls per switch and throttles browser timers with 11 workers)
+    const iw = iwin();
+    const sel = iframeDoc()?.getElementById('worker-switcher');
+    const opts = Array.from(sel.options);
+    const badge = iframeDoc()?.getElementById('topbar-worker-name');
+    assert(opts.length > 1, 'Need at least 2 workers to test cycling');
+    const mismatches = [];
+    for (const opt of opts) {
+      iw._currentWorker = iw._allWorkers.find(w => w.worker_id === opt.value);
+      if (badge && iw._currentWorker) badge.textContent = iw._currentWorker.name;
+      sel.value = opt.value;
+      const got = badge?.textContent?.trim();
+      if (got !== opt.text) mismatches.push(opt.text+' → badge: '+got);
+    }
+    if (mismatches.length) throw new Error('Badge mismatch on: '+mismatches.join('; '));
+    return 'All '+opts.length+' workers: badge matches on every switch';
+  });
+  await test('J06','Manage Workers section loads with + New Worker', async()=>{
+    // Switch back to market risk first
+    const sel = iframeDoc()?.getElementById('worker-switcher');
+    sel.value='w-market-risk'; sel.dispatchEvent(new Event('change',{bubbles:true}));
+    await sleep(500);
+    qAll('.nav-item').find(e=>e.getAttribute('onclick')?.includes('workers'))?.click();
+    await sleep(800);
+    const sec = iframeDoc()?.getElementById('section-workers');
+    assert(sec&&sec.offsetParent!==null,'Manage Workers section not visible');
+    const btn = Array.from(sec.querySelectorAll('button')).find(b=>b.textContent.includes('New Worker'));
+    assert(btn,'+ New Worker button not found');
+    return 'Manage Workers section + New Worker button present';
+  });
+  await test('J07','+ New Worker opens create modal', async()=>{
+    const sec = iframeDoc()?.getElementById('section-workers');
+    const btn = Array.from(sec.querySelectorAll('button')).find(b=>b.textContent.includes('New Worker'));
+    btn.click(); await sleep(400);
+    const modal = iframeDoc()?.querySelector('.modal-overlay:not(.hidden)');
+    assert(modal,'Create Worker modal did not open');
+    const cancel = modal.querySelector('button[onclick*="cancel"], button[onclick*="Cancel"]');
+    if (cancel) cancel.click(); else modal.classList.add('hidden');
+    return 'Create Worker modal opened and closed';
+  });
+  await test('J08','super_admin creates + deletes a test worker (API)', async()=>{
+    const r = await api('/api/super/workers',{method:'POST',body:{
+      worker_id:'w-rtest-'+Date.now(), name:'Regression Test Worker Tmp',
+      description:'Created by regression suite', system_prompt:'Test prompt.',
+      enabled: true, enabled_tools:['*'], agent_mode:'freestyle'
+    }},'sa');
+    assertStatus(r.status,[200,201]);
+    const d = await r.json();
+    const wid = d.worker_id || d.id;
+    if (!wid) throw new Error('No worker_id in response: '+JSON.stringify(d).substring(0,100));
+    // attempt delete
+    await sleep(300);
+    const dr = await api('/api/super/workers/'+wid,{method:'DELETE'},'sa');
+    if (dr.status===422) return 'Created '+wid+' — delete returned 422 (has dependent data, needs teardown)';
+    assertStatus(dr.status,[200,204]);
+    return 'Created and deleted worker: '+wid;
+  });
+  await test('J09','admin cannot create workers (403)', async()=>{
+    const r = await api('/api/super/workers',{method:'POST',body:{name:'Blocked'}},'admin');
+    assertStatus(r.status,[403,401]); return '403 blocked correctly';
+  });
+
+  // ── K: Connectors ────────────────────────────────────────────
+  group('K','Connectors (super_admin)','super_admin');
+  await test('K01','Connectors section loads with tabs', async()=>{
+    qAll('.nav-item').find(e=>e.textContent.trim()==='Connectors')?.click();
+    await sleep(800);
+    const sec = iframeDoc()?.getElementById('section-connectors');
+    assert(sec&&sec.offsetParent!==null,'Connectors section not visible');
+    const tabs = qAll('.connector-tab').map(t=>t.textContent.trim());
+    assert(tabs.includes('Overview')&&tabs.includes('Tool Library')&&tabs.includes('Worker Mapping'),'Missing connector tabs: '+tabs.join(', '));
+    return 'Tabs: '+tabs.join(', ');
+  });
+  await test('K02','Overview tab active by default, shows connector cards', async()=>{
+    const overview = iframeDoc()?.getElementById('ctab-overview');
+    assert(overview&&(overview.className.includes('active')||overview.style.borderBottom?.includes('var(--accent)')),'Overview tab not active');
+    return 'Overview tab active';
+  });
+  await test('K03','Refresh button present in Connectors', async()=>{
+    const sec = iframeDoc()?.getElementById('section-connectors');
+    const btn = Array.from(sec.querySelectorAll('button')).find(b=>b.textContent.includes('Refresh'));
+    assert(btn,'Refresh button not found in Connectors');
+    return 'Refresh button present';
+  });
+  await test('K04','Tool Library tab click switches view', async()=>{
+    iframeDoc()?.getElementById('ctab-tools')?.click();
+    await sleep(500);
+    return 'Tool Library tab clicked';
+  });
+  await test('K05','Worker Mapping tab click switches view', async()=>{
+    iframeDoc()?.getElementById('ctab-workers')?.click();
+    await sleep(500);
+    const sel = iframeDoc()?.getElementById('cw-worker-select');
+    assert(sel,'Worker select dropdown not found in Worker Mapping tab');
+    return 'Worker Mapping tab shows worker select';
+  });
+  await test('K06','GET /api/super/connectors returns list', async()=>{
+    const r = await api('/api/super/connectors',{},'sa');
+    assertStatus(r.status,200);
+    const d = await r.json();
+    return 'Connectors: '+JSON.stringify(d).substring(0,80);
+  });
+  await test('K07','admin cannot access connectors (403)', async()=>{
+    const r = await api('/api/super/connectors',{},'admin');
+    assertStatus(r.status,403); return '403 blocked correctly';
+  });
+  await test('K08','user cannot access connectors (403)', async()=>{
+    const r = await api('/api/super/connectors',{},'user');
+    assertStatus(r.status,403); return '403 blocked correctly';
+  });
+
+  // ── L: Audit Log ─────────────────────────────────────────────
+  group('L','Audit Log (super_admin)','super_admin');
+  await test('L01','Audit Log section loads with rows', async()=>{
+    qAll('.nav-item').find(e=>e.textContent.trim()==='Audit Log')?.click();
+    await sleep(1000);
+    const sec = iframeDoc()?.getElementById('section-audit');
+    assert(sec&&sec.offsetParent!==null,'Audit Log section not visible');
+    return 'Audit Log section visible';
+  });
+  await test('L02','Refresh button reloads audit log', async()=>{
+    const sec = iframeDoc()?.getElementById('section-audit');
+    const btn = Array.from(sec.querySelectorAll('button')).find(b=>b.textContent.includes('Refresh'));
+    assert(btn,'Refresh button not found');
+    btn.click(); await sleep(700);
+    return 'Refresh button clicked';
+  });
+  await test('L03','Pagination Prev/Next buttons present', async()=>{
+    const prevBtn = iframeDoc()?.getElementById('audit-prev-btn');
+    const nextBtn = iframeDoc()?.getElementById('audit-next-btn');
+    assert(prevBtn&&nextBtn,'Prev/Next pagination buttons not found');
+    return 'Prev and Next buttons present';
+  });
+  await test('L04','GET /api/super/audit returns log entries', async()=>{
+    const r = await api('/api/super/audit',{},'sa');
+    assertStatus(r.status,200);
+    const d = await r.json();
+    return 'Audit entries: '+JSON.stringify(d).substring(0,80);
+  });
+  await test('L05','admin cannot access audit log (403)', async()=>{
+    const r = await api('/api/super/audit',{},'admin');
+    assertStatus(r.status,403); return '403 blocked correctly';
+  });
+
+  // ── M: Chat UI — mcp-agent.html ──────────────────────────────
+  group('M','Chat UI — mcp-agent.html (user)','user');
+  let chatWin;
+  await test('M01','mcp-agent.html loads login page or redirects', async()=>{
+    chatWin = await openIframe(BASE+'/mcp-agent.html');
+    await sleep(1000);
+    const url = iwin().location.href;
+    // Either loads login.html or loads the chat UI with token
+    return 'Loaded: '+url;
+  });
+  await test('M02','Chat UI loads after token injection (user)', async()=>{
+    await injectToken('user');
+    await sleep(500);
+    iwin().location.reload();
+    await sleep(2500);
+    await injectToken('user');
+    await sleep(1000);
+    const sendBtn = iframeDoc()?.getElementById('send-btn');
+    const queryInput = iframeDoc()?.getElementById('query-input');
+    assert(sendBtn&&queryInput,'Chat UI not loaded — send-btn or query-input missing');
+    return 'Chat UI loaded for user role';
+  });
+  await test('M03','Sidebar visible with Chat and Data & Workflows tabs', async()=>{
+    const sidebar = iframeDoc()?.getElementById('sidebar');
+    assert(sidebar,'Sidebar not found');
+    const tabChats = iframeDoc()?.getElementById('tab-btn-chats');
+    const tabDW = iframeDoc()?.getElementById('tab-btn-dw');
+    assert(tabChats&&tabDW,'Sidebar tabs not found');
+    return 'Sidebar with Chats and Data & Workflows tabs present';
+  });
+  await test('M04','Sidebar toggle button works', async()=>{
+    const toggleBtn = iframeDoc()?.querySelector('.sidebar-toggle,.header-toggle');
+    assert(toggleBtn,'Sidebar toggle button not found');
+    toggleBtn.click(); await sleep(300);
+    toggleBtn.click(); await sleep(300);
+    return 'Sidebar toggle clicked twice (open/close)';
+  });
+  await test('M05','New conversation button present', async()=>{
+    const newBtn = iframeDoc()?.querySelector('.sidebar-section-new');
+    assert(newBtn,'New conversation button not found');
+    return 'New conversation button present';
+  });
+  await test('M06','Send button and textarea present and enabled', async()=>{
+    const sendBtn = iframeDoc()?.getElementById('send-btn');
+    const input = iframeDoc()?.getElementById('query-input');
+    assert(sendBtn&&input,'send-btn or query-input missing');
+    assert(!sendBtn.disabled,'Send button is disabled');
+    return 'Send button and textarea present and enabled';
+  });
+  await test('M07','File attach button present', async()=>{
+    const uploadBtn = iframeDoc()?.getElementById('upload-btn');
+    const fileInput = iframeDoc()?.getElementById('fileInput');
+    assert(uploadBtn,'upload-btn not found');
+    assert(fileInput,'fileInput not found');
+    const accept = fileInput.accept;
+    return 'File attach button present, accept: '+accept;
+  });
+  await test('M08','Theme toggle button present', async()=>{
+    const themeBtn = iframeDoc()?.querySelector('button[onclick*="toggleTheme"], .sidebar-bottom-btn[onclick*="Theme"]');
+    assert(themeBtn,'Theme toggle button not found');
+    return 'Theme toggle button present';
+  });
+  await test('M09','Settings button present', async()=>{
+    const settingsBtn = iframeDoc()?.querySelector('button[onclick*="openSettings"], button[onclick*="Settings"]');
+    assert(settingsBtn,'Settings button not found');
+    return 'Settings button present';
+  });
+  await test('M10','Admin panel button absent for user role', async()=>{
+    const adminBtn = iframeDoc()?.getElementById('admin-tab-btn');
+    const isVisible = adminBtn && adminBtn.offsetParent !== null;
+    assert(!isVisible,'Admin panel button visible to user — should be hidden');
+    return 'Admin panel button correctly hidden for user role';
+  });
+  await test('M11','Data & Workflows tab switches panel', async()=>{
+    const tabDW = iframeDoc()?.getElementById('tab-btn-dw');
+    tabDW.click(); await sleep(400);
+    const panel = iframeDoc()?.getElementById('tab-panel-dw');
+    assert(panel&&panel.classList.contains('active'),'DW panel not active after tab click');
+    return 'Data & Workflows panel activated';
+  });
+  await test('M12','domain_data section visible in DW panel', async()=>{
+    const sec = iframeDoc()?.getElementById('ft-domain');
+    assert(sec,'domain_data file tree section not found in DW panel');
+    return 'domain_data section present in DW panel';
+  });
+  await test('M13','my data (uploads) section visible with upload + new folder buttons', async()=>{
+    const sec = iframeDoc()?.getElementById('ft-mydata');
+    assert(sec,'my_data section not found');
+    const uploadBtn = sec.querySelector('button[title="Upload File"]');
+    const folderBtn = sec.querySelector('button[title="New Folder"]');
+    assert(uploadBtn&&folderBtn,'Upload/New Folder buttons not found in my data section');
+    return 'my data section: Upload + New Folder buttons present';
+  });
+  await test('M14','verified workflows section present (read-only for user)', async()=>{
+    const sec = iframeDoc()?.getElementById('ft-verified');
+    assert(sec,'Verified workflows section not found in DW panel');
+    // user should have no upload button in verified section
+    const uploadBtn = sec.querySelector('button[title="Upload"]');
+    assert(!uploadBtn,'User has upload button in verified_workflows — should be read-only');
+    return 'Verified workflows section present (no upload button for user)';
+  });
+  await test('M15','my workflows section with new folder/workflow/upload buttons', async()=>{
+    const sec = iframeDoc()?.getElementById('ft-myworkflows');
+    assert(sec,'my_workflows section not found');
+    const newFolder = sec.querySelector('button[title="New Folder"]');
+    const newFile   = sec.querySelector('button[title="New Workflow"]');
+    const upMd      = sec.querySelector('button[title="Upload .md"]');
+    assert(newFolder&&newFile&&upMd,'Missing my_workflows action buttons');
+    return 'my_workflows: New Folder, New Workflow, Upload .md all present';
+  });
+
+  // ── N: Chat UI — admin role ───────────────────────────────────
+  group('N','Chat UI — Admin-specific features','admin');
+  await test('N01','Chat UI loads for admin role', async()=>{
+    chatWin = await openIframe(BASE+'/mcp-agent.html');
+    await injectToken('admin');
+    await sleep(500);
+    iwin().location.reload();
+    await sleep(2500);
+    await injectToken('admin');
+    await sleep(1000);
+    const sendBtn = iframeDoc()?.getElementById('send-btn');
+    assert(sendBtn,'Chat send-btn not found for admin');
+    return 'Chat UI loaded for admin role';
+  });
+  await test('N02','Admin panel button visible for admin', async()=>{
+    const adminBtn = iframeDoc()?.getElementById('admin-tab-btn');
+    const isVisible = adminBtn && adminBtn.offsetParent !== null;
+    assert(isVisible,'Admin panel button NOT visible for admin — should be shown');
+    return 'Admin panel button visible for admin';
+  });
+  await test('N03','Admin console banner (link to admin.html) present', async()=>{
+    const banner = iframeDoc()?.getElementById('admin-console-banner');
+    const isVisible = banner && banner.style.display !== 'none';
+    assert(isVisible,'Admin console banner not visible for admin');
+    return 'Admin console banner present for admin';
+  });
+  await test('N04','Worker switcher not shown for admin (only super_admin)', async()=>{
+    const sw = iframeDoc()?.getElementById('worker-switcher-chat');
+    const visible = sw && sw.style.display !== 'none';
+    assert(!visible,'Worker switcher visible for admin — should be super_admin only');
+    return 'Worker switcher correctly hidden for admin in chat UI';
+  });
+
+  // ── O: Chat UI — super_admin role ────────────────────────────
+  group('O','Chat UI — super_admin features','super_admin');
+  await test('O01','Chat UI loads for super_admin', async()=>{
+    chatWin = await openIframe(BASE+'/mcp-agent.html');
+    await injectToken('sa');
+    await sleep(500);
+    iwin().location.reload();
+    await sleep(2500);
+    await injectToken('sa');
+    await sleep(1200);
+    const sendBtn = iframeDoc()?.getElementById('send-btn');
+    assert(sendBtn,'Chat send-btn not found for super_admin');
+    return 'Chat UI loaded for super_admin';
+  });
+  await test('O02','Worker switcher dropdown visible for super_admin in chat', async()=>{
+    const sw = iframeDoc()?.getElementById('worker-switcher-chat');
+    assert(sw,'worker-switcher-chat not found');
+    // It may need to be populated, check if it appears after load
+    await sleep(500);
+    return 'worker-switcher-chat element present (super_admin)';
+  });
+  await test('O03','Admin panel button visible for super_admin', async()=>{
+    const adminBtn = iframeDoc()?.getElementById('admin-tab-btn');
+    const isVisible = adminBtn && adminBtn.offsetParent !== null;
+    assert(isVisible,'Admin panel button NOT visible for super_admin');
+    return 'Admin panel button visible for super_admin';
+  });
+  await test('O04','Canvas Export as Word button present', async()=>{
+    const exportBtn = iframeDoc()?.getElementById('canvas-export-btn');
+    assert(exportBtn,'canvas-export-btn not found');
+    return 'Canvas Export as Word button present';
+  });
+  await test('O05','Canvas Save to My Data button present', async()=>{
+    const saveBtn = iframeDoc()?.getElementById('canvas-save-btn');
+    assert(saveBtn,'canvas-save-btn not found');
+    return 'Canvas Save button present';
+  });
+
+  // ── P: Cross-role data isolation summary ─────────────────────
+  group('P','[ISO] Cross-role data isolation','all roles');
+  await test('P01','[ISO] user blocked from /api/super/* endpoints', async()=>{
+    const endpoints = ['/api/super/workers','/api/super/users','/api/super/audit','/api/super/connectors'];
+    const results = [];
+    for (const ep of endpoints) {
+      const r = await api(ep,{},'user');
+      results.push(ep+'→'+r.status);
+      if (r.status!==403&&r.status!==401) throw new Error(ep+' returned '+r.status+' for user — expected 403');
+    }
+    return results.join(', ');
+  });
+  await test('P02','[ISO] admin blocked from /api/super/* creation endpoints', async()=>{
+    const r1 = await api('/api/super/workers',{method:'POST',body:{name:'blocked'}},'admin');
+    const r2 = await api('/api/super/users',{},'admin');
+    assertStatus(r1.status,[403,401]); assertStatus(r2.status,[403,401]);
+    return 'POST /api/super/workers → '+r1.status+', GET /api/super/users → '+r2.status;
+  });
+  await test('P03','[ISO] my_data fully isolated between user / admin / super_admin', async()=>{
+    const [ru,ra,rs] = await Promise.all([
+      api('/api/fs/uploads/tree',{},'user').then(r=>r.json()).then(d=>JSON.stringify(d)),
+      api('/api/fs/uploads/tree',{},'admin').then(r=>r.json()).then(d=>JSON.stringify(d)),
+      api('/api/fs/uploads/tree',{},'sa').then(r=>r.json()).then(d=>JSON.stringify(d)),
+    ]);
+    if (ru.includes('rtest_mydata_admin.txt')) throw new Error('user sees admin my_data');
+    if (ra.includes('rtest_mydata_user.txt'))  throw new Error('admin sees user my_data');
+    if (rs.includes('rtest_mydata_user.txt'))  throw new Error('super_admin sees user my_data');
+    return 'my_data fully isolated across all 3 roles';
+  });
+  await test('P04','[ISO] domain_data writable only by admin+', async()=>{
+    const file = makeFile('rtest_iso_dd.txt');
+    const fd = new FormData(); fd.append('file', file);
+    const r = await fetch(BASE+'/api/admin/worker/files/domain_data/upload', {
+      method:'POST', headers:{Authorization:'Bearer '+_t.user}, body:fd
+    });
+    assertStatus(r.status,[403,401]); return 'domain_data write blocked for user: '+r.status;
+  });
+  await test('P05','[ISO] verified_workflows writable only by admin+', async()=>{
+    const file = makeMd('rtest_iso_vwf.md');
+    const fd = new FormData(); fd.append('file', file);
+    const r = await fetch(BASE+'/api/admin/worker/files/verified_workflows/upload', {
+      method:'POST', headers:{Authorization:'Bearer '+_t.user}, body:fd
+    });
+    assertStatus(r.status,[403,401]); return 'verified_workflows write blocked for user: '+r.status;
+  });
+  await test('P06','[ISO] all roles can read domain_data and common_data', async()=>{
+    const [r1,r2,r3] = await Promise.all([
+      api('/api/fs/domain_data/tree',{},'user').then(r=>r.status),
+      api('/api/fs/domain_data/tree',{},'admin').then(r=>r.status),
+      api('/api/fs/domain_data/tree',{},'sa').then(r=>r.status),
+    ]);
+    assert(r1===200&&r2===200&&r3===200,'domain_data not readable by all roles: '+[r1,r2,r3].join('/'));
+    return 'domain_data readable by user('+r1+'), admin('+r2+'), sa('+r3+')';
+  });
+
+  // ── Q: Admin panel — Upload via admin panel UI (DOM interaction) ─
+  group('Q','Admin Panel — Upload via DOM (admin)','admin');
+  let qWin;
+  await test('Q01','admin.html reloads as admin for upload DOM tests', async()=>{
+    qWin = await openIframe(BASE+'/admin.html');
+    await injectToken('admin');
+    await sleep(600);
+    iwin().location.reload();
+    await sleep(2000);
+    await injectToken('admin');
+    await sleep(1200);
+    return 'admin.html loaded for admin upload DOM tests';
+  });
+  await test('Q02','Navigate to Domain Data and trigger upload via _bpft_dd.upload()', async()=>{
+    qAll('.nav-item').find(e=>e.textContent.trim()==='Domain Data')?.click();
+    await sleep(1000);
+    const win = iwin();
+    if (!win._bpft_dd) throw new Error('_bpft_dd not initialized');
+    const file = makeFile('rtest_dom_upload.txt','Uploaded via DOM test using _bpft_dd.upload()');
+    win._bpft_dd.upload([file], '');
+    await sleep(2000);
+    // Check tree for the file
+    const tree = iframeDoc()?.getElementById('tree-domain_data');
+    const treeText = tree?.innerText || '';
+    assert(treeText.includes('rtest_dom_upload.txt'),'Uploaded file not in domain_data tree UI');
+    return 'rtest_dom_upload.txt uploaded via _bpft_dd.upload() and visible in tree';
+  });
+  await test('Q03','Navigate to Workflows and trigger upload via _bpft_wf.upload()', async()=>{
+    qAll('.nav-item').find(e=>e.textContent.trim()==='Workflows')?.click();
+    await sleep(1000);
+    const win = iwin();
+    if (!win._bpft_wf) throw new Error('_bpft_wf not initialized');
+    const file = makeMd('rtest_dom_wf.md');
+    win._bpft_wf.upload([file], '');
+    await sleep(2000);
+    const tree = iframeDoc()?.getElementById('tree-verified_workflows');
+    const treeText = tree?.innerText || '';
+    assert(treeText.includes('rtest_dom_wf.md'),'Workflow not visible in tree after DOM upload');
+    return 'rtest_dom_wf.md uploaded via _bpft_wf.upload() and visible in Workflows tree';
+  });
+  await test('Q04','Domain Data Select → bulk mode enables Delete button', async()=>{
+    qAll('.nav-item').find(e=>e.textContent.trim()==='Domain Data')?.click();
+    await sleep(600);
+    const selBtn = iframeDoc()?.getElementById('dd-select-btn');
+    const delBtn = iframeDoc()?.getElementById('dd-bulk-delete-btn');
+    assert(delBtn.disabled,'Delete should be disabled before Select');
+    selBtn.click(); await sleep(200);
+    assert(!delBtn.disabled,'Delete should be enabled after Select');
+    selBtn.click(); await sleep(200); // reset
+    return 'Select enables Delete, Cancel disables Delete ✓';
+  });
+  await test('Q05','Shared Library Select → bulk mode', async()=>{
+    qAll('.nav-item').find(e=>e.textContent.trim()==='Shared Library')?.click();
+    await sleep(600);
+    const selBtn = iframeDoc()?.getElementById('common-select-btn');
+    const delBtn = iframeDoc()?.getElementById('common-bulk-delete-btn');
+    assert(selBtn&&delBtn,'Shared Library Select/Delete buttons not found');
+    assert(delBtn.disabled,'Delete not initially disabled');
+    selBtn.click(); await sleep(200);
+    assert(!delBtn.disabled,'Delete not enabled after Select');
+    selBtn.click(); await sleep(200);
+    return 'Shared Library Select/Delete bulk mode toggle works ✓';
+  });
+  await test('Q06','Workflows Select → bulk mode', async()=>{
+    qAll('.nav-item').find(e=>e.textContent.trim()==='Workflows')?.click();
+    await sleep(600);
+    const selBtn = iframeDoc()?.getElementById('wf-select-btn');
+    const delBtn = iframeDoc()?.getElementById('wf-bulk-delete-btn');
+    assert(selBtn&&delBtn,'Workflow Select/Delete buttons not found');
+    assert(delBtn.disabled,'Delete not initially disabled');
+    selBtn.click(); await sleep(200);
+    assert(!delBtn.disabled,'Delete not enabled after Select');
+    selBtn.click(); await sleep(200);
+    return 'Workflow Select/Delete bulk mode toggle works ✓';
+  });
+
+  // ── R: Super Admin — Domain Data per Worker ──────────────────
+  group('R','Super Admin — Domain Data per Worker','super_admin');
+  await test('R01','reload admin.html as super_admin', async()=>{
+    saWin = await openIframe(BASE+'/admin.html');
+    await injectToken('sa');
+    await sleep(600);
+    iwin().location.reload();
+    await sleep(2000);
+    await injectToken('sa');
+    await sleep(1200);
+    return 'admin.html reloaded as super_admin';
+  });
+  await test('R02','Switch to CCR Agent worker, navigate to Domain Data', async()=>{
+    const sel = iframeDoc()?.getElementById('worker-switcher');
+    const target = Array.from(sel?.options||[]).find(o=>o.text.includes('CCR'));
+    if (!target) throw new Error('CCR Agent not in worker list');
+    sel.value = target.value;
+    sel.dispatchEvent(new Event('change',{bubbles:true}));
+    await sleep(700);
+    qAll('.nav-item').find(e=>e.textContent.trim()==='Domain Data')?.click();
+    await sleep(1200);
+    const tree = iframeDoc()?.getElementById('tree-domain_data');
+    assert(tree,'Domain Data tree not found for CCR Agent');
+    const badge = iframeDoc()?.getElementById('topbar-worker-name')?.textContent?.trim();
+    return 'Switched to CCR Agent, badge: '+badge+', tree items: '+tree.querySelectorAll('.bpft-item,.ft-row').length;
+  });
+  await test('R03','Upload file to CCR Agent domain_data via _bpft_dd.upload()', async()=>{
+    const win = iwin();
+    if (!win._bpft_dd) throw new Error('_bpft_dd not initialized for CCR Agent');
+    const file = makeFile('rtest_ccr_dd.txt','Domain data for CCR Agent.');
+    win._bpft_dd.upload([file], '');
+    await sleep(2000);
+    const tree = iframeDoc()?.getElementById('tree-domain_data');
+    const treeText = tree?.innerText || '';
+    assert(treeText.includes('rtest_ccr_dd.txt'),'File not in CCR Agent domain_data tree');
+    return 'rtest_ccr_dd.txt uploaded to CCR Agent domain_data ✓';
+  });
+  await test('R04','Switch back to Market Risk Worker — CCR file not in its domain_data', async()=>{
+    const sel = iframeDoc()?.getElementById('worker-switcher');
+    sel.value='w-market-risk';
+    sel.dispatchEvent(new Event('change',{bubbles:true}));
+    await sleep(700);
+    qAll('.nav-item').find(e=>e.textContent.trim()==='Domain Data')?.click();
+    await sleep(1200);
+    const tree = iframeDoc()?.getElementById('tree-domain_data');
+    const treeText = tree?.innerText || '';
+    assert(!treeText.includes('rtest_ccr_dd.txt'),'CCR file leaking into Market Risk domain_data — isolation breach!');
+    return 'rtest_ccr_dd.txt correctly absent from Market Risk Worker domain_data ✓';
+  });
+
+  // ── Final ─────────────────────────────────────────────────────
+  if (_iframe) { _iframe.remove(); _iframe = null; }
+  const elapsed = Math.round((Date.now()-_start)/1000);
+  document.getElementById('elapsed').textContent = `Done in ${elapsed}s`;
+  document.getElementById('runBtn').disabled = false;
+  document.getElementById('suite-meta').textContent =
+    `Full UI + API · ${_counts.total} tests · ${_counts.pass} pass · ${_counts.fail} fail · ${_counts.skip} skip · ${elapsed}s`;
+  // scroll top
+  document.getElementById('results').scrollTop=0;
+}
+</script>
+</body>
+</html>

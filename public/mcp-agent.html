@@ -3405,7 +3405,6 @@
     var COST_PER_M_INPUT  = 3.00;
     var COST_PER_M_OUTPUT = 15.00;
     var API_URL = window.MCP_API_URL || 'http://localhost:8000/api/agent/run';
-    var FRONTEND_API_KEY = ''; // deprecated — JWT used instead
 
     var _threadId      = null;
     var _activeReader  = null;
@@ -5230,6 +5229,7 @@
         headers: reqHeaders,
         body: body
       }).then(function(res) {
+        if (_handleUnauth(res)) { setRunningState(false); return; }
         if (!res.ok) throw new Error('Server error: ' + res.status);
         readSSEStream(res);
       }).catch(function(err) {
@@ -6015,6 +6015,7 @@
         headers: headers,
         body: fd
       }).then(function(r) {
+        if (_handleUnauth(r)) return;
         if (!r.ok) throw new Error('HTTP ' + r.status);
         showToast('Saved to uploads/canvas/' + filename, 3000);
         ftLoad('uploads');
@@ -6866,6 +6867,16 @@
       window.location.href = 'login.html';
     }
 
+    function _handleUnauth(res) {
+      if (res && (res.status === 401 || res.status === 403)) {
+        sessionStorage.removeItem('rg_token');
+        sessionStorage.removeItem('rg_user');
+        window.location.replace('login.html');
+        return true;
+      }
+      return false;
+    }
+
     var _authUser = null;
     var _activeWorkerId = null;
 
@@ -6992,7 +7003,7 @@
           var agentBase = window.AGENT_BASE_URL || 'http://localhost:8000';
           try {
             var headers = {};
-            var _uploadTok = sessionStorage.getItem('rg_token') || FRONTEND_API_KEY;
+            var _uploadTok = sessionStorage.getItem('rg_token');
             if (_uploadTok) {
               headers['Authorization'] = 'Bearer ' + _uploadTok;
             }
@@ -7029,7 +7040,7 @@
           reader.onload = function(ev) {
             var content = ev.target.result;
             var headers = { 'Content-Type': 'application/json' };
-            var tok = sessionStorage.getItem('rg_token') || FRONTEND_API_KEY;
+            var tok = sessionStorage.getItem('rg_token');
             if (tok) headers['Authorization'] = 'Bearer ' + tok;
             fetch(_agentBase + '/api/workflows', {
               method: 'POST',
