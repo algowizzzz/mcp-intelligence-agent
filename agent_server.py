@@ -2122,17 +2122,42 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
                 return None
 
             envelope = None
-            _fence_match = _re.search(r'```(?:json)?\s*(\{[\s\S]*\})\s*```', assembled)
+            # 1. JSON inside ```json ... ``` fence
+            _fence_match = _re.search(r'```(?:json)?\s*(\{[\s\S]*?\})\s*```', assembled)
             if _fence_match:
                 envelope = _try_parse_envelope(_fence_match.group(1).strip())
+            # 2. Whole response is a bare JSON object
             if not envelope and assembled.startswith('{'):
                 envelope = _try_parse_envelope(assembled)
+            # 3. JSON embedded anywhere in the text — scan every '{' position
             if not envelope:
-                _json_start = assembled.find('{\n  "summary"')
-                if _json_start == -1:
-                    _json_start = assembled.find('{"summary"')
-                if _json_start != -1:
-                    envelope = _try_parse_envelope(assembled[_json_start:])
+                pos = 0
+                while pos < len(assembled):
+                    idx = assembled.find('{', pos)
+                    if idx == -1:
+                        break
+                    # Quick pre-check before expensive parse
+                    chunk = assembled[idx:]
+                    if '"summary"' in chunk and '"canvas"' in chunk:
+                        envelope = _try_parse_envelope(chunk)
+                        if envelope:
+                            break
+                    pos = idx + 1
+
+            # 4. [CANVAS] marker pattern: text before marker goes to chat, rest to canvas
+            if not envelope:
+                _marker = assembled.find('[CANVAS]')
+                if _marker != -1:
+                    _end_marker = assembled.find('[/CANVAS]', _marker)
+                    _canvas_content = assembled[_marker+8: _end_marker if _end_marker != -1 else None].strip()
+                    _summary = assembled[:_marker].strip()
+                    # Extract title from first # heading in canvas content, or use default
+                    _title_match = _re.match(r'^#{1,3}\s*(.+)', _canvas_content)
+                    _canvas_title = _title_match.group(1).strip() if _title_match else 'Document'
+                    envelope = {
+                        'summary': _summary,
+                        'canvas': {'title': _canvas_title, 'content': _canvas_content, 'type': 'report'}
+                    }
 
             if envelope:
                 canvas = envelope['canvas']
