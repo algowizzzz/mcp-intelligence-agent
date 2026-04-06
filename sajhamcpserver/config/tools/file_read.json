@@ -1,0 +1,6 @@
+{
+  "name": "file_read",
+  "description": "Read the full content of a text-based file (markdown, txt, csv, json, xml, yaml, html, etc.) from domain_data, my_data, or common (shared library). Returns the file content as a string. Use section='domain_data' for domain knowledge files, section='my_data' for user-uploaded files, section='common' for shared library files.",
+  "implementation": "sajha.tools.impl.file_read_tool.FileReadTool",
+  "enabled": true
+}
