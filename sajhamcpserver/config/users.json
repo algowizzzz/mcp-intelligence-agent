@@ -22,14 +22,14 @@
       "user_name": "Administrator",
       "display_name": "Admin User",
       "avatar_initials": "AU",
-      "password_hash": "$2b$12$8pxK8PcrBBsZhred2Sh7EuZiNWUfcJ43OIQl8/SrXbnmPHM2k.kj2",
+      "password_hash": "$2b$12$gt3F.NXhGp5uRNKLqSfx/OBU7XR77Oq.eDPBpP2J8W14PLNdSk5n.",
       "role": "admin",
       "worker_id": "w-market-risk",
       "tools": [
         "*"
       ],
       "enabled": true,
-      "onboarding_complete": true,
+      "onboarding_complete": false,
       "email": "admin@example.com",
       "created_at": "2025-10-26T18:45:05.776412Z",
       "last_login": "2026-04-03T11:56:40.044510Z"
@@ -39,14 +39,14 @@
       "user_name": "Test User",
       "display_name": "Test User",
       "avatar_initials": "TU",
-      "password_hash": "$2b$12$RZLcAgjGY.c3YMXRUnVH/.FuJ0n9w4IGMyi8ugPxUguxHS7apsHJa",
+      "password_hash": "$2b$12$BpgCsVwehdj7kwJgzm4fnuqzybZ/TFBxmzD5VI.pYFn3Lov35DqUq",
       "role": "user",
       "worker_id": "w-market-risk",
       "tools": [
         "*"
       ],
       "enabled": true,
-      "onboarding_complete": true,
+      "onboarding_complete": false,
       "email": "",
       "created_at": "2026-04-03T14:27:47.786907Z",
       "last_login": "2026-04-03T11:56:40.055296Z"
@@ -194,6 +194,40 @@
       "onboarding_complete": false,
       "email": "",
       "created_at": "2026-04-06T15:20:40.731898Z",
+      "last_login": null
+    },
+    {
+      "user_id": "erpm_admin",
+      "user_name": "ERPM Admin",
+      "display_name": "ERPM Admin",
+      "avatar_initials": "EA",
+      "password_hash": "$2b$12$.Kyq7qqyYQrIN3/E9CMWK.2QoGOkUU/yFxHABR4gVK27GqZTa5CqG",
+      "role": "admin",
+      "worker_id": "w-31de0e7d",
+      "tools": [
+        "*"
+      ],
+      "enabled": true,
+      "onboarding_complete": true,
+      "email": "",
+      "created_at": "2026-04-06T17:59:23.963379Z",
+      "last_login": null
+    },
+    {
+      "user_id": "erpm_user",
+      "user_name": "ERPM User",
+      "display_name": "ERPM User",
+      "avatar_initials": "EU",
+      "password_hash": "$2b$12$BKEhZR/tilaMJEr9b1yy2eBPsPX4z2qKhyt/E3mDnd7UoD6qn3mxi",
+      "role": "user",
+      "worker_id": "w-31de0e7d",
+      "tools": [
+        "*"
+      ],
+      "enabled": true,
+      "onboarding_complete": true,
+      "email": "",
+      "created_at": "2026-04-06T17:59:28.037722Z",
       "last_login": null
     }
   ]

@@ -1,10 +1,12 @@
 # Claude Code Handoff — Market Risk Digital Worker Connectors
 
 ## Context
-The goal is making all four connectors live for the Market Risk Digital Worker:
+The goal is making all four connectors live for the Market Risk Digital Worker (a.k.a. w-market-risk):
 **Teams (T2/T3), Outlook (T4), Jira (T5), Confluence (pending)**
 
 **Standing rule**: All connector tests must be run via direct SAJHA API calls — no LLM calls.
+
+**Note:** This document describes work completed through 2026-04-05. Teams RSC v1.0.1 and Outlook license provisioning are confirmed complete.
 
 ---
 
@@ -26,11 +28,11 @@ The goal is making all four connectors live for the Market Risk Digital Worker:
 
 | ID | Tool | Status | Notes |
 |----|------|--------|-------|
-| T2 | `teams_list_channels` | ✅ Was passing | Read-only, `Channel.ReadBasic.All` granted |
-| T3 | `teams_send_message` | ✅ RSC installed — ready to verify | v1.0.1 installed in B-Pulse Alerts; `ChannelMessage.Send.Group` RSC granted |
-| T4 | `outlook_read_email` | 🔲 Ready to test | Exchange Online mailbox now provisioned |
-| T5 | `jira_list_projects` / `jira_search_issues` | ✅ Was passing | Atlassian token configured |
-| T6 | confluence tools | ❌ Not set up | See below |
+| T2 | `teams_list_channels` | ✅ PASS | Read-only, `Channel.ReadBasic.All` granted via v1.0.1 |
+| T3 | `teams_send_message` | ✅ Ready — v1.0.1 complete | v1.0.1 installed in B-Pulse Alerts; RSC `ChannelMessage.Send.Group` active |
+| T4 | `outlook_read_email` / `outlook_send_email` | ✅ Ready — license provisioned | Exchange Online mailbox provisioned; `Mail.Read` / `Mail.ReadWrite` / `Mail.Send` granted; `outlook_user_email` in worker scope |
+| T5 | `jira_list_projects` / `jira_search_issues` | ✅ PASS | Atlassian token configured; project MRISK board 35 active |
+| T6 | confluence tools | 🔲 Pending setup | Space key and page ID not yet configured in workers.json |
 
 ---
 

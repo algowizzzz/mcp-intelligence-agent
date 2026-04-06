@@ -170,8 +170,7 @@ def _seed_worker_folders(worker_id: str):
     """Create the full scoped folder tree for a new worker (G-07)."""
     base = pathlib.Path(f'sajhamcpserver/data/workers/{worker_id}')
     for sub in [
-        'domain_data/iris', 'domain_data/counterparties', 'domain_data/market_data',
-        'domain_data/uploads', 'domain_data/analytics',
+        'domain_data',
         'workflows/verified', 'workflows/my',
         'templates', 'my_data',
     ]:
@@ -315,8 +314,11 @@ def _resolve_admin_path(section: str, rel: str = '') -> pathlib.Path:
 def _admin_section_roots_for_worker(worker: dict) -> dict:
     """Return admin-accessible section roots scoped to a worker's paths (REQ-WF-03).
 
-    Only exposes sections that admin/super-admin may browse and mutate.
-    my_data is intentionally excluded (user-owned, REQ-MD-01).
+    Includes section aliases so the super-admin chat worker-switcher can route
+    all left-sidebar tree sections through /api/super/workers/{id}/files/{section}:
+      verified   → workflows_path  (alias for verified_workflows)
+      uploads    → my_data_path    (alias for my_data; worker-wide, not user-scoped)
+      my_data    → my_data_path    (canonical)
     common is writable by admin+ and read-only for users (REQ-10).
     """
     base = pathlib.Path('sajhamcpserver')
@@ -324,7 +326,16 @@ def _admin_section_roots_for_worker(worker: dict) -> dict:
     wf     = base / worker.get('workflows_path',     './data/workflows/verified').lstrip('./')
     mywf   = base / worker.get('my_workflows_path',  './data/workflows/my').lstrip('./')
     common = base / worker.get('common_data_path',   './data/common').lstrip('./')
-    return {'domain_data': dd, 'verified_workflows': wf, 'my_workflows': mywf, 'common': common}
+    mydata = base / worker.get('my_data_path',       './data/uploads').lstrip('./')
+    return {
+        'domain_data': dd,
+        'verified_workflows': wf,
+        'verified': wf,          # alias used by chat left-panel section name
+        'my_workflows': mywf,
+        'common': common,
+        'my_data': mydata,       # full worker my_data tree (not user-scoped)
+        'uploads': mydata,       # alias used by chat left-panel section name
+    }
 
 
 def _resolve_admin_path_for_worker(worker: dict, section: str, rel: str = '') -> pathlib.Path:
@@ -1164,7 +1175,7 @@ async def admin_delete_worker_user(user_id: str, payload: dict = Depends(require
 
 # ── File upload ────────────────────────────────────────────────────────────────
 
-_UPLOAD_ALLOWED_EXT = {'pdf', 'docx', 'xlsx', 'csv', 'txt', 'parquet', 'md', 'json', 'png', 'jpg', 'jpeg'}
+_UPLOAD_ALLOWED_EXT = {'pdf', 'docx', 'xlsx', 'csv', 'txt', 'parquet', 'md', 'json', 'png', 'jpg', 'jpeg', 'py'}
 _UPLOAD_MAX_MB = 50
 _UPLOAD_CHUNK_SIZE = 65536        # 64 KB streaming chunk (REQ-11)
 _UPLOAD_MAX_BYTES  = 50 * 1024 * 1024  # 50 MB hard limit (REQ-11)
@@ -2049,6 +2060,10 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
             inp = ({'messages': [{'role': 'user', 'content': req.query}]}
                    if not req.resume else {'resume': req.resume})
             full_text = []
+            _canvas_streaming = False
+            _canvas_buf = ''
+            _canvas_title = 'Report'
+            _text_pending = ''
             from agent.middlewares.token_budget import BudgetExceededError
             async for event in agent_instance.astream_events(inp, config=config, version='v2'):
                 # Drain sub-agent SSE events accumulated during this iteration
@@ -2060,17 +2075,51 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
                     chunk = event['data']['chunk']
                     if hasattr(chunk, 'content'):
                         content = chunk.content
+                        raw_chunks = []
                         if isinstance(content, str) and content:
-                            full_text.append(content)
-                            yield f"data: {json.dumps({'type': 'text', 'text': content})}\n\n"
+                            raw_chunks = [content]
                         elif isinstance(content, list):
                             for block in content:
                                 if isinstance(block, dict) and block.get('type') == 'text' and block.get('text'):
-                                    full_text.append(block['text'])
-                                    yield f"data: {json.dumps({'type': 'text', 'text': block['text']})}\n\n"
+                                    raw_chunks.append(block['text'])
                                 elif hasattr(block, 'text') and block.text:
-                                    full_text.append(block.text)
-                                    yield f"data: {json.dumps({'type': 'text', 'text': block.text})}\n\n"
+                                    raw_chunks.append(block.text)
+                        for _rc in raw_chunks:
+                            full_text.append(_rc)
+                            if _canvas_streaming:
+                                _canvas_buf += _rc
+                                yield f"data: {json.dumps({'type': 'canvas_stream_chunk', 'text': _rc})}\n\n"
+                            else:
+                                _text_pending += _rc
+                                marker = _text_pending.find('[CANVAS]')
+                                if marker >= 0:
+                                    # Flush text before marker to chat
+                                    before = _text_pending[:marker]
+                                    if before:
+                                        yield f"data: {json.dumps({'type': 'text', 'text': before})}\n\n"
+                                    rest = _text_pending[marker + 8:]
+                                    nl = rest.find('\n')
+                                    if nl >= 0:
+                                        _canvas_title = rest[:nl].strip() or 'Report'
+                                        after_title = rest[nl + 1:]
+                                        _canvas_streaming = True
+                                        yield f"data: {json.dumps({'type': 'canvas_stream_start', 'title': _canvas_title})}\n\n"
+                                        if after_title:
+                                            _canvas_buf = after_title
+                                            yield f"data: {json.dumps({'type': 'canvas_stream_chunk', 'text': after_title})}\n\n"
+                                        else:
+                                            _canvas_buf = ''
+                                        _text_pending = ''
+                                    else:
+                                        # Title not yet complete — keep buffered
+                                        _text_pending = '[CANVAS]' + rest
+                                else:
+                                    # Flush all but last 8 chars (marker boundary guard)
+                                    safe_end = max(0, len(_text_pending) - 8)
+                                    if safe_end > 0:
+                                        safe = _text_pending[:safe_end]
+                                        yield f"data: {json.dumps({'type': 'text', 'text': safe})}\n\n"
+                                        _text_pending = _text_pending[safe_end:]
                 elif t == 'on_tool_start':
                     yield f"data: {json.dumps({'type': 'tool_start', 'name': event['name'], 'input': event['data'].get('input', {}), 'run_id': event['run_id']})}\n\n"
                 elif t == 'on_tool_end':
@@ -2110,6 +2159,13 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
                     if usage:
                         yield f"data: {json.dumps({'type': 'usage', 'usage': usage})}\n\n"
             import json as _json, re as _re
+            # Flush any remaining look-ahead buffer
+            if _text_pending and not _canvas_streaming:
+                yield f"data: {json.dumps({'type': 'text', 'text': _text_pending})}\n\n"
+            # Emit canvas_stream_end if we were streaming to canvas
+            if _canvas_streaming:
+                yield f"data: {_json.dumps({'type': 'canvas_stream_end', 'title': _canvas_title, 'content': _canvas_buf})}\n\n"
+
             assembled = ''.join(full_text).strip()
 
             def _try_parse_envelope(s):
@@ -2136,12 +2192,23 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
                     idx = assembled.find('{', pos)
                     if idx == -1:
                         break
-                    # Quick pre-check before expensive parse
-                    chunk = assembled[idx:]
-                    if '"summary"' in chunk and '"canvas"' in chunk:
-                        envelope = _try_parse_envelope(chunk)
-                        if envelope:
-                            break
+                    tail = assembled[idx:]
+                    if '"summary"' in tail and '"canvas"' in tail:
+                        # Brace-match to extract exactly the JSON object (no trailing text)
+                        _depth = 0
+                        _end = -1
+                        for _ci, _ch in enumerate(tail):
+                            if _ch == '{':
+                                _depth += 1
+                            elif _ch == '}':
+                                _depth -= 1
+                                if _depth == 0:
+                                    _end = _ci
+                                    break
+                        if _end >= 0:
+                            envelope = _try_parse_envelope(tail[:_end + 1])
+                            if envelope:
+                                break
                     pos = idx + 1
 
             # 4. [CANVAS] marker pattern: text before marker goes to chat, rest to canvas
@@ -2159,7 +2226,7 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
                         'canvas': {'title': _canvas_title, 'content': _canvas_content, 'type': 'report'}
                     }
 
-            if envelope:
+            if envelope and not _canvas_streaming:
                 canvas = envelope['canvas']
                 yield f"data: {_json.dumps({'type': 'replace_text', 'text': envelope.get('summary', '')})}\n\n"
                 yield f"data: {_json.dumps({'type': 'canvas', 'title': canvas.get('title','Document'), 'content': canvas.get('content',''), 'canvas_type': canvas.get('type','report')})}\n\n"

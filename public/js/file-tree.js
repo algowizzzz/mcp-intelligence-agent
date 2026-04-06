@@ -26,6 +26,58 @@
   var _FILE_SVG   = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#aaaaaa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>';
   var _CHEVRON_SVG = '<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>';
 
+  /* File-type icon colours — VS Code style */
+  function _getFileIcon(name) {
+    var ext = (name.split('.').pop() || '').toLowerCase();
+    var iconMap = {
+      md:   { stroke: '#7c9dff', fill: 'none' },
+      txt:  { stroke: '#9ca3af', fill: 'none' },
+      json: { stroke: '#f59e0b', fill: 'none' },
+      jsonl:{ stroke: '#f59e0b', fill: 'none' },
+      csv:  { stroke: '#34d399', fill: 'none' },
+      tsv:  { stroke: '#34d399', fill: 'none' },
+      pdf:  { stroke: '#f87171', fill: 'none' },
+      xlsx: { stroke: '#4ade80', fill: 'none' },
+      xls:  { stroke: '#4ade80', fill: 'none' },
+      docx: { stroke: '#60a5fa', fill: 'none' },
+      doc:  { stroke: '#60a5fa', fill: 'none' },
+      py:   { stroke: '#fbbf24', fill: 'none' },
+      yaml: { stroke: '#c084fc', fill: 'none' },
+      yml:  { stroke: '#c084fc', fill: 'none' },
+      xml:  { stroke: '#fb923c', fill: 'none' },
+      html: { stroke: '#fb923c', fill: 'none' },
+      sql:  { stroke: '#67e8f9', fill: 'none' },
+      log:  { stroke: '#6b7280', fill: 'none' },
+      ini:  { stroke: '#a8a29e', fill: 'none' },
+      toml: { stroke: '#a8a29e', fill: 'none' },
+      rst:  { stroke: '#9ca3af', fill: 'none' },
+      pq:       { stroke: '#818cf8', fill: 'none' },
+      parquet:  { stroke: '#818cf8', fill: 'none' }
+    };
+    var c = (iconMap[ext] || { stroke: '#aaaaaa', fill: 'none' });
+    return '<svg viewBox="0 0 24 24" width="13" height="13" fill="' + c.fill + '" stroke="' + c.stroke + '" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>';
+  }
+
+  /* Highlight search query inside a filename */
+  function _highlightName(name, query) {
+    if (!query) return esc(name);
+    var lower = name.toLowerCase();
+    var idx = lower.indexOf(query);
+    if (idx < 0) return esc(name);
+    return esc(name.substring(0, idx)) +
+      '<mark class="ft-match">' + esc(name.substring(idx, idx + query.length)) + '</mark>' +
+      esc(name.substring(idx + query.length));
+  }
+
+  /* Build indent guide divs for depth levels */
+  function _indentGuides(depth) {
+    var html = '';
+    for (var i = 0; i < depth; i++) {
+      html += '<div class="ft-indent-guide"></div>';
+    }
+    return html;
+  }
+
   /* ============================================================
      BPulseFilePreview
      ============================================================ */
@@ -353,21 +405,23 @@
   BPulseFileTree.prototype._renderNodes = function (nodes, depth) {
     if (!nodes || !nodes.length) return '';
     var self = this;
+    var q = self._searchQuery;
     var html = '';
     nodes.forEach(function (node) {
-      if (self._searchQuery && !self._matchesSearch(node)) return;
-      var indent = depth * 14;
+      if (q && !self._matchesSearch(node)) return;
       var isDir = node.type === 'folder' || node.type === 'directory';
+      var guides = _indentGuides(depth);
       if (isDir) {
-        var isOpen = !!self._expanded[node.path];
+        var isOpen = !!(q ? true : self._expanded[node.path]);  // auto-expand when searching
+        if (!q) isOpen = !!self._expanded[node.path];
         var chevronCls = 'ft-row-chevron' + (isOpen ? ' open' : '');
         var isWritable = self._writable && !self._readOnly && !self._bulkMode;
         html += '<div class="ft-row bpft-item" data-path="' + esc(node.path) + '" data-type="folder" data-name="' + esc(node.name) + '"' +
           ' draggable="' + (isWritable ? 'true' : 'false') + '">' +
-          '<div class="ft-indent" style="width:' + indent + 'px"></div>' +
+          guides +
           '<div class="' + chevronCls + '">' + _CHEVRON_SVG + '</div>' +
           '<span class="ft-icon">' + _FOLDER_SVG + '</span>' +
-          '<span class="ft-row-name">' + esc(node.name) + '</span>';
+          '<span class="ft-row-name">' + _highlightName(node.name, q) + '</span>';
         if (isWritable) {
           html += '<div class="ft-row-actions">' +
             '<button class="ft-action-btn" title="New File" aria-label="New file in ' + esc(node.name) + '" data-action="newfile" data-apath="' + esc(node.path) + '">' +
@@ -387,17 +441,16 @@
         var isSelected = self._isFileSelected ? self._isFileSelected(node.path) : false;
         var inBulk = self._bulkMode && self._bulkSelected[node.path];
         var rowCls = 'ft-row bpft-item' + (isActive ? ' wf-active' : '') + (isSelected || inBulk ? ' selected' : '');
-        var fileIndent = (depth + 1) * 14;
         var isWritable = self._writable && !self._readOnly && !self._bulkMode;
         html += '<div class="' + rowCls + '" data-path="' + esc(node.path) + '" data-type="file" data-name="' + esc(node.name) + '"' +
           ' draggable="' + (isWritable ? 'true' : 'false') + '">' +
-          '<div class="ft-indent" style="width:' + fileIndent + 'px"></div>' +
-          '<div class="ft-row-chevron"></div>' +
-          '<span class="ft-icon">' + _FILE_SVG + '</span>';
+          guides +
+          '<div class="ft-row-chevron ft-row-chevron--file"></div>' +
+          '<span class="ft-icon">' + _getFileIcon(node.name) + '</span>';
         if (self._bulkMode) {
           html += '<input type="checkbox" class="bpft-bulk-cb" ' + (inBulk ? 'checked' : '') + ' style="margin-right:4px">';
         }
-        html += '<span class="ft-row-name">' + esc(node.name) + '</span>';
+        html += '<span class="ft-row-name">' + _highlightName(node.name, q) + '</span>';
         if (node.size_bytes != null) {
           var sizeStr = node.size_bytes > 1048576
             ? (node.size_bytes / 1048576).toFixed(1) + ' MB'
@@ -907,6 +960,50 @@
     self._processUploadQueue();
   };
 
+  /**
+   * uploadFolder — upload files preserving folder structure via webkitRelativePath.
+   * Each file's webkitRelativePath is used to derive per-file destFolder.
+   * The top-level folder name from webkitRelativePath becomes a subfolder under destFolder.
+   */
+  BPulseFileTree.prototype.uploadFolder = function (files, destFolder) {
+    var self = this;
+    if (!files || !files.length) return;
+    destFolder = destFolder || '';
+    var MAX_SIZE = 50 * 1024 * 1024;
+    var rejected = [];
+    files.forEach(function (f) {
+      if (f.size > MAX_SIZE) {
+        rejected.push(f.name);
+        return;
+      }
+      // webkitRelativePath looks like "topFolder/sub/file.txt"
+      var relPath = f.webkitRelativePath || f.name;
+      // Get the directory part (everything except the filename)
+      var parts = relPath.replace(/\\/g, '/').split('/');
+      parts.pop(); // remove filename
+      var subFolder = parts.join('/');
+      var fileDest = destFolder ? (destFolder + '/' + subFolder) : subFolder;
+      self._uploadQueue.push({
+        file: f,
+        destFolder: fileDest,
+        id: Math.random().toString(36).slice(2),
+        status: 'queued',
+        progress: 0,
+        bytesLoaded: 0,
+        error: null,
+        _xhr: null,
+      });
+    });
+    if (rejected.length) {
+      self._toast(rejected.length + ' file(s) exceed 50 MB limit', 'error');
+    }
+    self._currentBatchId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2);
+    self._renderUploadQueue();
+    self._processUploadQueue();
+  };
+
   BPulseFileTree.prototype._processUploadQueue = function () {
     var self = this;
     var MAX = self._uploadConcurrency || 4;
@@ -1162,6 +1259,33 @@
 
   BPulseFileTree.prototype.clearSearch = function () {
     this._searchQuery = '';
+    this._render();
+  };
+
+  /* ------------------------------------------------------------
+     expandAll / collapseAll
+     ------------------------------------------------------------ */
+  BPulseFileTree.prototype._collectFolderPaths = function (nodes) {
+    var paths = [];
+    var self = this;
+    (nodes || []).forEach(function (node) {
+      if (node.type === 'folder' || node.type === 'directory') {
+        paths.push(node.path);
+        if (node.children) paths = paths.concat(self._collectFolderPaths(node.children));
+      }
+    });
+    return paths;
+  };
+
+  BPulseFileTree.prototype.expandAll = function () {
+    var paths = this._collectFolderPaths(this._tree ? this._tree.tree : []);
+    var self = this;
+    paths.forEach(function (p) { self._expanded[p] = true; });
+    this._render();
+  };
+
+  BPulseFileTree.prototype.collapseAll = function () {
+    this._expanded = {};
     this._render();
   };
 

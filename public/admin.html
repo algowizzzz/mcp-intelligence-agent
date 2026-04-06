@@ -486,6 +486,72 @@
     .ft-action-btn:hover { color: var(--text); background: rgba(255,255,255,0.08); }
     .ft-action-btn.danger:hover { color: var(--red); }
 
+    /* ── VS Code-style indent guides ── */
+    .ft-indent-guide {
+      width: 14px;
+      flex-shrink: 0;
+      position: relative;
+      align-self: stretch;
+    }
+    .ft-indent-guide::after {
+      content: '';
+      position: absolute;
+      left: 7px;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: rgba(255,255,255,0.07);
+    }
+    .ft-row:hover .ft-indent-guide::after { background: rgba(255,255,255,0.13); }
+
+    /* file chevron spacer (no icon, just width) */
+    .ft-row-chevron--file { cursor: default; }
+
+    /* search match highlight */
+    mark.ft-match {
+      background: rgba(255, 210, 80, 0.28);
+      color: inherit;
+      border-radius: 2px;
+      padding: 0 1px;
+    }
+
+    /* ── File tree search bar ── */
+    .ft-search-wrap {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 8px 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    .ft-search-input {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 5px;
+      color: var(--text);
+      font-size: 12px;
+      padding: 4px 8px;
+      outline: none;
+      min-width: 0;
+    }
+    .ft-search-input:focus { border-color: rgba(255,255,255,0.28); }
+    .ft-search-input::placeholder { color: var(--text-d); }
+    .ft-tree-ctrl-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--text-d);
+      padding: 3px 4px;
+      border-radius: 4px;
+      font-size: 13px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      transition: color 0.15s, background 0.15s;
+      flex-shrink: 0;
+    }
+    .ft-tree-ctrl-btn:hover { color: var(--text); background: rgba(255,255,255,0.08); }
+
     /* Inline rename/create input */
     .ft-inline-input {
       display: flex;
@@ -643,7 +709,10 @@
         <div id="dash-workers-section" style="display:none">
           <div class="section-header" style="margin-top:16px">
             <div class="section-title" style="font-size:16px">All Workers</div>
-            <button class="btn btn-primary btn-sm" onclick="openCreateWorkerModal()">+ New Worker</button>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="text" id="dash-workers-search" class="form-input" style="width:200px;height:32px;font-size:13px" placeholder="Search workers…" oninput="filterWorkersGrid(this.value)">
+              <button class="btn btn-primary btn-sm" onclick="openCreateWorkerModal()">+ New Worker</button>
+            </div>
           </div>
           <div class="workers-grid" id="dash-workers-grid"></div>
         </div>
@@ -658,6 +727,7 @@
           </div>
           <div style="display:flex;gap:8px">
             <button class="btn btn-secondary btn-sm" id="worker-enable-toggle" onclick="toggleWorkerEnabled()">Disable Worker</button>
+            <button class="btn btn-danger btn-sm" id="worker-delete-btn" onclick="openDeleteWorkerModal()" style="display:none">Delete Worker</button>
             <button class="btn btn-primary btn-sm" onclick="saveWorkerConfig()">Save Changes</button>
           </div>
         </div>
@@ -763,11 +833,22 @@
           <div class="filetree-sidebar">
             <div class="filetree-toolbar">
               <button class="btn btn-secondary btn-sm" onclick="document.getElementById('bpft-upload-input-dd').click()" title="Upload files">↑ Upload</button>
+              <button class="btn btn-secondary btn-sm" onclick="document.getElementById('bpft-folder-input-dd').click()" title="Upload entire folder with subfolders">↑ Folder</button>
               <button class="btn btn-secondary btn-sm" onclick="window._bpft_dd && window._bpft_dd.mkdir()" title="New folder">+ Folder</button>
               <button class="btn btn-secondary btn-sm" id="dd-select-btn" onclick="window._bpft_dd && (window._bpft_dd.toggleBulkMode(),this.textContent=window._bpft_dd._bulkMode?'Cancel':'Select')">Select</button>
               <button class="btn btn-danger btn-sm" id="dd-bulk-delete-btn" onclick="window._bpft_dd && window._bpft_dd.bulkDelete()" disabled>Delete</button>
             </div>
+            <div class="ft-search-wrap">
+              <input class="ft-search-input" type="text" placeholder="Search files…" oninput="window._bpft_dd && window._bpft_dd.search(this.value)" id="ft-search-dd">
+              <button class="ft-tree-ctrl-btn" title="Expand all" onclick="window._bpft_dd && window._bpft_dd.expandAll()">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <button class="ft-tree-ctrl-btn" title="Collapse all" onclick="window._bpft_dd && window._bpft_dd.collapseAll()">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+              </button>
+            </div>
             <input type="file" id="bpft-upload-input-dd" multiple style="display:none">
+            <input type="file" id="bpft-folder-input-dd" webkitdirectory multiple style="display:none">
             <div class="filetree-body" id="tree-domain_data"></div>
           </div>
           <div class="preview-panel" id="preview-panel">
@@ -799,11 +880,22 @@
           <div class="filetree-sidebar">
             <div class="filetree-toolbar">
               <button class="btn btn-secondary btn-sm" onclick="document.getElementById('bpft-upload-input-common').click()" title="Upload files">↑ Upload</button>
+              <button class="btn btn-secondary btn-sm" onclick="document.getElementById('bpft-folder-input-common').click()" title="Upload entire folder with subfolders">↑ Folder</button>
               <button class="btn btn-secondary btn-sm" onclick="window._bpft_common && window._bpft_common.mkdir()" title="New folder">+ Folder</button>
               <button class="btn btn-secondary btn-sm" id="common-select-btn" onclick="window._bpft_common && (window._bpft_common.toggleBulkMode(),this.textContent=window._bpft_common._bulkMode?'Cancel':'Select')">Select</button>
               <button class="btn btn-danger btn-sm" id="common-bulk-delete-btn" onclick="window._bpft_common && window._bpft_common.bulkDelete()" disabled>Delete</button>
             </div>
+            <div class="ft-search-wrap">
+              <input class="ft-search-input" type="text" placeholder="Search files…" oninput="window._bpft_common && window._bpft_common.search(this.value)" id="ft-search-common">
+              <button class="ft-tree-ctrl-btn" title="Expand all" onclick="window._bpft_common && window._bpft_common.expandAll()">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <button class="ft-tree-ctrl-btn" title="Collapse all" onclick="window._bpft_common && window._bpft_common.collapseAll()">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+              </button>
+            </div>
             <input type="file" id="bpft-upload-input-common" multiple style="display:none">
+            <input type="file" id="bpft-folder-input-common" webkitdirectory multiple style="display:none">
             <div class="filetree-body" id="tree-common"></div>
           </div>
           <div class="preview-panel" id="preview-panel-common">
@@ -837,6 +929,15 @@
               <button class="btn btn-secondary btn-sm" onclick="window._bpft_wf && window._bpft_wf.createMd('')">+ New</button>
               <button class="btn btn-secondary btn-sm" id="wf-select-btn" onclick="window._bpft_wf && (window._bpft_wf.toggleBulkMode(),this.textContent=window._bpft_wf._bulkMode?'Cancel':'Select')">Select</button>
               <button class="btn btn-danger btn-sm" id="wf-bulk-delete-btn" onclick="window._bpft_wf && window._bpft_wf.bulkDelete()" disabled>Delete</button>
+            </div>
+            <div class="ft-search-wrap">
+              <input class="ft-search-input" type="text" placeholder="Search workflows…" oninput="window._bpft_wf && window._bpft_wf.search(this.value)" id="ft-search-wf">
+              <button class="ft-tree-ctrl-btn" title="Expand all" onclick="window._bpft_wf && window._bpft_wf.expandAll()">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <button class="ft-tree-ctrl-btn" title="Collapse all" onclick="window._bpft_wf && window._bpft_wf.collapseAll()">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+              </button>
             </div>
             <input type="file" id="bpft-upload-input-wf" accept=".md" multiple style="display:none">
             <div class="filetree-body" id="tree-verified_workflows"></div>
@@ -889,7 +990,10 @@
             <div class="section-title">Manage Workers</div>
             <div class="section-sub">Create and configure digital workers</div>
           </div>
-          <button class="btn btn-primary btn-sm" onclick="openCreateWorkerModal()">+ New Worker</button>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="text" id="workers-search" class="form-input" style="width:200px;height:32px;font-size:13px" placeholder="Search workers…" oninput="filterWorkersGrid(this.value)">
+            <button class="btn btn-primary btn-sm" onclick="openCreateWorkerModal()">+ New Worker</button>
+          </div>
         </div>
         <div class="workers-grid" id="workers-grid"></div>
       </div>
@@ -1426,6 +1530,8 @@ async function loadWorkerConfig() {
   var enableBtn = document.getElementById('worker-enable-toggle');
   enableBtn.textContent = _currentWorker.enabled ? 'Disable Worker' : 'Enable Worker';
   enableBtn.className = 'btn btn-sm ' + (_currentWorker.enabled ? 'btn-danger' : 'btn-primary');
+  var deleteBtn = document.getElementById('worker-delete-btn');
+  if (deleteBtn) deleteBtn.style.display = (typeof _user !== 'undefined' && _user && _user.role === 'super_admin') ? '' : 'none';
   // REQ-13 / REQ-14 fields
   var mode = _currentWorker.agent_mode || 'single';
   document.getElementById('wc-agent-mode').value = mode;
@@ -2349,10 +2455,66 @@ async function submitCreateWorker() {
     if (r.ok) {
       closeModalFn(); showToast('Worker created: ' + name, 'success');
       await loadSuperAdminWorkers();
+      var si = document.getElementById('workers-search'); if (si) si.value = '';
+      var si2 = document.getElementById('dash-workers-search'); if (si2) si2.value = '';
       renderWorkersGrid(_allWorkers, 'workers-grid');
       renderWorkersGrid(_allWorkers, 'dash-workers-grid');
     } else { showToast('Error: ' + (d.detail || 'Create failed'), 'error'); }
   } catch(err) { showToast('Network error', 'error'); }
+}
+
+// ── Delete Worker ─────────────────────────────────────────────────────────────
+function openDeleteWorkerModal() {
+  if (!_currentWorker) return;
+  function e(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  openModal(
+    'Delete Worker',
+    'This action is permanent. All worker data will be erased.',
+    '<div class="form-row" style="margin-bottom:0">' +
+    '<label class="form-label">Type <strong>' + e(_currentWorker.name) + '</strong> to confirm deletion</label>' +
+    '<input class="form-input" id="del-worker-confirm" placeholder="' + e(_currentWorker.name) + '" autocomplete="off">' +
+    '</div>',
+    '<button class="btn btn-secondary" onclick="closeModalFn()">Cancel</button>' +
+    '<button class="btn btn-danger" onclick="submitDeleteWorker()">Delete Worker</button>'
+  );
+}
+
+async function submitDeleteWorker() {
+  if (!_currentWorker) return;
+  var confirmVal = (document.getElementById('del-worker-confirm') || {}).value || '';
+  if (confirmVal !== _currentWorker.name) {
+    showToast('Name does not match — deletion cancelled', 'error');
+    return;
+  }
+  try {
+    var r = await fetch(API + '/api/super/workers/' + _currentWorker.worker_id, {
+      method: 'DELETE',
+      headers: authHeaders(),
+      body: JSON.stringify({ confirm_name: _currentWorker.name }),
+    });
+    var d = await r.json().catch(function() { return {}; });
+    if (r.ok) {
+      closeModalFn();
+      showToast('Worker "' + _currentWorker.name + '" deleted', 'success');
+      _currentWorker = null;
+      await loadSuperAdminWorkers();
+      renderWorkersGrid(_allWorkers, 'workers-grid');
+      renderWorkersGrid(_allWorkers, 'dash-workers-grid');
+      showSection('workers');
+    } else {
+      showToast('Error: ' + (d.detail || 'Delete failed'), 'error');
+    }
+  } catch(err) { showToast('Network error', 'error'); }
+}
+
+// ── Filter Workers Grid ────────────────────────────────────────────────────────
+function filterWorkersGrid(query) {
+  var q = (query || '').toLowerCase().trim();
+  var filtered = q ? _allWorkers.filter(function(w) {
+    return (w.name || '').toLowerCase().includes(q) || (w.description || '').toLowerCase().includes(q);
+  }) : _allWorkers;
+  renderWorkersGrid(filtered, 'workers-grid');
+  renderWorkersGrid(filtered, 'dash-workers-grid');
 }
 
 // ── Audit Log (UI-ADMIN-013) ──────────────────────────────────────────────────
@@ -2658,13 +2820,39 @@ function _bpftConfirm(msg, cb) {
     if (_cd) _cd.style.display = 'none';
   }
 
-  // Wire upload inputs
+  // Wire upload inputs (individual files)
   var ddInput = document.getElementById('bpft-upload-input-dd');
   if (ddInput) ddInput.onchange = function() { window._bpft_dd && window._bpft_dd.upload(Array.from(this.files), ''); this.value = ''; };
   var wfInput = document.getElementById('bpft-upload-input-wf');
   if (wfInput) wfInput.onchange = function() { window._bpft_wf && window._bpft_wf.upload(Array.from(this.files), ''); this.value = ''; };
   var commonInput = document.getElementById('bpft-upload-input-common');
   if (commonInput) commonInput.onchange = function() { window._bpft_common && window._bpft_common.upload(Array.from(this.files), ''); this.value = ''; };
+
+  // Wire folder upload inputs (preserves subfolder structure via webkitRelativePath)
+  var ddFolderInput = document.getElementById('bpft-folder-input-dd');
+  if (ddFolderInput) ddFolderInput.onchange = function() {
+    var files = Array.from(this.files).filter(function(f) { return !f.name.startsWith('.'); });
+    if (files.length && window._bpft_dd) {
+      var count = files.length;
+      var topFolder = (files[0].webkitRelativePath || '').split('/')[0] || 'folder';
+      if (confirm('Upload ' + count + ' files from "' + topFolder + '/" preserving folder structure?')) {
+        window._bpft_dd.uploadFolder(files, '');
+      }
+    }
+    this.value = '';
+  };
+  var commonFolderInput = document.getElementById('bpft-folder-input-common');
+  if (commonFolderInput) commonFolderInput.onchange = function() {
+    var files = Array.from(this.files).filter(function(f) { return !f.name.startsWith('.'); });
+    if (files.length && window._bpft_common) {
+      var count = files.length;
+      var topFolder = (files[0].webkitRelativePath || '').split('/')[0] || 'folder';
+      if (confirm('Upload ' + count + ' files from "' + topFolder + '/" preserving folder structure?')) {
+        window._bpft_common.uploadFolder(files, '');
+      }
+    }
+    this.value = '';
+  };
 
   // UI-ADMIN-008: wire Select buttons to enable/disable Delete button based on bulk mode
   var ddSelectBtn = document.getElementById('dd-select-btn');
@@ -2702,9 +2890,21 @@ function _bpftConfirm(msg, cb) {
   // Patch loadFileTree to use BPulseFileTree instances
   var _origLoadFileTree = window.loadFileTree;
   window.loadFileTree = function(section) {
-    if (section === 'domain_data' && window._bpft_dd) { window._bpft_dd.load(); return; }
-    if (section === 'verified_workflows' && window._bpft_wf) { window._bpft_wf.load(); return; }
-    if (section === 'common' && window._bpft_common) { window._bpft_common.load(); return; }
+    if (section === 'domain_data' && window._bpft_dd) {
+      window._bpft_dd.clearSearch();
+      var _si = document.getElementById('ft-search-dd'); if (_si) _si.value = '';
+      window._bpft_dd.load(); return;
+    }
+    if (section === 'verified_workflows' && window._bpft_wf) {
+      window._bpft_wf.clearSearch();
+      var _si = document.getElementById('ft-search-wf'); if (_si) _si.value = '';
+      window._bpft_wf.load(); return;
+    }
+    if (section === 'common' && window._bpft_common) {
+      window._bpft_common.clearSearch();
+      var _si = document.getElementById('ft-search-common'); if (_si) _si.value = '';
+      window._bpft_common.load(); return;
+    }
     if (_origLoadFileTree) _origLoadFileTree(section);
   };
 })();

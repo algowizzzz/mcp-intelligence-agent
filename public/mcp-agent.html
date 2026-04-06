@@ -1980,10 +1980,10 @@
        CANVAS LAYOUT
        ================================================================ */
     #chat-zone { display: flex; flex-direction: column; flex: 1; min-width: 0; overflow: hidden; }
-    #canvas-zone { display: none; flex-direction: column; flex: 0 0 55%; min-width: 320px; border-left: 1px solid var(--border); background: #1e1e1e; overflow: hidden; }
+    #canvas-zone { display: none; flex-direction: column; flex: 1 1 0; min-width: 320px; border-left: 1px solid var(--border); background: #1e1e1e; overflow: hidden; }
     body.light-theme #canvas-zone { background: #fafafa; }
     body.canvas-active #main { flex-direction: row; }
-    body.canvas-active #chat-zone { flex: 0 0 45%; min-width: 320px; }
+    body.canvas-active #chat-zone { flex: 0 0 var(--chat-w, 45%); min-width: 320px; }
     body.canvas-active #canvas-zone { display: flex; }
 
     /* Drag handles */
@@ -2173,6 +2173,49 @@
     .ft-body.open {
       max-height: 300px;
       overflow-y: auto;
+    }
+
+    /* Search bar inside file tree sections */
+    .ft-search-bar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--bg-sidebar);
+      z-index: 2;
+    }
+    .ft-search-bar input {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 5px;
+      color: var(--text-primary);
+      font-size: 11px;
+      padding: 3px 7px;
+      outline: none;
+      min-width: 0;
+    }
+    .ft-search-bar input:focus { border-color: rgba(255,255,255,0.28); }
+    .ft-search-bar input::placeholder { color: var(--text-muted); }
+    .ft-search-ctrl {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      padding: 2px;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+    }
+    .ft-search-ctrl:hover { color: var(--text-primary); background: var(--bg-hover); }
+    mark.ft-match {
+      background: rgba(255,200,0,0.25);
+      color: var(--text-primary);
+      padding: 0 1px;
+      border-radius: 2px;
     }
 
     /* Tree rows */
@@ -2901,6 +2944,11 @@
                 </div>
               </div>
               <div class="ft-body" id="ft-body-domain_data">
+                <div class="ft-search-bar">
+                  <input type="text" placeholder="Search files…" oninput="_bpftInstB.domain_data&&_bpftInstB.domain_data.search(this.value)" id="ft-search-domain_data">
+                  <button class="ft-search-ctrl" title="Expand all" onclick="_bpftInstB.domain_data&&_bpftInstB.domain_data.expandAll()"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>
+                  <button class="ft-search-ctrl" title="Collapse all" onclick="_bpftInstB.domain_data&&_bpftInstB.domain_data.collapseAll()"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg></button>
+                </div>
                 <div class="ft-tree" id="ft-tree-domain_data"></div>
               </div>
             </div>
@@ -2920,6 +2968,11 @@
                 </div>
               </div>
               <div class="ft-body" id="ft-body-common">
+                <div class="ft-search-bar">
+                  <input type="text" placeholder="Search files…" oninput="_bpftInstB.common&&_bpftInstB.common.search(this.value)" id="ft-search-common">
+                  <button class="ft-search-ctrl" title="Expand all" onclick="_bpftInstB.common&&_bpftInstB.common.expandAll()"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>
+                  <button class="ft-search-ctrl" title="Collapse all" onclick="_bpftInstB.common&&_bpftInstB.common.collapseAll()"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg></button>
+                </div>
                 <div class="ft-tree" id="ft-tree-common"></div>
               </div>
             </div>
@@ -2942,6 +2995,11 @@
                 </div>
               </div>
               <div class="ft-body" id="ft-body-uploads">
+                <div class="ft-search-bar">
+                  <input type="text" placeholder="Search files…" oninput="_bpftInstB.uploads&&_bpftInstB.uploads.search(this.value)" id="ft-search-uploads">
+                  <button class="ft-search-ctrl" title="Expand all" onclick="_bpftInstB.uploads&&_bpftInstB.uploads.expandAll()"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>
+                  <button class="ft-search-ctrl" title="Collapse all" onclick="_bpftInstB.uploads&&_bpftInstB.uploads.collapseAll()"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg></button>
+                </div>
                 <div class="ft-tree" id="ft-tree-uploads"></div>
                 <input type="file" id="ftUploadInput-uploads" multiple style="display:none" onchange="ftUploadFiles('uploads', '', this)">
               </div>
@@ -2967,6 +3025,11 @@
                 </div>
               </div>
               <div class="ft-body" id="ft-body-verified">
+                <div class="ft-search-bar">
+                  <input type="text" placeholder="Search workflows…" oninput="_bpftInstB.verified&&_bpftInstB.verified.search(this.value)" id="ft-search-verified">
+                  <button class="ft-search-ctrl" title="Expand all" onclick="_bpftInstB.verified&&_bpftInstB.verified.expandAll()"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>
+                  <button class="ft-search-ctrl" title="Collapse all" onclick="_bpftInstB.verified&&_bpftInstB.verified.collapseAll()"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg></button>
+                </div>
                 <div class="ft-tree" id="ft-tree-verified"></div>
               </div>
             </div>
@@ -2992,6 +3055,11 @@
                 </div>
               </div>
               <div class="ft-body" id="ft-body-my_workflows">
+                <div class="ft-search-bar">
+                  <input type="text" placeholder="Search workflows…" oninput="_bpftInstB.my_workflows&&_bpftInstB.my_workflows.search(this.value)" id="ft-search-my_workflows">
+                  <button class="ft-search-ctrl" title="Expand all" onclick="_bpftInstB.my_workflows&&_bpftInstB.my_workflows.expandAll()"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>
+                  <button class="ft-search-ctrl" title="Collapse all" onclick="_bpftInstB.my_workflows&&_bpftInstB.my_workflows.collapseAll()"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg></button>
+                </div>
                 <div class="ft-tree" id="ft-tree-my_workflows"></div>
                 <input type="file" id="ftUploadInput-my_workflows" accept=".md" style="display:none" onchange="ftUploadFiles('my_workflows', '', this)">
               </div>
@@ -3380,6 +3448,9 @@
     var _currentSynthesis  = '';
     var _reasoningStartTs  = null;
     var _reasoningDone     = false;
+    var _canvasStreaming    = false;
+    var _canvasStreamBuf   = '';
+    var _canvasStreamTitle = '';
     var _toolKeys          = {};
     var _toolDataStore     = {};
     var _toolStartTimes    = {};
@@ -3535,7 +3606,15 @@
       var container = $('sidebar-conversations');
       container.innerHTML = '';
 
-      if (!_conversations.length) return;
+      // Only show conversations belonging to the active worker
+      var activeWid = _activeWorkerId || ((_authUser || {}).worker_id) || null;
+      var visible = _conversations.filter(function(c) {
+        if (!activeWid) return true;          // no worker context — show all
+        if (!c.worker_id) return true;        // legacy conversations (no tag) — show for all
+        return c.worker_id === activeWid;
+      });
+
+      if (!visible.length) return;
 
       var now = new Date();
       var todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
@@ -3551,7 +3630,7 @@
         older: []
       };
 
-      var sorted = _conversations.slice().sort(function(a, b) { return b.updated - a.updated; });
+      var sorted = visible.slice().sort(function(a, b) { return b.updated - a.updated; });
 
       for (var i = 0; i < sorted.length; i++) {
         var c = sorted[i];
@@ -3702,6 +3781,7 @@
         title: 'New Chat',
         messages: [],
         threadId: null,
+        worker_id: _activeWorkerId || ((_authUser || {}).worker_id) || null,
         cost: { inputTokens: 0, outputTokens: 0, callCount: 0, totalUSD: 0 },
         created: Date.now(),
         updated: Date.now()
@@ -4995,12 +5075,33 @@
         showHitlApprovalDialog(evt);
       }
       else if (type === 'replace_text') {
-        // Canvas was detected — replace the streamed raw JSON in the chat bubble with just the summary
+        // Canvas was detected — replace streamed text with just the summary
         _currentSynthesis = evt.text || '';
+        _currentReasoning = '';
+        _reasoningDone = true;
         if (_currentAgentMsg) {
           var sd = _currentAgentMsg.querySelector('.synthesis');
           if (sd) sd.innerHTML = parseMarkdown(_currentSynthesis);
+          // Hide reasoning bubble — it only contained the raw canvas content
+          var rb = _currentAgentMsg.querySelector('.reasoning-bubble');
+          if (rb) rb.style.display = 'none';
         }
+      }
+      else if (type === 'canvas_stream_start') {
+        _canvasStreaming = true;
+        _canvasStreamTitle = evt.title || 'Report';
+        _canvasStreamBuf = '';
+        _openCanvasStream(_canvasStreamTitle);
+        // Mark synthesis as done — any text before [CANVAS] is already in chat
+        if (!_reasoningDone) finishReasoning();
+      }
+      else if (type === 'canvas_stream_chunk') {
+        _canvasStreamBuf += evt.text || '';
+        _appendCanvasStreamChunk(evt.text || '');
+      }
+      else if (type === 'canvas_stream_end') {
+        _canvasStreaming = false;
+        _finalizeCanvasStream(evt.title || _canvasStreamTitle, evt.content || _canvasStreamBuf);
       }
       else if (type === 'canvas') {
         if (evt.canvas_type === 'chart' && evt.chart_url) {
@@ -5147,6 +5248,13 @@
       _reasoningDone = false;
       _lastCanvasTitle = '';
       _lastCanvasContent = '';
+      _canvasStreaming = false;
+      _canvasStreamBuf = '';
+      _canvasStreamTitle = '';
+      // Close previous canvas so it doesn't persist from prior query
+      if (document.body.classList.contains('canvas-active')) {
+        closeCanvas();
+      }
 
       addUserMessage(q);
       _messages.push({ role: 'user', content: q, timestamp: Date.now() });
@@ -5298,13 +5406,23 @@
       document.getElementById('bpft-confirm-ok').onclick    = function() { overlay.remove(); cb(); };
     }
 
+    // Dynamic apiPrefix: routes super_admin through worker-scoped endpoint when
+    // a worker is selected via the header switcher (_activeWorkerId is set).
+    function _ftApiPrefix() {
+      var u = _authUser || {};
+      if (u.role === 'super_admin' && _activeWorkerId) {
+        return _agentBase + '/api/super/workers/' + _activeWorkerId + '/files';
+      }
+      return _agentBase + '/api/fs';
+    }
+
     var _bpftInstB = {};
     Object.keys(_FT_SECTIONS).forEach(function(section) {
       var cfg = _FT_SECTIONS[section];
       _bpftInstB[section] = new BPulseFileTree({
         containerId: 'ft-tree-' + section,
         section: section,
-        apiPrefix: _agentBase + '/api/fs',
+        apiPrefix: _ftApiPrefix,
         writable: cfg.writable,
         workflowSection: cfg.wfSection,
         token: _bpftToken,
@@ -5353,7 +5471,13 @@
       return h;
     }
 
-    function ftLoad(section) {
+    function ftLoad(section, skipReindex) {
+      if (!skipReindex) {
+        // Rebuild BM25 index before loading tree so newly added files are discoverable
+        fetch(_agentBase + '/api/fs/' + section + '/reindex', {
+          method: 'POST', headers: _ftHeaders()
+        }).catch(function() {});
+      }
       if (_bpftInstB[section]) { _bpftInstB[section].load(); ftUpdateBadge(section); return; }
       // Fallback fetch (should not be needed)
       fetch(_agentBase + '/api/fs/' + section + '/tree', { headers: _ftHeaders() })
@@ -5378,9 +5502,9 @@
       if (_ftSectionOpen[section]) {
         body.classList.add('open');
         chevron.classList.add('open');
-        // Always load via BPulseFileTree on open
+        // Always load via BPulseFileTree on open (skip reindex on toggle)
         if (_bpftInstB[section]) _bpftInstB[section].load();
-        else if (!_ftTrees[section]) ftLoad(section);
+        else if (!_ftTrees[section]) ftLoad(section, true);
       } else {
         body.classList.remove('open');
         chevron.classList.remove('open');
@@ -5601,7 +5725,7 @@
             _canvasMarkdown = data.content || '';
             renderCanvas(_canvasMarkdown);
           });
-      } else if (ext === 'json' || ext === 'txt') {
+      } else if (ext === 'json' || ext === 'txt' || ext === 'py') {
         var cc = document.getElementById('canvas-content');
         cc.style.display = '';
         fetch(url, { headers: _ftHeaders() })
@@ -5611,6 +5735,8 @@
             if (ext === 'json') {
               try { content = JSON.stringify(JSON.parse(content), null, 2); } catch(e) {}
               cc.innerHTML = '<pre style="font-size:12px;color:var(--text-secondary);white-space:pre-wrap;">' + esc(content) + '</pre>';
+            } else if (ext === 'py') {
+              cc.innerHTML = '<pre style="font-size:12px;color:var(--text-secondary);white-space:pre-wrap;font-family:\'SF Mono\',Menlo,monospace;">' + esc(content) + '</pre>';
             } else {
               cc.innerHTML = '<pre style="font-size:12px;color:var(--text-secondary);white-space:pre-wrap;">' + esc(content) + '</pre>';
             }
@@ -6896,9 +7022,13 @@
         .then(function(w) {
           if (!w) return;
           _activeWorkerId = workerId;
+          // Update header name and page title
           var wn = document.getElementById('header-worker-name');
           if (wn) wn.textContent = w.name;
           document.title = w.name;
+          // Update welcome screen title
+          var wt = document.querySelector('.welcome-title');
+          if (wt) wt.textContent = w.name;
           // Update sessionStorage so the worker persists if page refreshes
           try {
             var u = JSON.parse(sessionStorage.getItem('rg_user') || '{}');
@@ -6906,7 +7036,12 @@
             u.worker_name = w.name;
             sessionStorage.setItem('rg_user', JSON.stringify(u));
           } catch(e) {}
-          // Reload admin panel trees for new worker context
+          // Close canvas if open
+          if (document.body.classList.contains('canvas-active') && typeof closeCanvas === 'function') closeCanvas();
+          // Start a fresh conversation in the new worker context
+          if (typeof newConversation === 'function') newConversation();
+          // Reload left sidebar and admin panel trees for new worker context
+          if (typeof ftLoadAll === 'function') ftLoadAll();
           if (typeof adminLoadAll === 'function') adminLoadAll();
         }).catch(function() {});
     }
@@ -7063,6 +7198,66 @@
     var _lastCanvasContent = '';
     var _restoredCanvases = {};
 
+    /* ── Canvas streaming (direct render, no post-hoc replace) ── */
+    function _openCanvasStream(title) {
+      document.getElementById('canvas-title').textContent = title || 'Report';
+      document.getElementById('canvas-title').contentEditable = 'true';
+      var badge = document.getElementById('canvas-readonly-badge');
+      if (badge) badge.style.display = 'none';
+      var saveBtn = document.getElementById('canvas-save-btn');
+      if (saveBtn) saveBtn.style.display = '';
+      var exportBtn = document.getElementById('canvas-export-btn');
+      if (exportBtn) exportBtn.style.display = '';
+      // Show a raw streaming container
+      var cc = document.getElementById('canvas-content');
+      cc.innerHTML = '<div id="canvas-stream-raw" style="font-family:monospace;font-size:12px;color:var(--text-secondary,#aaa);white-space:pre-wrap;padding:8px;opacity:0.85"></div>';
+      document.body.classList.add('canvas-active');
+      var wfBar = document.getElementById('canvas-wf-select-bar');
+      if (wfBar) wfBar.style.display = 'none';
+    }
+
+    function _appendCanvasStreamChunk(text) {
+      var raw = document.getElementById('canvas-stream-raw');
+      if (!raw) return;
+      raw.textContent += text;
+      // Auto-scroll canvas
+      var cc = document.getElementById('canvas-content');
+      if (cc) cc.scrollTop = cc.scrollHeight;
+    }
+
+    function _finalizeCanvasStream(title, content) {
+      _lastCanvasTitle = title;
+      _lastCanvasContent = content;
+      _canvasMarkdown = content;
+      // Replace raw pre with proper markdown render
+      renderCanvas(content);
+      document.getElementById('canvas-title').textContent = title;
+      document.getElementById('canvas-content').scrollTop = 0;
+      // Add view-canvas button to the current message
+      if (_currentAgentMsg) {
+        var actions = _currentAgentMsg.querySelector('.msg-actions');
+        if (actions && !actions.querySelector('.btn-view-canvas')) {
+          var viewBtn = document.createElement('button');
+          viewBtn.className = 'btn-view-canvas';
+          viewBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h6"/></svg> View Report';
+          var capturedTitle = title, capturedContent = content;
+          viewBtn.onclick = function() { openCanvas(capturedTitle, capturedContent); };
+          actions.insertBefore(viewBtn, actions.firstChild);
+        }
+        // Save canvas info onto message for history restore
+        var conv = _conversations.find(function(c) { return c.id === _activeConvId; });
+        if (conv) {
+          var msgs = conv.messages;
+          var last = msgs[msgs.length - 1];
+          if (last && last.role === 'assistant') {
+            last.canvasTitle = title;
+            last.canvasContent = content;
+            saveConversations();
+          }
+        }
+      }
+    }
+
     function openCanvas(title, content) {
       _canvasMarkdown = content;
       _lastCanvasTitle = title || 'Document';
@@ -7194,6 +7389,9 @@
 
     function closeCanvas() {
       document.body.classList.remove('canvas-active');
+      // Clear any inline flex set on chat-zone so layout resets cleanly
+      var cz = document.getElementById('chat-zone');
+      if (cz) { cz.style.flex = ''; cz.style.minWidth = ''; }
       // Restore canvas to normal (non-preview) state
       _canvasPreviewWorkflow = null;
       document.getElementById('canvas-title').contentEditable = 'true';
@@ -7328,29 +7526,30 @@
     }
 
     // ── Panel drag-to-resize ──────────────────────────────────────────
-    (function() {
-      function makeDraggable(handleId, getA, setA, minA, minB) {
-        var handle = document.getElementById(handleId);
-        if (!handle) return;
+    (function () {
+      var SIDEBAR_MIN = 180;
+      var SIDEBAR_MAX = 520;
+      var CHAT_MIN    = 320;
+      var CANVAS_MIN  = 320;
+
+      function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+      function _startDrag(handle, onMove) {
         var dragging = false, startX, startW;
-        handle.addEventListener('mousedown', function(e) {
+        handle.addEventListener('mousedown', function (e) {
           e.preventDefault();
           dragging = true;
           startX = e.clientX;
-          startW = getA();
+          startW = onMove.getW();
           handle.classList.add('dragging');
           document.body.style.cursor = 'col-resize';
           document.body.style.userSelect = 'none';
         });
-        document.addEventListener('mousemove', function(e) {
+        document.addEventListener('mousemove', function (e) {
           if (!dragging) return;
-          var delta = e.clientX - startX;
-          var newW = Math.max(minA, startW + delta);
-          var totalW = document.getElementById('app').offsetWidth;
-          if (totalW - newW < minB) newW = totalW - minB;
-          setA(newW);
+          onMove(startW + (e.clientX - startX));
         });
-        document.addEventListener('mouseup', function() {
+        document.addEventListener('mouseup', function () {
           if (!dragging) return;
           dragging = false;
           handle.classList.remove('dragging');
@@ -7359,27 +7558,35 @@
         });
       }
 
-      // Sidebar ↔ main
-      makeDraggable(
-        'sidebar-drag',
-        function() { return document.getElementById('sidebar').offsetWidth; },
-        function(w) {
-          document.getElementById('sidebar').style.width = w + 'px';
-          document.getElementById('sidebar').style.minWidth = w + 'px';
-        },
-        160, 400
-      );
+      // ── Sidebar ↔ main ──────────────────────────────────────────────
+      // Sets --sidebar-width CSS var (no inline style) so .collapsed class
+      // can always override with width:0 without specificity fights.
+      var sidebarHandle = document.getElementById('sidebar-drag');
+      if (sidebarHandle) {
+        var fn = function (w) {
+          var appW = document.getElementById('app').offsetWidth;
+          w = clamp(w, SIDEBAR_MIN, Math.min(SIDEBAR_MAX, appW - CHAT_MIN));
+          document.documentElement.style.setProperty('--sidebar-width', w + 'px');
+        };
+        fn.getW = function () { return document.getElementById('sidebar').offsetWidth; };
+        _startDrag(sidebarHandle, fn);
+      }
 
-      // Chat ↔ canvas
-      makeDraggable(
-        'canvas-drag',
-        function() { return document.getElementById('chat-zone').offsetWidth; },
-        function(w) {
-          var chatZone = document.getElementById('chat-zone');
-          chatZone.style.flex = '0 0 ' + w + 'px';
-        },
-        300, 300
-      );
+      // ── Chat ↔ canvas ───────────────────────────────────────────────
+      // Sets --chat-w CSS var. Canvas zone uses flex:1 1 0 so it fills
+      // whatever space chat doesn't take — both panels always fit.
+      var canvasHandle = document.getElementById('canvas-drag');
+      if (canvasHandle) {
+        var fn2 = function (w) {
+          if (!document.body.classList.contains('canvas-active')) return;
+          var mainW = document.getElementById('main').offsetWidth;
+          // 4px = drag handle width; guarantee both panels meet their minimums
+          w = clamp(w, CHAT_MIN, mainW - CANVAS_MIN - 4);
+          document.documentElement.style.setProperty('--chat-w', w + 'px');
+        };
+        fn2.getW = function () { return document.getElementById('chat-zone').offsetWidth; };
+        _startDrag(canvasHandle, fn2);
+      }
     })();
     // ─────────────────────────────────────────────────────────────────
 

@@ -259,9 +259,21 @@ def _copy_context_files(context_files: List[str], tmpdir: str, worker_ctx: dict,
                 except Exception:
                     pass
 
-        # Fallback: treat as bare filename and search both sections
+        # Also handle common/ prefix
+        if resolved is None and rel_path.startswith('common/'):
+            inner = rel_path[len('common/'):]
+            if worker_ctx:
+                try:
+                    base = path_resolve('common_data', worker_ctx)
+                    candidate = os.path.join(base, inner)
+                    if os.path.isfile(candidate):
+                        resolved = candidate
+                except Exception:
+                    pass
+
+        # Fallback: treat as bare filename and search all three sections
         if resolved is None and worker_ctx:
-            for section in ('my_data', 'domain_data'):
+            for section in ('my_data', 'domain_data', 'common_data'):
                 try:
                     kw = {'user_id': user_id} if section == 'my_data' and user_id else {}
                     base = path_resolve(section, worker_ctx, **kw)
@@ -288,6 +300,15 @@ def _charts_dir(worker_ctx: dict, user_id: Optional[str]) -> str:
             return os.path.join(my_data_base, 'charts')
         except Exception:
             pass
+    # Fallback: use X-Worker-My-Data-Root header injected by the agent server (G-04).
+    # g.worker_ctx is not reconstructed from headers, but g.worker_my_data_root is.
+    try:
+        from flask import g as _g
+        my_data_root = getattr(_g, 'worker_my_data_root', '') or ''
+        if my_data_root:
+            return os.path.join(my_data_root.strip(), 'charts')
+    except RuntimeError:
+        pass
     return os.path.join(tempfile.gettempdir(), 'sajha_charts')
 
 
@@ -428,8 +449,8 @@ class PythonRunScriptTool(BaseMCPTool):
                 },
                 'section': {
                     'type': 'string',
-                    'enum': ['domain_data', 'my_data'],
-                    'description': 'Section containing the script.',
+                    'enum': ['domain_data', 'my_data', 'common'],
+                    'description': 'Data layer containing the script. Default: domain_data. Tool auto-searches all layers if not found in the specified one.',
                 },
                 'args': {
                     'type': 'array',
@@ -462,7 +483,7 @@ class PythonRunScriptTool(BaseMCPTool):
 
     def execute(self, arguments: Dict[str, Any]) -> Any:
         script_path: str = arguments.get('script_path', '').strip().lstrip('/')
-        section: str = arguments.get('section', 'my_data')
+        section: str = arguments.get('section', 'domain_data')
         args: List[str] = arguments.get('args') or []
         timeout: int = min(int(arguments.get('timeout_seconds', 60)), 90)
 
@@ -483,42 +504,61 @@ class PythonRunScriptTool(BaseMCPTool):
         worker_ctx = _get_worker_ctx()
         user_id = _get_user_id()
 
-        # Resolve script location
-        try:
-            if section == 'my_data':
-                if not user_id:
-                    return {
-                        'stdout': '', 'stderr': '', 'exit_code': 1,
-                        'elapsed_seconds': 0.0, 'figures': [],
-                        'error': 'User context not available for my_data section.',
-                        '_python_ready': False,
-                    }
-                section_root = path_resolve('my_data', worker_ctx, user_id=user_id)
+        # Resolve script location — try requested section first, then fallback all layers
+        all_sections = ['domain_data', 'my_data', 'common']
+        sections_to_try = [section]
+        for s in all_sections:
+            if s not in sections_to_try:
+                sections_to_try.append(s)
+
+        abs_script: Optional[str] = None
+        section_root: Optional[str] = None
+        resolve_errors: List[str] = []
+
+        for try_section in sections_to_try:
+            try:
+                if try_section == 'my_data':
+                    if not user_id:
+                        resolve_errors.append('my_data: user context not available')
+                        continue
+                    candidate_root = path_resolve('my_data', worker_ctx, user_id=user_id)
+                elif try_section == 'common':
+                    candidate_root = path_resolve('common_data', worker_ctx)
+                else:
+                    candidate_root = path_resolve('domain_data', worker_ctx)
+                    # Fallback: use g.worker_data_root when worker_ctx is empty
+                    if not worker_ctx:
+                        try:
+                            from flask import g as _g
+                            wr = getattr(_g, 'worker_data_root', '') or ''
+                            if wr:
+                                candidate_root = wr.strip()
+                        except RuntimeError:
+                            pass
+            except Exception as exc:
+                resolve_errors.append(f'{try_section}: {exc}')
+                continue
+
+            candidate = os.path.normpath(os.path.join(candidate_root, script_path))
+
+            # Security: prevent path traversal outside section root
+            if not candidate.startswith(os.path.normpath(candidate_root)):
+                resolve_errors.append(f'{try_section}: path traversal blocked')
+                continue
+
+            if os.path.isfile(candidate):
+                abs_script = candidate
+                section_root = candidate_root
+                break
             else:
-                section_root = path_resolve('domain_data', worker_ctx)
-        except Exception as exc:
-            return {
-                'stdout': '', 'stderr': str(exc), 'exit_code': 1,
-                'elapsed_seconds': 0.0, 'figures': [],
-                'error': f'Path resolution failed: {exc}', '_python_ready': False,
-            }
+                resolve_errors.append(f'{try_section}: not found')
 
-        abs_script = os.path.normpath(os.path.join(section_root, script_path))
-
-        # Security: prevent path traversal outside section root
-        if not abs_script.startswith(os.path.normpath(section_root)):
+        if abs_script is None or section_root is None:
             return {
                 'stdout': '', 'stderr': '', 'exit_code': 1,
                 'elapsed_seconds': 0.0, 'figures': [],
-                'error': 'Path traversal outside section root is not permitted.',
+                'error': f'Script not found: {script_path} (searched: {", ".join(resolve_errors)})',
                 '_python_ready': False,
-            }
-
-        if not os.path.isfile(abs_script):
-            return {
-                'stdout': '', 'stderr': '', 'exit_code': 1,
-                'elapsed_seconds': 0.0, 'figures': [],
-                'error': f'Script not found: {script_path}', '_python_ready': False,
             }
 
         # Read script source

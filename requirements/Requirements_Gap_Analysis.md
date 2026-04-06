@@ -1,9 +1,9 @@
 # Requirements Gap Analysis — RiskGPT / B-Pulse Digital Workers
 
-**Date:** 2026-04-05  
-**Scope:** All documents in `requirements/completed/` cross-referenced against the live codebase.  
-**Analyst:** Claude Code (automated review + manual verification)  
-**Overall Status:** REQ-01 through REQ-04 ✅ fully implemented. Six architectural prep requirements partially implemented. Five requirements pending (REQ-05 to REQ-08 + REQ-03 Listener Workflows).
+**Date:** 2026-04-06
+**Scope:** All documents in `requirements/completed/` cross-referenced against the live codebase.
+**Analyst:** Claude Code (automated review + manual verification)
+**Overall Status:** REQ-01 through REQ-04 ✅ fully implemented. REQ-09, REQ-10, REQ-11 ✅ fully implemented. Five requirements pending (REQ-05 to REQ-08 + REQ-03 Listener Workflows).
 
 ---
 
@@ -38,6 +38,9 @@
 | Connector suite (Teams, Outlook, Jira, SharePoint) | completed | ✅ IMPLEMENTED | Teams channel send + Outlook email blocked by M365 permissions/licensing (not code defects) |
 | Admin Panel Feature Parity | completed | ✅ COMPLETE | All admin panel CRUD functions defined and tested (see Functional_Test_Results.md) |
 | Workflow Tool Suite | completed | ✅ COMPLETE | Verified via UAT |
+| REQ-09 — BM25 Document Search Engine | completed | ✅ COMPLETE | Chunking, ranking, caching, file-type filter, OSFI retirement verified via UAT (10 CI tests PASS) |
+| REQ-10 — Common Data Path (Shared Library) | completed | ✅ COMPLETE | Admin upload, user read-only, BM25 extension verified via UAT (13 CI tests PASS, BT pending) |
+| REQ-11 — Multi-File Parallel Upload Engine | completed | ✅ COMPLETE | Streaming writes, 4 concurrent slots, batch_id deferred reindex verified via UAT (14 CI tests PASS, BT pending) |
 | REQ-05 — Summarization Engine | **pending** | 🔲 NOT STARTED | Pending implementation |
 | REQ-06 — B-Pulse Branding | **pending** | 🔲 NOT STARTED | Pending implementation |
 | REQ-07 — PostgreSQL Migration | **pending** | 🔲 NOT STARTED | Pending implementation |
@@ -154,13 +157,38 @@
 
 ---
 
-### 3. Pending Requirements (Not Started)
+### 3. Completed Requirements — Additional
+
+#### REQ-09 — BM25 Document Search Engine
+
+**Status:** ✅ Complete (updated 2026-04-06)
+**Location:** `requirements/completed/REQ-10_Common_Data_Path.md` (also covers search)
+**Scope:** BM25-based document search with chunking, ranking, caching, file-type filtering, and OSFI retirement.
+**Current state:** Fully implemented and tested. 10/10 CI tests PASS (see REQ-09_UAT_Results.md). BT pending.
+
+#### REQ-10 — Common Data Path (Shared Library)
+
+**Status:** ✅ Complete (updated 2026-04-06)
+**Location:** `requirements/completed/REQ-10_Common_Data_Path.md`
+**Scope:** Shared library for admin upload, user read-only access, BM25 extension, sidebar and admin panel integration.
+**Current state:** Fully implemented. 13/13 CI tests PASS (see REQ-10_UAT_Results.md). BT pending.
+
+#### REQ-11 — Multi-File Parallel Upload Engine
+
+**Status:** ✅ Complete (updated 2026-04-06)
+**Location:** `requirements/completed/REQ-11_Multi_File_Parallel_Upload.md`
+**Scope:** Streaming writes, 4 concurrent upload slots, batch_id deferred reindex, cancel/retry.
+**Current state:** Fully implemented. 14/14 CI tests PASS (see REQ-11_UAT_Results.md). BT pending.
+
+---
+
+### 4. Pending Requirements (Not Started)
 
 #### REQ-05 — Summarization Engine
 
-**Status:** 🔲 Not started  
-**Location:** `requirements/pending/REQ-05_Summarization_Engine.md`  
-**Scope:** Rolling context compression engine triggered at 180k tokens. SQLite-backed compression history. Context utilization gauge in both UIs. Permanent system notice when compressed.  
+**Status:** 🔲 Not started
+**Location:** `requirements/pending/REQ-05_Summarization_Engine.md`
+**Scope:** Rolling context compression engine triggered at 180k tokens. SQLite-backed compression history. Context utilization gauge in both UIs. Permanent system notice when compressed.
 **Current state:** Agent server uses a basic reactive summarization. No compression gauge in UI. No SQLite compression log.
 
 ---
@@ -176,37 +204,37 @@
 
 #### REQ-07 — PostgreSQL Database Migration
 
-**Status:** 🔲 Not started  
-**Location:** `requirements/pending/REQ-07_PostgreSQL_Database_Migration.md`  
-**Scope:** Migrate user config, conversation history, audit logs, worker config from JSON/JSONL flat files to PostgreSQL.  
+**Status:** 🔲 Not started
+**Location:** `requirements/pending/REQ-07_PostgreSQL_Database_Migration.md`
+**Scope:** Migrate user config, conversation history, audit logs, worker config from JSON/JSONL flat files to PostgreSQL.
 **Current state:** All config in `sajhamcpserver/config/` JSON files. Conversations in `data/threads.jsonl`. Audit log in `data/audit/tool_calls.jsonl`. `WorkerRepository` stub already provides the abstraction seam for worker config (GAP-02 above is the blocker for workers).
 
 ---
 
 #### REQ-08 — Apache Iceberg + S3 Data Strategy
 
-**Status:** 🔲 Architecture review pending  
-**Location:** `requirements/pending/REQ-08_Apache_Iceberg_S3_Data_Strategy.md`  
-**Scope:** Evaluate Apache Iceberg for analytical data layer; S3-first strategy for domain data and uploads.  
+**Status:** 🔲 Architecture review pending
+**Location:** `requirements/pending/REQ-08_Apache_Iceberg_S3_Data_Strategy.md`
+**Scope:** Evaluate Apache Iceberg for analytical data layer; S3-first strategy for domain data and uploads.
 **Current state:** `storage.py` S3 stub is the groundwork. DuckDB in-memory (REQ-PREP-04 complete) removes the persistent file constraint.
 
 ---
 
 #### REQ-03 Listener Workflows
 
-**Status:** 🔲 No UAT plan  
-**Location:** `REQ-03_Listener_Workflows.docx` (repo root)  
-**Scope:** Event-driven workflow execution triggered by external events (Teams messages, scheduled timers, etc.).  
+**Status:** 🔲 No UAT plan
+**Location:** `REQ-03_Listener_Workflows.docx` (repo root)
+**Scope:** Event-driven workflow execution triggered by external events (Teams messages, scheduled timers, etc.).
 **Current state:** Spec document exists but has not been translated to a UAT plan or implementation. No listener code found in `agent_server.py` or SAJHA server.
 
 ---
 
-### 4. External Blockers (Not Code Defects)
+### 5. External Blockers (Not Code Defects)
 
 | Item | Blocker | Status |
 |------|---------|--------|
-| `teams_send_message` — channel send | No `ChannelMessage.Send` application permission in MS Graph | Deferred — M365 admin |
-| `outlook_send_email` / `outlook_read_email` | `SaadAhmed@DeepLearnHQ.onmicrosoft.com` has no Exchange Online license | Deferred — M365 admin |
+| `teams_send_message` — channel send | ✅ RSC `ChannelMessage.Send.Group` via Teams app v1.0.1 installed | Ready to verify |
+| `outlook_send_email` / `outlook_read_email` | `SaadAhmed@DeepLearnHQ.onmicrosoft.com` now has Exchange Online license provisioned | Ready to verify |
 | Multi-worker connector scope isolation | Requires live credentials + 2 active workers | Deferred — connector setup |
 | `testConnectorFromModal()` | Real credential test requires licensed connectors | Deferred — connector setup |
 

@@ -35,7 +35,7 @@ _PYTHON_ADDENDUM = """
 You have access to two Python execution tools:
 
 - `python_execute`: Run ad-hoc Python code in a sandboxed environment.
-- `python_run_script`: Run a .py script from domain_data or my_data.
+- `python_run_script`: Run a .py script from domain_data or my_data. Before running a script, use `list_uploaded_files` with `file_type: "py"` to discover available scripts — always pass `file_type: "py"` when listing scripts to avoid truncation of large directories.
 
 Available libraries: pandas, numpy, scipy, matplotlib, plotly, openpyxl, pyarrow, statsmodels.
 
@@ -55,6 +55,45 @@ Additional libraries available in the sandbox:
 - QuantLib: Interest rate curves, bond pricing, derivatives (if available for runtime Python version)
 - xarray: Multi-dimensional labelled arrays for scenario grids and stress tests
 - networkx: Counterparty network graphs, contagion and centrality analysis
+"""
+
+
+_CANVAS_ADDENDUM = """
+
+## Canvas Panel — Direct Streaming
+
+**RULE: Canvas is ONLY for your FINAL response. Never open canvas before all tool calls are complete.**
+
+You MUST complete all tool calls and have real data in hand before writing any [CANVAS] output.
+- NEVER open canvas with placeholder, TBD, or "to be populated" content
+- NEVER pre-write a report template before tools have returned
+- NEVER emit [CANVAS] mid-reasoning or as a "I'm about to fetch this" message
+- If you need to call tools, call them first. Canvas comes AFTER.
+
+Correct order:
+  1. Call all required tools
+  2. Receive and process tool results
+  3. Write your final response — THEN open [CANVAS] if the output warrants it
+
+When your FINAL response is a report, detailed analysis, policy write-up, or structured document (>200 words with headers/tables):
+
+Start your final response with exactly:
+  [CANVAS]Your Report Title Here
+
+Everything AFTER that line streams directly into the canvas panel.
+Keep any text BEFORE [CANVAS] to one or two sentences (the chat summary).
+
+Example (correct — tools already called, data in hand):
+  Here is the latest news report on RBC.
+  [CANVAS]RBC Latest News — April 2026
+  ## Summary
+  Royal Bank of Canada is currently...
+  | Date | Headline | Source |
+  |------|----------|--------|
+  | Apr 6 | SpaceX IPO ... | Reuters |
+
+Do NOT use {"summary":..., "canvas":...} JSON format.
+Skip [CANVAS] entirely for short direct answers (< 3 sentences, no structure needed).
 """
 
 
@@ -93,7 +132,7 @@ WORKFLOW-GUIDED MODE (workflow file attached with agent_mode: multi in frontmatt
 
 def _augment_prompt(prompt: str, agent_mode: str = 'single') -> str:
     """Append platform addenda to a worker system prompt."""
-    result = prompt + _PYTHON_ADDENDUM
+    result = prompt + _PYTHON_ADDENDUM + _CANVAS_ADDENDUM
     if agent_mode == 'multi':
         result += _MULTI_AGENT_ADDENDUM
     return result

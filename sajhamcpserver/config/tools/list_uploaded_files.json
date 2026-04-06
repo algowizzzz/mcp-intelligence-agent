@@ -1,22 +1,31 @@
 {
   "name": "list_uploaded_files",
   "implementation": "sajha.tools.impl.upload_tools.ListUploadedFilesTool",
-  "description": "Lists all files uploaded to the SAJHA uploads folder. Returns filename, full path, file type, size, and upload time. Call this before any read_pdf / read_docx / read_excel call to get the correct file path. Also call when user mentions 'the file I uploaded' or asks to analyse an uploaded document.",
-  "version": "1.0.0",
+  "description": "Lists files across all data layers (my_data, domain_data, common) by default. Returns filename, full path, section, file type, size, and upload time. Call this before any read_pdf / read_docx / read_excel / python_run_script call to discover available files. By default searches ALL three layers — use the 'section' parameter to drill down into a specific layer if needed.",
+  "version": "1.1.0",
   "enabled": true,
   "data_path": "${data.uploads_dir}",
   "inputSchema": {
     "type": "object",
     "properties": {
+      "section": {
+        "type": "string",
+        "enum": ["all", "my_data", "domain_data", "common"],
+        "description": "Data layer to list. Default: all (searches my_data, domain_data, and common)."
+      },
       "file_type": {
         "type": "string",
-        "enum": ["pdf", "docx", "xlsx", "csv", "txt", "all"],
+        "enum": ["pdf", "docx", "xlsx", "csv", "txt", "parquet", "md", "json", "py", "all"],
         "description": "Filter by file type. Default: all."
       },
       "sort_by": {
         "type": "string",
         "enum": ["uploaded_at", "filename", "size"],
         "description": "Sort order. Default: uploaded_at descending (newest first)."
+      },
+      "subfolder": {
+        "type": "string",
+        "description": "Optional subfolder path within a section to list (e.g. 'exports'). Default: list all subfolders recursively."
       }
     },
     "required": []
@@ -25,7 +34,7 @@
     "author": "Ashutosh Sinha",
     "email": "ajsinha@gmail.com",
     "category": "File Management",
-    "tags": ["upload", "files", "documents", "pdf", "docx", "excel"],
+    "tags": ["upload", "files", "documents", "pdf", "docx", "excel", "python", "data-layers"],
     "rateLimit": 60,
     "cacheTTL": 0,
     "copyright": "Copyright All Rights Reserved 2025-2030"
