@@ -115,6 +115,15 @@ class PdfReadTool(BaseMCPTool):
                 "pages": {"type": "string", "description": "Page range: '1', '1-5', or 'all' (default)."},
                 "extract_tables": {"type": "boolean", "description": "Extract tables. Default: true."},
                 "max_chars": {"type": "integer", "description": "Truncate text at this char count. Default: 50000."},
+                "heading": {
+                    "type": "string",
+                    "description": (
+                        "For large PDFs: extract only the section under this heading. "
+                        "Detected using font-size analysis — larger/bolder text is treated as a heading. "
+                        "Case-insensitive partial match. E.g. 'Market Risk', 'Item 7', 'Executive Summary'. "
+                        "If not found, returns available_headings[] detected in the document."
+                    ),
+                },
             },
             "required": ["file_path"],
         }
@@ -127,6 +136,7 @@ class PdfReadTool(BaseMCPTool):
         pages_arg = arguments.get("pages", "all")
         extract_tables = arguments.get("extract_tables", True)
         max_chars = arguments.get("max_chars", 50000)
+        heading = (arguments.get("heading") or "").strip()
 
         safe = _safe_path(file_path, _domain_root(), _my_data_root())
         if not safe:
@@ -155,9 +165,13 @@ class PdfReadTool(BaseMCPTool):
             return {"error": "PDF is encrypted. Cannot extract without password."}
 
         total_pages = len(doc)
-        # Parse page range
         page_indices = self._parse_pages(pages_arg, total_pages)
 
+        # ── Heading extraction mode ──────────────────────────────────────────
+        if heading:
+            return self._extract_pdf_section(doc, page_indices, heading, safe, total_pages)
+
+        # ── Standard full read ───────────────────────────────────────────────
         text_parts = []
         tables = []
         for i in page_indices:
@@ -196,6 +210,181 @@ class PdfReadTool(BaseMCPTool):
         if warning:
             result["warning"] = warning
         return result
+
+    def _detect_pdf_headings(self, doc, page_indices):
+        """
+        Detect heading-like lines using font-size analysis via PyMuPDF.
+
+        Strategy:
+          1. Collect every text line with its max font size and bold flag, per page.
+          2. Compute the most-common (body) font size via Counter.
+          3. A line is a heading if font_size > body_size * 1.15 OR
+             (bold AND short AND >= body_size).
+          4. Exclude: TOC leader lines (`...`), pure numbers, very long lines.
+          5. Exclude running headers/footers — text that appears on ≥30% of pages.
+          6. Allow multiple occurrences of the same heading (e.g. TOC + body);
+             the caller will pick the occurrence with the longest following content.
+
+        Returns (headings, full_text):
+          headings — list of {'text', 'page', 'char_offset'} dicts
+          full_text — concatenated page texts (joined by newline) for slicing
+        """
+        from collections import Counter
+
+        # Per-page line collection
+        page_line_items = {}  # page_idx -> [(font_size, is_bold, text), ...]
+        for page_idx in page_indices:
+            items = []
+            page = doc[page_idx]
+            d = page.get_text("dict")
+            for block in d.get("blocks", []):
+                if block.get("type") != 0:
+                    continue
+                for line in block.get("lines", []):
+                    parts, max_size, bold = [], 0.0, False
+                    for span in line.get("spans", []):
+                        t = span.get("text", "")
+                        if t.strip():
+                            parts.append(t)
+                        sz = span.get("size", 0.0)
+                        if sz > max_size:
+                            max_size = sz
+                        if span.get("flags", 0) & 16:
+                            bold = True
+                    line_text = "".join(parts).strip()
+                    if line_text:
+                        items.append((max_size, bold, line_text))
+            page_line_items[page_idx] = items
+
+        all_line_items = [(p + 1, sz, bold, txt)
+                         for p, items in page_line_items.items()
+                         for sz, bold, txt in items]
+
+        if not all_line_items:
+            return [], ""
+
+        # Body font size = most common rounded size
+        body_size = Counter(round(it[1]) for it in all_line_items).most_common(1)[0][0]
+
+        # Detect running headers/footers: normalized text appearing on ≥30% of pages
+        n_pages = len(page_indices)
+        text_page_count: Counter = Counter()
+        for p, sz, bold, txt in all_line_items:
+            text_page_count[re.sub(r'\s+', ' ', txt.lower()[:40])] += 1
+        running_threshold = max(2, int(n_pages * 0.30))
+        running_texts = {k for k, v in text_page_count.items() if v >= running_threshold}
+
+        # Build full text
+        full_text = "\n".join(doc[p].get_text() for p in page_indices)
+
+        headings = []
+        search_from = 0  # advance through full_text to find offsets in order
+        for page, size, bold, text in all_line_items:
+            norm_key = re.sub(r'\s+', ' ', text.lower()[:40])
+            is_large   = size > body_size * 1.15
+            is_bold_hdr = bold and len(text) < 120 and size >= body_size * 0.95
+            is_toc_line = bool(re.search(r'\.{3,}', text))
+            is_numeric  = bool(re.match(r'^[\d\s\.\,\-\$\%]+$', text))
+            is_running  = norm_key in running_texts
+            too_long    = len(text) > 200
+            too_short   = len(text) < 3
+            if (is_large or is_bold_hdr) and not any(
+                    [is_toc_line, is_numeric, is_running, too_long, too_short]):
+                # Locate this text in full_text (search forward from last offset)
+                pos = full_text.lower().find(text.lower()[:40], search_from)
+                if pos == -1:
+                    pos = full_text.lower().find(text.lower()[:40])
+                if pos != -1:
+                    search_from = pos + 1
+                    headings.append({"text": text, "page": page, "char_offset": pos})
+
+        return headings, full_text
+
+    def _extract_pdf_section(self, doc, page_indices, heading_query, safe, total_pages):
+        """
+        Extract body text between the matched heading and the next detected heading
+        using character offsets into the full concatenated document text.
+        """
+        result = self._detect_pdf_headings(doc, page_indices)
+        if isinstance(result, tuple):
+            headings, full_text = result
+        else:
+            headings, full_text = result, ""
+
+        if not headings:
+            return {
+                "error": (
+                    "No headings detected in this PDF. "
+                    "The document may use image-only text or non-standard formatting. "
+                    "Try pdf_read without heading= and use pages= to narrow the range."
+                ),
+                "filename": safe.name,
+                "_source": str(safe),
+            }
+
+        query = heading_query.strip().lower()
+        match_idx = None
+        for i, h in enumerate(headings):
+            if query in h["text"].lower():
+                match_idx = i
+                break
+
+        available = [h["text"] for h in headings]
+
+        if match_idx is None:
+            return {
+                "error": f'Heading "{heading_query}" not found in {safe.name}',
+                "available_headings": available[:50],
+                "filename": safe.name,
+                "total_pages": total_pages,
+                "_source": str(safe),
+            }
+
+        # Find the best match — PDFs often repeat headings in the TOC (short content)
+        # before the real body section (long content). Also, the TOC and body versions
+        # of the same heading may differ slightly (e.g. em-dash vs hyphen).
+        # Strategy: collect ALL headings from the list that match the query, compute
+        # the content length from each to the next heading, pick the longest.
+        all_heading_offsets = sorted(h["char_offset"] for h in headings)
+
+        matching_headings = [(i, h) for i, h in enumerate(headings)
+                             if query in h["text"].lower()]
+
+        best_text = ""
+        best_matched_text = headings[match_idx]["text"]
+        best_start_page = headings[match_idx]["page"]
+
+        for _, candidate_h in matching_headings:
+            start_off = candidate_h["char_offset"]
+            # Next heading boundary after this one
+            next_boundary = len(full_text)
+            for hoff in all_heading_offsets:
+                if hoff > start_off + len(candidate_h["text"]):
+                    next_boundary = hoff
+                    break
+            candidate_text = full_text[start_off:next_boundary].strip()
+            if len(candidate_text) > len(best_text):
+                best_text = candidate_text
+                best_matched_text = candidate_h["text"]
+                best_start_page = candidate_h["page"]
+
+        section_text = best_text
+        max_chars = 60_000
+        truncated = len(section_text) > max_chars
+        if truncated:
+            section_text = section_text[:max_chars]
+
+        return {
+            "filename": safe.name,
+            "matched_heading": best_matched_text,
+            "start_page": best_start_page,
+            "total_pages": total_pages,
+            "char_count": len(section_text),
+            "truncated": truncated,
+            "content": section_text,
+            "available_headings": available[:50],
+            "_source": str(safe),
+        }
 
     def _parse_pages(self, pages_arg, total):
         if pages_arg == "all" or not pages_arg:

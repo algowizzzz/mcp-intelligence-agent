@@ -11,6 +11,10 @@
         "type": "string",
         "description": "Name of the Word file to read (.docx)"
       },
+      "heading": {
+        "type": "string",
+        "description": "For large Word documents: extract only the section under this heading (case-insensitive partial match against Heading styles). Returns available_headings[] if not found."
+      },
       "section": {
         "type": "string",
         "enum": ["domain_data", "my_data", "common"],

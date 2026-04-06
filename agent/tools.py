@@ -53,7 +53,9 @@ _MAX_TOOL_OUTPUT_CHARS = 12_000  # ~3k tokens per tool — keeps accumulated res
 
 # Per-tool output limits (override _MAX_TOOL_OUTPUT_CHARS for tools that legitimately return large text)
 _TOOL_OUTPUT_LIMITS: dict = {
-    'file_read': 60_000,  # document reads — 60k chars (~15k tokens) for filing sections
+    'file_read':       60_000,  # markdown — 60k chars (~15k tokens) for filing sections
+    'msdoc_read_word': 60_000,  # Word docs — heading extraction can return large sections
+    'pdf_read':        60_000,  # PDFs — heading extraction or ranged page reads
 }
 
 # Per-tool HTTP timeouts (override 30s default for tools that hit large external docs)

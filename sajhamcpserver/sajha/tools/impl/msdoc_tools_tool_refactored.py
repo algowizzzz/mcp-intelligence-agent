@@ -62,6 +62,86 @@ class MsDocBaseTool(BaseMCPTool):
         """Get full absolute path for a file in the given section."""
         return os.path.join(self._resolve_docs_dir(section), filename)
 
+    def _extract_word_heading(self, doc, heading_query: str) -> tuple:
+        """
+        Extract the content block under a matching Word heading style.
+
+        Walks all paragraphs, identifies those with a 'Heading N' style, finds
+        the first one whose text contains heading_query (case-insensitive), then
+        collects paragraphs (and table text) until the next heading at the same
+        or higher level.
+
+        Returns (text, matched_title, available_headings).
+        text is None when heading_query is not found.
+        """
+        query = heading_query.strip().lower()
+
+        # Walk the document body in order, collecting paragraphs and table cells
+        from docx.table import Table as _DocxTable
+        from docx.text.paragraph import Paragraph as _DocxPara
+
+        body_children = list(doc.element.body)
+
+        # --- Pass 1: index all heading paragraphs ---
+        heading_map = []  # list of (child_index, level, text)
+        for ci, child in enumerate(body_children):
+            # Paragraph elements
+            if child.tag.endswith('}p'):
+                para = _DocxPara(child, doc)
+                style_name = para.style.name if para.style else ''
+                if style_name.startswith('Heading'):
+                    text = para.text.strip()
+                    if not text:
+                        continue
+                    try:
+                        level = int(style_name.split()[-1])
+                    except (ValueError, IndexError):
+                        level = 1
+                    heading_map.append((ci, level, text))
+
+        if not heading_map:
+            return None, None, []
+
+        # --- Pass 2: find match ---
+        match_i = None
+        match_level = None
+        match_title = None
+        for hi, (ci, level, text) in enumerate(heading_map):
+            if query in text.lower():
+                match_i = hi
+                match_level = level
+                match_title = text
+                break
+
+        if match_i is None:
+            return None, None, [h[2] for h in heading_map]
+
+        # --- Pass 3: find end boundary ---
+        start_ci = heading_map[match_i][0]
+        end_ci = len(body_children)
+        for hi in range(match_i + 1, len(heading_map)):
+            next_ci, next_level, _ = heading_map[hi]
+            if next_level <= match_level:
+                end_ci = next_ci
+                break
+
+        # --- Pass 4: collect text from start_ci to end_ci ---
+        lines = []
+        for child in body_children[start_ci:end_ci]:
+            if child.tag.endswith('}p'):
+                para = _DocxPara(child, doc)
+                if para.text.strip():
+                    lines.append(para.text)
+            elif child.tag.endswith('}tbl'):
+                # Include table cell text
+                table = _DocxTable(child, doc)
+                for row in table.rows:
+                    row_cells = [c.text.strip() for c in row.cells if c.text.strip()]
+                    if row_cells:
+                        lines.append(' | '.join(row_cells))
+
+        return '\n'.join(lines), match_title, [h[2] for h in heading_map]
+
     def _list_files_by_type(self, file_type: str = 'all', docs_dir: str = None) -> List[Dict]:
         """List files by type using storage abstraction (REQ-PREP-03)."""
         directory = docs_dir or self.docs_directory
@@ -284,6 +364,15 @@ class MsDocReadWordTool(MsDocBaseTool):
                     "type": "string",
                     "description": "Name of the Word file to read"
                 },
+                "heading": {
+                    "type": "string",
+                    "description": (
+                        "For large Word documents: extract only the section under this heading. "
+                        "Case-insensitive partial match against Word Heading styles (Heading 1/2/3). "
+                        "E.g. 'Market Risk', 'Executive Summary', 'Introduction'. "
+                        "If not found, returns available_headings[] so you can pick the right one."
+                    ),
+                },
                 "section": _SECTION_PROP,
             },
             "required": ["filename"]
@@ -318,10 +407,44 @@ class MsDocReadWordTool(MsDocBaseTool):
         """Execute read Word document"""
         filename = arguments['filename']
         section = arguments.get('section', 'domain_data')
+        heading = (arguments.get('heading') or '').strip()
         file_path = self._get_file_path(filename, section)
 
         if not storage.exists(file_path):
             raise ValueError(f"File not found: {filename}")
+
+        if heading:
+            from docx import Document
+            raw = storage.read_bytes(file_path)
+            doc = Document(io.BytesIO(raw))
+            text, matched_title, all_headings = self._extract_word_heading(doc, heading)
+
+            if text is None:
+                if not all_headings:
+                    return {
+                        'error': (
+                            f'No Word heading styles found in {filename}. '
+                            'The document may not use standard Heading styles. '
+                            'Try msdoc_read_word without heading= to read the full document.'
+                        ),
+                        'filename': filename,
+                        '_source': file_path,
+                    }
+                return {
+                    'error': f'Heading "{heading}" not found in {filename}',
+                    'available_headings': all_headings[:40],
+                    'filename': filename,
+                    '_source': file_path,
+                }
+
+            return {
+                'filename': filename,
+                'matched_heading': matched_title,
+                'size_chars': len(text),
+                'content': text,
+                'available_headings': all_headings[:40],
+                '_source': file_path,
+            }
 
         result = self._read_word_document(file_path)
         result['_source'] = str(file_path)
