@@ -837,6 +837,111 @@ async def super_reset_password(user_id: str, _: dict = Depends(require_super_adm
     return {'temp_password': tmp, 'onboarding_complete': False}
 
 
+# ── Super Admin — LLM Provider Config ─────────────────────────────────────────
+
+_LLM_CONFIG_FILE = pathlib.Path('sajhamcpserver/config/llm_config.json')
+
+_LLM_DEFAULTS = {
+    'anthropic':  {'model': 'claude-sonnet-4-20250514', 'max_tokens': 8192},
+    'xai':        {'model': 'grok-3',                   'max_tokens': 8192},
+    'huggingface':{'model': 'meta-llama/Llama-3.3-70B-Instruct', 'max_tokens': 4096},
+    'bedrock':    {'model_id': 'us.anthropic.claude-sonnet-4-20250514-v1:0',
+                   'region': 'us-east-1',               'max_tokens': 8192},
+}
+
+def _mask_key(key: str) -> str:
+    """Return masked version showing only last 4 chars."""
+    if not key or len(key) < 8:
+        return '••••' if key else ''
+    return '••••' + key[-4:]
+
+def _read_llm_config() -> dict:
+    if _LLM_CONFIG_FILE.exists():
+        try:
+            return json.loads(_LLM_CONFIG_FILE.read_text())
+        except Exception:
+            pass
+    return {'provider': os.getenv('LLM_PROVIDER', 'anthropic')}
+
+def _write_llm_config(cfg: dict) -> None:
+    _LLM_CONFIG_FILE.write_text(json.dumps(cfg, indent=2))
+
+
+@app.get('/api/super/llm-config')
+async def get_llm_config(_: dict = Depends(require_super_admin)):
+    """Return current LLM config with API keys masked."""
+    cfg = _read_llm_config()
+    # Mask API keys in response
+    masked = dict(cfg)
+    for prov in ('anthropic', 'xai', 'huggingface'):
+        if prov in masked and masked[prov].get('api_key'):
+            masked[prov] = dict(masked[prov])
+            masked[prov]['api_key_masked'] = _mask_key(masked[prov]['api_key'])
+            masked[prov]['api_key'] = ''  # never send raw key back
+    return masked
+
+
+class LlmProviderSettings(BaseModel):
+    api_key: str | None = None
+    api_key_masked: str | None = None  # ignored on write
+    model: str | None = None
+    max_tokens: int | None = None
+
+class LlmBedrockSettings(BaseModel):
+    model_id: str | None = None
+    region: str | None = None
+    max_tokens: int | None = None
+
+class LlmConfigRequest(BaseModel):
+    provider: str
+    anthropic: LlmProviderSettings | None = None
+    xai: LlmProviderSettings | None = None
+    huggingface: LlmProviderSettings | None = None
+    bedrock: LlmBedrockSettings | None = None
+
+
+@app.put('/api/super/llm-config')
+async def put_llm_config(req: LlmConfigRequest, _: dict = Depends(require_super_admin)):
+    """Save LLM config and hot-reload the agent LLM."""
+    valid = ('anthropic', 'xai', 'huggingface', 'bedrock')
+    if req.provider not in valid:
+        raise HTTPException(status_code=400, detail=f"provider must be one of {valid}")
+
+    existing = _read_llm_config()
+
+    def _merge_prov(prov_name: str, incoming, key_field='api_key'):
+        prev = existing.get(prov_name, {})
+        defaults = _LLM_DEFAULTS.get(prov_name, {})
+        merged = {**defaults, **prev}
+        if incoming is None:
+            return merged
+        d = incoming.dict(exclude_none=True)
+        d.pop('api_key_masked', None)
+        # If api_key is empty string, keep existing key
+        if key_field in d and not d[key_field]:
+            d.pop(key_field)
+        merged.update(d)
+        return merged
+
+    cfg = {
+        'provider': req.provider,
+        'anthropic':   _merge_prov('anthropic',   req.anthropic),
+        'xai':         _merge_prov('xai',         req.xai),
+        'huggingface': _merge_prov('huggingface', req.huggingface),
+        'bedrock':     _merge_prov('bedrock',     req.bedrock, key_field=''),
+    }
+    _write_llm_config(cfg)
+
+    # Hot-reload agent LLM
+    try:
+        from agent.agent import reload_llm
+        new_provider = reload_llm()
+        return {'status': 'ok', 'active_provider': new_provider}
+    except Exception as exc:
+        # Config saved but reload failed — return error so UI can show it
+        raise HTTPException(status_code=500, detail=f"Config saved but LLM reload failed: {exc}")
+
+
 # ── Admin — Own Worker Config ──────────────────────────────────────────────────
 
 def _get_admin_worker(payload: dict) -> dict:

@@ -1,0 +1,23 @@
+{
+  "provider": "xai",
+  "anthropic": {
+    "model": "claude-sonnet-4-20250514",
+    "max_tokens": 8192,
+    "api_key": ""
+  },
+  "xai": {
+    "model": "grok-3",
+    "max_tokens": 8192,
+    "api_key": ""
+  },
+  "huggingface": {
+    "model": "meta-llama/Llama-3.3-70B-Instruct",
+    "max_tokens": 4096,
+    "api_key": ""
+  },
+  "bedrock": {
+    "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+    "region": "us-east-1",
+    "max_tokens": 8192
+  }
+}

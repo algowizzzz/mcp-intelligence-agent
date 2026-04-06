@@ -351,6 +351,18 @@
     .pill-blue { background: rgba(255,255,255,0.08); color: #cccccc; }
     .pill-red { background: rgba(220,50,50,0.18); color: #f08080; }
 
+    /* ── LLM Provider Cards ── */
+    .llm-prov-card {
+      padding: 14px 12px; border: 1px solid var(--border); border-radius: 10px;
+      cursor: pointer; text-align: center; transition: border-color .15s, background .15s;
+      background: rgba(255,255,255,0.03);
+    }
+    .llm-prov-card:hover { border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.06); }
+    .llm-prov-card.selected { border-color: var(--accent); background: rgba(99,102,241,0.10); }
+    .llm-prov-name { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+    .llm-prov-sub  { font-size: 11px; color: var(--text-m); }
+    .form-hint { font-size: 11px; color: var(--text-m); margin-top: 4px; }
+
     /* ── Modal ── */
     .modal-overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.6);
@@ -566,6 +578,10 @@
         <div class="nav-item" onclick="showSection('audit')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
           Audit Log
+        </div>
+        <div class="nav-item" onclick="showSection('llm-config')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07M8.46 8.46a5 5 0 0 0 0 7.07"/></svg>
+          LLM Provider
         </div>
       </div>
     </nav>
@@ -1020,6 +1036,127 @@
         </div>
       </div>
 
+      <!-- ── LLM Provider (Super Admin) ── -->
+      <div class="section-panel" id="section-llm-config">
+        <div class="section-header">
+          <div>
+            <div class="section-title">LLM Provider</div>
+            <div class="section-sub">Configure the AI model powering all digital workers</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="saveLlmConfig()">Apply &amp; Reload</button>
+        </div>
+
+        <div style="max-width:640px">
+          <!-- Active provider badge -->
+          <div id="llm-active-badge" style="display:none;margin-bottom:20px;padding:10px 14px;background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.3);border-radius:8px;font-size:13px;color:#a5b4fc">
+            Active: <strong id="llm-active-label">—</strong>
+          </div>
+
+          <!-- Provider selector -->
+          <div class="form-row">
+            <label class="form-label">Provider</label>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:600px" id="llm-provider-cards">
+              <div class="llm-prov-card" id="llmprov-anthropic" onclick="selectLlmProvider('anthropic')">
+                <div class="llm-prov-name">Anthropic</div>
+                <div class="llm-prov-sub">Claude models</div>
+              </div>
+              <div class="llm-prov-card" id="llmprov-xai" onclick="selectLlmProvider('xai')">
+                <div class="llm-prov-name">xAI</div>
+                <div class="llm-prov-sub">Grok models</div>
+              </div>
+              <div class="llm-prov-card" id="llmprov-huggingface" onclick="selectLlmProvider('huggingface')">
+                <div class="llm-prov-name">HuggingFace</div>
+                <div class="llm-prov-sub">Open-source</div>
+              </div>
+              <div class="llm-prov-card" id="llmprov-bedrock" onclick="selectLlmProvider('bedrock')">
+                <div class="llm-prov-name">AWS Bedrock</div>
+                <div class="llm-prov-sub">Claude on AWS</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Anthropic fields -->
+          <div id="llm-fields-anthropic" class="llm-prov-fields" style="display:none">
+            <div class="form-row" style="margin-top:20px">
+              <label class="form-label">API Key</label>
+              <input class="form-input" id="llm-ant-key" type="password" placeholder="sk-ant-…  (leave blank to keep existing)" autocomplete="off">
+              <div class="form-hint" id="llm-ant-key-hint"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px">
+              <div class="form-row">
+                <label class="form-label">Model</label>
+                <input class="form-input" id="llm-ant-model" placeholder="claude-sonnet-4-20250514">
+              </div>
+              <div class="form-row">
+                <label class="form-label">Max Tokens</label>
+                <input class="form-input" id="llm-ant-maxtok" type="number" placeholder="8192">
+              </div>
+            </div>
+          </div>
+
+          <!-- xAI fields -->
+          <div id="llm-fields-xai" class="llm-prov-fields" style="display:none">
+            <div class="form-row" style="margin-top:20px">
+              <label class="form-label">API Key</label>
+              <input class="form-input" id="llm-xai-key" type="password" placeholder="xai-…  (leave blank to keep existing)" autocomplete="off">
+              <div class="form-hint" id="llm-xai-key-hint"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px">
+              <div class="form-row">
+                <label class="form-label">Model</label>
+                <input class="form-input" id="llm-xai-model" placeholder="grok-3">
+              </div>
+              <div class="form-row">
+                <label class="form-label">Max Tokens</label>
+                <input class="form-input" id="llm-xai-maxtok" type="number" placeholder="8192">
+              </div>
+            </div>
+          </div>
+
+          <!-- HuggingFace fields -->
+          <div id="llm-fields-huggingface" class="llm-prov-fields" style="display:none">
+            <div class="form-row" style="margin-top:20px">
+              <label class="form-label">API Key</label>
+              <input class="form-input" id="llm-hf-key" type="password" placeholder="hf_…  (leave blank to keep existing)" autocomplete="off">
+              <div class="form-hint" id="llm-hf-key-hint"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px">
+              <div class="form-row">
+                <label class="form-label">Model</label>
+                <input class="form-input" id="llm-hf-model" placeholder="meta-llama/Llama-3.3-70B-Instruct">
+              </div>
+              <div class="form-row">
+                <label class="form-label">Max Tokens</label>
+                <input class="form-input" id="llm-hf-maxtok" type="number" placeholder="4096">
+              </div>
+            </div>
+          </div>
+
+          <!-- Bedrock fields -->
+          <div id="llm-fields-bedrock" class="llm-prov-fields" style="display:none">
+            <div style="margin-top:16px;padding:10px 14px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:8px;font-size:12px;color:#fbbf24">
+              Requires: <code>pip install langchain-aws boto3</code> and AWS credentials configured in the environment.
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+              <div class="form-row">
+                <label class="form-label">Model ID</label>
+                <input class="form-input" id="llm-bdr-modelid" placeholder="us.anthropic.claude-sonnet-4-20250514-v1:0">
+              </div>
+              <div class="form-row">
+                <label class="form-label">AWS Region</label>
+                <input class="form-input" id="llm-bdr-region" placeholder="us-east-1">
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="form-label">Max Tokens</label>
+              <input class="form-input" id="llm-bdr-maxtok" type="number" placeholder="8192" style="max-width:160px">
+            </div>
+          </div>
+
+          <div id="llm-save-msg" style="display:none;margin-top:20px;padding:10px 14px;border-radius:8px;font-size:13px"></div>
+        </div>
+      </div>
+
     </div><!-- /content -->
   </div><!-- /main -->
 </div>
@@ -1126,7 +1263,8 @@ function showSection(name) {
   var titles = {
     dashboard: 'Dashboard', 'worker-config': 'Worker Configuration',
     tools: 'Tools', 'domain-data': 'Domain Data', 'common-data': 'Shared Library', workflows: 'Workflows',
-    users: 'Users', workers: 'Manage Workers', connectors: 'Connectors', audit: 'Audit Log'
+    users: 'Users', workers: 'Manage Workers', connectors: 'Connectors', audit: 'Audit Log',
+    'llm-config': 'LLM Provider'
   };
   document.getElementById('topbar-title').textContent = titles[name] || name;
 
@@ -1140,6 +1278,7 @@ function showSection(name) {
   else if (name === 'workers') loadWorkers();
   else if (name === 'connectors') { _currentConnTab = 'overview'; switchConnectorTab('overview'); }
   else if (name === 'audit') loadAudit();
+  else if (name === 'llm-config') loadLlmConfig();
 }
 
 // ── Worker switcher ───────────────────────────────────────────────────────────
@@ -2288,6 +2427,138 @@ function switchSheet(tabEl, sheetName, wb) {
   tabEl.classList.add('active');
   var pb = document.getElementById('preview-body');
   if (pb && typeof renderSheet === 'function') renderSheet(wb, sheetName, pb);
+}
+
+// ── LLM Provider Config ───────────────────────────────────────────────────────
+var _llmCfg = {};
+var _llmSelectedProvider = 'xai';
+
+function selectLlmProvider(prov) {
+  _llmSelectedProvider = prov;
+  document.querySelectorAll('.llm-prov-card').forEach(function(c) { c.classList.remove('selected'); });
+  var card = document.getElementById('llmprov-' + prov);
+  if (card) card.classList.add('selected');
+  document.querySelectorAll('.llm-prov-fields').forEach(function(f) { f.style.display = 'none'; });
+  var fields = document.getElementById('llm-fields-' + prov);
+  if (fields) fields.style.display = '';
+}
+
+function _llmFieldVal(id, fallback) {
+  var el = document.getElementById(id);
+  return el ? (el.value.trim() || fallback || '') : (fallback || '');
+}
+
+async function loadLlmConfig() {
+  try {
+    var resp = await fetch(API + '/api/super/llm-config', { headers: authHeaders() });
+    if (!resp.ok) throw new Error(await resp.text());
+    var r = await resp.json();
+    _llmCfg = r;
+    var prov = r.provider || 'xai';
+    selectLlmProvider(prov);
+
+    // Active badge
+    var badge = document.getElementById('llm-active-badge');
+    var label = document.getElementById('llm-active-label');
+    if (badge && label) {
+      label.textContent = prov.charAt(0).toUpperCase() + prov.slice(1);
+      badge.style.display = '';
+    }
+
+    // Anthropic
+    var ant = r.anthropic || {};
+    _setVal('llm-ant-model', ant.model || 'claude-sonnet-4-20250514');
+    _setVal('llm-ant-maxtok', ant.max_tokens || 8192);
+    var antHint = document.getElementById('llm-ant-key-hint');
+    if (antHint) antHint.textContent = ant.api_key_masked ? 'Current key: ' + ant.api_key_masked : 'No key saved';
+
+    // xAI
+    var xai = r.xai || {};
+    _setVal('llm-xai-model', xai.model || 'grok-3');
+    _setVal('llm-xai-maxtok', xai.max_tokens || 8192);
+    var xaiHint = document.getElementById('llm-xai-key-hint');
+    if (xaiHint) xaiHint.textContent = xai.api_key_masked ? 'Current key: ' + xai.api_key_masked : 'No key saved';
+
+    // HuggingFace
+    var hf = r.huggingface || {};
+    _setVal('llm-hf-model', hf.model || 'meta-llama/Llama-3.3-70B-Instruct');
+    _setVal('llm-hf-maxtok', hf.max_tokens || 4096);
+    var hfHint = document.getElementById('llm-hf-key-hint');
+    if (hfHint) hfHint.textContent = hf.api_key_masked ? 'Current key: ' + hf.api_key_masked : 'No key saved';
+
+    // Bedrock
+    var bdr = r.bedrock || {};
+    _setVal('llm-bdr-modelid', bdr.model_id || 'us.anthropic.claude-sonnet-4-20250514-v1:0');
+    _setVal('llm-bdr-region',  bdr.region   || 'us-east-1');
+    _setVal('llm-bdr-maxtok',  bdr.max_tokens || 8192);
+  } catch(e) {
+    console.error('loadLlmConfig error', e);
+  }
+}
+
+function _setVal(id, val) {
+  var el = document.getElementById(id);
+  if (el) el.value = val;
+}
+
+async function saveLlmConfig() {
+  var msg = document.getElementById('llm-save-msg');
+  if (msg) { msg.style.display = ''; msg.style.background = 'rgba(255,255,255,0.05)'; msg.style.color = 'var(--text-m)'; msg.textContent = 'Applying…'; }
+
+  var body = {
+    provider: _llmSelectedProvider,
+    anthropic: {
+      api_key:    _llmFieldVal('llm-ant-key'),
+      model:      _llmFieldVal('llm-ant-model', 'claude-sonnet-4-20250514'),
+      max_tokens: parseInt(_llmFieldVal('llm-ant-maxtok', '8192')) || 8192,
+    },
+    xai: {
+      api_key:    _llmFieldVal('llm-xai-key'),
+      model:      _llmFieldVal('llm-xai-model', 'grok-3'),
+      max_tokens: parseInt(_llmFieldVal('llm-xai-maxtok', '8192')) || 8192,
+    },
+    huggingface: {
+      api_key:    _llmFieldVal('llm-hf-key'),
+      model:      _llmFieldVal('llm-hf-model', 'meta-llama/Llama-3.3-70B-Instruct'),
+      max_tokens: parseInt(_llmFieldVal('llm-hf-maxtok', '4096')) || 4096,
+    },
+    bedrock: {
+      model_id:   _llmFieldVal('llm-bdr-modelid', 'us.anthropic.claude-sonnet-4-20250514-v1:0'),
+      region:     _llmFieldVal('llm-bdr-region',  'us-east-1'),
+      max_tokens: parseInt(_llmFieldVal('llm-bdr-maxtok', '8192')) || 8192,
+    },
+  };
+
+  try {
+    var resp2 = await fetch(API + '/api/super/llm-config', {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+    });
+    if (!resp2.ok) { var errTxt = await resp2.text(); throw new Error(errTxt); }
+    var r = await resp2.json();
+    if (msg) {
+      msg.style.background = 'rgba(34,197,94,0.12)';
+      msg.style.color = '#86efac';
+      msg.style.border = '1px solid rgba(34,197,94,0.3)';
+      msg.textContent = 'Active provider: ' + (r.active_provider || _llmSelectedProvider) + ' — LLM reloaded successfully.';
+    }
+    // Update badge
+    var label = document.getElementById('llm-active-label');
+    if (label) label.textContent = (r.active_provider || _llmSelectedProvider).charAt(0).toUpperCase() + (r.active_provider || _llmSelectedProvider).slice(1);
+    // Reload to refresh masked key hints
+    await loadLlmConfig();
+    // Clear key fields after save
+    ['llm-ant-key','llm-xai-key','llm-hf-key'].forEach(function(id) { var el = document.getElementById(id); if(el) el.value=''; });
+    if (typeof showToast === 'function') showToast('LLM provider updated', 'success');
+  } catch(e) {
+    if (msg) {
+      msg.style.background = 'rgba(220,50,50,0.12)';
+      msg.style.color = '#f08080';
+      msg.style.border = '1px solid rgba(220,50,50,0.3)';
+      msg.textContent = 'Error: ' + (e.message || e);
+    }
+  }
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────────

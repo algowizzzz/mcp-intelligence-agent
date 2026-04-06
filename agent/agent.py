@@ -56,6 +56,17 @@ class MessageTrimmer(AgentMiddleware):
 
 llm = create_llm()
 
+
+def reload_llm() -> str:
+    """Recreate the LLM from the current config file. Returns new provider name."""
+    global llm
+    llm = create_llm()
+    # Return provider name for confirmation
+    from agent.llm_factory import _load_file_config
+    cfg = _load_file_config()
+    return cfg.get('provider', 'anthropic')
+
+
 # checkpointer is injected by agent_server.py via set_checkpointer() during
 # FastAPI lifespan startup.  AsyncSqliteSaver requires an async context so it
 # cannot be constructed synchronously at module load time.
