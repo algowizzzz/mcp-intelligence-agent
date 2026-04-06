@@ -4663,12 +4663,13 @@
 
     function showSubAgentCard(taskId, description, name) {
       if (!_currentAgentMsg) return;
-      var container = _currentAgentMsg.querySelector('.subagent-cards');
+      var msgBody = _currentAgentMsg.querySelector('.msg-body') || _currentAgentMsg;
+      var container = msgBody.querySelector('.subagent-cards');
       if (!container) {
         container = document.createElement('div');
         container.className = 'subagent-cards';
-        var toolCards = _currentAgentMsg.querySelector('.tool-cards');
-        _currentAgentMsg.insertBefore(container, toolCards || null);
+        var toolCards = msgBody.querySelector('.tool-cards');
+        msgBody.insertBefore(container, toolCards || msgBody.firstChild);
       }
       var card = document.createElement('div');
       card.className = 'subagent-card';

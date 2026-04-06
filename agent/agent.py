@@ -68,7 +68,10 @@ def set_checkpointer(cp) -> None:
     checkpointer = cp
 
 
-def create_agent_for_worker(system_prompt: str, tools: list = None, extra_middleware: list = None, checkpointer_override=None):
+_UNSET = object()  # sentinel to distinguish "not passed" from "explicitly None"
+
+
+def create_agent_for_worker(system_prompt: str, tools: list = None, extra_middleware: list = None, checkpointer_override=_UNSET):
     """Create an agent instance with a specific system prompt and tool allowlist.
 
     Uses the shared checkpointer so all thread state is preserved across
@@ -81,15 +84,15 @@ def create_agent_for_worker(system_prompt: str, tools: list = None, extra_middle
         Additional middlewares inserted between MessageTrimmer and
         LoopDetectionMiddleware (e.g. SubagentLimitMiddleware for multi-agent workers).
     checkpointer_override : optional
-        Pass None to create an ephemeral sub-agent (no persistence).
-        Omit to use the shared global checkpointer (default for lead agents).
+        Pass None explicitly to create an ephemeral sub-agent (no persistence).
+        Omit entirely to use the shared global checkpointer (default for lead agents).
     """
     from agent.middlewares import (
         DanglingToolCallMiddleware,
         LoopDetectionMiddleware,
         ToolErrorHandlingMiddleware,
     )
-    _cp = checkpointer if checkpointer_override is None else checkpointer_override
+    _cp = checkpointer if checkpointer_override is _UNSET else checkpointer_override
     mw = [
         DanglingToolCallMiddleware(),
         SummarisationMiddleware(),

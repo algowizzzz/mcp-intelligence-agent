@@ -161,20 +161,12 @@ class SubAgentExecutor:
         # Re-set ContextVar in this new async task's context.
         _worker_ctx.set(self._parent_worker_ctx)
 
-        try:
-            system_prompt = self._parent_worker_ctx.get("system_prompt", "")
-            agent = self._create_agent_fn(
-                system_prompt=system_prompt,
-                tools=self._tools,
-                checkpointer=None,
-            )
-        except TypeError:
-            # create_agent_for_worker(system_prompt, tools) — no checkpointer kwarg
-            from agent.agent import create_agent_for_worker
-            agent = create_agent_for_worker(
-                system_prompt=self._parent_worker_ctx.get("system_prompt", ""),
-                tools=self._tools,
-            )
+        system_prompt = self._parent_worker_ctx.get("system_prompt", "")
+        agent = self._create_agent_fn(
+            system_prompt=system_prompt,
+            tools=self._tools,
+            checkpointer_override=None,  # ephemeral — no cross-loop SQLite lock
+        )
 
         inp = {"messages": [HumanMessage(content=self._prompt)]}
         config = {"configurable": {"thread_id": task_id}}
