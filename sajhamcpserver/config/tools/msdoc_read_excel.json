@@ -31,6 +31,11 @@
         "type": "boolean",
         "description": "Include cell formulas in the output",
         "default": false
+      },
+      "section": {
+        "type": "string",
+        "enum": ["domain_data", "my_data", "common"],
+        "description": "Data layer: 'domain_data' (worker knowledge base, default), 'my_data' (user uploads), 'common' (shared library)."
       }
     },
     "required": ["filename"]

@@ -12,28 +12,63 @@ from sajha.core.properties_configurator import PropertiesConfigurator
 from sajha.storage import storage
 
 
+# Section parameter definition reused across all tool schemas
+_SECTION_PROP = {
+    "type": "string",
+    "enum": ["domain_data", "my_data", "common"],
+    "description": (
+        "Data layer: 'domain_data' (worker knowledge base, default), "
+        "'my_data' (user uploads), 'common' (shared library)."
+    ),
+}
+
+
 class MsDocBaseTool(BaseMCPTool):
     """
     Base class for Microsoft Document tools with shared functionality
     """
-    
+
     def __init__(self, config: Dict = None):
         """Initialize MS Doc base tool"""
         super().__init__(config)
-        
-        # Set docs directory from config or use default
-        self.docs_directory = (config.get('docs_directory') if config else None) or PropertiesConfigurator().get('tool.msdoc.docs_directory', 'data/msdocs')
-        
-    def _get_file_path(self, filename: str) -> str:
-        """Get full path for a file"""
-        return os.path.join(self.docs_directory, filename)
+        # Fallback docs directory (used when flask g context is unavailable)
+        self.docs_directory = (
+            (config.get('docs_directory') if config else None)
+            or PropertiesConfigurator().get('tool.msdoc.docs_directory', 'data/msdocs')
+        )
 
-    def _list_files_by_type(self, file_type: str = 'all') -> List[Dict]:
+    def _resolve_docs_dir(self, section: str = 'domain_data') -> str:
+        """Return the docs directory for the given section, using per-request
+        worker context (flask g) when available, falling back to config."""
+        try:
+            from flask import g as _g
+            if section == 'my_data':
+                r = getattr(_g, 'worker_my_data_root', None)
+                if r:
+                    return r.rstrip('/')
+            elif section == 'common':
+                r = getattr(_g, 'worker_common_root', None)
+                if r:
+                    return r.rstrip('/')
+            else:  # domain_data — docs live under a 'msdocs' subfolder
+                r = getattr(_g, 'worker_data_root', None)
+                if r:
+                    return r.rstrip('/') + '/msdocs'
+        except RuntimeError:
+            pass
+        return self.docs_directory
+
+    def _get_file_path(self, filename: str, section: str = 'domain_data') -> str:
+        """Get full absolute path for a file in the given section."""
+        return os.path.join(self._resolve_docs_dir(section), filename)
+
+    def _list_files_by_type(self, file_type: str = 'all', docs_dir: str = None) -> List[Dict]:
         """List files by type using storage abstraction (REQ-PREP-03)."""
+        directory = docs_dir or self.docs_directory
         files = []
         try:
             import pathlib
-            for rel_path in storage.list_prefix(self.docs_directory):
+            for rel_path in storage.list_prefix(directory):
                 # list_prefix returns relative paths; skip nested directories
                 if os.sep in rel_path or '/' in rel_path:
                     continue
@@ -42,7 +77,7 @@ class MsDocBaseTool(BaseMCPTool):
                     continue
                 elif file_type == 'excel' and extension not in ['.xlsx', '.xls', '.xlsm']:
                     continue
-                abs_path = os.path.join(self.docs_directory, rel_path)
+                abs_path = os.path.join(directory, rel_path)
                 try:
                     import pathlib as _pl
                     stat = _pl.Path(abs_path).stat()
@@ -178,7 +213,8 @@ class MsDocListFilesTool(MsDocBaseTool):
                     "description": "Type of files to list",
                     "enum": ["all", "word", "excel"],
                     "default": "all"
-                }
+                },
+                "section": _SECTION_PROP,
             }
         }
     
@@ -208,15 +244,18 @@ class MsDocListFilesTool(MsDocBaseTool):
     
     def execute(self, arguments: Dict[str, Any]) -> Dict:
         """Execute list files"""
+        section = arguments.get('section', 'domain_data')
         file_type = arguments.get('file_type', 'all')
-        files = self._list_files_by_type(file_type)
-        
+        docs_dir = self._resolve_docs_dir(section)
+        files = self._list_files_by_type(file_type, docs_dir)
+
         return {
-            'directory': self.docs_directory,
+            'directory': docs_dir,
+            'section': section,
             'file_type': file_type,
             'count': len(files),
             'files': files,
-            '_source': self.docs_directory
+            '_source': docs_dir
         }
 
 
@@ -244,11 +283,12 @@ class MsDocReadWordTool(MsDocBaseTool):
                 "filename": {
                     "type": "string",
                     "description": "Name of the Word file to read"
-                }
+                },
+                "section": _SECTION_PROP,
             },
             "required": ["filename"]
         }
-    
+
     def get_output_schema(self) -> Dict:
         """Get output schema"""
         return {
@@ -277,8 +317,9 @@ class MsDocReadWordTool(MsDocBaseTool):
     def execute(self, arguments: Dict[str, Any]) -> Dict:
         """Execute read Word document"""
         filename = arguments['filename']
-        file_path = self._get_file_path(filename)
-        
+        section = arguments.get('section', 'domain_data')
+        file_path = self._get_file_path(filename, section)
+
         if not storage.exists(file_path):
             raise ValueError(f"File not found: {filename}")
 
@@ -331,12 +372,13 @@ class MsDocReadExcelTool(MsDocBaseTool):
                 "include_formulas": {
                     "type": "boolean",
                     "description": "Include cell formulas",
-                    "default": false
-                }
+                    "default": False
+                },
+                "section": _SECTION_PROP,
             },
             "required": ["filename"]
         }
-    
+
     def get_output_schema(self) -> Dict:
         """Get output schema"""
         return {
@@ -371,8 +413,9 @@ class MsDocReadExcelTool(MsDocBaseTool):
     def execute(self, arguments: Dict[str, Any]) -> Dict:
         """Execute read Excel document"""
         filename = arguments['filename']
-        file_path = self._get_file_path(filename)
-        
+        section = arguments.get('section', 'domain_data')
+        file_path = self._get_file_path(filename, section)
+
         if not storage.exists(file_path):
             raise ValueError(f"File not found: {filename}")
 
@@ -415,11 +458,12 @@ class MsDocSearchWordTool(MsDocBaseTool):
                 "search_term": {
                     "type": "string",
                     "description": "Text to search for"
-                }
+                },
+                "section": _SECTION_PROP,
             },
             "required": ["filename", "search_term"]
         }
-    
+
     def get_output_schema(self) -> Dict:
         """Get output schema"""
         return {
@@ -440,12 +484,13 @@ class MsDocSearchWordTool(MsDocBaseTool):
                 "match_count": {"type": "integer"}
             }
         }
-    
+
     def execute(self, arguments: Dict[str, Any]) -> Dict:
         """Execute search in Word document"""
         filename = arguments['filename']
         search_term = arguments['search_term'].lower()
-        file_path = self._get_file_path(filename)
+        section = arguments.get('section', 'domain_data')
+        file_path = self._get_file_path(filename, section)
         
         if not storage.exists(file_path):
             raise ValueError(f"File not found: {filename}")
@@ -501,7 +546,8 @@ class MsDocSearchExcelTool(MsDocBaseTool):
                 "sheet_name": {
                     "type": "string",
                     "description": "Name of the sheet to search (optional)"
-                }
+                },
+                "section": _SECTION_PROP,
             },
             "required": ["filename", "search_term"]
         }
@@ -534,7 +580,8 @@ class MsDocSearchExcelTool(MsDocBaseTool):
         filename = arguments['filename']
         search_term = arguments['search_term'].lower()
         sheet_name = arguments.get('sheet_name')
-        file_path = self._get_file_path(filename)
+        section = arguments.get('section', 'domain_data')
+        file_path = self._get_file_path(filename, section)
         
         if not storage.exists(file_path):
             raise ValueError(f"File not found: {filename}")
@@ -589,11 +636,12 @@ class MsDocGetWordMetadataTool(MsDocBaseTool):
                 "filename": {
                     "type": "string",
                     "description": "Name of the Word file"
-                }
+                },
+                "section": _SECTION_PROP,
             },
             "required": ["filename"]
         }
-    
+
     def get_output_schema(self) -> Dict:
         """Get output schema"""
         return {
@@ -612,11 +660,12 @@ class MsDocGetWordMetadataTool(MsDocBaseTool):
                 }
             }
         }
-    
+
     def execute(self, arguments: Dict[str, Any]) -> Dict:
         """Execute get Word metadata"""
         filename = arguments['filename']
-        file_path = self._get_file_path(filename)
+        section = arguments.get('section', 'domain_data')
+        file_path = self._get_file_path(filename, section)
         
         if not storage.exists(file_path):
             raise ValueError(f"File not found: {filename}")
@@ -670,11 +719,12 @@ class MsDocGetExcelMetadataTool(MsDocBaseTool):
                 "filename": {
                     "type": "string",
                     "description": "Name of the Excel file"
-                }
+                },
+                "section": _SECTION_PROP,
             },
             "required": ["filename"]
         }
-    
+
     def get_output_schema(self) -> Dict:
         """Get output schema"""
         return {
@@ -693,19 +743,21 @@ class MsDocGetExcelMetadataTool(MsDocBaseTool):
                 }
             }
         }
-    
+
     def execute(self, arguments: Dict[str, Any]) -> Dict:
         """Execute get Excel metadata"""
         filename = arguments['filename']
-        file_path = self._get_file_path(filename)
-        
+        section = arguments.get('section', 'domain_data')
+        file_path = self._get_file_path(filename, section)
+
         if not storage.exists(file_path):
             raise ValueError(f"File not found: {filename}")
-        
+
         try:
             from openpyxl import load_workbook
-            
-            wb = load_workbook(str(file_path))
+
+            raw = storage.read_bytes(file_path)
+            wb = load_workbook(io.BytesIO(raw))
             props = wb.properties
             
             metadata = {
@@ -754,11 +806,12 @@ class MsDocExtractTextTool(MsDocBaseTool):
                 "filename": {
                     "type": "string",
                     "description": "Name of the file to extract text from"
-                }
+                },
+                "section": _SECTION_PROP,
             },
             "required": ["filename"]
         }
-    
+
     def get_output_schema(self) -> Dict:
         """Get output schema"""
         return {
@@ -769,16 +822,17 @@ class MsDocExtractTextTool(MsDocBaseTool):
                 "character_count": {"type": "integer"}
             }
         }
-    
+
     def execute(self, arguments: Dict[str, Any]) -> Dict:
         """Execute extract text"""
         filename = arguments['filename']
-        file_path = self._get_file_path(filename)
-        
+        section = arguments.get('section', 'domain_data')
+        file_path = self._get_file_path(filename, section)
+
         if not storage.exists(file_path):
             raise ValueError(f"File not found: {filename}")
-        
-        extension = file_path.suffix.lower()
+
+        extension = os.path.splitext(file_path)[1].lower()
         
         if extension in ['.docx', '.doc']:
             doc_content = self._read_word_document(file_path)
@@ -824,11 +878,12 @@ class MsDocGetExcelSheetsTool(MsDocBaseTool):
                 "filename": {
                     "type": "string",
                     "description": "Name of the Excel file"
-                }
+                },
+                "section": _SECTION_PROP,
             },
             "required": ["filename"]
         }
-    
+
     def get_output_schema(self) -> Dict:
         """Get output schema"""
         return {
@@ -848,19 +903,21 @@ class MsDocGetExcelSheetsTool(MsDocBaseTool):
                 "count": {"type": "integer"}
             }
         }
-    
+
     def execute(self, arguments: Dict[str, Any]) -> Dict:
         """Execute get Excel sheets"""
         filename = arguments['filename']
-        file_path = self._get_file_path(filename)
-        
+        section = arguments.get('section', 'domain_data')
+        file_path = self._get_file_path(filename, section)
+
         if not storage.exists(file_path):
             raise ValueError(f"File not found: {filename}")
-        
+
         try:
             from openpyxl import load_workbook
-            
-            wb = load_workbook(str(file_path), read_only=True)
+
+            raw = storage.read_bytes(file_path)
+            wb = load_workbook(io.BytesIO(raw), read_only=True)
             sheets = [
                 {'index': i, 'name': sheet.title}
                 for i, sheet in enumerate(wb.worksheets)
@@ -920,13 +977,10 @@ class MsDocReadExcelSheetTool(MsDocBaseTool):
                     "default": 100,
                     "minimum": 1,
                     "maximum": 10000
-                }
+                },
+                "section": _SECTION_PROP,
             },
-            "required": ["filename"],
-            "oneOf": [
-                {"required": ["sheet_name"]},
-                {"required": ["sheet_index"]}
-            ]
+            "required": ["filename"]
         }
     
     def get_output_schema(self) -> Dict:
@@ -950,8 +1004,9 @@ class MsDocReadExcelSheetTool(MsDocBaseTool):
     def execute(self, arguments: Dict[str, Any]) -> Dict:
         """Execute read Excel sheet"""
         filename = arguments['filename']
-        file_path = self._get_file_path(filename)
-        
+        section = arguments.get('section', 'domain_data')
+        file_path = self._get_file_path(filename, section)
+
         if not storage.exists(file_path):
             raise ValueError(f"File not found: {filename}")
 
@@ -966,6 +1021,119 @@ class MsDocReadExcelSheetTool(MsDocBaseTool):
         return result
 
 
+class MsDocGetExcelStatsTool(MsDocBaseTool):
+    """
+    Tool to get per-sheet statistics for an Excel workbook.
+    Returns row/column counts, detected data types, and numeric summary stats.
+    """
+
+    def __init__(self, config: Dict = None):
+        default_config = {
+            'name': 'msdoc_get_excel_stats',
+            'description': (
+                'Get per-sheet statistics for an Excel workbook: row/column counts, '
+                'column names, data types, and numeric summary (min/max/mean) for each sheet.'
+            ),
+            'version': '1.0.0',
+            'enabled': True,
+        }
+        if config:
+            default_config.update(config)
+        super().__init__(default_config)
+
+    def get_input_schema(self) -> Dict:
+        return {
+            'type': 'object',
+            'properties': {
+                'filename': {
+                    'type': 'string',
+                    'description': 'Name of the Excel file',
+                },
+                'section': _SECTION_PROP,
+            },
+            'required': ['filename'],
+        }
+
+    def get_output_schema(self) -> Dict:
+        return {'type': 'object'}
+
+    def execute(self, arguments: Dict[str, Any]) -> Dict:
+        filename = arguments['filename']
+        section = arguments.get('section', 'domain_data')
+        file_path = self._get_file_path(filename, section)
+
+        if not storage.exists(file_path):
+            raise ValueError(f'File not found: {filename}')
+
+        try:
+            from openpyxl import load_workbook
+
+            raw = storage.read_bytes(file_path)
+            wb = load_workbook(io.BytesIO(raw), data_only=True)
+            sheets_stats = []
+
+            for sheet in wb.worksheets:
+                rows = list(sheet.iter_rows(values_only=True))
+                if not rows:
+                    sheets_stats.append({
+                        'sheet': sheet.title,
+                        'row_count': 0,
+                        'column_count': 0,
+                        'columns': [],
+                        'numeric_summary': {},
+                    })
+                    continue
+
+                header = [str(c) if c is not None else f'col_{i}' for i, c in enumerate(rows[0])]
+                data_rows = rows[1:]
+                col_count = len(header)
+
+                # Per-column type detection and numeric summary
+                col_stats = {}
+                for ci, col_name in enumerate(header):
+                    values = [r[ci] for r in data_rows if ci < len(r) and r[ci] is not None]
+                    nums = []
+                    for v in values:
+                        try:
+                            nums.append(float(v))
+                        except (TypeError, ValueError):
+                            pass
+                    if nums:
+                        col_stats[col_name] = {
+                            'type': 'numeric',
+                            'non_null': len(values),
+                            'min': round(min(nums), 4),
+                            'max': round(max(nums), 4),
+                            'mean': round(sum(nums) / len(nums), 4),
+                        }
+                    else:
+                        col_stats[col_name] = {
+                            'type': 'text',
+                            'non_null': len(values),
+                        }
+
+                sheets_stats.append({
+                    'sheet': sheet.title,
+                    'row_count': len(data_rows),
+                    'column_count': col_count,
+                    'columns': header,
+                    'column_stats': col_stats,
+                })
+
+            wb.close()
+            return {
+                'filename': filename,
+                'sheet_count': len(sheets_stats),
+                'sheets': sheets_stats,
+                '_source': file_path,
+            }
+
+        except ImportError:
+            raise ValueError('openpyxl library not installed. Install with: pip install openpyxl')
+        except Exception as e:
+            raise ValueError(f'Failed to get Excel stats: {str(e)}')
+
+
 # Tool registry
 MSDOC_TOOLS = {
     'msdoc_list_files': MsDocListFilesTool,
@@ -977,5 +1145,6 @@ MSDOC_TOOLS = {
     'msdoc_get_excel_metadata': MsDocGetExcelMetadataTool,
     'msdoc_extract_text': MsDocExtractTextTool,
     'msdoc_get_excel_sheets': MsDocGetExcelSheetsTool,
-    'msdoc_read_excel_sheet': MsDocReadExcelSheetTool
+    'msdoc_read_excel_sheet': MsDocReadExcelSheetTool,
+    'msdoc_get_excel_stats': MsDocGetExcelStatsTool,
 }

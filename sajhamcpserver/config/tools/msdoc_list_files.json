@@ -11,12 +11,13 @@
       "file_type": {
         "type": "string",
         "description": "Type of files to list",
-        "enum": [
-          "all",
-          "word",
-          "excel"
-        ],
+        "enum": ["all", "word", "excel"],
         "default": "all"
+      },
+      "section": {
+        "type": "string",
+        "enum": ["domain_data", "my_data", "common"],
+        "description": "Data layer: 'domain_data' (worker knowledge base, default), 'my_data' (user uploads), 'common' (shared library)."
       }
     }
   },

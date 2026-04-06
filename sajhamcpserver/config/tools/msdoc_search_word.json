@@ -14,6 +14,11 @@
       "search_term": {
         "type": "string",
         "description": "Text to search for (case-insensitive)"
+      },
+      "section": {
+        "type": "string",
+        "enum": ["domain_data", "my_data", "common"],
+        "description": "Data layer: 'domain_data' (worker knowledge base, default), 'my_data' (user uploads), 'common' (shared library)."
       }
     },
     "required": ["filename", "search_term"]

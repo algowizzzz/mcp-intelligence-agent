@@ -76,6 +76,46 @@ class SqlSelectBaseTool(BaseMCPTool):
             except Exception as e:
                 self.logger.error(f"Error registering data source {source_name}: {str(e)}")
     
+    def _resolve_worker_data_dir(self) -> str:
+        """Return per-request worker sqlselect directory from flask g when available."""
+        try:
+            from flask import g as _g
+            r = getattr(_g, 'worker_data_root', None)
+            if r:
+                return os.path.join(r.rstrip('/'), 'sqlselect')
+        except RuntimeError:
+            pass
+        return self.data_directory
+
+    def _ensure_worker_sources(self):
+        """Re-register data sources if the effective worker directory has changed."""
+        effective_dir = self._resolve_worker_data_dir()
+        if effective_dir == getattr(self, '_loaded_data_dir', self.data_directory):
+            return  # already up to date
+        self._loaded_data_dir = effective_dir
+        for source_name, source_config in self.data_sources.items():
+            try:
+                file_path = os.path.join(effective_dir, source_config['file'])
+                file_type = source_config.get('type', 'csv').lower()
+                if not os.path.exists(file_path):
+                    self.logger.warning(f"Data file not found: {file_path}")
+                    continue
+                if file_type == 'csv':
+                    self.connection.execute(
+                        f"CREATE OR REPLACE TABLE {source_name} AS "
+                        f"SELECT * FROM read_csv_auto('{file_path}')")
+                elif file_type == 'parquet':
+                    self.connection.execute(
+                        f"CREATE OR REPLACE TABLE {source_name} AS "
+                        f"SELECT * FROM read_parquet('{file_path}')")
+                elif file_type == 'json':
+                    self.connection.execute(
+                        f"CREATE OR REPLACE TABLE {source_name} AS "
+                        f"SELECT * FROM read_json_auto('{file_path}')")
+                self.logger.info(f"Re-registered {source_name} from {file_path}")
+            except Exception as e:
+                self.logger.error(f"Error re-registering {source_name}: {e}")
+
     def _error_response(self, error_message: str) -> Dict[str, Any]:
         """Generate error response"""
         return {
@@ -166,6 +206,7 @@ class SqlSelectListSourcesTool(SqlSelectBaseTool):
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Execute list sources operation"""
+        self._ensure_worker_sources()
         sources = []
         for source_name, source_config in self.data_sources.items():
             sources.append({
@@ -275,6 +316,7 @@ class SqlSelectDescribeSourceTool(SqlSelectBaseTool):
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Execute describe source operation"""
+        self._ensure_worker_sources()
         source_name = arguments.get('source_name')
         
         if not source_name:
@@ -403,6 +445,7 @@ class SqlSelectExecuteQueryTool(SqlSelectBaseTool):
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Execute SQL SELECT query"""
+        self._ensure_worker_sources()
         query = arguments.get('query')
         limit = arguments.get('limit', 100)
         
@@ -527,6 +570,7 @@ class SqlSelectSampleDataTool(SqlSelectBaseTool):
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Execute sample data retrieval"""
+        self._ensure_worker_sources()
         source_name = arguments.get('source_name')
         limit = arguments.get('limit', 10)
         
@@ -644,6 +688,7 @@ class SqlSelectGetSchemaTool(SqlSelectBaseTool):
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Execute schema retrieval"""
+        self._ensure_worker_sources()
         source_name = arguments.get('source_name')
         
         if not source_name:
@@ -745,6 +790,7 @@ class SqlSelectCountRowsTool(SqlSelectBaseTool):
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Execute row counting"""
+        self._ensure_worker_sources()
         source_name = arguments.get('source_name')
         where_clause = arguments.get('where_clause', '')
         

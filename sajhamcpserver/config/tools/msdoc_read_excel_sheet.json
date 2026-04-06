@@ -26,13 +26,14 @@
         "default": 100,
         "minimum": 1,
         "maximum": 10000
+      },
+      "section": {
+        "type": "string",
+        "enum": ["domain_data", "my_data", "common"],
+        "description": "Data layer: 'domain_data' (worker knowledge base, default), 'my_data' (user uploads), 'common' (shared library)."
       }
     },
-    "required": ["filename"],
-    "oneOf": [
-      {"required": ["sheet_name"]},
-      {"required": ["sheet_index"]}
-    ]
+    "required": ["filename"]
   },
   "outputSchema": {
     "type": "object",

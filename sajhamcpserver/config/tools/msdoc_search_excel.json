@@ -18,6 +18,11 @@
       "sheet_name": {
         "type": "string",
         "description": "Name of the sheet to search (optional, searches active sheet if not specified)"
+      },
+      "section": {
+        "type": "string",
+        "enum": ["domain_data", "my_data", "common"],
+        "description": "Data layer: 'domain_data' (worker knowledge base, default), 'my_data' (user uploads), 'common' (shared library)."
       }
     },
     "required": ["filename", "search_term"]
