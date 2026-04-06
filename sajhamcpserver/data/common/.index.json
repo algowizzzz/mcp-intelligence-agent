@@ -1,0 +1,231 @@
+{
+  "root": "/Users/saadahmed/Desktop/react_agent/sajhamcpserver/data/common",
+  "built_at": "2026-04-06T00:22:09.331380+00:00",
+  "tree": [
+    {
+      "type": "file",
+      "name": "BAC_10K_20251231_000157.md",
+      "path": "BAC_10K_20251231_000157.md",
+      "size_bytes": 1358117,
+      "modified_at": "2026-04-06T00:14:23.190340+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "debug-test.md",
+      "path": "debug-test.md",
+      "size_bytes": 37,
+      "modified_at": "2026-04-06T00:20:44.566082+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "folder",
+      "name": "filings",
+      "path": "filings",
+      "children": [
+        {
+          "type": "folder",
+          "name": "bank-10k",
+          "path": "filings/bank-10k",
+          "children": [
+            {
+              "type": "file",
+              "name": "GS_10K_20241231_000005.md",
+              "path": "filings/bank-10k/GS_10K_20241231_000005.md",
+              "size_bytes": 1425810,
+              "modified_at": "2026-04-06T00:06:29.544620+00:00",
+              "mime": "text/markdown"
+            },
+            {
+              "type": "file",
+              "name": "JPM_10K_20241231_000270.md",
+              "path": "filings/bank-10k/JPM_10K_20241231_000270.md",
+              "size_bytes": 1611499,
+              "modified_at": "2026-04-06T00:06:29.538663+00:00",
+              "mime": "text/markdown"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "name": "fp-test-23a5faa7.md",
+      "path": "fp-test-23a5faa7.md",
+      "size_bytes": 83,
+      "modified_at": "2026-04-06T00:20:22.800882+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "fp-test-46969614.md",
+      "path": "fp-test-46969614.md",
+      "size_bytes": 82,
+      "modified_at": "2026-04-06T00:22:08.116385+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "fp-test.md",
+      "path": "fp-test.md",
+      "size_bytes": 83,
+      "modified_at": "2026-04-06T00:13:54.469349+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "freshness-23a5faa7.md",
+      "path": "freshness-23a5faa7.md",
+      "size_bytes": 74,
+      "modified_at": "2026-04-06T00:20:23.964841+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "freshness-46969614.md",
+      "path": "freshness-46969614.md",
+      "size_bytes": 73,
+      "modified_at": "2026-04-06T00:22:09.331320+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "frtb-sensitivity.md",
+      "path": "frtb-sensitivity.md",
+      "size_bytes": 99,
+      "modified_at": "2026-04-06T00:13:54.426955+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "model-validation-policy.md",
+      "path": "model-validation-policy.md",
+      "size_bytes": 161,
+      "modified_at": "2026-04-06T00:13:54.432885+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "policy-test-23a5faa7.md",
+      "path": "policy-test-23a5faa7.md",
+      "size_bytes": 60,
+      "modified_at": "2026-04-06T00:20:22.445427+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
+      "name": "policy-test-46969614.md",
+      "path": "policy-test-46969614.md",
+      "size_bytes": 60,
+      "modified_at": "2026-04-06T00:22:07.726064+00:00",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "folder",
+      "name": "reference",
+      "path": "reference",
+      "children": [
+        {
+          "type": "file",
+          "name": "risk-taxonomy.csv",
+          "path": "reference/risk-taxonomy.csv",
+          "size_bytes": 1216,
+          "modified_at": "2026-04-05T23:31:31.234865+00:00",
+          "mime": "text/csv"
+        }
+      ]
+    },
+    {
+      "type": "folder",
+      "name": "regulatory",
+      "path": "regulatory",
+      "children": [
+        {
+          "type": "file",
+          "name": "basel-iii-overview.md",
+          "path": "regulatory/basel-iii-overview.md",
+          "size_bytes": 1699,
+          "modified_at": "2026-04-05T23:31:19.164821+00:00",
+          "mime": "text/markdown"
+        },
+        {
+          "type": "folder",
+          "name": "bcbs",
+          "path": "regulatory/bcbs",
+          "children": []
+        },
+        {
+          "type": "folder",
+          "name": "ca",
+          "path": "regulatory/ca",
+          "children": []
+        },
+        {
+          "type": "folder",
+          "name": "markets",
+          "path": "regulatory/markets",
+          "children": []
+        },
+        {
+          "type": "folder",
+          "name": "osfi",
+          "path": "regulatory/osfi",
+          "children": [
+            {
+              "type": "folder",
+              "name": "car",
+              "path": "regulatory/osfi/car",
+              "children": []
+            },
+            {
+              "type": "folder",
+              "name": "guidelines",
+              "path": "regulatory/osfi/guidelines",
+              "children": []
+            },
+            {
+              "type": "folder",
+              "name": "lar",
+              "path": "regulatory/osfi/lar",
+              "children": []
+            }
+          ]
+        },
+        {
+          "type": "folder",
+          "name": "us",
+          "path": "regulatory/us",
+          "children": [
+            {
+              "type": "folder",
+              "name": "fed",
+              "path": "regulatory/us/fed",
+              "children": []
+            },
+            {
+              "type": "folder",
+              "name": "occ",
+              "path": "regulatory/us/occ",
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "folder",
+      "name": "templates",
+      "path": "templates",
+      "children": [
+        {
+          "type": "file",
+          "name": "counterparty-brief-template.md",
+          "path": "templates/counterparty-brief-template.md",
+          "size_bytes": 1325,
+          "modified_at": "2026-04-05T23:31:41.373337+00:00",
+          "mime": "text/markdown"
+        }
+      ]
+    }
+  ]
+}

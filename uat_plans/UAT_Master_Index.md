@@ -1,7 +1,7 @@
 # UAT Master Index — RiskGPT MCP Intelligence Agent
 
 **Last updated:** 2026-04-05  
-**Overall status: ✅ REQ-09 and prior verified. REQ-10/REQ-11 implemented — BT pending.**
+**Overall status: ✅ REQ-09 and prior verified. REQ-10/REQ-11 CI fully PASS — BT pending.**
 
 ---
 
@@ -14,9 +14,9 @@
 | Regression v2 (Playwright) | 14 | 14 | 0 | 0 | `run_regression_v2_tests.mjs` |
 | Gap Fixes (architectural — CI + BT) | 19 | 19 | 0 | 0 | Python inline |
 | REQ-09 BM25 Document Search (CI) | 10 | 10 | 0 | 0 | Python inline |
-| REQ-10 Common Data Path | 10 CI + 9 BT | PENDING | — | — | Python inline + Playwright |
-| REQ-11 Parallel Upload Engine | 11 CI + 6 BT | PENDING | — | — | Python inline + Playwright |
-| **Total** | **223** | **193** | **0** | **3** | |
+| REQ-10 Common Data Path | 13 CI + 9 BT | 13 CI PASS | — | BT pending | Python inline + Playwright |
+| REQ-11 Parallel Upload Engine | 14 CI + 6 BT | 14 CI PASS | — | BT pending | Python inline + Playwright |
+| **Total** | **236** | **220** | **0** | **3** | |
 
 † 3 skips are environment-only (empty domain-data tree in admin context; no `.md` files in test worker `my_workflows`). Same functionality verified via equivalent tests.
 
@@ -39,8 +39,10 @@
 | [GAP_Fixes_UAT_Results.md](GAP_Fixes_UAT_Results.md) | Gap fix test results — 19/19 PASS | ✅ PASS | 19 tests |
 | [REQ-09_UAT_Plan.md](REQ-09_UAT_Plan.md) | BM25 document search — chunking, ranking, cache, file-type filter, OSFI retirement | ✅ 10/10 CI PASS | 10 CI + 7 BT (BT pending server) |
 | [REQ-09_UAT_Results.md](REQ-09_UAT_Results.md) | REQ-09 test results | ✅ CI PASS / BT PENDING | 10 CI tests |
-| [REQ-10_UAT_Plan.md](REQ-10_UAT_Plan.md) | Common Data Path (Shared Library) — admin upload, user read-only, BM25 extension, sidebar + admin panel | ⏳ PENDING | 10 CI + 9 BT |
-| [REQ-11_UAT_Plan.md](REQ-11_UAT_Plan.md) | Multi-File Parallel Upload — streaming writes, 4 concurrent slots, batch_id deferred reindex, cancel/retry | ⏳ PENDING | 11 CI + 6 BT |
+| [REQ-10_UAT_Plan.md](REQ-10_UAT_Plan.md) | Common Data Path (Shared Library) — admin upload, user read-only, BM25 extension, sidebar + admin panel | ✅ 13 CI PASS / BT pending | 13 CI + 9 BT |
+| [REQ-10_UAT_Results.md](REQ-10_UAT_Results.md) | REQ-10 CI test results — 13/13 PASS | ✅ CI PASS | 13 CI tests |
+| [REQ-11_UAT_Plan.md](REQ-11_UAT_Plan.md) | Multi-File Parallel Upload — streaming writes, 4 concurrent slots, batch_id deferred reindex, cancel/retry | ✅ 14 CI PASS / BT pending | 14 CI + 6 BT |
+| [REQ-11_UAT_Results.md](REQ-11_UAT_Results.md) | REQ-11 CI test results — 14/14 PASS | ✅ CI PASS | 14 CI tests |
 
 † REQ-03 VIZ-TEST-001: PARTIAL PASS — agent chose `python_execute` over `generate_chart` for chart generation; canvas pipeline verified via direct `openCanvasChart()` call. All 6 component fixes confirmed working.
 
