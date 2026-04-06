@@ -13,7 +13,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-  <script src="/js/file-tree.js"></script>
+  <script src="/js/file-tree.js?v=2"></script>
   <style>
     /* ================================================================
        ROOT & RESET
@@ -6569,7 +6569,13 @@
         if (xhr.status === 200 || xhr.status === 201) {
           next.status = 'done';
           next.progress = 100;
-          adminLoad(next.section);
+          // Reindex BM25 then refresh tree (only once per file; batch reindex on last item handled below)
+          var reindexUrl = _adminFileOpUrl(next.section, 'reindex');
+          var reindexHeaders = {};
+          if (_adminToken) reindexHeaders['Authorization'] = 'Bearer ' + _adminToken;
+          fetch(reindexUrl, { method: 'POST', headers: reindexHeaders }).catch(function(){}).finally(function(){
+            adminLoad(next.section);
+          });
           // Fade out after 3 seconds
           setTimeout(function() {
             _adminQueue = _adminQueue.filter(function(i) { return i !== next; });

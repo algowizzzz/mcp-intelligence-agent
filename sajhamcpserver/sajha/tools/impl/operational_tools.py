@@ -51,6 +51,17 @@ def _my_data_root():
         pass
     return _resolve(_props().get('data.my_data.dir', './data/uploads'))
 
+def _common_root():
+    """Return common/shared-library root. Checks per-request worker context first."""
+    try:
+        from flask import g as _g
+        common_root = getattr(_g, 'worker_common_root', None)
+        if common_root:
+            return Path(common_root.rstrip('/')).resolve()
+    except RuntimeError:
+        pass
+    return _resolve(_props().get('data.common_data.dir', './data/common'))
+
 def _templates_dir():
     """Return templates dir. Checks per-request worker context first (REQ-API-02)."""
     try:
@@ -480,10 +491,10 @@ class SearchFilesTool(BaseMCPTool):
         cfg = {
             "name": "search_files",
             "description": (
-                "Full-text search across domain_data/ and my_data/ files. "
-                "Returns file path and excerpts for each match. "
+                "Full-text keyword search across domain_data/, my_data/, and common/ (Shared Library) files. "
+                "Returns file path and excerpts with highlighted matches for each hit. "
                 "Supports pdf, docx, xlsx, csv, md, txt, json. "
-                "Use to find documents containing a keyword or phrase before processing them."
+                "Use to find documents containing a keyword or exact phrase before processing them."
             ),
             "version": "1.0.0",
             "enabled": True,
@@ -497,7 +508,7 @@ class SearchFilesTool(BaseMCPTool):
             "type": "object",
             "properties": {
                 "query": {"type": "string", "description": "Search term. Case-insensitive. Use quotes for exact phrase."},
-                "section": {"type": "string", "enum": ["domain_data", "my_data", "all"], "description": "Limit search scope. Default: all."},
+                "section": {"type": "string", "enum": ["domain_data", "my_data", "common", "all"], "description": "Limit search scope. Default: all (includes domain_data, my_data, and common/Shared Library)."},
                 "file_type": {"type": "string", "description": "Filter by extension: pdf|docx|xlsx|csv|md|txt|json|all. Default: all."},
                 "folder": {"type": "string", "description": "Limit to a sub-folder name (partial match)."},
                 "max_results": {"type": "integer", "description": "Max file matches. Default: 20."},
@@ -530,6 +541,8 @@ class SearchFilesTool(BaseMCPTool):
             roots.append(("domain_data", _domain_root()))
         if section in ("my_data", "all"):
             roots.append(("my_data", _my_data_root()))
+        if section in ("common", "all"):
+            roots.append(("common", _common_root()))
 
         candidates = []
         for sec_name, root in roots:

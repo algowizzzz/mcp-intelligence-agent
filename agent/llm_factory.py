@@ -1,6 +1,16 @@
 """
 LLM factory — returns the configured chat model based on LLM_PROVIDER env var.
-Set LLM_PROVIDER=bedrock and uncomment the bedrock block to switch to AWS Bedrock.
+
+Supported providers:
+  anthropic   — Claude via Anthropic API (default)
+  huggingface — Llama / other models via HuggingFace Inference API (OpenAI-compat)
+  bedrock     — Claude on AWS Bedrock (stubbed; uncomment block to activate)
+
+To switch to HuggingFace:
+  1. Set LLM_PROVIDER=huggingface in .env
+  2. Set HF_API_KEY=hf_... in .env
+  3. Optionally set HF_MODEL (default: meta-llama/Llama-3.3-70B-Instruct)
+  4. pip install langchain-openai
 """
 import os
 
@@ -15,6 +25,21 @@ def create_llm():
             temperature=0,
             streaming=True,
             max_tokens=int(os.getenv('LLM_MAX_TOKENS', '8192')),
+        )
+
+    elif provider == 'huggingface':
+        from langchain_openai import ChatOpenAI
+        hf_key = os.getenv('HF_API_KEY')
+        if not hf_key:
+            raise ValueError("HF_API_KEY is required when LLM_PROVIDER=huggingface")
+        model = os.getenv('HF_MODEL', 'meta-llama/Llama-3.3-70B-Instruct')
+        return ChatOpenAI(
+            model=model,
+            base_url='https://router.huggingface.co/v1',
+            api_key=hf_key,
+            temperature=0,
+            streaming=True,
+            max_tokens=int(os.getenv('LLM_MAX_TOKENS', '4096')),
         )
 
     elif provider == 'bedrock':
@@ -32,4 +57,7 @@ def create_llm():
         )
 
     else:
-        raise ValueError(f"Unknown LLM_PROVIDER: '{provider}'. Set to 'anthropic' or 'bedrock'.")
+        raise ValueError(
+            f"Unknown LLM_PROVIDER: '{provider}'. "
+            "Valid options: 'anthropic', 'huggingface', 'bedrock'."
+        )

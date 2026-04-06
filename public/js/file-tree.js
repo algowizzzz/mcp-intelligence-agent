@@ -221,7 +221,7 @@
     // Upload queue (REQ-11: parallel concurrent uploads)
     this._uploadQueue       = [];  // array of { file, destFolder, id, status, progress, bytesLoaded, error, _xhr }
     this._currentBatchId    = '';
-    this._uploadConcurrency = opts.uploadConcurrency || 4;
+    this._uploadConcurrency = config.uploadConcurrency || 4;
 
     // Drag state
     this._drag = null;  // { path, isDir }

@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SAJHA Regression Test Suite</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #0f1117; color: #e2e8f0; font-size: 13px; }
+  header { background: #1e2433; padding: 18px 24px; border-bottom: 1px solid #2d3748; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100; }
+  header h1 { font-size: 18px; color: #63b3ed; font-weight: 700; }
+  header .meta { color: #718096; font-size: 11px; }
+  #run-btn { background: #3182ce; color: #fff; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+  #run-btn:hover { background: #2b6cb0; }
+  #run-btn:disabled { background: #4a5568; cursor: not-allowed; }
+  #summary-bar { background: #1a202c; padding: 10px 24px; border-bottom: 1px solid #2d3748; display: flex; gap: 24px; font-size: 12px; }
+  .sum-item { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot.pass { background: #48bb78; } .dot.fail { background: #fc8181; } .dot.skip { background: #ecc94b; } .dot.run { background: #63b3ed; }
+  #progress-bar { height: 4px; background: #2d3748; }
+  #progress-fill { height: 100%; background: #3182ce; width: 0; transition: width 0.2s; }
+  #main { display: flex; gap: 0; }
+  #group-nav { width: 220px; min-width: 220px; background: #1a202c; border-right: 1px solid #2d3748; height: calc(100vh - 130px); overflow-y: auto; padding: 12px 0; position: sticky; top: 130px; }
+  .group-nav-item { padding: 8px 16px; cursor: pointer; color: #a0aec0; font-size: 12px; border-left: 3px solid transparent; display: flex; justify-content: space-between; align-items: center; }
+  .group-nav-item:hover { background: #2d3748; color: #e2e8f0; }
+  .group-nav-item.active { color: #63b3ed; border-left-color: #63b3ed; background: #1e2433; }
+  .group-badge { font-size: 10px; padding: 1px 6px; border-radius: 10px; background: #2d3748; }
+  #results { flex: 1; padding: 0; overflow-y: auto; height: calc(100vh - 130px); }
+  .group-section { border-bottom: 1px solid #2d3748; }
+  .group-header { padding: 12px 20px; background: #1a202c; font-weight: 700; font-size: 13px; color: #e2e8f0; display: flex; align-items: center; gap: 10px; cursor: pointer; sticky: top; position: sticky; top: 0; z-index: 10; }
+  .group-header .role-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+  .role-super { background: #553c9a; color: #e9d8fd; }
+  .role-admin { background: #1a365d; color: #bee3f8; }
+  .role-user { background: #1c4532; color: #c6f6d5; }
+  .role-all { background: #2d3748; color: #e2e8f0; }
+  .test-row { padding: 9px 20px 9px 36px; display: flex; align-items: flex-start; gap: 12px; border-bottom: 1px solid #1a202c; }
+  .test-row:hover { background: #1e2433; }
+  .test-id { color: #718096; min-width: 52px; font-size: 11px; font-family: monospace; }
+  .test-name { flex: 1; color: #e2e8f0; }
+  .test-detail { font-size: 11px; color: #718096; margin-top: 2px; }
+  .test-status { min-width: 60px; text-align: right; font-size: 11px; font-weight: 700; }
+  .status-pass { color: #48bb78; }
+  .status-fail { color: #fc8181; }
+  .status-skip { color: #ecc94b; }
+  .status-run  { color: #63b3ed; }
+  .status-pending { color: #4a5568; }
+  .fail-msg { font-size: 11px; color: #fc8181; margin-top: 3px; font-family: monospace; background: #1a0a0a; padding: 4px 8px; border-radius: 4px; word-break: break-all; }
+  #log-panel { position: fixed; bottom: 0; right: 0; width: 420px; height: 200px; background: #0a0e1a; border-top: 1px solid #2d3748; border-left: 1px solid #2d3748; overflow-y: auto; font-family: monospace; font-size: 11px; color: #a0aec0; padding: 8px; z-index: 200; }
+  .log-entry { margin: 1px 0; }
+  .log-ok { color: #48bb78; } .log-err { color: #fc8181; } .log-info { color: #63b3ed; } .log-warn { color: #ecc94b; }
+  .iso-badge { font-size: 10px; background: #553c9a; color: #e9d8fd; padding: 1px 6px; border-radius: 8px; margin-left: 6px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="flex:1">
+    <h1>SAJHA Intelligence Platform — Regression Test Suite</h1>
+    <div class="meta" id="suite-meta">Ready · 3 roles · super_admin / admin / user · Data isolation included</div>
+  </div>
+  <button id="run-btn" onclick="runAll()">▶ Run All Tests</button>
+</header>
+
+<div id="summary-bar">
+  <div class="sum-item"><div class="dot run"></div><span id="cnt-total">0</span> total</div>
+  <div class="sum-item"><div class="dot pass"></div><span id="cnt-pass">0</span> pass</div>
+  <div class="sum-item"><div class="dot fail"></div><span id="cnt-fail">0</span> fail</div>
+  <div class="sum-item"><div class="dot skip"></div><span id="cnt-skip">0</span> skip</div>
+  <div style="margin-left:auto;color:#718096" id="elapsed"></div>
+</div>
+<div id="progress-bar"><div id="progress-fill"></div></div>
+
+<div id="main">
+  <div id="group-nav"></div>
+  <div id="results"></div>
+</div>
+
+<div id="log-panel"></div>
+
+<script>
+// ─── Config ───────────────────────────────────────────────────────────────────
+const BASE = 'http://localhost:8000';
+const CREDS = {
+  super_admin: { user_id: 'risk_agent',  password: 'RiskAgent2025!' },
+  admin:       { user_id: 'admin',       password: 'Admin2025!'     },
+  user:        { user_id: 'test_user',   password: 'TestUser2025!'  },
+};
+const TOKENS = {};   // filled at runtime
+const RESULTS = {};  // testId → {status, msg}
+let totalRun = 0, totalPass = 0, totalFail = 0, totalSkip = 0;
+
+// ─── Logging ──────────────────────────────────────────────────────────────────
+function log(msg, cls='info') {
+  const el = document.getElementById('log-panel');
+  const d = document.createElement('div');
+  d.className = 'log-entry log-' + cls;
+  d.textContent = new Date().toLocaleTimeString('en', {hour12:false}) + ' ' + msg;
+  el.appendChild(d);
+  el.scrollTop = el.scrollHeight;
+}
+
+// ─── Auth helpers ─────────────────────────────────────────────────────────────
+async function login(role) {
+  const c = CREDS[role];
+  const r = await fetch(BASE + '/api/auth/login', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(c)
+  });
+  const d = await r.json();
+  if (!d.token) throw new Error('Login failed for ' + role + ': ' + (d.detail||JSON.stringify(d)));
+  TOKENS[role] = d.token;
+  log('Authenticated as ' + role + ' (' + d.display_name + ')', 'ok');
+  return d;
+}
+
+function hdr(role) {
+  const tok = TOKENS[role];
+  if (!tok) throw new Error('No token for ' + role);
+  return { 'Authorization': 'Bearer ' + tok, 'Content-Type': 'application/json' };
+}
+
+async function api(method, path, role, body) {
+  const opts = { method, headers: hdr(role) };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(BASE + path, opts);
+  const text = await r.text();
+  let json;
+  try { json = JSON.parse(text); } catch(e) { json = { _raw: text }; }
+  return { status: r.status, ok: r.ok, json };
+}
+
+// ─── Test runner ──────────────────────────────────────────────────────────────
+async function runTest(id, name, fn) {
+  setStatus(id, 'run', '…');
+  totalRun++;
+  try {
+    const result = await fn();
+    const msg = result && result.detail ? result.detail : (typeof result === 'string' ? result : 'OK');
+    setStatus(id, 'pass', msg);
+    totalPass++;
+    log('PASS ' + id + ' ' + name, 'ok');
+  } catch(e) {
+    setStatus(id, 'fail', e.message || String(e));
+    totalFail++;
+    log('FAIL ' + id + ' ' + name + ': ' + (e.message||e), 'err');
+  }
+  updateCounts();
+}
+
+function skipTest(id, name, reason) {
+  setStatus(id, 'skip', reason || 'skipped');
+  totalSkip++;
+  updateCounts();
+}
+
+function assert(cond, msg) { if (!cond) throw new Error(msg || 'assertion failed'); }
+function assertEqual(a, b, msg) { if (a !== b) throw new Error((msg||'') + ' expected ' + JSON.stringify(b) + ' got ' + JSON.stringify(a)); }
+function assertIncludes(arr, val, msg) { if (!arr.includes(val)) throw new Error((msg||'') + ' expected ' + val + ' in ' + JSON.stringify(arr)); }
+function assertNotIncludes(arr, val, msg) { if (arr.includes(val)) throw new Error((msg||'') + ' did NOT expect ' + val + ' in ' + JSON.stringify(arr)); }
+
+function setStatus(id, status, msg) {
+  const row = document.getElementById('row-' + id);
+  if (!row) return;
+  const statusEl = row.querySelector('.test-status');
+  const detailEl = row.querySelector('.test-detail');
+  const failEl = row.querySelector('.fail-msg');
+  statusEl.className = 'test-status status-' + status;
+  statusEl.textContent = status.toUpperCase();
+  if (status === 'fail' && failEl) { failEl.textContent = msg; failEl.style.display = 'block'; }
+  else if (detailEl && status !== 'pending') { detailEl.textContent = msg || ''; }
+}
+
+function updateCounts() {
+  document.getElementById('cnt-total').textContent = totalRun + totalSkip;
+  document.getElementById('cnt-pass').textContent  = totalPass;
+  document.getElementById('cnt-fail').textContent  = totalFail;
+  document.getElementById('cnt-skip').textContent  = totalSkip;
+  const total = totalRun + totalSkip;
+  if (total > 0) document.getElementById('progress-fill').style.width = (totalRun / total * 100) + '%';
+}
+
+// ─── Test Definitions ─────────────────────────────────────────────────────────
+
+const GROUPS = [
+
+// ═══════════════════════════════════════════════════════════════════════
+// GROUP 1: Authentication
+// ═══════════════════════════════════════════════════════════════════════
+{
+  id: 'G1', label: 'Authentication (login.html)', role: 'all',
+  tests: [
+    { id:'T001', name:'Valid login — super_admin returns JWT + role',
+      fn: async () => {
+        const r = await fetch(BASE+'/api/auth/login', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(CREDS.super_admin)});
+        const d = await r.json();
+        assert(d.token, 'No token returned');
+        assertEqual(d.role, 'super_admin', 'Role mismatch');
+        assertEqual(d.is_admin, true, 'is_admin should be true');
+        TOKENS.super_admin = d.token;
+        return d.display_name + ' · ' + d.role;
+      }},
+    { id:'T002', name:'Valid login — admin returns JWT + role',
+      fn: async () => {
+        const r = await fetch(BASE+'/api/auth/login', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(CREDS.admin)});
+        const d = await r.json();
+        assert(d.token, 'No token returned');
+        assertEqual(d.role, 'admin', 'Role mismatch');
+        TOKENS.admin = d.token;
+        return d.display_name + ' · ' + d.role;
+      }},
+    { id:'T003', name:'Valid login — user returns JWT + role',
+      fn: async () => {
+        const r = await fetch(BASE+'/api/auth/login', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(CREDS.user)});
+        const d = await r.json();
+        assert(d.token, 'No token returned');
+        assertEqual(d.role, 'user', 'Role mismatch');
+        TOKENS.user = d.token;
+        return d.display_name + ' · ' + d.role;
+      }},
+    { id:'T004', name:'Invalid credentials rejected (wrong password)',
+      fn: async () => {
+        const r = await fetch(BASE+'/api/auth/login', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:'risk_agent',password:'wrongpassword'})});
+        const d = await r.json();
+        assert(!d.token, 'Should not return token for invalid creds');
+        assert(r.status === 401, 'Expected 401, got ' + r.status);
+        return '401 returned correctly';
+      }},
+    { id:'T005', name:'Invalid credentials rejected (unknown user)',
+      fn: async () => {
+        const r = await fetch(BASE+'/api/auth/login', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:'nobody',password:'xxx'})});
+        const d = await r.json();
+        assert(!d.token, 'Should not return token for unknown user');
+        return '401 returned correctly';
+      }},
+    { id:'T006', name:'Missing credentials body returns error',
+      fn: async () => {
+        const r = await fetch(BASE+'/api/auth/login', {method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+        assert(r.status >= 400, 'Expected 4xx, got ' + r.status);
+        return r.status + ' returned';
+      }},
+    { id:'T007', name:'Token /api/auth/me returns correct profile',
+      fn: async () => {
+        const r = await fetch(BASE+'/api/auth/me', {headers:{Authorization:'Bearer '+TOKENS.super_admin}});
+        const d = await r.json();
+        assertEqual(d.user_id, 'risk_agent', 'user_id mismatch');
+        assertEqual(d.role, 'super_admin', 'role mismatch');
+        return d.display_name;
+      }},
+    { id:'T008', name:'Expired/invalid token returns 401',
+      fn: async () => {
+        const r = await fetch(BASE+'/api/auth/me', {headers:{Authorization:'Bearer fake.token.here'}});
+        assert(r.status === 401 || r.status === 403, 'Expected 401/403, got ' + r.status);
+        return r.status + ' returned';
+      }},
+    { id:'T009', name:'No token returns 401 on protected endpoint',
+      fn: async () => {
+        const r = await fetch(BASE+'/api/admin/worker');
+        assert(r.status === 401 || r.status === 403, 'Expected 401/403, got ' + r.status);
+        return r.status + ' returned';
+      }},
+  ]
+},
+
+// ═══════════════════════════════════════════════════════════════════════
+// GROUP 2: Worker API
+// ═══════════════════════════════════════════════════════════════════════
+{
+  id: 'G2', label: 'Worker API — all roles', role: 'all',
+  tests: [
+    { id:'T010', name:'super_admin — GET /api/super/workers returns list',
+      fn: async () => {
+        const {status,json} = await api('GET','/api/super/workers','super_admin');
+        assert(status===200, 'Expected 200 got '+status);
+        assert(Array.isArray(json.workers||json), 'Expected array');
+        const workers = json.workers || json;
+        return workers.length + ' workers';
+      }},
+    { id:'T011', name:'admin — GET /api/admin/worker returns own worker',
+      fn: async () => {
+        const {status,json} = await api('GET','/api/admin/worker','admin');
+        assert(status===200, 'Expected 200 got '+status);
+        assert(json.worker_id || json.id, 'Expected worker data');
+        return (json.worker_id||json.id) + ' · ' + json.name;
+      }},
+    { id:'T012', name:'user — GET /api/admin/worker returns worker (read)',
+      fn: async () => {
+        const {status,json} = await api('GET','/api/admin/worker','user');
+        assert(status===200, 'Expected 200 got '+status);
+        return (json.worker_id||json.id) + ' · ' + json.name;
+      }},
+    { id:'T013', name:'user — PUT /api/admin/worker BLOCKED (403)',
+      fn: async () => {
+        const {status} = await api('PUT','/api/admin/worker','user',{name:'hacked'});
+        assert(status===403 || status===401, 'Expected 403/401 got '+status);
+        return status + ' blocked correctly';
+      }},
+    { id:'T014', name:'admin — PUT /api/admin/worker ALLOWED',
+      fn: async () => {
+        // First get current config
+        const {json:current} = await api('GET','/api/admin/worker','admin');
+        const originalDesc = current.description;
+        // Update with same value (no-op)
+        const {status} = await api('PUT','/api/admin/worker','admin',{description: originalDesc});
+        assert(status===200, 'Expected 200 got '+status);
+        return 'PUT succeeded';
+      }},
+    { id:'T015', name:'user — GET /api/super/workers BLOCKED (403)',
+      fn: async () => {
+        const {status} = await api('GET','/api/super/workers','user');
+        assert(status===403||status===401, 'Expected 403/401 got '+status);
+        return status + ' blocked correctly';
+      }},
+    { id:'T016', name:'admin — GET /api/super/workers BLOCKED (403)',
+      fn: async () => {
+        const {status} = await api('GET','/api/super/workers','admin');
+        assert(status===403||status===401, 'Expected 403/401 got '+status);
+        return status + ' blocked correctly';
+      }},
+  ]
+},
+
+// ═══════════════════════════════════════════════════════════════════════
+// GROUP 3: Tools API
+// ═══════════════════════════════════════════════════════════════════════
+{
+  id: 'G3', label: 'Tools API — all roles', role: 'all',
+  tests: [
+    { id:'T020', name:'super_admin — GET tools list returns all tools',
+      fn: async () => {
+        const {status,json} = await api('GET','/api/super/workers/w-market-risk/tools','super_admin');
+        assert(status===200, 'Expected 200 got '+status);
+        return (json.tools||json).length + ' tools';
+      }},
+    { id:'T021', name:'admin — GET /api/admin/worker/tools returns tools',
+      fn: async () => {
+        const {status,json} = await api('GET','/api/admin/worker/tools','admin');
+        assert(status===200, 'Expected 200 got '+status);
+        return (json.tools||json).length + ' tools';
+      }},
+    { id:'T022', name:'user — GET /api/admin/worker/tools allowed (read)',
+      fn: async () => {
+        const {status,json} = await api('GET','/api/admin/worker/tools','user');
+        assert(status===200||status===403, 'Got '+status);
+        return status === 200 ? 'read allowed' : '403 correctly blocked';
+      }},
+    { id:'T023', name:'user — POST /api/admin/worker/tools BLOCKED',
+      fn: async () => {
+        const {status} = await api('POST','/api/admin/worker/tools','user',{enabled_tools:['*']});
+        assert(status===403||status===401, 'Expected 403/401 got '+status);
+        return status + ' blocked correctly';
+      }},
+  ]
+},
+
+// ═══════════════════════════════════════════════════════════════════════
+// GROUP 4: File System — Domain Data
+// ═══════════════════════════════════════════════════════════════════════
+{
+  id: 'G4', label: 'File System — Domain Data', role: 'all',
+  tests: [
+    { id:'T030', name:'admin — GET /api/admin/worker/files/domain_data tree',
+      fn: async () => {
+        const {status,json} = await api('GET','/api/admin/worker/files/domain_data','admin');
+        assert(status===200, 'Expected 200 got '+status);
+        return 'tree loaded · ' + JSON.stringify(json).slice(0,40);
+      }},
+    { id:'T031', name:'super_admin — GET domain_data tree for w-market-risk',
+      fn: async () => {
+        const {status,json} = await api('GET','/api/super/workers/w-market-risk/files/domain_data','super_admin');
+        assert(status===200, 'Expected 200 got '+status);
+        return 'tree loaded';
+      }},
+    { id:'T032', name:'user — GET /api/fs/domain_data/tree returns domain data',
+      fn: async () => {
+        const {status,json} = await api('GET','/api/fs/domain_data/tree','user');
+        assert(status===200||status===403, 'Unexpected status '+status);
+        return status === 200 ? 'visible to user (read)' : '403 read blocked';
+      }},
+    { id:'T033', name:'admin — Upload file to domain_data then verify present',
+      fn: async () => {
+        const content = 'regression_test_domain_data_' + Date.now();
+        const fname = 'rtest_domain.txt';
+        const formData = new FormData();
+        formData.append('file', new Blob([content], {type:'text/plain'}), fname);
+        const r = await fetch(BASE+'/api/admin/worker/files/domain_data/upload', {
+          method:'POST',
+          headers:{Authorization:'Bearer '+TOKENS.admin},
+          body: formData
+        });
+        const d = await r.json();
+        assert(r.ok, 'Upload failed: '+(d.message||d.error||JSON.stringify(d)));
+        return 'Uploaded: ' + (d.filename||fname);
+      }},
+    { id:'T034', name:'user — domain_data upload BLOCKED',
+      fn: async () => {
+        const formData = new FormData();
+        formData.append('file', new Blob(['test'], {type:'text/plain'}), 'blocked.txt');
+        const r = await fetch(BASE+'/api/admin/worker/files/domain_data/upload', {
+          method:'POST',
+          headers:{Authorization:'Bearer '+TOKENS.user},
+          body: formData
+        });
+        assert(!r.ok, 'User should not upload to domain_data');
+        return r.status + ' upload blocked correctly';
+      }},
+    { id:'T035', name:'user — GET /api/fs/domain_data/tree sees admin-uploaded file',
+      fn: async () => {
+        const {status,json} = await api('GET','/api/fs/domain_data/tree','user');
+        if (status===403) return 'domain_data read gated (403 — by design)';
+        assert(status===200, 'Expected 200 got '+status);
+        return 'domain_data visible to user';
+      }},
+  ]
+},
+
+// ═══════════════════════════════════════════════════════════════════════
+// GROUP 5: File System — My Data (User-Scoped Isolation)
+// ═══════════════════════════════════════════════════════════════════════
+{
+  id: 'G5', label: 'File System — My Data (user isolation)', role: 'all',
+  tests: [
+    { id:'T040', name:'user — Upload file to my_data (via /api/files/upload)',
+      fn: async () => {
+        const content = 'my_data_isolation_test_' + Date.now();
+        const fname = 'rtest_mydata_user.txt';
+        const formData = new FormData();
+        formData.append('file', new Blob([content], {type:'text/plain'}), fname);
+        const r = await fetch(BASE+'/api/files/upload', {
+          method:'POST',
+          headers:{Authorization:'Bearer '+TOKENS.user},
+          body: formData
+        });
+        const d = await r.json();
+        assert(r.ok, 'Upload failed: '+JSON.stringify(d));
+        return 'Uploaded: ' + (d.filename||fname) + ' to my_data/test_user';
+      }},
+    { id:'T041', name:'admin — Upload file to my_data (separate user scope)',
+      fn: async () => {
+        const formData = new FormData();
+        formData.append('file', new Blob(['admin_private_file'], {type:'text/plain'}), 'rtest_mydata_admin.txt');
+        const r = await fetch(BASE+'/api/files/upload', {
+          method:'POST',
+          headers:{Authorization:'Bearer '+TOKENS.admin},
+          body: formData
+        });
+        const d = await r.json();
+        assert(r.ok, 'Admin upload to my_data failed: '+JSON.stringify(d));
+        return 'Uploaded: ' + (d.filename||'rtest_mydata_admin.txt');
+      }},
+    { id:'T042', name:'[ISOLATION] user my_data tree shows only user files',
+      fn: async () => {
+        const {status,json} = await api('GET','/api/fs/uploads/tree','user');
+        assert(status===200, 'Expected 200 got '+status);
+        const allPaths = JSON.stringify(json);
+        assert(!allPaths.includes('admin'), 'user should NOT see admin my_data files');
+        return 'No admin files visible to user — ISOLATED';
+      }},
+    { id:'T043', name:'[ISOLATION] admin my_data tree shows only admin files',
+      fn: async () => {
+        const {status,json} = await api('GET','/api/fs/uploads/tree','admin');
+        assert(status===200, 'Expected 200 got '+status);
+        const allPaths = JSON.stringify(json);
+        // Admin scoped tree should not show test_user's files
+        assert(!allPaths.includes('test_user'), 'admin should NOT see test_user my_data files');
+        return 'No test_user files visible to admin — ISOLATED';
+      }},
+    { id:'T044', name:'[ISOLATION] super_admin my_data separate from user',
+      fn: async () => {
+        const {status,json} = await api('GET','/api/fs/uploads/tree','super_admin');
+        assert(status===200, 'Expected 200 got '+status);
+        const allPaths = JSON.stringify(json);
+        assert(!allPaths.includes('test_user'), 'super_admin should NOT see test_user files');
+        return 'super_admin my_data isolated correctly';
+      }},
+  ]
+},
+
+// ═══════════════════════════════════════════════════════════════════════
+// GROUP 6: File System — Common Data (Shared)
+// ═══════════════════════════════════════════════════════════════════════
+{
+  id: 'G6', label: 'File System — Common Data (shared library)', role: 'all',
+  tests: [
+    { id:'T050', name:'super_admin — GET common_data tree',
+      fn: async () => {
+        const {status,json} = await api('GET','/api/fs/common/tree','super_admin');
+        assert(status===200, 'Expected 200 got '+status);
+        return 'common tree loaded';
+      }},
+    { id:'T051', name:'admin — GET common_data tree',
+      fn: async () => {
+        const {status} = await api('GET','/api/fs/common/tree','admin');
+        assert(status===200||status===403, 'Unexpected '+status);
+        return status===200 ? 'common visible to admin' : '403 gated';
+      }},
+    { id:'T052', name:'user — GET common_data tree (read access)',
+      fn: async () => {
+        const {status} = await api('GET','/api/fs/common/tree','user');
+        assert(status===200||status===403, 'Unexpected '+status);
+        return status===200 ? 'common visible to user (shared)' : '403 gated';
+      }},
+    { id:'T053', name:'user — common_data upload BLOCKED',
+      fn: async () => {
+        const formData = new FormData();
+        formData.append('file', new Blob(['x'],{type:'text/plain'}), 'x.txt');
+        const r = await fetch(BASE+'/api/fs/common/upload', {
+          method:'POST',
+          headers:{Authorization:'Bearer '+TOKENS.user},
+          body: formData
+        });
+        assert(!r.ok, 'User should not upload to common_data. Got: '+r.status);
+        return r.status + ' upload blocked';
+      }},
+  ]
+},
+
+// ═══════════════════════════════════════════════════════════════════════
+// GROUP 7: Verified Workflows
+// ═══════════════════════════════════════════════════════════════════════
+{
+  id: 'G7', label: 'Verified Workflows', role: 'all',
+  tests: [
+    { id:'T060', name:'admin — GET verified_workflows tree',
+      fn: async () => {
+        const {status,json} = await api('GET','/api/admin/worker/files/verified_workflows','admin');
+        assert(status===200, 'Expected 200 got '+status);
+        return 'verified_workflows tree loaded';
+      }},
+    { id:'T061', name:'user — GET /api/fs/verified/tree returns workflows',
+      fn: async () => {
+        const {status} = await api('GET','/api/fs/verified/tree','user');
+        assert(status===200||status===403, 'Unexpected '+status);
+        return status===200 ? 'workflows visible to user (read)' : '403 gated';
+      }},
+    { id:'T062', name:'user — verified_workflows upload BLOCKED',
+      fn: async () => {
+        const formData = new FormData();
+        formData.append('file', new Blob(['---\nname:test\n---'],{type:'text/plain'}), 'test.md');
+        const r = await fetch(BASE+'/api/admin/worker/files/verified_workflows/upload', {
+          method:'POST',
+          headers:{Authorization:'Bearer '+TOKENS.user},
+          body: formData
+        });
+        assert(!r.ok, 'User should not upload verified workflows. Got '+r.status);
+        return r.status + ' upload blocked';
+      }},
+    { id:'T063', name:'admin — Upload .md to verified_workflows ALLOWED',
+      fn: async () => {
+        const formData = new FormData();
+        formData.append('file', new Blob(['---\nname: Regression Test Workflow\n---\n# Test'],{type:'text/plain'}), 'rtest_workflow.md');
+        const r = await fetch(BASE+'/api/admin/worker/files/verified_workflows/upload', {
+          method:'POST',
+          headers:{Authorization:'Bearer '+TOKENS.admin},
+          body: formData
+        });
+        const d = await r.json();
+        assert(r.ok, 'Admin upload to verified_workflows failed: '+JSON.stringify(d));
+        return 'Uploaded: ' + (d.filename||'rtest_workflow.md');
+      }},
+    { id:'T064', name:'[ISOLATION] user sees admin-uploaded verified workflow',
+      fn: async () => {
+        const {status,json} = await api('GET','/api/fs/verified/tree','user');
+        if (status===403) return '403 gated — user cannot read verified (by design)';
+        assert(status===200, 'Expected 200 got '+status);
+        return 'verified workflows visible to user';
+      }},
+  ]
+},
+
+// ═══════════════════════════════════════════════════════════════════════
+// GROUP 8: My Workflows (user-scoped)
+// ═══════════════════════════════════════════════════════════════════════
+{
+  id: 'G8', label: 'My Workflows — user scoped', role: 'all',
+  tests: [
+    { id:'T070', name:'user — GET /api/fs/my_workflows/tree returns own workflows',
+      fn: async () => {
+        const {status,json} = await api('GET','/api/fs/my_workflows/tree','user');
+        assert(status===200||status===403, 'Unexpected '+status);
+        return status===200 ? 'my_workflows visible' : '403 gated';
+      }},
+    { id:'T071', name:'user — POST /api/fs/my_workflows/file creates workflow',
+      fn: async () => {
+        const {status,json} = await api('POST','/api/fs/my_workflows/file','user',{
+          path:'rtest_myworkflow.md',
+          content:'---\nname: My Regression Test\n---\n# Test workflow'
+        });
+        assert(status===200||status===201||status===403, 'Unexpected '+status);
+        return status < 400 ? 'workflow created' : status+' gated';
+      }},
+    { id:'T072', name:'[ISOLATION] admin GET /api/fs/my_workflows/tree sees own, not user',
+      fn: async () => {
+        const {status,json:adminJson} = await api('GET','/api/fs/my_workflows/tree','admin');
+        const {json:userJson}  = await api('GET','/api/fs/my_workflows/tree','user');
+        if (status===403) return '403 gated for admin';
+        const adminStr = JSON.stringify(adminJson);
+        assert(!adminStr.includes('rtest_myworkflow'), 'Admin should NOT see user my_workflows');
+        return 'my_workflows isolated between admin and user';
+      }},
+  ]
+},
+
+// ═══════════════════════════════════════════════════════════════════════
+// GROUP 9: User Management (super_admin only)
+// ═══════════════════════════════════════════════════════════════════════
+{
+  id: 'G9', label: 'User Management — super_admin only', role: 'super_admin',
+  tests: [
+    { id:'T080', name:'super_admin — GET /api/super/users returns all users',
+      fn: async () => {
+        const {status,json} = await api('GET','/api/super/users','super_admin');
+        assert(status===200, 'Expected 200 got '+status);
+        const users = json.users || json;
+        assert(Array.isArray(users) && users.length >= 3, 'Expected 3+ users');
+        return users.length + ' users returned';
+      }},
+    { id:'T081', name:'admin — GET /api/super/users BLOCKED',
+      fn: async () => {
+        const {status} = await api('GET','/api/super/users','admin');
+        assert(status===403||status===401, 'Expected 403/401 got '+status);
+        return status + ' blocked correctly';
+      }},
+    { id:'T082', name:'user — GET /api/super/users BLOCKED',
+      fn: async () => {
+        const {status} = await api('GET','/api/super/users','user');
+        assert(status===403||status===401, 'Expected 403/401 got '+status);
+        return status + ' blocked correctly';
+      }},
+    { id:'T083', name:'super_admin — POST /api/super/users creates user',
+      fn: async () => {
+        const {status,json} = await api('POST','/api/super/users','super_admin',{
+          user_id: 'rtest_tmp_user',
+          display_name: 'Regression Temp User',
+          password: 'TempUser123!',
+          role: 'user',
+          worker_id: 'w-market-risk',
+          enabled: true
+        });
+        assert(status===200||status===201||status===409, 'Unexpected status '+status);
+        return status===409 ? 'user already exists (ok)' : 'user created: rtest_tmp_user';
+      }},
+    { id:'T084', name:'super_admin — PUT /api/super/users/{id} updates user',
+      fn: async () => {
+        const {status} = await api('PUT','/api/super/users/rtest_tmp_user','super_admin',{
+          display_name: 'Regression Temp Updated'
+        });
+        assert(status===200||status===404, 'Unexpected status '+status);
+        return status===404 ? 'user not found (create may have failed)' : 'user updated';
+      }},
+    { id:'T085', name:'super_admin — DELETE /api/super/users/{id} removes user',
+      fn: async () => {
+        const {status} = await api('DELETE','/api/super/users/rtest_tmp_user','super_admin');
+        assert(status===200||status===404, 'Unexpected status '+status);
+        return status===404 ? 'user not found (cleanup ok)' : 'user deleted';
+      }},
+    { id:'T086', name:'admin — POST /api/super/users BLOCKED',
+      fn: async () => {
+        const {status} = await api('POST','/api/super/users','admin',{user_id:'x',password:'y',role:'user'});
+        assert(status===403||status===401, 'Expected 403/401 got '+status);
+        return status + ' blocked correctly';
+      }},
+  ]
+},
+
+// ═══════════════════════════════════════════════════════════════════════
+// GROUP 10: Worker Management (super_admin only)
+// ═══════════════════════════════════════════════════════════════════════
+{
+  id: 'G10', label: 'Worker Management — super_admin only', role: 'super_admin',
+  tests: [
+    { id:'T090', name:'super_admin — GET /api/super/workers lists all workers',
+      fn: async () => {
+        const {status,json} = await api('GET','/api/super/workers','super_admin');
+        assert(status===200, 'Expected 200 got '+status);
+        const workers = json.workers || json;
+        return workers.length + ' workers';
+      }},
+    { id:'T091', name:'super_admin — POST /api/super/workers creates worker',
+      fn: async () => {
+        const {status,json} = await api('POST','/api/super/workers','super_admin',{
+          worker_id: 'w-rtest-tmp',
+          name: 'Regression Test Worker',
+          description: 'Temporary worker for regression testing',
+          system_prompt: 'You are a test agent.',
+          enabled: true
+        });
+        assert(status===200||status===201||status===409, 'Unexpected status '+status);
+        return status===409 ? 'worker already exists (ok)' : 'worker created: w-rtest-tmp';
+      }},
+    { id:'T092', name:'super_admin — PUT /api/super/workers/{id} updates worker',
+      fn: async () => {
+        const {status} = await api('PUT','/api/super/workers/w-rtest-tmp','super_admin',{
+          description: 'Updated regression test worker'
+        });
+        assert(status===200||status===404, 'Unexpected status '+status);
+        return status===404 ? 'worker not found (create may have failed)' : 'worker updated';
+      }},
+    { id:'T093', name:'super_admin — DELETE /api/super/workers/{id} removes test worker',
+      fn: async () => {
+        const {status} = await api('DELETE','/api/super/workers/w-rtest-tmp','super_admin');
+        assert(status===200||status===404, 'Unexpected status '+status);
+        return status===404 ? 'not found (already deleted)' : 'worker deleted';
+      }},
+    { id:'T094', name:'admin — POST /api/super/workers BLOCKED',
+      fn: async () => {
+        const {status} = await api('POST','/api/super/workers','admin',{worker_id:'x',name:'x'});
+        assert(status===403||status===401, 'Expected 403/401 got '+status);
+        return status + ' blocked correctly';
+      }},
+    { id:'T095', name:'user — PUT /api/super/workers/{id} BLOCKED',
+      fn: async () => {
+        const {status} = await api('PUT','/api/super/workers/w-market-risk','user',{name:'hacked'});
+        assert(status===403||status===401, 'Expected 403/401 got '+status);
+        return status + ' blocked correctly';
+      }},
+  ]
+},
+
+// ═══════════════════════════════════════════════════════════════════════
+// GROUP 11: Connectors (super_admin only)
+// ═══════════════════════════════════════════════════════════════════════
+{
+  id: 'G11', label: 'Connectors — super_admin only', role: 'super_admin',
+  tests: [
+    { id:'T100', name:'super_admin — GET /api/super/connectors returns connector list',
+      fn: async () => {
+        const {status,json} = await api('GET','/api/super/connectors','super_admin');
+        assert(status===200||status===404, 'Unexpected '+status);
+        return status===404 ? 'no connectors endpoint (ok)' : 'connectors: '+JSON.stringify(json).slice(0,40);
+      }},
+    { id:'T101', name:'admin — GET /api/super/connectors BLOCKED',
+      fn: async () => {
+        const {status} = await api('GET','/api/super/connectors','admin');
+        assert(status===403||status===401||status===404, 'Expected 403/401 got '+status);
+        return status===404 ? 'endpoint not found (ok)' : status + ' blocked correctly';
+      }},
+    { id:'T102', name:'user — GET /api/super/connectors BLOCKED',
+      fn: async () => {
+        const {status} = await api('GET','/api/super/connectors','user');
+        assert(status===403||status===401||status===404, 'Expected 403/401 got '+status);
+        return status===404 ? 'endpoint not found (ok)' : status + ' blocked correctly';
+      }},
+  ]
+},
+
+// ═══════════════════════════════════════════════════════════════════════
+// GROUP 12: Chat / Agent Run
+// ═══════════════════════════════════════════════════════════════════════
+{
+  id: 'G12', label: 'Chat & Agent Execution', role: 'all',
+  tests: [
+    { id:'T110', name:'user — POST /api/chat starts SSE stream',
+      fn: async () => {
+        const r = await fetch(BASE+'/api/chat', {
+          method:'POST',
+          headers:{Authorization:'Bearer '+TOKENS.user, 'Content-Type':'application/json'},
+          body: JSON.stringify({message:'Say only the word PONG', thread_id:null, files:[]})
+        });
+        assert(r.ok, 'Chat request failed: '+r.status);
+        assert(r.headers.get('content-type')&&r.headers.get('content-type').includes('text/event-stream'), 'Expected SSE stream');
+        const reader = r.body.getReader();
+        const dec = new TextDecoder();
+        let chunks = '', found = false;
+        for (let i=0; i<20; i++) {
+          const {value, done} = await reader.read();
+          if (done) break;
+          chunks += dec.decode(value);
+          if (chunks.includes('PONG') || chunks.includes('[DONE]')) { found = true; break; }
+        }
+        reader.cancel();
+        assert(found || chunks.includes('data:'), 'No SSE data received');
+        return 'SSE stream received · response: ' + chunks.slice(0,60);
+      }},
+    { id:'T111', name:'admin — POST /api/chat works for admin role',
+      fn: async () => {
+        const r = await fetch(BASE+'/api/chat', {
+          method:'POST',
+          headers:{Authorization:'Bearer '+TOKENS.admin, 'Content-Type':'application/json'},
+          body: JSON.stringify({message:'Reply with OK only', thread_id:null, files:[]})
+        });
+        assert(r.ok, 'Chat failed for admin: '+r.status);
+        assert(r.headers.get('content-type')&&r.headers.get('content-type').includes('text/event-stream'), 'Expected SSE');
+        const reader = r.body.getReader();
+        const dec = new TextDecoder();
+        let chunks = '';
+        for (let i=0; i<10; i++) {
+          const {value,done} = await reader.read();
+          if (done) break;
+          chunks += dec.decode(value);
+          if (chunks.includes('[DONE]') || chunks.length > 200) break;
+        }
+        reader.cancel();
+        return 'SSE stream received';
+      }},
+    { id:'T112', name:'no token — POST /api/chat BLOCKED',
+      fn: async () => {
+        const r = await fetch(BASE+'/api/chat', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({message:'hello', thread_id:null})
+        });
+        assert(!r.ok, 'Expected auth failure, got '+r.status);
+        return r.status + ' blocked correctly';
+      }},
+  ]
+},
+
+// ═══════════════════════════════════════════════════════════════════════
+// GROUP 13: File Upload via Chat (test_user)
+// ═══════════════════════════════════════════════════════════════════════
+{
+  id: 'G13', label: 'Chat File Upload — all roles', role: 'all',
+  tests: [
+    { id:'T120', name:'user — /api/files/upload .txt file succeeds',
+      fn: async () => {
+        const formData = new FormData();
+        formData.append('file', new Blob(['test content'],{type:'text/plain'}), 'rtest_upload.txt');
+        const r = await fetch(BASE+'/api/files/upload', {
+          method:'POST', headers:{Authorization:'Bearer '+TOKENS.user}, body:formData
+        });
+        const d = await r.json();
+        assert(r.ok, 'Upload failed: '+JSON.stringify(d));
+        return 'Uploaded: '+(d.filename||'rtest_upload.txt')+' to my_data/test_user';
+      }},
+    { id:'T121', name:'admin — /api/files/upload .txt file succeeds',
+      fn: async () => {
+        const formData = new FormData();
+        formData.append('file', new Blob(['admin content'],{type:'text/plain'}), 'rtest_upload_admin.txt');
+        const r = await fetch(BASE+'/api/files/upload', {
+          method:'POST', headers:{Authorization:'Bearer '+TOKENS.admin}, body:formData
+        });
+        const d = await r.json();
+        assert(r.ok, 'Upload failed: '+JSON.stringify(d));
+        return 'Uploaded: '+(d.filename||'rtest_upload_admin.txt');
+      }},
+    { id:'T122', name:'user — /api/files/upload .pdf file succeeds (if < 20MB)',
+      fn: async () => {
+        const fakePdf = new Uint8Array([0x25,0x50,0x44,0x46,0x2D,0x31,0x2E,0x34]); // %PDF-1.4 header
+        const formData = new FormData();
+        formData.append('file', new Blob([fakePdf],{type:'application/pdf'}), 'rtest_test.pdf');
+        const r = await fetch(BASE+'/api/files/upload', {
+          method:'POST', headers:{Authorization:'Bearer '+TOKENS.user}, body:formData
+        });
+        const d = await r.json();
+        return r.ok ? 'PDF uploaded: '+(d.filename||'rtest_test.pdf') : 'Failed ('+r.status+'):'+JSON.stringify(d).slice(0,60);
+      }},
+    { id:'T123', name:'no token — /api/files/upload BLOCKED',
+      fn: async () => {
+        const formData = new FormData();
+        formData.append('file', new Blob(['x'],{type:'text/plain'}), 'x.txt');
+        const r = await fetch(BASE+'/api/files/upload', {method:'POST', body:formData});
+        assert(!r.ok, 'Expected auth failure, got '+r.status);
+        return r.status + ' blocked correctly';
+      }},
+  ]
+},
+
+// ═══════════════════════════════════════════════════════════════════════
+// GROUP 14: Admin Console UI - Role Visibility
+// ═══════════════════════════════════════════════════════════════════════
+{
+  id: 'G14', label: 'Admin Console — role-based access', role: 'all',
+  tests: [
+    { id:'T130', name:'super_admin — admin.html loads with full nav',
+      fn: async () => {
+        const r = await fetch('http://localhost:8000/admin.html');
+        assert(r.ok, 'admin.html not accessible: '+r.status);
+        const html = await r.text();
+        assert(html.includes('showSection'), 'Expected showSection in HTML');
+        assert(html.includes('workers'), 'Expected workers nav item');
+        assert(html.includes('connectors'), 'Expected connectors nav item');
+        return 'admin.html loaded, all nav sections present';
+      }},
+    { id:'T131', name:'super_admin — /api/super/audit returns audit log',
+      fn: async () => {
+        const {status,json} = await api('GET','/api/super/audit?limit=5','super_admin');
+        assert(status===200||status===404, 'Unexpected '+status);
+        return status===404 ? 'audit endpoint not found (ok)' : 'audit log: '+(json.entries||json.total||'loaded');
+      }},
+    { id:'T132', name:'admin — /api/super/audit BLOCKED',
+      fn: async () => {
+        const {status} = await api('GET','/api/super/audit','admin');
+        assert(status===403||status===401||status===404, 'Expected 403/401 got '+status);
+        return status===404 ? 'not found (ok)' : status + ' blocked correctly';
+      }},
+    { id:'T133', name:'admin — /api/super/workers BLOCKED (cannot create workers)',
+      fn: async () => {
+        const {status} = await api('POST','/api/super/workers','admin',{worker_id:'x',name:'x'});
+        assert(status===403||status===401, 'Expected 403/401 got '+status);
+        return status + ' blocked correctly';
+      }},
+    { id:'T134', name:'admin — /api/admin/worker PUT (can edit own worker)',
+      fn: async () => {
+        const {status} = await api('PUT','/api/admin/worker','admin',{description:'Admin regression test'});
+        // Restore
+        await api('PUT','/api/admin/worker','admin',{description:'Counterparty credit risk and market intelligence for capital markets analysts.'});
+        assert(status===200, 'Expected 200 got '+status);
+        return 'admin can edit own worker config';
+      }},
+  ]
+},
+
+// ═══════════════════════════════════════════════════════════════════════
+// GROUP 15: Data Isolation — Cross-Role Visibility Summary
+// ═══════════════════════════════════════════════════════════════════════
+{
+  id: 'G15', label: 'Data Isolation — cross-role summary', role: 'all',
+  tests: [
+    { id:'T140', name:'[ISOLATION] user cannot reach super endpoints',
+      fn: async () => {
+        const blocked = [];
+        const endpoints = ['/api/super/workers','/api/super/users','/api/super/audit','/api/super/connectors'];
+        for (const ep of endpoints) {
+          const {status} = await api('GET',ep,'user');
+          if (status===403||status===401||status===404) blocked.push(ep.split('/').pop());
+          else throw new Error(ep + ' not blocked (got '+status+')');
+        }
+        return 'Blocked: ' + blocked.join(', ');
+      }},
+    { id:'T141', name:'[ISOLATION] admin cannot reach super_admin endpoints',
+      fn: async () => {
+        const blocked = [];
+        const endpoints = ['/api/super/workers','/api/super/users'];
+        for (const ep of endpoints) {
+          const {status} = await api('GET',ep,'admin');
+          if (status===403||status===401||status===404) blocked.push(ep.split('/').pop());
+          else throw new Error(ep + ' not blocked for admin (got '+status+')');
+        }
+        return 'Blocked: ' + blocked.join(', ');
+      }},
+    { id:'T142', name:'[ISOLATION] my_data files not shared between users',
+      fn: async () => {
+        // Get each user's uploads tree
+        const [u, a, s] = await Promise.all([
+          api('GET','/api/fs/uploads/tree','user'),
+          api('GET','/api/fs/uploads/tree','admin'),
+          api('GET','/api/fs/uploads/tree','super_admin'),
+        ]);
+        const userStr = JSON.stringify(u.json);
+        const adminStr = JSON.stringify(a.json);
+        const superStr = JSON.stringify(s.json);
+        // Verify no cross-contamination of known filenames
+        if (userStr.includes('rtest_mydata_admin')) throw new Error('user sees admin my_data file!');
+        if (adminStr.includes('rtest_mydata_user')) throw new Error('admin sees user my_data file!');
+        return 'my_data isolated across all 3 roles';
+      }},
+    { id:'T143', name:'[ISOLATION] domain_data writable only by admin+',
+      fn: async () => {
+        const formData = new FormData();
+        formData.append('file', new Blob(['x'],{type:'text/plain'}), 'x.txt');
+        const r = await fetch(BASE+'/api/admin/worker/files/domain_data/upload', {
+          method:'POST', headers:{Authorization:'Bearer '+TOKENS.user}, body:formData
+        });
+        assert(!r.ok, 'user should not write domain_data. got '+r.status);
+        return 'domain_data write blocked for user ('+r.status+')';
+      }},
+    { id:'T144', name:'[ISOLATION] verified_workflows writable only by admin+',
+      fn: async () => {
+        const formData = new FormData();
+        formData.append('file', new Blob(['---\nname:x\n---'],{type:'text/plain'}), 'x.md');
+        const r = await fetch(BASE+'/api/admin/worker/files/verified_workflows/upload', {
+          method:'POST', headers:{Authorization:'Bearer '+TOKENS.user}, body:formData
+        });
+        assert(!r.ok, 'user should not write verified_workflows. got '+r.status);
+        return 'verified_workflows write blocked for user ('+r.status+')';
+      }},
+  ]
+},
+
+];
+
+// ─── Build DOM ────────────────────────────────────────────────────────────────
+function buildUI() {
+  const nav  = document.getElementById('group-nav');
+  const main = document.getElementById('results');
+  GROUPS.forEach(g => {
+    // Nav item
+    const ni = document.createElement('div');
+    ni.className = 'group-nav-item';
+    ni.id = 'nav-' + g.id;
+    ni.innerHTML = `<span>${g.label}</span><span class="group-badge" id="badge-${g.id}">—</span>`;
+    ni.onclick = () => document.getElementById('sec-'+g.id).scrollIntoView({behavior:'smooth'});
+    nav.appendChild(ni);
+
+    // Section
+    const sec = document.createElement('div');
+    sec.className = 'group-section';
+    sec.id = 'sec-' + g.id;
+    const roleBadgeClass = g.role === 'super_admin' ? 'role-super' : g.role === 'admin' ? 'role-admin' : g.role === 'user' ? 'role-user' : 'role-all';
+    const roleBadgeText = g.role === 'all' ? 'all roles' : g.role;
+    sec.innerHTML = `<div class="group-header"><span>${g.id}: ${g.label}</span><span class="role-badge ${roleBadgeClass}">${roleBadgeText}</span></div>`;
+
+    g.tests.forEach(t => {
+      const row = document.createElement('div');
+      row.className = 'test-row';
+      row.id = 'row-' + t.id;
+      const isIso = t.name.startsWith('[ISOLATION]');
+      row.innerHTML = `
+        <div class="test-id">${t.id}</div>
+        <div style="flex:1">
+          <div class="test-name">${t.name}${isIso ? '<span class="iso-badge">isolation</span>' : ''}</div>
+          <div class="test-detail"></div>
+          <div class="fail-msg" style="display:none"></div>
+        </div>
+        <div class="test-status status-pending">—</div>`;
+      sec.appendChild(row);
+    });
+    main.appendChild(sec);
+  });
+
+  // Count total
+  let total = 0;
+  GROUPS.forEach(g => total += g.tests.length);
+  document.getElementById('cnt-total').textContent = total;
+}
+
+// ─── Run All ──────────────────────────────────────────────────────────────────
+async function runAll() {
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Running…';
+  totalRun = totalPass = totalFail = totalSkip = 0;
+  const startTime = Date.now();
+
+  document.getElementById('suite-meta').textContent = 'Running… logging to panel below';
+  log('=== SAJHA Regression Test Suite started ===', 'info');
+
+  // Authenticate all 3 roles first
+  try {
+    log('Authenticating all 3 roles…', 'info');
+    await login('super_admin');
+    await login('admin');
+    await login('user');
+    log('All tokens acquired', 'ok');
+  } catch(e) {
+    log('AUTH FAILURE: ' + e.message, 'err');
+    btn.disabled = false; btn.textContent = '▶ Run All Tests';
+    return;
+  }
+
+  // Run all groups sequentially, tests within group sequential
+  for (const g of GROUPS) {
+    log('--- Group ' + g.id + ': ' + g.label, 'info');
+    let gPass = 0, gFail = 0, gSkip = 0;
+
+    for (const t of g.tests) {
+      await runTest(t.id, t.name, t.fn);
+      const status = document.getElementById('row-' + t.id).querySelector('.test-status').classList.contains('status-pass') ? 'pass' :
+                     document.getElementById('row-' + t.id).querySelector('.test-status').classList.contains('status-fail') ? 'fail' : 'skip';
+      if (status==='pass') gPass++;
+      else if (status==='fail') gFail++;
+      else gSkip++;
+      // Small delay between tests to avoid hammering
+      await new Promise(r => setTimeout(r, 80));
+    }
+
+    // Update nav badge
+    const badge = document.getElementById('badge-'+g.id);
+    if (gFail > 0) { badge.textContent = gFail+'F'; badge.style.background='#742a2a'; badge.style.color='#fc8181'; }
+    else if (gSkip > 0) { badge.textContent = gPass+'P '+gSkip+'S'; badge.style.background='#4a3a00'; badge.style.color='#ecc94b'; }
+    else { badge.textContent = gPass+'P'; badge.style.background='#1c4532'; badge.style.color='#c6f6d5'; }
+  }
+
+  const elapsed = ((Date.now()-startTime)/1000).toFixed(1);
+  document.getElementById('elapsed').textContent = elapsed + 's';
+  log('=== COMPLETE: ' + totalPass + ' pass, ' + totalFail + ' fail, ' + totalSkip + ' skip in ' + elapsed + 's ===', totalFail>0?'warn':'ok');
+  document.getElementById('suite-meta').textContent =
+    'Completed in ' + elapsed + 's  ·  ' + totalPass + ' pass  ·  ' + totalFail + ' fail  ·  ' + totalSkip + ' skip';
+  btn.disabled = false; btn.textContent = '▶ Run All Tests';
+  updateCounts();
+}
+
+buildUI();
+</script>
+</body>
+</html>

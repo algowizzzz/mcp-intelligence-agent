@@ -1456,6 +1456,20 @@ async def fs_batch_delete(section: str, req: FsBatchDeleteRequest, payload: dict
     return {'deleted': deleted, 'errors': errors}
 
 
+@app.post('/api/fs/{section}/reindex')
+async def fs_reindex(section: str, payload: dict = Depends(require_jwt)):
+    """Rebuild BM25 .index.json for a section after user upload completes.
+    Called automatically by BPulseFileTree._checkBatchComplete(). (REQ-11)"""
+    worker = _fs_worker(payload)
+    uid = payload['user_id']
+    root = _resolve_fs_path(worker, uid, section)
+    t0 = time.time()
+    idx = build_index(str(root))
+    elapsed = round((time.time() - t0) * 1000, 1)
+    file_count = _count_files_in_tree(idx.get('tree', []))
+    return {'indexed_files': file_count, 'elapsed_ms': elapsed, 'section': section}
+
+
 @app.patch('/api/fs/{section}/file/used')
 async def fs_mark_file_used(section: str, request: Request, path: str = '', payload: dict = Depends(require_jwt)):
     """Mark a workflow file as recently used. Updates last_used timestamp in section metadata.

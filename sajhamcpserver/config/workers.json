@@ -252,18 +252,38 @@
       "assigned_users": []
     },
     {
-      "worker_id": "w-0e64feb2",
+      "worker_id": "w-1ddc8c61",
       "name": "UAT Regression v2 Worker",
       "description": "Temporary worker for regression v2 UAT",
       "created_by": "risk_agent",
-      "created_at": "2026-04-05T07:54:44.023060Z",
+      "created_at": "2026-04-06T03:09:08.043471Z",
       "enabled": true,
       "system_prompt": "",
-      "domain_data_path": "./data/workers/w-0e64feb2/domain_data",
-      "workflows_path": "./data/workers/w-0e64feb2/workflows/verified",
-      "my_workflows_path": "./data/workers/w-0e64feb2/workflows/my",
-      "templates_path": "./data/workers/w-0e64feb2/templates",
-      "my_data_path": "./data/workers/w-0e64feb2/my_data",
+      "domain_data_path": "./data/workers/w-1ddc8c61/domain_data",
+      "workflows_path": "./data/workers/w-1ddc8c61/workflows/verified",
+      "my_workflows_path": "./data/workers/w-1ddc8c61/workflows/my",
+      "templates_path": "./data/workers/w-1ddc8c61/templates",
+      "my_data_path": "./data/workers/w-1ddc8c61/my_data",
+      "common_data_path": "./data/common",
+      "enabled_tools": [
+        "*"
+      ],
+      "assigned_admins": [],
+      "assigned_users": []
+    },
+    {
+      "worker_id": "w-da082632",
+      "name": "Regression Test Worker",
+      "description": "Temporary worker for regression testing",
+      "created_by": "risk_agent",
+      "created_at": "2026-04-06T04:37:25.424900Z",
+      "enabled": true,
+      "system_prompt": "You are a test agent.",
+      "domain_data_path": "./data/workers/w-da082632/domain_data",
+      "workflows_path": "./data/workers/w-da082632/workflows/verified",
+      "my_workflows_path": "./data/workers/w-da082632/workflows/my",
+      "templates_path": "./data/workers/w-da082632/templates",
+      "my_data_path": "./data/workers/w-da082632/my_data",
       "common_data_path": "./data/common",
       "enabled_tools": [
         "*"
