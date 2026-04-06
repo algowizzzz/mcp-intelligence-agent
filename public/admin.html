@@ -1658,10 +1658,11 @@ function closePreview(suffix) {
 
 async function previewFile(e, section, path, name) {
   e.stopPropagation();
-  var suffix = section === 'verified_workflows' ? 'wf' : '';
-  var pbId = 'preview-body' + (suffix ? '-' + suffix : '');
-  var pfnId = 'preview-file-name' + (suffix ? '-' + suffix : '');
-  var pfmId = 'preview-file-meta' + (suffix ? '-' + suffix : '');
+  var suffixMap = { 'verified_workflows': 'wf', 'common': 'common' };
+  var suffix = suffixMap[section] || '';
+  var pbId   = 'preview-body'      + (suffix ? '-' + suffix : '');
+  var pfnId  = 'preview-file-name' + (suffix ? '-' + suffix : '');
+  var pfmId  = 'preview-file-meta' + (suffix ? '-' + suffix : '');
   var tabsId = suffix ? null : 'preview-sheet-tabs';
 
   var pb = document.getElementById(pbId);

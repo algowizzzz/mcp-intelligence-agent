@@ -4377,23 +4377,23 @@
           tableHeaders = false;
         }
 
-        // Headers
-        if (line.match(/^### /)) {
+        // Headers — match with or without trailing space (LLMs sometimes omit it)
+        if (line.match(/^###\s*/)) {
           if (inList) { html += '</ul>'; inList = false; }
           if (inOl) { html += '</ol>'; inOl = false; }
-          html += '<h3>' + renderWithAttribution(line.substring(4)) + '</h3>';
+          html += '<h3>' + renderWithAttribution(line.replace(/^###\s*/, '')) + '</h3>';
           continue;
         }
-        if (line.match(/^## /)) {
+        if (line.match(/^##\s*/)) {
           if (inList) { html += '</ul>'; inList = false; }
           if (inOl) { html += '</ol>'; inOl = false; }
-          html += '<h2>' + renderWithAttribution(line.substring(3)) + '</h2>';
+          html += '<h2>' + renderWithAttribution(line.replace(/^##\s*/, '')) + '</h2>';
           continue;
         }
-        if (line.match(/^# /)) {
+        if (line.match(/^#\s*/)) {
           if (inList) { html += '</ul>'; inList = false; }
           if (inOl) { html += '</ol>'; inOl = false; }
-          html += '<h1>' + renderWithAttribution(line.substring(2)) + '</h1>';
+          html += '<h1>' + renderWithAttribution(line.replace(/^#\s*/, '')) + '</h1>';
           continue;
         }
 
