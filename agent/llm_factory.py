@@ -4,13 +4,13 @@ LLM factory — returns the configured chat model based on LLM_PROVIDER env var.
 Supported providers:
   anthropic   — Claude via Anthropic API (default)
   huggingface — Llama / other models via HuggingFace Inference API (OpenAI-compat)
+  xai         — Grok via xAI API (OpenAI-compat, base_url https://api.x.ai/v1)
   bedrock     — Claude on AWS Bedrock (stubbed; uncomment block to activate)
 
-To switch to HuggingFace:
-  1. Set LLM_PROVIDER=huggingface in .env
-  2. Set HF_API_KEY=hf_... in .env
-  3. Optionally set HF_MODEL (default: meta-llama/Llama-3.3-70B-Instruct)
-  4. pip install langchain-openai
+To switch to xAI Grok:
+  1. Set LLM_PROVIDER=xai in .env
+  2. Set XAI_API_KEY=xai-... in .env
+  3. Optionally set XAI_MODEL (default: grok-3)
 """
 import os
 
@@ -42,6 +42,21 @@ def create_llm():
             max_tokens=int(os.getenv('LLM_MAX_TOKENS', '4096')),
         )
 
+    elif provider == 'xai':
+        from langchain_openai import ChatOpenAI
+        xai_key = os.getenv('XAI_API_KEY')
+        if not xai_key:
+            raise ValueError("XAI_API_KEY is required when LLM_PROVIDER=xai")
+        model = os.getenv('XAI_MODEL', 'grok-3')
+        return ChatOpenAI(
+            model=model,
+            base_url='https://api.x.ai/v1',
+            api_key=xai_key,
+            temperature=0,
+            streaming=True,
+            max_tokens=int(os.getenv('LLM_MAX_TOKENS', '8192')),
+        )
+
     elif provider == 'bedrock':
         # Uncomment after: pip install langchain-aws boto3
         # from langchain_aws import ChatBedrockConverse
@@ -59,5 +74,5 @@ def create_llm():
     else:
         raise ValueError(
             f"Unknown LLM_PROVIDER: '{provider}'. "
-            "Valid options: 'anthropic', 'huggingface', 'bedrock'."
+            "Valid options: 'anthropic', 'huggingface', 'xai', 'bedrock'."
         )
