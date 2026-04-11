@@ -118,15 +118,39 @@ def _truncate_result(result: dict, tool_name: str) -> dict:
 
 
 def _log_audit(tool_name: str, duration_ms: float, status: str):
-    """Append one structured JSONL audit log line. Non-blocking best-effort."""
+    """Audit log — dual-write to PostgreSQL (REQ-07) and JSONL fallback."""
+    import datetime
+    ctx = _worker_ctx.get()
+    user_id = ctx.get('user_id', '')
+    worker_id = ctx.get('worker_id', '')
+
+    # PostgreSQL path (non-blocking fire-and-forget)
+    if os.getenv('DATABASE_URL'):
+        try:
+            import asyncio
+            import sys as _sys
+            _sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / 'sajhamcpserver'))
+            from sajha.db import repo as _db_repo
+            async def _write():
+                await _db_repo.log_tool_call(
+                    user_id=user_id, worker_id=worker_id, tool_name=tool_name,
+                    elapsed_ms=round(duration_ms, 1), status=status,
+                )
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.ensure_future(_write())
+            else:
+                loop.run_until_complete(_write())
+        except Exception:
+            pass
+
+    # JSONL fallback (always write for dual-write safety)
     try:
-        import datetime
-        ctx = _worker_ctx.get()
         _AUDIT_FILE.parent.mkdir(parents=True, exist_ok=True)
         line = json.dumps({
             'timestamp': datetime.datetime.utcnow().isoformat() + 'Z',
-            'user_id': ctx.get('user_id', ''),
-            'worker_id': ctx.get('worker_id', ''),
+            'user_id': user_id,
+            'worker_id': worker_id,
             'tool_name': tool_name,
             'duration_ms': round(duration_ms, 1),
             'status': status,
