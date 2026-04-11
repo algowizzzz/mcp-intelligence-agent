@@ -4,7 +4,7 @@
   "description": "Search for recent news articles from the last 7 days with recency prioritization. Use for: breaking news, earnings announcements, credit rating actions, market events, regulatory updates. Prefer over web_search for any time-sensitive query.",
   "version": "2.9.8",
   "enabled": true,
-  "api_key": "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",
+  "api_key": "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",
   "min_score": 0.4,
   "days": 7,
   "inputSchema": {
