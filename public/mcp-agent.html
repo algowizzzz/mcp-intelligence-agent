@@ -3467,6 +3467,9 @@
     var _activeConvId  = null;
     var _sidebarOpen   = true;
 
+    // Cost display was removed — stub to prevent ReferenceError in restoreSession
+    function updateCostDisplay() {}
+
     // FileTree state
     var _activeWorkflow       = null;   // { section, path, name, content }
     var _selectedFiles        = {};     // { 'section:path': { section, path, name } }
