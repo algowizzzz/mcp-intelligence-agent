@@ -317,42 +317,64 @@ def _make_dynamic_tool(name: str, description: str, schema: dict):
 
 
 def discover_sajha_tools() -> list:
-    """Fetch all tools from SAJHA and create LangChain tool wrappers."""
+    """Fetch all tools from SAJHA and create LangChain tool wrappers.
+
+    Retries up to 6 times (with 5-second gaps) so that SAJHA has time to
+    finish loading all its tool configs before the agent module is ready.
+    This prevents the startup race condition where only a few tools are
+    registered when the first tools/list call lands.
+    """
     import httpx as _httpx
+    import time as _time
 
-    try:
-        # trust_env=False prevents httpx from picking up system SOCKS/HTTP proxy env vars.
-        # Without this, if ALL_PROXY or HTTPS_PROXY is set to a socks5:// URL and the
-        # 'socksio' package is not installed, tool discovery fails silently.
-        list_r = _httpx.post(
-            f'{SAJHA_BASE}/api/mcp',
-            headers={'Authorization': _SAJHA_API_KEY},
-            json={'jsonrpc': '2.0', 'id': '1', 'method': 'tools/list', 'params': {}},
-            timeout=10.0,
-            trust_env=False,
-        )
-        tools_data = list_r.json().get('result', {}).get('tools', [])
+    _MIN_EXPECTED_TOOLS = 30  # SAJHA should always serve more than this
 
-        dynamic_tools = []
-        for t in tools_data:
-            name = t.get('name', '')
-            if name in STATIC_TOOL_NAMES:
+    for attempt in range(6):
+        try:
+            # trust_env=False prevents httpx from picking up system SOCKS/HTTP proxy env vars.
+            # Without this, if ALL_PROXY or HTTPS_PROXY is set to a socks5:// URL and the
+            # 'socksio' package is not installed, tool discovery fails silently.
+            list_r = _httpx.post(
+                f'{SAJHA_BASE}/api/mcp',
+                headers={'Authorization': _SAJHA_API_KEY},
+                json={'jsonrpc': '2.0', 'id': '1', 'method': 'tools/list', 'params': {}},
+                timeout=10.0,
+                trust_env=False,
+            )
+            tools_data = list_r.json().get('result', {}).get('tools', [])
+
+            # If SAJHA is still loading its tool registry, retry
+            if len(tools_data) < _MIN_EXPECTED_TOOLS and attempt < 5:
+                print(f'SAJHA returned only {len(tools_data)} tools on attempt {attempt+1} — retrying in 5s...')
+                _time.sleep(5)
                 continue
-            desc = t.get('description', f'SAJHA tool: {name}')
-            schema = t.get('inputSchema', {})
-            try:
-                dynamic_tool = _make_dynamic_tool(name, desc, schema)
-                dynamic_tools.append(dynamic_tool)
-            except Exception as e:
-                print(f'Warning: could not create tool wrapper for {name}: {e}')
 
-        print(f'Discovered {len(dynamic_tools)} additional SAJHA tools')
-        return dynamic_tools
+            dynamic_tools = []
+            for t in tools_data:
+                name = t.get('name', '')
+                if name in STATIC_TOOL_NAMES:
+                    continue
+                desc = t.get('description', f'SAJHA tool: {name}')
+                schema = t.get('inputSchema', {})
+                try:
+                    dynamic_tool = _make_dynamic_tool(name, desc, schema)
+                    dynamic_tools.append(dynamic_tool)
+                except Exception as e:
+                    print(f'Warning: could not create tool wrapper for {name}: {e}')
 
-    except Exception as e:
-        print(f'Warning: SAJHA tool discovery failed: {e}')
-        print('Falling back to static tools only')
-        return []
+            print(f'Discovered {len(dynamic_tools)} additional SAJHA tools (attempt {attempt+1})')
+            return dynamic_tools
+
+        except Exception as e:
+            if attempt < 5:
+                print(f'Warning: SAJHA tool discovery failed (attempt {attempt+1}): {e} — retrying in 5s...')
+                _time.sleep(5)
+            else:
+                print(f'Warning: SAJHA tool discovery failed after 6 attempts: {e}')
+                print('Falling back to static tools only')
+                return []
+
+    return []
 
 
 # ================================================================
