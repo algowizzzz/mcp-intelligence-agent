@@ -588,8 +588,6 @@
           e.preventDefault();
           row.style.background = '';
           if (!self._drag || self._drag.path === path || path.indexOf(self._drag.path + '/') === 0) return;
-          var srcName = self._drag.path.split('/').pop();
-          var dst = path + '/' + srcName;
           var drag = self._drag;
           self._drag = null;
           var xhr = new XMLHttpRequest();
@@ -601,7 +599,7 @@
             else { self._toast('Move failed', 'error'); }
           };
           xhr.onerror = function () { self._toast('Move failed', 'error'); };
-          xhr.send(JSON.stringify({ src: drag.path, dst: dst }));
+          xhr.send(JSON.stringify({ src: drag.path, dest_folder: path }));
         });
       }
     });
@@ -722,7 +720,6 @@
      ------------------------------------------------------------ */
   BPulseFileTree.prototype._showMoveDialog = function (srcPath, srcType, srcName) {
     var self = this;
-    console.log('[BPulseFileTree] _showMoveDialog called:', srcPath, srcType, srcName);
 
     // Collect all folder paths from tree
     var folders = [{ path: '', name: '/ (root)', indent: 0 }];
@@ -775,7 +772,7 @@
           else { self._toast('Move failed', 'error'); }
         };
         xhr.onerror = function () { self._toast('Move failed', 'error'); };
-        xhr.send(JSON.stringify({ src: srcPath, dst: dst }));
+        xhr.send(JSON.stringify({ src: srcPath, dest_folder: f.path }));
       });
       list.appendChild(item);
     });
