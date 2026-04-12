@@ -3601,7 +3601,7 @@
     // Merge DB threads into _conversations — adds any thread the server knows about
     // that isn't already in localStorage. Fetches messages from checkpoint for each.
     async function syncThreadsFromDB() {
-      var token = sessionStorage.getItem('mcp_token') || localStorage.getItem('mcp_token');
+      var token = sessionStorage.getItem('rg_token') || localStorage.getItem('rg_token');
       if (!token) return;
       var workerId = (_authUser || {}).worker_id || _activeWorkerId || null;
       var url = _agentBase + '/api/agent/threads' + (workerId ? '?worker_id=' + encodeURIComponent(workerId) : '');
