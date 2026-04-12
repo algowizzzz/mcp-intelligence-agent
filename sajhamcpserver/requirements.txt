@@ -45,3 +45,7 @@ pdfplumber>=0.11.0
 # Microsoft Document tools (Word + Excel)
 python-docx>=1.1.0
 openpyxl>=3.1.0
+
+# IRIS CCR tools + OLAP/visualisation
+pandas>=2.0.0
+plotly>=5.0.0

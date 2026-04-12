@@ -104,11 +104,16 @@ class RollupEngine:
                             for col, alias in zip(dim_cols, dim_aliases)]
             grouping_indicators = ",\n    " + ",\n    ".join(grouping_funcs)
         
-        # Build the query
+        # Build the query — use a variable for the total marker to avoid
+        # backslash-in-f-string syntax error on Python < 3.12
+        _total = '[TOTAL]'
+        dim_selects = ', '.join(
+            f"COALESCE(CAST({col} AS VARCHAR), '{_total}') AS {alias}"
+            for col, alias in zip(dim_cols, dim_aliases)
+        )
         sql = f"""
-SELECT 
-    {', '.join(f'COALESCE(CAST({col} AS VARCHAR), \'[TOTAL]\') AS {alias}' 
-               for col, alias in zip(dim_cols, dim_aliases))},
+SELECT
+    {dim_selects},
     {', '.join(measure_exprs)}{grouping_indicators}
 FROM ({base_sql}) AS base
 GROUP BY {grouping}
