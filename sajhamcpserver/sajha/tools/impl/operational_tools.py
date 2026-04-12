@@ -386,6 +386,50 @@ class PdfReadTool(BaseMCPTool):
             "_source": str(safe),
         }
 
+    def _read_pdfplumber(self, safe, pages_arg, max_chars):
+        """Fallback PDF reader using pdfplumber when PyMuPDF is unavailable."""
+        import pdfplumber
+        try:
+            raw = storage.read_bytes(str(safe))
+            pdf = pdfplumber.open(io.BytesIO(raw))
+        except Exception as e:
+            return {"error": f"PDF could not be parsed: {e}"}
+
+        total_pages = len(pdf.pages)
+        page_indices = self._parse_pages(pages_arg, total_pages)
+
+        text_parts = []
+        tables = []
+        for i in page_indices:
+            page = pdf.pages[i]
+            text = page.extract_text() or ""
+            text_parts.append(text)
+            for tab in (page.extract_tables() or []):
+                if tab:
+                    headers = [str(c) if c else "" for c in tab[0]]
+                    rows = [[str(c) if c else "" for c in row] for row in tab[1:]]
+                    tables.append({"page": i + 1, "headers": headers, "rows": rows})
+
+        pdf.close()
+        full_text = "\n".join(text_parts)
+        truncated = len(full_text) > max_chars
+        if truncated:
+            full_text = full_text[:max_chars]
+
+        result = {
+            "filename": safe.name,
+            "pages_extracted": len(page_indices),
+            "total_pages": total_pages,
+            "char_count": len(full_text),
+            "truncated": truncated,
+            "text": full_text,
+            "_source": str(safe),
+        }
+        result["tables"] = tables
+        if not full_text.strip():
+            result["warning"] = "No text layer detected. PDF may be image-only."
+        return result
+
     def _parse_pages(self, pages_arg, total):
         if pages_arg == "all" or not pages_arg:
             return list(range(total))

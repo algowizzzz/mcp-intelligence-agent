@@ -41,6 +41,7 @@ PyMySQL>=1.1.0
 # REQ-09: Generic Document Retrieval (BM25)
 rank-bm25>=0.2.2
 pdfplumber>=0.11.0
+pymupdf>=1.24.0
 
 # Microsoft Document tools (Word + Excel)
 python-docx>=1.1.0
