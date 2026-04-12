@@ -2169,7 +2169,7 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
         agent_instance = create_agent_for_worker(system_prompt, tools, extra_middleware=extra_mw)
 
     thread_id = req.thread_id or str(uuid.uuid4())
-    config = {'configurable': {'thread_id': thread_id}}
+    config = {'configurable': {'thread_id': thread_id}, 'recursion_limit': 100}
 
     # Thread ownership — validate on resume, register on new thread (G-08)
     if req.thread_id or req.resume:
