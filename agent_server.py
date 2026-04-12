@@ -31,6 +31,8 @@ from agent.sub_agent_tool import set_stream_writer as _set_stream_writer
 _sys.path.insert(0, str(pathlib.Path(__file__).parent / 'sajhamcpserver'))
 from sajha.tools.impl.fs_index import build_index, get_index
 from sajha.worker_repository import WorkerRepository as _WorkerRepository
+from sajha.storage import storage as _storage
+_S3_MODE = os.getenv('STORAGE_BACKEND', 'local') == 's3'
 
 # REQ-07: PostgreSQL DB layer (enabled when DATABASE_URL is set)
 _DB_ENABLED = bool(os.getenv('DATABASE_URL'))
@@ -222,7 +224,9 @@ def _resolve_worker_for_user(user: dict, requested_worker_id: str = None) -> Opt
 
 
 def _seed_worker_folders(worker_id: str):
-    """Create the full scoped folder tree for a new worker (G-07)."""
+    """Create the full scoped folder tree for a new worker (G-07). Skipped in S3 mode."""
+    if _S3_MODE:
+        return  # S3 has no directories; folders are virtual
     base = pathlib.Path(f'sajhamcpserver/data/workers/{worker_id}')
     for sub in [
         'domain_data',
@@ -234,6 +238,8 @@ def _seed_worker_folders(worker_id: str):
 
 def _clone_worker_folder(src_id: str, dst_id: str):
     """Clone source worker's folder to destination, excluding my_data (user-owned, REQ-MD-01)."""
+    if _S3_MODE:
+        return  # S3 mode: worker templates/domain data cloning handled separately if needed
     src = pathlib.Path(f'sajhamcpserver/data/workers/{src_id}')
     dst = pathlib.Path(f'sajhamcpserver/data/workers/{dst_id}')
     if src.exists():
@@ -320,7 +326,8 @@ def _resolve_worker_path(worker: dict, section: str, rel: str = '') -> pathlib.P
     if raw is None:
         raise HTTPException(status_code=400, detail=f'Unknown section: {section}')
     root = (base / raw.lstrip('./')).resolve()
-    root.mkdir(parents=True, exist_ok=True)
+    if not _S3_MODE:
+        root.mkdir(parents=True, exist_ok=True)
     if rel:
         full = (root / rel).resolve()
         if not str(full).startswith(str(root)):
@@ -410,7 +417,8 @@ def _resolve_admin_path_for_worker(worker: dict, section: str, rel: str = '') ->
     if root is None:
         raise HTTPException(status_code=400, detail=f'Unknown admin section: {section}')
     root_resolved = root.resolve()
-    root_resolved.mkdir(parents=True, exist_ok=True)
+    if not _S3_MODE:
+        root_resolved.mkdir(parents=True, exist_ok=True)
     if rel:
         full = (root_resolved / rel).resolve()
         if not str(full).startswith(str(root_resolved)):
@@ -419,8 +427,9 @@ def _resolve_admin_path_for_worker(worker: dict, section: str, rel: str = '') ->
     return root_resolved
 
 
-# Ensure common data directory exists
-_COMMON_DATA.mkdir(parents=True, exist_ok=True)
+# Ensure common data directory exists (local mode only — S3 has no dirs)
+if not _S3_MODE:
+    _COMMON_DATA.mkdir(parents=True, exist_ok=True)
 _AUDIT_LOG.parent.mkdir(parents=True, exist_ok=True)
 _load_thread_registry()
 
@@ -844,7 +853,10 @@ async def super_delete_worker(worker_id: str, req: DeleteWorkerRequest, _: dict 
         raise HTTPException(status_code=400, detail='Confirmation name does not match worker name')
     # Delete folder tree
     base = pathlib.Path(f'sajhamcpserver/data/workers/{worker_id}')
-    if base.exists():
+    if _S3_MODE:
+        for rel in _storage.list_prefix(str(base)):
+            _storage.delete(str(base).rstrip('/') + '/' + rel)
+    elif base.exists():
         shutil.rmtree(str(base))
     # Remove from workers
     workers = [x for x in _load_workers() if x['worker_id'] != worker_id]
@@ -1321,8 +1333,20 @@ _UPLOAD_MAX_BYTES  = 20 * 1024 * 1024  # 20 MB hard limit (REQ-11)
 
 
 async def _stream_upload(file: UploadFile, dest: pathlib.Path) -> int:
-    """Stream upload to disk in 64 KB chunks. Returns bytes written.
-    Raises HTTP 413 if file exceeds 20 MB. Cleans up partial file on error. (REQ-11)"""
+    """Stream upload to disk or S3. Returns bytes written.
+    Raises HTTP 413 if file exceeds 20 MB. Cleans up partial file on error. (REQ-11, REQ-15)"""
+    if _S3_MODE:
+        buf = b''
+        while True:
+            chunk = await file.read(_UPLOAD_CHUNK_SIZE)
+            if not chunk:
+                break
+            buf += chunk
+            if len(buf) > _UPLOAD_MAX_BYTES:
+                raise HTTPException(status_code=413, detail='File exceeds 20 MB limit')
+        _storage.write_bytes(str(dest), buf)
+        return len(buf)
+    # Local mode — original implementation
     bytes_written = 0
     try:
         async with aiofiles.open(dest, 'wb') as f:
@@ -1360,7 +1384,8 @@ async def upload_file(file: UploadFile = File(...), payload: dict = Depends(requ
         raw_my_data = worker.get('my_data_path', './data/uploads')
         my_data_dir = (pathlib.Path('sajhamcpserver') / raw_my_data.lstrip('./')).resolve()
         user_dir = my_data_dir / user_id
-        user_dir.mkdir(parents=True, exist_ok=True)
+        if not _S3_MODE:
+            user_dir.mkdir(parents=True, exist_ok=True)
 
         # Validate extension
         ext = file.filename.rsplit('.', 1)[-1].lower() if file.filename and '.' in file.filename else ''
@@ -1371,21 +1396,26 @@ async def upload_file(file: UploadFile = File(...), payload: dict = Depends(requ
         # Safe filename
         safe_name = pathlib.Path(file.filename).name
         dest = user_dir / safe_name
-        if dest.exists():
+        _dest_exists = _storage.exists(str(dest)) if _S3_MODE else dest.exists()
+        if _dest_exists:
             ts = datetime.now(_tz.utc).strftime('%Y%m%d_%H%M%S')
             stem, suffix = safe_name.rsplit('.', 1) if '.' in safe_name else (safe_name, '')
             safe_name = f'{stem}_{ts}.{suffix}' if suffix else f'{stem}_{ts}'
             dest = user_dir / safe_name
 
-        await _stream_upload(file, dest)
+        size_bytes = await _stream_upload(file, dest)
         _build_and_sync(str(user_dir))   # refresh tree cache immediately
-        stat = dest.stat()
+        now_iso = datetime.now(_tz.utc).isoformat()
+        if not _S3_MODE:
+            stat = dest.stat()
+            size_bytes = stat.st_size
+            now_iso = datetime.fromtimestamp(stat.st_mtime, tz=_tz.utc).isoformat()
         return JSONResponse(content={
             'success': True,
             'filename': safe_name,
             'path': str(dest.relative_to(pathlib.Path('sajhamcpserver').resolve())).replace('\\', '/'),
-            'size_bytes': stat.st_size,
-            'uploaded_at': datetime.fromtimestamp(stat.st_mtime, tz=_tz.utc).isoformat(),
+            'size_bytes': size_bytes,
+            'uploaded_at': now_iso,
             'file_type': ext,
         })
     except HTTPException:
@@ -1422,12 +1452,17 @@ async def list_workspace_files(payload: dict = Depends(require_jwt)):
     raw = worker.get('my_data_path', './data/uploads')
     base = pathlib.Path('sajhamcpserver')
     user_dir = (base / raw.lstrip('./')).resolve() / payload['user_id']
-    user_dir.mkdir(parents=True, exist_ok=True)
     files = []
-    for f in sorted(user_dir.iterdir()):
-        if f.is_file() and not f.name.startswith('.'):
-            files.append({'name': f.name, 'size': f.stat().st_size,
-                           'modified': f.stat().st_mtime})
+    if _S3_MODE:
+        for rel in _storage.list_prefix(str(user_dir)):
+            if not rel.startswith('.') and '/' not in rel:
+                files.append({'name': rel, 'size': 0, 'modified': None})
+    else:
+        user_dir.mkdir(parents=True, exist_ok=True)
+        for f in sorted(user_dir.iterdir()):
+            if f.is_file() and not f.name.startswith('.'):
+                files.append({'name': f.name, 'size': f.stat().st_size,
+                               'modified': f.stat().st_mtime})
     return {'files': files}
 
 
@@ -1442,14 +1477,24 @@ async def list_workflows(payload: dict = Depends(require_jwt)):
     wf_dir = _resolve_worker_path(worker, 'verified_workflows')
     meta = _read_metadata()
     workflows = []
-    for f in sorted(wf_dir.iterdir()):
-        if f.is_file() and f.suffix == '.md':
-            workflows.append({
-                'filename': f.name,
-                'name': f.stem.replace('_', ' ').title(),
-                'size': f.stat().st_size,
-                'last_used': meta.get(f.name),
-            })
+    if _S3_MODE:
+        for rel in _storage.list_prefix(str(wf_dir)):
+            if rel.endswith('.md') and '/' not in rel:
+                workflows.append({
+                    'filename': rel,
+                    'name': rel.rsplit('.', 1)[0].replace('_', ' ').title(),
+                    'size': 0,
+                    'last_used': meta.get(rel),
+                })
+    else:
+        for f in sorted(wf_dir.iterdir()):
+            if f.is_file() and f.suffix == '.md':
+                workflows.append({
+                    'filename': f.name,
+                    'name': f.stem.replace('_', ' ').title(),
+                    'size': f.stat().st_size,
+                    'last_used': meta.get(f.name),
+                })
     workflows.sort(key=lambda w: w['last_used'] or '', reverse=True)
     return {'workflows': workflows}
 
@@ -1465,8 +1510,10 @@ async def get_workflow(filename: str, payload: dict = Depends(require_jwt)):
     for section in ('verified_workflows', 'my_workflows'):
         wf_dir = _resolve_worker_path(worker, section)
         path = wf_dir / name
-        if path.exists():
-            return {'filename': name, 'content': path.read_text()}
+        _exists = _storage.exists(str(path)) if _S3_MODE else path.exists()
+        if _exists:
+            content = _storage.read_text(str(path)) if _S3_MODE else path.read_text()
+            return {'filename': name, 'content': content}
     raise HTTPException(status_code=404, detail='Workflow not found')
 
 
@@ -1482,7 +1529,11 @@ async def create_workflow(req: WorkflowCreate, payload: dict = Depends(require_j
         raise HTTPException(status_code=404, detail='No worker assigned to this user')
     name = _safe_filename(req.filename)
     my_wf_dir = _resolve_worker_path(worker, 'my_workflows')
-    (my_wf_dir / name).write_text(req.content)
+    wf_path = my_wf_dir / name
+    if _S3_MODE:
+        _storage.write_text(str(wf_path), req.content)
+    else:
+        wf_path.write_text(req.content)
     return {'filename': name, 'ok': True}
 
 
@@ -1495,9 +1546,13 @@ async def delete_workflow(filename: str, payload: dict = Depends(require_jwt)):
     name = _safe_filename(filename)
     my_wf_dir = _resolve_worker_path(worker, 'my_workflows')
     path = my_wf_dir / name
-    if not path.exists():
+    _exists = _storage.exists(str(path)) if _S3_MODE else path.exists()
+    if not _exists:
         raise HTTPException(status_code=404, detail='Workflow not found')
-    path.unlink()
+    if _S3_MODE:
+        _storage.delete(str(path))
+    else:
+        path.unlink()
     meta = _read_metadata()
     meta.pop(name, None)
     _write_metadata(meta)
@@ -1536,7 +1591,8 @@ def _resolve_fs_path(worker: dict, user_id: str, section: str, rel: str = '') ->
         raw = worker.get('my_data_path', './data/uploads')
         base = pathlib.Path('sajhamcpserver')
         root = (base / raw.lstrip('./')).resolve() / user_id
-        root.mkdir(parents=True, exist_ok=True)
+        if not _S3_MODE:
+            root.mkdir(parents=True, exist_ok=True)
         if rel:
             full = (root / rel).resolve()
             if not str(full).startswith(str(root)):
@@ -1551,7 +1607,11 @@ async def fs_quota(payload: dict = Depends(require_jwt)):
     worker = _fs_worker(payload)
     uid = payload['user_id']
     my_data_root = _resolve_fs_path(worker, uid, 'uploads')
-    used_bytes = sum(f.stat().st_size for f in my_data_root.rglob('*') if f.is_file()) if my_data_root.exists() else 0
+    if _S3_MODE:
+        keys = _storage.list_prefix(str(my_data_root))
+        used_bytes = sum(_storage.get_size(str(my_data_root).rstrip('/') + '/' + k) for k in keys)
+    else:
+        used_bytes = sum(f.stat().st_size for f in my_data_root.rglob('*') if f.is_file()) if my_data_root.exists() else 0
     # Default quota: 5 GB. Could be configurable via properties.
     limit_bytes = 5 * 1024 * 1024 * 1024
     used_pct = round((used_bytes / limit_bytes) * 100, 2) if limit_bytes > 0 else 0
@@ -1572,9 +1632,13 @@ async def fs_file(section: str, path: str = '', payload: dict = Depends(require_
     if not path:
         raise HTTPException(status_code=400, detail='path required')
     full = _resolve_fs_path(worker, payload['user_id'], section, path)
-    if not full.exists() or not full.is_file():
-        raise HTTPException(status_code=404, detail='File not found')
-    content_bytes = full.read_bytes()
+    if _S3_MODE:
+        if not _storage.exists(str(full)):
+            raise HTTPException(status_code=404, detail='File not found')
+    else:
+        if not full.exists() or not full.is_file():
+            raise HTTPException(status_code=404, detail='File not found')
+    content_bytes = _storage.read_bytes(str(full)) if _S3_MODE else full.read_bytes()
     try:
         text = content_bytes.decode('utf-8')
         return {'path': path, 'encoding': 'utf-8', 'content': text}
@@ -1596,7 +1660,8 @@ async def fs_upload(
     uid = payload['user_id']
     root = _resolve_fs_path(worker, uid, section)
     folder = _resolve_fs_path(worker, uid, section, path) if path else root
-    folder.mkdir(parents=True, exist_ok=True)
+    if not _S3_MODE:
+        folder.mkdir(parents=True, exist_ok=True)
     dest = folder / pathlib.Path(file.filename).name
     await _stream_upload(file, dest)
     if not batch_id:
@@ -1616,7 +1681,11 @@ async def fs_update_file(section: str, req: FsUpdateRequest, payload: dict = Dep
     uid = payload['user_id']
     root = _resolve_fs_path(worker, uid, section)
     full = _resolve_fs_path(worker, uid, section, req.path)
-    full.write_text(req.content, encoding='utf-8')
+    if _S3_MODE:
+        _storage.write_text(str(full), req.content)
+    else:
+        full.parent.mkdir(parents=True, exist_ok=True)
+        full.write_text(req.content, encoding='utf-8')
     _build_and_sync(str(root))
     return {'ok': True}
 
@@ -1632,7 +1701,8 @@ async def fs_mkdir(section: str, req: FsMkdirRequest, payload: dict = Depends(re
     uid = payload['user_id']
     root = _resolve_fs_path(worker, uid, section)
     full = _resolve_fs_path(worker, uid, section, req.path)
-    full.mkdir(parents=True, exist_ok=True)
+    if not _S3_MODE:
+        full.mkdir(parents=True, exist_ok=True)
     _build_and_sync(str(root))
     return {'ok': True}
 
@@ -1650,10 +1720,15 @@ async def fs_move(section: str, req: FsMoveRequest, payload: dict = Depends(requ
     root = _resolve_fs_path(worker, uid, section)
     src_full = _resolve_fs_path(worker, uid, section, req.src)
     dst_full = _resolve_fs_path(worker, uid, section, req.dst)
-    if not src_full.exists():
+    _src_exists = _storage.exists(str(src_full)) if _S3_MODE else src_full.exists()
+    if not _src_exists:
         raise HTTPException(status_code=404, detail='Source not found')
-    dst_full.parent.mkdir(parents=True, exist_ok=True)
-    shutil.move(str(src_full), str(dst_full))
+    if _S3_MODE:
+        _storage.copy(str(src_full), str(dst_full))
+        _storage.delete(str(src_full))
+    else:
+        dst_full.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(src_full), str(dst_full))
     _build_and_sync(str(root))
     return {'ok': True}
 
@@ -1670,11 +1745,16 @@ async def fs_rename(section: str, req: FsRenameRequest, payload: dict = Depends(
     uid = payload['user_id']
     root = _resolve_fs_path(worker, uid, section)
     full = _resolve_fs_path(worker, uid, section, req.path)
-    if not full.exists():
+    _full_exists = _storage.exists(str(full)) if _S3_MODE else full.exists()
+    if not _full_exists:
         raise HTTPException(status_code=404, detail='Not found')
     new_name = pathlib.Path(req.new_name).name
     new_full = full.parent / new_name
-    full.rename(new_full)
+    if _S3_MODE:
+        _storage.copy(str(full), str(new_full))
+        _storage.delete(str(full))
+    else:
+        full.rename(new_full)
     _build_and_sync(str(root))
     return {'ok': True}
 
@@ -1691,13 +1771,21 @@ async def fs_copy(section: str, req: FsCopyRequest, payload: dict = Depends(requ
     if req.dest_section not in _WRITABLE_SECTIONS:
         raise HTTPException(status_code=403, detail='Destination section is read-only')
     src_full = _resolve_fs_path(worker, uid, section, req.src_path)
-    if not src_full.exists() or not src_full.is_file():
-        raise HTTPException(status_code=404, detail='Source file not found')
+    if _S3_MODE:
+        if not _storage.exists(str(src_full)):
+            raise HTTPException(status_code=404, detail='Source file not found')
+    else:
+        if not src_full.exists() or not src_full.is_file():
+            raise HTTPException(status_code=404, detail='Source file not found')
     dst_full = _resolve_fs_path(worker, uid, req.dest_section, req.dest_path)
-    if dst_full.exists():
+    _dst_exists = _storage.exists(str(dst_full)) if _S3_MODE else dst_full.exists()
+    if _dst_exists:
         raise HTTPException(status_code=409, detail='Destination already exists')
-    dst_full.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(str(src_full), str(dst_full))
+    if _S3_MODE:
+        _storage.copy(str(src_full), str(dst_full))
+    else:
+        dst_full.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(str(src_full), str(dst_full))
     dst_root = _resolve_fs_path(worker, uid, req.dest_section)
     _build_and_sync(str(dst_root))
     return {'ok': True, 'dest_path': req.dest_path}
@@ -1719,16 +1807,34 @@ async def fs_batch_delete(section: str, req: FsBatchDeleteRequest, payload: dict
     for p in req.paths:
         try:
             full = _resolve_fs_path(worker, uid, section, p)
-            if not full.exists():
-                errors.append({'path': p, 'error': 'Not found'})
-                continue
-            if full.is_dir():
-                if not req.include_dirs:
-                    errors.append({'path': p, 'error': 'Is a directory; set include_dirs=true'})
+            if _S3_MODE:
+                # In S3: check if it's a "folder" (has keys under prefix) or a file
+                full_str = str(full)
+                prefix_keys = _storage.list_prefix(full_str)
+                is_s3_folder = len(prefix_keys) > 0
+                is_s3_file = not is_s3_folder and _storage.exists(full_str)
+                if not is_s3_folder and not is_s3_file:
+                    errors.append({'path': p, 'error': 'Not found'})
                     continue
-                shutil.rmtree(str(full))
+                if is_s3_folder:
+                    if not req.include_dirs:
+                        errors.append({'path': p, 'error': 'Is a directory; set include_dirs=true'})
+                        continue
+                    for rel in prefix_keys:
+                        _storage.delete(full_str.rstrip('/') + '/' + rel)
+                else:
+                    _storage.delete(full_str)
             else:
-                full.unlink()
+                if not full.exists():
+                    errors.append({'path': p, 'error': 'Not found'})
+                    continue
+                if full.is_dir():
+                    if not req.include_dirs:
+                        errors.append({'path': p, 'error': 'Is a directory; set include_dirs=true'})
+                        continue
+                    shutil.rmtree(str(full))
+                else:
+                    full.unlink()
             deleted.append(p)
         except Exception as e:
             errors.append({'path': p, 'error': str(e)})
@@ -1768,13 +1874,19 @@ async def fs_mark_file_used(section: str, request: Request, path: str = '', payl
     root = _resolve_fs_path(worker, payload['user_id'], section)
     meta_path = root / '.used_metadata.json'
     try:
-        meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
+        if _S3_MODE:
+            meta = json.loads(_storage.read_text(str(meta_path))) if _storage.exists(str(meta_path)) else {}
+        else:
+            meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
     except Exception:
         meta = {}
     from datetime import datetime, timezone
     now_iso = datetime.now(timezone.utc).isoformat()
     meta[path] = {'last_used': now_iso}
-    meta_path.write_text(json.dumps(meta, indent=2))
+    if _S3_MODE:
+        _storage.write_text(str(meta_path), json.dumps(meta, indent=2))
+    else:
+        meta_path.write_text(json.dumps(meta, indent=2))
     # Audit log (BUG-FS-002)
     entry = {
         'user_id': payload.get('sub', ''),
@@ -1798,9 +1910,14 @@ async def fs_delete_file(section: str, path: str = '', payload: dict = Depends(r
     uid = payload['user_id']
     root = _resolve_fs_path(worker, uid, section)
     full = _resolve_fs_path(worker, uid, section, path)
-    if not full.exists():
-        raise HTTPException(status_code=404, detail='File not found')
-    full.unlink()
+    if _S3_MODE:
+        if not _storage.exists(str(full)):
+            raise HTTPException(status_code=404, detail='File not found')
+        _storage.delete(str(full))
+    else:
+        if not full.exists():
+            raise HTTPException(status_code=404, detail='File not found')
+        full.unlink()
     _build_and_sync(str(root))
     return {'ok': True}
 
@@ -1813,12 +1930,20 @@ async def fs_delete_folder(section: str, path: str = '', payload: dict = Depends
     uid = payload['user_id']
     root = _resolve_fs_path(worker, uid, section)
     full = _resolve_fs_path(worker, uid, section, path)
-    if not full.exists():
-        raise HTTPException(status_code=404, detail='Folder not found')
-    try:
-        full.rmdir()
-    except OSError:
-        raise HTTPException(status_code=400, detail='Folder is not empty')
+    if _S3_MODE:
+        prefix_keys = _storage.list_prefix(str(full))
+        if not prefix_keys and not _storage.exists(str(full)):
+            raise HTTPException(status_code=404, detail='Folder not found')
+        if prefix_keys:
+            raise HTTPException(status_code=400, detail='Folder is not empty')
+        # Empty S3 "folder" — no objects to delete, just rebuild index
+    else:
+        if not full.exists():
+            raise HTTPException(status_code=404, detail='Folder not found')
+        try:
+            full.rmdir()
+        except OSError:
+            raise HTTPException(status_code=400, detail='Folder is not empty')
     _build_and_sync(str(root))
     return {'ok': True}
 
@@ -1837,18 +1962,36 @@ async def list_charts(payload: dict = Depends(require_jwt)):
     """List available charts (HTML and PNG) for the authenticated user."""
     worker = _fs_worker(payload)
     charts_root = _resolve_charts_root(worker, payload['user_id'])
-    if not charts_root.exists():
-        return {'charts': []}
     charts = []
-    for f in sorted(charts_root.iterdir()):
-        if f.suffix in ('.html', '.png') and f.is_file():
-            charts.append({
-                'filename': f.name,
-                'type': 'html' if f.suffix == '.html' else 'png',
-                'url': f'/api/fs/charts/{f.name}',
-                'size': f.stat().st_size,
-                'modified': f.stat().st_mtime,
-            })
+    if _S3_MODE:
+        charts_prefix = str(charts_root)
+        keys = _storage.list_prefix(charts_prefix)
+        for rel in keys:
+            if rel.startswith('.'):
+                continue
+            name = rel.split('/')[-1]
+            suffix = '.' + name.rsplit('.', 1)[-1].lower() if '.' in name else ''
+            if suffix in ('.html', '.png'):
+                key = charts_prefix.rstrip('/') + '/' + rel
+                charts.append({
+                    'filename': name,
+                    'type': 'html' if suffix == '.html' else 'png',
+                    'url': f'/api/fs/charts/{name}',
+                    'size': _storage.get_size(key),
+                    'modified': None,
+                })
+    else:
+        if not charts_root.exists():
+            return {'charts': []}
+        for f in sorted(charts_root.iterdir()):
+            if f.suffix in ('.html', '.png') and f.is_file():
+                charts.append({
+                    'filename': f.name,
+                    'type': 'html' if f.suffix == '.html' else 'png',
+                    'url': f'/api/fs/charts/{f.name}',
+                    'size': f.stat().st_size,
+                    'modified': f.stat().st_mtime,
+                })
     return {'charts': charts}
 
 
@@ -1877,6 +2020,12 @@ async def serve_chart(filename: str, token: str = '', payload: dict = None,
     chart_path = (charts_root / filename).resolve()
     if not str(chart_path).startswith(str(charts_root)):
         raise HTTPException(status_code=400, detail='Path traversal not allowed')
+    if _S3_MODE:
+        if not _storage.exists(str(chart_path)):
+            raise HTTPException(status_code=404, detail='Chart not found')
+        content = _storage.read_bytes(str(chart_path))
+        media_type = 'image/png' if chart_path.suffix == '.png' else 'text/html'
+        return Response(content=content, media_type=media_type)
     if not chart_path.exists():
         raise HTTPException(status_code=404, detail='Chart not found')
     if chart_path.suffix == '.png':
@@ -2555,19 +2704,25 @@ async def super_worker_upload(
         raise HTTPException(status_code=404, detail='Worker not found')
     root = _resolve_admin_path_for_worker(w, section)
     folder = _resolve_admin_path_for_worker(w, section, path) if path else root
-    folder.mkdir(parents=True, exist_ok=True)
+    if not _S3_MODE:
+        folder.mkdir(parents=True, exist_ok=True)
     dest = folder / pathlib.Path(file.filename).name
-    if dest.exists() and not overwrite:
+    _dest_exists = _storage.exists(str(dest)) if _S3_MODE else dest.exists()
+    if _dest_exists and not overwrite:
         raise HTTPException(status_code=409, detail='File already exists')
-    await _stream_upload(file, dest)
+    size_bytes = await _stream_upload(file, dest)
     if not batch_id:
         _build_and_sync(str(root))
     from datetime import datetime, timezone
-    stat = dest.stat()
+    now_iso = datetime.now(timezone.utc).isoformat()
+    if not _S3_MODE:
+        stat = dest.stat()
+        size_bytes = stat.st_size
+        now_iso = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat()
     return {
         'path': str(dest.relative_to(root)).replace('\\', '/'),
-        'size_bytes': stat.st_size,
-        'modified_at': datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+        'size_bytes': size_bytes,
+        'modified_at': now_iso,
     }
 
 
@@ -2628,19 +2783,25 @@ async def admin_worker_upload(
         raise HTTPException(status_code=404, detail='Worker not found')
     root = _resolve_worker_path(w, section)
     folder = _resolve_worker_path(w, section, path) if path else root
-    folder.mkdir(parents=True, exist_ok=True)
+    if not _S3_MODE:
+        folder.mkdir(parents=True, exist_ok=True)
     dest = folder / pathlib.Path(file.filename).name
-    if dest.exists() and not overwrite:
+    _dest_exists = _storage.exists(str(dest)) if _S3_MODE else dest.exists()
+    if _dest_exists and not overwrite:
         raise HTTPException(status_code=409, detail='File already exists')
-    await _stream_upload(file, dest)
+    size_bytes = await _stream_upload(file, dest)
     if not batch_id:
         _build_and_sync(str(root))
     from datetime import datetime, timezone
-    stat = dest.stat()
+    now_iso = datetime.now(timezone.utc).isoformat()
+    if not _S3_MODE:
+        stat = dest.stat()
+        size_bytes = stat.st_size
+        now_iso = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat()
     return {
         'path': str(dest.relative_to(root)).replace('\\', '/'),
-        'size_bytes': stat.st_size,
-        'modified_at': datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+        'size_bytes': size_bytes,
+        'modified_at': now_iso,
     }
 
 
@@ -2672,19 +2833,25 @@ async def admin_common_upload(
         raise HTTPException(status_code=404, detail='Worker not found')
     common_root = _resolve_worker_path(w, 'common')
     folder = _resolve_worker_path(w, 'common', path) if path else common_root
-    folder.mkdir(parents=True, exist_ok=True)
+    if not _S3_MODE:
+        folder.mkdir(parents=True, exist_ok=True)
     dest = folder / pathlib.Path(file.filename).name
-    if dest.exists() and not overwrite:
+    _dest_exists = _storage.exists(str(dest)) if _S3_MODE else dest.exists()
+    if _dest_exists and not overwrite:
         raise HTTPException(status_code=409, detail='File already exists')
-    await _stream_upload(file, dest)
+    size_bytes = await _stream_upload(file, dest)
     if not batch_id:
         _build_and_sync(str(common_root))
     from datetime import datetime, timezone
-    stat = dest.stat()
+    now_iso = datetime.now(timezone.utc).isoformat()
+    if not _S3_MODE:
+        stat = dest.stat()
+        size_bytes = stat.st_size
+        now_iso = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat()
     return {
         'path': str(dest.relative_to(common_root)).replace('\\', '/'),
-        'size_bytes': stat.st_size,
-        'modified_at': datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+        'size_bytes': size_bytes,
+        'modified_at': now_iso,
     }
 
 
@@ -2693,11 +2860,16 @@ async def admin_common_upload(
 def _wf_read(w, section, path, _res=None):
     _r = _res or _resolve_worker_path
     full = _r(w, section, path)
-    if not full.exists() or not full.is_file():
-        raise HTTPException(status_code=404, detail='File not found')
-    content_bytes = full.read_bytes()
-    root = _r(w, section)
-    size = full.stat().st_size
+    if _S3_MODE:
+        if not _storage.exists(str(full)):
+            raise HTTPException(status_code=404, detail='File not found')
+        content_bytes = _storage.read_bytes(str(full))
+        size = len(content_bytes)
+    else:
+        if not full.exists() or not full.is_file():
+            raise HTTPException(status_code=404, detail='File not found')
+        content_bytes = full.read_bytes()
+        size = full.stat().st_size
     try:
         return {'path': path, 'encoding': 'utf-8', 'content': content_bytes.decode('utf-8'), 'size_bytes': size}
     except UnicodeDecodeError:
@@ -2706,52 +2878,77 @@ def _wf_read(w, section, path, _res=None):
 def _wf_write(w, section, path, content, _res=None):
     _r = _res or _resolve_worker_path
     full = _r(w, section, path)
-    full.parent.mkdir(parents=True, exist_ok=True)
-    full.write_text(content, encoding='utf-8')
+    if _S3_MODE:
+        _storage.write_text(str(full), content)
+    else:
+        full.parent.mkdir(parents=True, exist_ok=True)
+        full.write_text(content, encoding='utf-8')
     _build_and_sync(str(_r(w, section)))
     return {'ok': True}
 
 def _wf_delete_file(w, section, path, _res=None):
     _r = _res or _resolve_worker_path
     full = _r(w, section, path)
-    if not full.exists():
-        raise HTTPException(status_code=404, detail='File not found')
-    full.unlink()
+    if _S3_MODE:
+        if not _storage.exists(str(full)):
+            raise HTTPException(status_code=404, detail='File not found')
+        _storage.delete(str(full))
+    else:
+        if not full.exists():
+            raise HTTPException(status_code=404, detail='File not found')
+        full.unlink()
     _build_and_sync(str(_r(w, section)))
     return {'ok': True}
 
 def _wf_delete_folder(w, section, path, recursive: bool = False, _res=None):
     _r = _res or _resolve_worker_path
     full = _r(w, section, path)
-    if not full.exists():
-        raise HTTPException(status_code=404, detail='Folder not found')
-    items = list(full.rglob('*'))
-    count = len([x for x in items if x.is_file()])
-    if count > 0 and not recursive:
-        raise HTTPException(status_code=409, detail=f'Folder contains {count} items. Use recursive=true to delete.')
-    shutil.rmtree(full)
+    if _S3_MODE:
+        prefix_keys = _storage.list_prefix(str(full))
+        if not prefix_keys and not _storage.exists(str(full)):
+            raise HTTPException(status_code=404, detail='Folder not found')
+        if prefix_keys and not recursive:
+            raise HTTPException(status_code=409, detail=f'Folder contains {len(prefix_keys)} items. Use recursive=true to delete.')
+        for rel in prefix_keys:
+            _storage.delete(str(full).rstrip('/') + '/' + rel)
+    else:
+        if not full.exists():
+            raise HTTPException(status_code=404, detail='Folder not found')
+        items = list(full.rglob('*'))
+        count = len([x for x in items if x.is_file()])
+        if count > 0 and not recursive:
+            raise HTTPException(status_code=409, detail=f'Folder contains {count} items. Use recursive=true to delete.')
+        shutil.rmtree(full)
     _build_and_sync(str(_r(w, section)))
     return {'ok': True}
 
 def _wf_mkdir(w, section, path, _res=None):
     _r = _res or _resolve_worker_path
     full = _r(w, section, path)
-    full.mkdir(parents=True, exist_ok=True)
+    if not _S3_MODE:
+        full.mkdir(parents=True, exist_ok=True)
+    # In S3 mode, "folders" are virtual — no action needed
     _build_and_sync(str(_r(w, section)))
     return {'ok': True}
 
 def _wf_rename(w, section, path, new_name, _res=None):
     _r = _res or _resolve_worker_path
     full = _r(w, section, path)
-    if not full.exists():
+    _full_exists = _storage.exists(str(full)) if _S3_MODE else full.exists()
+    if not _full_exists:
         raise HTTPException(status_code=404, detail='Not found')
     n = pathlib.Path(new_name).name
     if not n or '/' in n or '\\' in n:
         raise HTTPException(status_code=400, detail='Invalid name')
     new_full = full.parent / n
-    if new_full.exists():
+    _new_exists = _storage.exists(str(new_full)) if _S3_MODE else new_full.exists()
+    if _new_exists:
         raise HTTPException(status_code=409, detail='A file or folder with this name already exists')
-    full.rename(new_full)
+    if _S3_MODE:
+        _storage.copy(str(full), str(new_full))
+        _storage.delete(str(full))
+    else:
+        full.rename(new_full)
     root = _r(w, section)
     _build_and_sync(str(root))
     return {'new_path': str(new_full.relative_to(root)).replace('\\', '/')}
@@ -2761,17 +2958,23 @@ def _wf_move(w, section, src, dest_folder, _res=None):
     root = _r(w, section)
     src_full = _r(w, section, src)
     dst_full = _r(w, section, dest_folder) / src_full.name
-    if not src_full.exists():
+    _src_exists = _storage.exists(str(src_full)) if _S3_MODE else src_full.exists()
+    if not _src_exists:
         raise HTTPException(status_code=404, detail='Source not found')
     try:
         dst_full.relative_to(src_full)
         raise HTTPException(status_code=400, detail='Cannot move a folder into itself')
     except ValueError:
         pass
-    if dst_full.exists():
+    _dst_exists = _storage.exists(str(dst_full)) if _S3_MODE else dst_full.exists()
+    if _dst_exists:
         raise HTTPException(status_code=409, detail=f'"{src_full.name}" already exists in target folder')
-    dst_full.parent.mkdir(parents=True, exist_ok=True)
-    shutil.move(str(src_full), str(dst_full))
+    if _S3_MODE:
+        _storage.copy(str(src_full), str(dst_full))
+        _storage.delete(str(src_full))
+    else:
+        dst_full.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(src_full), str(dst_full))
     _build_and_sync(str(root))
     return {'ok': True, 'new_path': str(dst_full.relative_to(root)).replace('\\', '/')}
 

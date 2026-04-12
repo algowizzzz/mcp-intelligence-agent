@@ -54,6 +54,12 @@ class LocalStorageBackend:
         dst_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)
 
+    def get_size(self, path: str) -> int:
+        try:
+            return pathlib.Path(path).stat().st_size
+        except Exception:
+            return 0
+
     async def write_stream(self, path: str, stream, chunk_size: int = 65536) -> int:
         """Write from async file-like stream. Returns bytes written. (REQ-11)"""
         import aiofiles
@@ -153,42 +159,25 @@ class S3StorageBackend:
             ExpiresIn=expiry,
         )
 
-    async def write_stream(self, path: str, stream, chunk_size: int = 5 * 1024 * 1024) -> int:
-        """S3 multipart upload. REQ-08a: 5MB parts (S3 minimum). Returns bytes written."""
-        key = self._key(path)
-        mpu = self.client.create_multipart_upload(Bucket=self.bucket, Key=key)
-        upload_id = mpu['UploadId']
-        parts = []
-        part_num = 1
-        buf = b''
-        total = 0
+    def get_size(self, path: str) -> int:
+        """Return object size in bytes, or 0 if not found."""
         try:
-            while True:
-                chunk = await stream.read(65536)
-                if not chunk:
-                    break
-                buf += chunk
-                total += len(chunk)
-                if len(buf) >= chunk_size:
-                    resp = self.client.upload_part(
-                        Bucket=self.bucket, Key=key, UploadId=upload_id,
-                        PartNumber=part_num, Body=buf)
-                    parts.append({'PartNumber': part_num, 'ETag': resp['ETag']})
-                    buf = b''
-                    part_num += 1
-            if buf:
-                resp = self.client.upload_part(
-                    Bucket=self.bucket, Key=key, UploadId=upload_id,
-                    PartNumber=part_num, Body=buf)
-                parts.append({'PartNumber': part_num, 'ETag': resp['ETag']})
-            self.client.complete_multipart_upload(
-                Bucket=self.bucket, Key=key, UploadId=upload_id,
-                MultipartUpload={'Parts': parts})
+            resp = self.client.head_object(Bucket=self.bucket, Key=self._key(path))
+            return resp['ContentLength']
         except Exception:
-            self.client.abort_multipart_upload(
-                Bucket=self.bucket, Key=key, UploadId=upload_id)
-            raise
-        return total
+            return 0
+
+    async def write_stream(self, path: str, stream, chunk_size: int = 65536) -> int:
+        """Buffer stream into memory then PUT to S3. Safe for files up to 20 MB."""
+        key = self._key(path)
+        buf = b''
+        while True:
+            chunk = await stream.read(chunk_size)
+            if not chunk:
+                break
+            buf += chunk
+        self.client.put_object(Bucket=self.bucket, Key=key, Body=buf)
+        return len(buf)
 
 
 _STORAGE_BACKEND_TYPE = os.environ.get('STORAGE_BACKEND', 'local')

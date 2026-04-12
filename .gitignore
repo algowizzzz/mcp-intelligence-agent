@@ -16,6 +16,7 @@ ENV/
 
 # Environment & secrets
 .env
+.secrets/
 *.env.local
 *.env.*.local
 connector_credentials.env
@@ -66,3 +67,4 @@ sajhamcpserver/python_sandbox_venv/
 
 # SQLite agent checkpoints
 sajhamcpserver/data/checkpoints.db
+CREDENTIALS.md
