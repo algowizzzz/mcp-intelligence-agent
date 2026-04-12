@@ -214,9 +214,15 @@ async def touch_thread(thread_id: str):
 # ── Audit Events ───────────────────────────────────────────────────────────────
 
 async def log_tool_call(user_id: str, worker_id: str, tool_name: str,
-                        elapsed_ms: float, status: str, thread_id: str = None):
-    """Async-safe audit log insert. Non-blocking — errors are swallowed."""
+                        elapsed_ms: float, status: str, thread_id: str = None,
+                        tool_args: dict = None, result_summary: str = None):
+    """Async-safe tool-call audit insert. Errors are swallowed — must not break main flow."""
     try:
+        detail: dict = {'status': status}
+        if tool_args:
+            detail['args'] = tool_args
+        if result_summary:
+            detail['result'] = result_summary[:500]
         async with AsyncSessionLocal() as db:
             row = AuditEvent(
                 event_type='tool_call',
@@ -226,7 +232,30 @@ async def log_tool_call(user_id: str, worker_id: str, tool_name: str,
                 tool_name=tool_name,
                 tool_result_ok=(status == 'success'),
                 elapsed_ms=int(elapsed_ms),
-                detail={'status': status},
+                detail=detail,
+            )
+            db.add(row)
+            await db.commit()
+    except Exception:
+        pass  # audit must never break the main flow
+
+
+async def log_event(event_type: str, user_id: str, worker_id: str,
+                    thread_id: str = None, detail: dict = None,
+                    elapsed_ms: float = None, tool_name: str = None,
+                    tool_result_ok: bool = None):
+    """Generic audit event insert for query, response, usage, canvas, error events."""
+    try:
+        async with AsyncSessionLocal() as db:
+            row = AuditEvent(
+                event_type=event_type,
+                user_id=user_id,
+                worker_id=worker_id,
+                thread_id=thread_id,
+                tool_name=tool_name,
+                tool_result_ok=tool_result_ok,
+                elapsed_ms=int(elapsed_ms) if elapsed_ms is not None else None,
+                detail=detail or {},
             )
             db.add(row)
             await db.commit()

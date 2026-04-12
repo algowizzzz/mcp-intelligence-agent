@@ -2188,13 +2188,25 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
 
     async def stream():
         # Inject worker context into ContextVar for this async task (G-04 + G-13)
-        ctx_token = _worker_ctx.set({**worker, 'user_id': payload['user_id']})
+        # thread_id included so _log_audit in tools.py can correlate all tool events
+        ctx_token = _worker_ctx.set({**worker, 'user_id': payload['user_id'], 'thread_id': thread_id})
         # REQ-13: SSE queue for sub-agent task events
         import asyncio as _asyncio
         _sse_queue = _asyncio.Queue()
         _sse_token = _set_stream_writer(_sse_queue.put_nowait)
+        _run_start = time.time()
         try:
             yield f"data: {json.dumps({'type': 'session', 'thread_id': thread_id})}\n\n"
+            # Log user query to DB
+            if _DB_ENABLED and req.query and not req.resume:
+                try:
+                    await _db_repo.log_event(
+                        'query', payload['user_id'], worker['worker_id'],
+                        thread_id=thread_id,
+                        detail={'query': req.query[:2000]},
+                    )
+                except Exception:
+                    pass
             inp = ({'messages': [{'role': 'user', 'content': req.query}]}
                    if not req.resume else {'resume': req.resume})
             full_text = []
@@ -2208,6 +2220,19 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
                 while not _sse_queue.empty():
                     sa_evt = _sse_queue.get_nowait()
                     yield f"data: {json.dumps(sa_evt)}\n\n"
+                    # DB audit for sub-agent lifecycle events
+                    if _DB_ENABLED:
+                        _sa_type = sa_evt.get('type', '')
+                        if _sa_type in ('task_started', 'task_completed', 'task_failed', 'task_timed_out'):
+                            try:
+                                await _db_repo.log_event(
+                                    'subagent', payload['user_id'], worker['worker_id'],
+                                    thread_id=thread_id,
+                                    detail={k: v for k, v in sa_evt.items() if k != 'type'},
+                                    tool_name=_sa_type,
+                                )
+                            except Exception:
+                                pass
                 t = event['event']
                 if t == 'on_chat_model_stream':
                     chunk = event['data']['chunk']
@@ -2281,10 +2306,29 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
                             chart_title = output.get('title', 'Chart')
                             chart_url = '/api/fs/charts/' + output['html_file']
                             yield f"data: {json.dumps({'type': 'canvas', 'title': chart_title, 'content': '', 'canvas_type': 'chart', 'chart_url': chart_url})}\n\n"
+                            if _DB_ENABLED:
+                                try:
+                                    await _db_repo.log_event(
+                                        'canvas', payload['user_id'], worker['worker_id'],
+                                        thread_id=thread_id,
+                                        detail={'canvas_type': 'chart', 'title': chart_title, 'chart_url': chart_url},
+                                    )
+                                except Exception:
+                                    pass
                         elif output.get('figures'):
                             first_fig = output['figures'][0]
                             chart_title = output.get('title', 'Python Chart')
                             yield f"data: {json.dumps({'type': 'canvas', 'title': chart_title, 'canvas_type': 'chart', 'chart_url': first_fig['url']})}\n\n"
+                            if _DB_ENABLED:
+                                try:
+                                    await _db_repo.log_event(
+                                        'canvas', payload['user_id'], worker['worker_id'],
+                                        thread_id=thread_id,
+                                        detail={'canvas_type': 'chart', 'title': chart_title,
+                                                'chart_url': first_fig['url']},
+                                    )
+                                except Exception:
+                                    pass
                 elif t == 'on_interrupt':
                     yield f"data: {json.dumps({'type': 'hitl', 'question': event['data'].get('question', ''), 'options': event['data'].get('options', []), 'thread_id': thread_id})}\n\n"
                 elif t == 'on_chat_model_end':
@@ -2296,6 +2340,20 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
                             usage = um if isinstance(um, dict) else dict(um)
                     if usage:
                         yield f"data: {json.dumps({'type': 'usage', 'usage': usage})}\n\n"
+                        if _DB_ENABLED:
+                            try:
+                                await _db_repo.log_event(
+                                    'usage', payload['user_id'], worker['worker_id'],
+                                    thread_id=thread_id,
+                                    detail={
+                                        'input_tokens': usage.get('input_tokens', 0),
+                                        'output_tokens': usage.get('output_tokens', 0),
+                                        'total_tokens': usage.get('total_tokens',
+                                            usage.get('input_tokens', 0) + usage.get('output_tokens', 0)),
+                                    },
+                                )
+                            except Exception:
+                                pass
             import json as _json, re as _re
             # Flush any remaining look-ahead buffer
             if _text_pending and not _canvas_streaming:
@@ -2368,6 +2426,29 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
                 canvas = envelope['canvas']
                 yield f"data: {_json.dumps({'type': 'replace_text', 'text': envelope.get('summary', '')})}\n\n"
                 yield f"data: {_json.dumps({'type': 'canvas', 'title': canvas.get('title','Document'), 'content': canvas.get('content',''), 'canvas_type': canvas.get('type','report')})}\n\n"
+                if _DB_ENABLED:
+                    try:
+                        await _db_repo.log_event(
+                            'canvas', payload['user_id'], worker['worker_id'],
+                            thread_id=thread_id,
+                            detail={'canvas_type': canvas.get('type', 'report'),
+                                    'title': canvas.get('title', 'Document'),
+                                    'summary': envelope.get('summary', '')[:500]},
+                        )
+                    except Exception:
+                        pass
+
+            # Log assembled response text to DB
+            if _DB_ENABLED and assembled:
+                try:
+                    _response_text = assembled[:5000]
+                    await _db_repo.log_event(
+                        'response', payload['user_id'], worker['worker_id'],
+                        thread_id=thread_id,
+                        detail={'text': _response_text, 'truncated': len(assembled) > 5000},
+                    )
+                except Exception:
+                    pass
             # REQ-05: emit context gauge + summary notice if compression fired
             try:
                 final_state = await agent_instance.aget_state(config)
@@ -2388,9 +2469,27 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
             yield f"data: {json.dumps({'type': 'budget_exceeded', 'used': be.used, 'budget': be.budget})}\n\n"
             yield f"data: {json.dumps({'type': 'error', 'message': f'Token budget exceeded ({be.used}/{be.budget} tokens). Response may be incomplete.'})}\n\n"
             yield 'data: [DONE]\n\n'
+            if _DB_ENABLED:
+                try:
+                    await _db_repo.log_event(
+                        'error', payload['user_id'], worker['worker_id'],
+                        thread_id=thread_id,
+                        detail={'error_type': 'budget_exceeded', 'used': be.used, 'budget': be.budget},
+                    )
+                except Exception:
+                    pass
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
             yield 'data: [DONE]\n\n'
+            if _DB_ENABLED:
+                try:
+                    await _db_repo.log_event(
+                        'error', payload['user_id'], worker['worker_id'],
+                        thread_id=thread_id,
+                        detail={'error_type': type(e).__name__, 'message': str(e)[:1000]},
+                    )
+                except Exception:
+                    pass
         finally:
             from agent.sub_agent_tool import _sse_writer_ctx
             _sse_writer_ctx.reset(_sse_token)

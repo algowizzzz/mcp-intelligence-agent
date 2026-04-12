@@ -5228,6 +5228,7 @@
             title: q.length > 30 ? q.substring(0, 30) + '...' : q,
             messages: [],
             threadId: null,
+            worker_id: _activeWorkerId || ((_authUser || {}).worker_id) || null,
             cost: { inputTokens: 0, outputTokens: 0, callCount: 0, totalUSD: 0 },
             created: Date.now(),
             updated: Date.now()

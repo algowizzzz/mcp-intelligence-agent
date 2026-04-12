@@ -124,12 +124,14 @@ if _DB_ENABLED:
     from sajha.db import repo as _db_repo  # noqa: E402
 
 
-async def _log_audit(tool_name: str, duration_ms: float, status: str):
+async def _log_audit(tool_name: str, duration_ms: float, status: str,
+                     tool_args: dict = None, result_summary: str = None):
     """Audit log — dual-write to PostgreSQL (REQ-07) and JSONL fallback."""
     import datetime
     ctx = _worker_ctx.get()
     user_id = ctx.get('user_id', '')
     worker_id = ctx.get('worker_id', '')
+    thread_id = ctx.get('thread_id', None)
 
     # PostgreSQL path — direct await (caller is always async)
     if _DB_ENABLED:
@@ -137,6 +139,8 @@ async def _log_audit(tool_name: str, duration_ms: float, status: str):
             await _db_repo.log_tool_call(
                 user_id=user_id, worker_id=worker_id, tool_name=tool_name,
                 elapsed_ms=round(duration_ms, 1), status=status,
+                thread_id=thread_id, tool_args=tool_args,
+                result_summary=result_summary,
             )
         except Exception:
             pass
@@ -148,6 +152,7 @@ async def _log_audit(tool_name: str, duration_ms: float, status: str):
             'timestamp': datetime.datetime.utcnow().isoformat() + 'Z',
             'user_id': user_id,
             'worker_id': worker_id,
+            'thread_id': thread_id,
             'tool_name': tool_name,
             'duration_ms': round(duration_ms, 1),
             'status': status,
@@ -158,9 +163,24 @@ async def _log_audit(tool_name: str, duration_ms: float, status: str):
         pass
 
 
+def _result_summary(result: dict) -> str:
+    """Return a short plain-text summary of a tool result for audit storage."""
+    if not isinstance(result, dict):
+        return str(result)[:500]
+    # Strip large fields; keep top-level keys + short values
+    try:
+        return json.dumps({k: v for k, v in result.items()
+                           if k not in ('html', 'data') and not isinstance(v, (list, dict))
+                           or k in ('count', 'total', 'error', 'success', '_truncated')},
+                          default=str)[:500]
+    except Exception:
+        return ''
+
+
 async def _call_sajha(tool_name: str, args: dict) -> dict:
     t0 = time.time()
     status = 'success'
+    result: dict = {}
     timeout = _TOOL_TIMEOUTS.get(tool_name, 30.0)
     try:
         async with httpx.AsyncClient(timeout=timeout, trust_env=False) as c:
@@ -172,15 +192,22 @@ async def _call_sajha(tool_name: str, args: dict) -> dict:
             return _truncate_result(result, tool_name)
     except httpx.TimeoutException:
         status = 'timeout'
-        return {'error': f'{tool_name} timed out after {int(timeout)}s'}
+        result = {'error': f'{tool_name} timed out after {int(timeout)}s'}
+        return result
     except httpx.HTTPStatusError as e:
         status = f'http_{e.response.status_code}'
-        return {'error': f'{tool_name} returned HTTP {e.response.status_code}'}
+        result = {'error': f'{tool_name} returned HTTP {e.response.status_code}'}
+        return result
     except Exception as e:
         status = 'error'
-        return {'error': f'{tool_name} failed: {str(e)}'}
+        result = {'error': f'{tool_name} failed: {str(e)}'}
+        return result
     finally:
-        await _log_audit(tool_name, (time.time() - t0) * 1000, status)
+        # Redact sensitive args before storing (password, api_key, token, secret)
+        _safe_args = {k: '[REDACTED]' if any(s in k.lower() for s in ('password', 'api_key', 'token', 'secret')) else v
+                      for k, v in args.items()} if args else None
+        await _log_audit(tool_name, (time.time() - t0) * 1000, status,
+                         tool_args=_safe_args, result_summary=_result_summary(result))
 
 
 # ================================================================
