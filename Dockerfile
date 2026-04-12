@@ -63,7 +63,7 @@ RUN mkdir -p \
         /var/log \
         /var/run
 
-# ── Environment defaults ───────────────────────────��─────────────────────────��
+# ── Environment defaults ──────────────────────────────────────────────────────
 ENV PYTHONUNBUFFERED=1 \
     PORT=80
 
