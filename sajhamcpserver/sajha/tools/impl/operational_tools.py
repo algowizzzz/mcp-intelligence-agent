@@ -908,9 +908,13 @@ class FillTemplateTool(BaseMCPTool):
         versioning = arguments.get("versioning", True)
         convert_to_docx = arguments.get("convert_to_docx", False)
 
-        # Security: template must be within templates dir
+        # Security: template must be within worker templates dir or common templates dir
         tmpl_dir = _templates_dir()
         safe = _safe_path(template_path, tmpl_dir)
+        if not safe or not safe.exists():
+            # Also try common/templates
+            common_tmpl_dir = _common_root() / "templates"
+            safe = _safe_path(template_path, common_tmpl_dir)
         if not safe or not safe.exists():
             return {"error": "Template access denied"}
         if safe.suffix.lower() != ".md":

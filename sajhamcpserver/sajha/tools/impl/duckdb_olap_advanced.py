@@ -1068,7 +1068,17 @@ ORDER BY {self._safe_alias(measure)} DESC
         """
         import asyncio
         tool_name = arguments.get('_tool_name', 'olap_list_datasets')
-        return asyncio.get_event_loop().run_until_complete(self.call_tool(tool_name, arguments))
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    future = pool.submit(asyncio.run, self.call_tool(tool_name, arguments))
+                    return future.result()
+            else:
+                return loop.run_until_complete(self.call_tool(tool_name, arguments))
+        except RuntimeError:
+            return asyncio.run(self.call_tool(tool_name, arguments))
     
     def get_input_schema(self) -> Dict:
         """Get combined input schema for all OLAP tools."""
@@ -1138,6 +1148,7 @@ class CustomerOLAPTool(BaseMCPTool):
         super().__init__(config)
         self.config = config or {}
         self.conn = None
+        self.db_source = self._get_data_path()
         self._init_connection()
     
     def _init_connection(self):

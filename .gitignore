@@ -68,3 +68,30 @@ sajhamcpserver/python_sandbox_venv/
 # SQLite agent checkpoints
 sajhamcpserver/data/checkpoints.db
 CREDENTIALS.md
+
+# Runtime data — worker files, uploads, audit logs, charts, indexes
+# These are generated at runtime and must NOT be committed
+sajhamcpserver/data/audit/
+sajhamcpserver/data/threads.jsonl
+sajhamcpserver/data/workers/*/domain_data/
+sajhamcpserver/data/workers/*/my_data/
+sajhamcpserver/data/workers/*/workflows/
+sajhamcpserver/data/common/
+sajhamcpserver/data/checkpoints.db-shm
+sajhamcpserver/data/checkpoints.db-wal
+sajhamcpserver/data/workers/*/domain_data/.index.json
+sajhamcpserver/data/workers/*/workflows/verified/.index.json
+
+# Playwright MCP
+.playwright-mcp/
+
+# Misc local artifacts
+market_risk_worker*.zip
+*.bak
+*.backup
+ziJp5YFV
+data/
+download_bmo_excel.py
+stats_calculator.py
+BMO_Q4_2025_Summary.xlsx
+.env.production
