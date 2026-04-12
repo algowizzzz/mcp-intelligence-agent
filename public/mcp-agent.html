@@ -3593,6 +3593,69 @@
       }
     }
 
+    // Merge DB threads into _conversations — adds any thread the server knows about
+    // that isn't already in localStorage. Fetches messages from checkpoint for each.
+    async function syncThreadsFromDB() {
+      var token = sessionStorage.getItem('mcp_token') || localStorage.getItem('mcp_token');
+      if (!token) return;
+      var workerId = (_authUser || {}).worker_id || _activeWorkerId || null;
+      var url = _agentBase + '/api/agent/threads' + (workerId ? '?worker_id=' + encodeURIComponent(workerId) : '');
+      var resp;
+      try {
+        resp = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+        if (!resp.ok) return;
+      } catch(e) { return; }
+      var data = await resp.json();
+      var dbThreads = (data.threads || []).filter(function(t) { return t.message_count > 0; });
+      if (!dbThreads.length) return;
+
+      // Index local convos by threadId for fast lookup
+      var localByThread = {};
+      _conversations.forEach(function(c) { if (c.threadId) localByThread[c.threadId] = c; });
+
+      var newConvs = [];
+      for (var i = 0; i < dbThreads.length; i++) {
+        var t = dbThreads[i];
+        if (localByThread[t.thread_id]) continue; // already have it locally
+
+        // Fetch messages from LangGraph checkpoint
+        var msgs = [];
+        try {
+          var mr = await fetch(_agentBase + '/api/agent/threads/' + t.thread_id + '/messages',
+            { headers: { 'Authorization': 'Bearer ' + token } });
+          if (mr.ok) {
+            var md = await mr.json();
+            msgs = (md.messages || []).map(function(m) {
+              return { role: m.role === 'human' ? 'user' : 'assistant', content: m.content };
+            });
+          }
+        } catch(e) {}
+
+        var title = t.title || (msgs.length ? msgs[0].content.slice(0, 60) : 'Conversation');
+        newConvs.push({
+          id: t.thread_id,          // use thread_id as conv id for stable identity
+          threadId: t.thread_id,
+          worker_id: t.worker_id,
+          title: title,
+          messages: msgs,
+          cost: { inputTokens: 0, outputTokens: 0, callCount: 0, totalUSD: 0 },
+          created: t.created_at,
+          updated: t.last_activity_at,
+          _fromDB: true,
+        });
+      }
+
+      if (!newConvs.length) return;
+
+      // Prepend DB-recovered convos (sorted newest first) and save
+      newConvs.sort(function(a, b) { return b.updated > a.updated ? 1 : -1; });
+      _conversations = newConvs.concat(_conversations);
+      // If no active conv yet, default to the most recent recovered one
+      if (!_activeConvId && newConvs.length) _activeConvId = newConvs[0].id;
+      saveConversations();
+      renderSidebar();
+    }
+
     function saveConversations() {
       try {
         localStorage.setItem(CONV_STORAGE_KEY, JSON.stringify(_conversations));
@@ -4866,6 +4929,8 @@
       }
 
       renderSidebar();
+      // Async: pull any threads from DB not yet in localStorage (survives logout/login)
+      syncThreadsFromDB();
     }
 
     function renderRestoredMessages(msgs) {

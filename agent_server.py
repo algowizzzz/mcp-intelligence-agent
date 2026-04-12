@@ -283,6 +283,7 @@ async def _persist_thread(thread_id: str, meta: dict):
                 thread_id,
                 meta.get('user_id', ''),
                 meta.get('worker_id', ''),
+                title=meta.get('title'),
             )
         except Exception:
             pass
@@ -2178,9 +2179,13 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
                 raise HTTPException(status_code=403, detail='Thread belongs to a different user or worker')
     if not (req.thread_id or req.resume):
         import datetime
+        # Derive a short title from the query (first 80 chars, trimmed)
+        _raw_title = (req.query or '').strip()
+        _thread_title = (_raw_title[:77] + '...') if len(_raw_title) > 80 else _raw_title or None
         meta = {
             'user_id': payload['user_id'],
             'worker_id': worker['worker_id'],
+            'title': _thread_title,
             'created_at': datetime.datetime.utcnow().isoformat() + 'Z',
         }
         _thread_registry[thread_id] = meta
@@ -2944,6 +2949,54 @@ async def list_threads(payload: dict = Depends(require_jwt)):
         if meta['user_id'] == user_id and meta.get('worker_id') == worker_id
     ]
     return {'threads': threads}
+
+
+@app.get('/api/agent/threads/{thread_id}/messages')
+async def get_thread_messages(thread_id: str, payload: dict = Depends(require_jwt)):
+    """Return the message history for a thread from LangGraph checkpoint.
+    Used by the frontend to restore chat UI after logout/login."""
+    user_id = payload['user_id']
+    worker_id = payload.get('worker_id')
+
+    # Verify ownership: thread must belong to this user+worker
+    if _DB_ENABLED:
+        try:
+            t = await _db_repo.get_thread(thread_id)
+            if not t or t['user_id'] != user_id:
+                raise HTTPException(status_code=403, detail='Thread not accessible')
+        except HTTPException:
+            raise
+        except Exception:
+            pass
+
+    # Load checkpoint from LangGraph using the shared checkpointer
+    try:
+        cp = _agent_module.checkpointer
+        if cp is None:
+            return {'messages': [], 'error': 'Checkpointer not initialised'}
+        config = {'configurable': {'thread_id': thread_id}}
+        state = await cp.aget(config)
+        if not state or not state.get('channel_values'):
+            return {'messages': []}
+        msgs = state['channel_values'].get('messages', [])
+        out = []
+        for m in msgs:
+            role = getattr(m, 'type', None) or getattr(m, 'role', None)
+            # LangGraph message types: HumanMessage→'human', AIMessage→'ai'
+            if role in ('human', 'ai'):
+                content = m.content if isinstance(m.content, str) else ''
+                if isinstance(m.content, list):
+                    content = ' '.join(
+                        block.get('text', '') if isinstance(block, dict) else str(block)
+                        for block in m.content
+                    ).strip()
+                if content.strip():
+                    out.append({'role': role, 'content': content})
+        return {'messages': out}
+    except HTTPException:
+        raise
+    except Exception as e:
+        return {'messages': [], 'error': str(e)}
 
 
 # ── Audit log (G-13) ───────────────────────────────────────────────────────────
