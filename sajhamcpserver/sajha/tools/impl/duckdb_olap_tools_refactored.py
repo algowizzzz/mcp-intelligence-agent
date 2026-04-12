@@ -568,7 +568,7 @@ class DuckDbListTablesTool(DuckDbBaseTool):
             return {
                 'tables': tables,
                 'total_count': len(tables),
-                '_source': self.db_path
+                '_source': self.data_directory
             }
 
         except Exception as e:
@@ -643,7 +643,7 @@ class DuckDbDescribeTableTool(DuckDbBaseTool):
                 'table_type': table_type,
                 'columns': columns,
                 'row_count': row_count,
-                '_source': self.db_path
+                '_source': self.data_directory
             }
 
             # Get sample data if requested
@@ -716,7 +716,7 @@ class DuckDbQueryTool(DuckDbBaseTool):
                 'row_count': len(df),
                 'execution_time_ms': round(execution_time, 2),
                 'limited': len(df) >= limit,
-                '_source': self.db_path
+                '_source': self.data_directory
             }
 
             return response
@@ -802,7 +802,7 @@ class DuckDbRefreshViewsTool(DuckDbBaseTool):
                 'refreshed_views': refreshed_views,
                 'total_refreshed': len([v for v in refreshed_views if v['status'] == 'success']),
                 'external_files_reloaded': reload_external,
-                '_source': self.db_path
+                '_source': self.data_directory
             }
 
         except Exception as e:
@@ -921,7 +921,7 @@ class DuckDbGetStatsTool(DuckDbBaseTool):
                 'table_name': table_name,
                 'total_rows': total_rows,
                 'column_statistics': column_statistics,
-                '_source': self.db_path
+                '_source': self.data_directory
             }
 
         except Exception as e:
@@ -1010,7 +1010,7 @@ class DuckDbAggregateTool(DuckDbBaseTool):
                 'results': df.to_dict(orient='records'),
                 'row_count': len(df),
                 'execution_time_ms': round(execution_time, 2),
-                '_source': self.db_path
+                '_source': self.data_directory
             }
 
         except Exception as e:
@@ -1076,7 +1076,7 @@ class DuckDbListFilesTool(DuckDbBaseTool):
                 'files': files,
                 'total_files': len(files),
                 'summary': summary,
-                '_source': self.db_path
+                '_source': self.data_directory
             }
 
         except Exception as e:
