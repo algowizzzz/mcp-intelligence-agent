@@ -164,6 +164,20 @@ def _run_sandboxed(
     if extra_env:
         env.update(extra_env)
 
+    if not os.path.isfile(SANDBOX_VENV_PYTHON):
+        return {
+            'stdout': '',
+            'stderr': (
+                f'Sandbox Python interpreter not found: {SANDBOX_VENV_PYTHON}. '
+                'Run: python -m venv sajhamcpserver/python_sandbox_venv && '
+                'sajhamcpserver/python_sandbox_venv/bin/pip install pandas numpy scipy '
+                'matplotlib plotly openpyxl pyarrow statsmodels'
+            ),
+            'exit_code': -1,
+            'elapsed_seconds': 0.0,
+            'timed_out': False,
+        }
+
     start = time.monotonic()
     try:
         result = subprocess.run(

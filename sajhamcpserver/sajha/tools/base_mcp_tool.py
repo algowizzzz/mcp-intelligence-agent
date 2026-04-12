@@ -180,7 +180,7 @@ class BaseMCPTool(ABC):
             
         except Exception as e:
             self.logger.error(f"Tool execution failed: {self.name} - {str(e)}", exc_info=True)
-            raise
+            return {'error': str(e), 'success': False}
     
     def get_metrics(self) -> Dict:
         """

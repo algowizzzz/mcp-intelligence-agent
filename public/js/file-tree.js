@@ -1034,7 +1034,7 @@
     var self = this;
     if (!files || !files.length) return;
     destFolder = destFolder || '';
-    var MAX_SIZE = 50 * 1024 * 1024;
+    var MAX_SIZE = 20 * 1024 * 1024;
     var rejected = [];
     files.forEach(function (f) {
       if (f.size > MAX_SIZE) {
@@ -1053,7 +1053,7 @@
       });
     });
     if (rejected.length) {
-      self._toast(rejected.length + ' file(s) exceed 50 MB limit', 'error');
+      self._toast(rejected.length + ' file(s) exceed 20 MB limit', 'error');
     }
     self._currentBatchId = (typeof crypto !== 'undefined' && crypto.randomUUID)
       ? crypto.randomUUID()
@@ -1071,7 +1071,7 @@
     var self = this;
     if (!files || !files.length) return;
     destFolder = destFolder || '';
-    var MAX_SIZE = 50 * 1024 * 1024;
+    var MAX_SIZE = 20 * 1024 * 1024;
     var rejected = [];
     files.forEach(function (f) {
       if (f.size > MAX_SIZE) {
@@ -1097,7 +1097,7 @@
       });
     });
     if (rejected.length) {
-      self._toast(rejected.length + ' file(s) exceed 50 MB limit', 'error');
+      self._toast(rejected.length + ' file(s) exceed 20 MB limit', 'error');
     }
     self._currentBatchId = (typeof crypto !== 'undefined' && crypto.randomUUID)
       ? crypto.randomUUID()

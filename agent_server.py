@@ -1315,14 +1315,14 @@ async def admin_delete_worker_user(user_id: str, payload: dict = Depends(require
 # ── File upload ────────────────────────────────────────────────────────────────
 
 _UPLOAD_ALLOWED_EXT = {'pdf', 'docx', 'xlsx', 'csv', 'txt', 'parquet', 'md', 'json', 'png', 'jpg', 'jpeg', 'py'}
-_UPLOAD_MAX_MB = 50
+_UPLOAD_MAX_MB = 20
 _UPLOAD_CHUNK_SIZE = 65536        # 64 KB streaming chunk (REQ-11)
-_UPLOAD_MAX_BYTES  = 50 * 1024 * 1024  # 50 MB hard limit (REQ-11)
+_UPLOAD_MAX_BYTES  = 20 * 1024 * 1024  # 20 MB hard limit (REQ-11)
 
 
 async def _stream_upload(file: UploadFile, dest: pathlib.Path) -> int:
     """Stream upload to disk in 64 KB chunks. Returns bytes written.
-    Raises HTTP 413 if file exceeds 50 MB. Cleans up partial file on error. (REQ-11)"""
+    Raises HTTP 413 if file exceeds 20 MB. Cleans up partial file on error. (REQ-11)"""
     bytes_written = 0
     try:
         async with aiofiles.open(dest, 'wb') as f:
@@ -1333,7 +1333,7 @@ async def _stream_upload(file: UploadFile, dest: pathlib.Path) -> int:
                 await f.write(chunk)
                 bytes_written += len(chunk)
                 if bytes_written > _UPLOAD_MAX_BYTES:
-                    raise HTTPException(status_code=413, detail='File exceeds 50 MB limit')
+                    raise HTTPException(status_code=413, detail='File exceeds 20 MB limit')
     except HTTPException:
         dest.unlink(missing_ok=True)
         raise

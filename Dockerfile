@@ -30,6 +30,12 @@ RUN pip install --no-cache-dir \
         -r sajha-requirements.txt \
         bcrypt
 
+# ── Python sandbox venv (python_execute tool — REQ-04a) ───────────────────────
+# The sandbox venv is gitignored so it must be built during the image build.
+RUN python -m venv sajhamcpserver/python_sandbox_venv && \
+    sajhamcpserver/python_sandbox_venv/bin/pip install --no-cache-dir \
+        pandas numpy scipy matplotlib plotly openpyxl pyarrow statsmodels
+
 # ── Application code ─────────────────────────────────────────────────────────��
 COPY agent/             ./agent/
 COPY agent_server.py    .
