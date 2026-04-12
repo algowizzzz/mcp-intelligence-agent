@@ -797,7 +797,7 @@ class WorkerUpdateRequest(BaseModel):
     enabled: Optional[bool] = None
     # REQ-13: Multi-agent
     agent_mode: Optional[str] = None                 # "single" | "multi"
-    max_concurrent_subagents: Optional[int] = None   # clamped to [2, 4]
+    max_concurrent_subagents: Optional[int] = None   # clamped to [2, 8]
     # REQ-14: Memory + budget + HITL
     enable_memory: Optional[bool] = None
     memory_ttl_days: Optional[int] = None
@@ -819,7 +819,7 @@ async def super_update_worker(worker_id: str, req: WorkerUpdateRequest, _: dict 
             if req.enabled is not None: w['enabled'] = req.enabled
             if req.agent_mode is not None: w['agent_mode'] = req.agent_mode
             if req.max_concurrent_subagents is not None:
-                w['max_concurrent_subagents'] = max(2, min(4, req.max_concurrent_subagents))
+                w['max_concurrent_subagents'] = max(2, min(8, req.max_concurrent_subagents))
             if req.enable_memory is not None: w['enable_memory'] = req.enable_memory
             if req.memory_ttl_days is not None: w['memory_ttl_days'] = req.memory_ttl_days
             if req.max_memories_per_query is not None: w['max_memories_per_query'] = req.max_memories_per_query

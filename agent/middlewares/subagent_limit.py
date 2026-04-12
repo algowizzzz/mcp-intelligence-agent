@@ -25,7 +25,7 @@ from langchain_core.messages import AIMessage, BaseMessage
 logger = logging.getLogger(__name__)
 
 _MIN_CONCURRENT = 2
-_MAX_CONCURRENT = 4
+_MAX_CONCURRENT = 8
 
 
 class SubagentLimitMiddleware(AgentMiddleware):
