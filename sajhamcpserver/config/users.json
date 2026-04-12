@@ -229,6 +229,34 @@
       "email": "",
       "created_at": "2026-04-06T17:59:28.037722Z",
       "last_login": null
+    },
+    {
+      "user_id": "finance_admin",
+      "user_name": "Finance Admin",
+      "display_name": "Finance Admin",
+      "avatar_initials": "FA",
+      "role": "admin",
+      "worker_id": "w-finance-agent",
+      "password_hash": "$2b$12$2e4XFTa73jWoDL27Y9acd..TWy8nl9/g8SMUqqhG9s2X2SLC0pTXO",
+      "tools": [],
+      "enabled": true,
+      "onboarding_complete": true,
+      "email": "finance_admin@example.com",
+      "created_at": "2026-04-12T00:00:00.000000Z"
+    },
+    {
+      "user_id": "finance_user",
+      "user_name": "Finance User",
+      "display_name": "Finance User",
+      "avatar_initials": "FU",
+      "role": "user",
+      "worker_id": "w-finance-agent",
+      "password_hash": "$2b$12$3MFfrf5VaOlQdN2h/z/xx.LRnRl1Mo0ZABS/jPIaAH6WKjiRjZaAG",
+      "tools": [],
+      "enabled": true,
+      "onboarding_complete": true,
+      "email": "finance_user@example.com",
+      "created_at": "2026-04-12T00:00:00.000000Z"
     }
   ]
 }
