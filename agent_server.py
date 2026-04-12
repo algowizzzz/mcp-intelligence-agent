@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional, List
 from dotenv import load_dotenv
+load_dotenv()  # must run before any os.getenv() checks (incl. _DB_ENABLED below)
 import httpx
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver  # kept as fallback
 import agent.agent as _agent_module
@@ -243,8 +244,6 @@ def _clone_worker_folder(src_id: str, dst_id: str):
     (dst / 'my_data').mkdir(parents=True, exist_ok=True)
 
 
-load_dotenv()
-
 _DATA_ROOT     = pathlib.Path('sajhamcpserver/data')
 _COMMON_DATA   = _DATA_ROOT / 'common'
 _AUDIT_LOG     = _DATA_ROOT / 'audit' / 'tool_calls.jsonl'
@@ -276,22 +275,15 @@ def _load_thread_registry():
             pass
 
 
-def _persist_thread(thread_id: str, meta: dict):
+async def _persist_thread(thread_id: str, meta: dict):
     """Register a new thread. Dual-write: PostgreSQL (if enabled) + JSONL file."""
     if _DB_ENABLED:
-        import asyncio
-        async def _reg():
+        try:
             await _db_repo.register_thread(
                 thread_id,
                 meta.get('user_id', ''),
                 meta.get('worker_id', ''),
             )
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.ensure_future(_reg())
-            else:
-                loop.run_until_complete(_reg())
         except Exception:
             pass
     # Always append to JSONL (dual-write)
@@ -2192,7 +2184,7 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
             'created_at': datetime.datetime.utcnow().isoformat() + 'Z',
         }
         _thread_registry[thread_id] = meta
-        _persist_thread(thread_id, meta)
+        await _persist_thread(thread_id, meta)
 
     async def stream():
         # Inject worker context into ContextVar for this async task (G-04 + G-13)
@@ -2403,6 +2395,12 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
             from agent.sub_agent_tool import _sse_writer_ctx
             _sse_writer_ctx.reset(_sse_token)
             _worker_ctx.reset(ctx_token)
+            # REQ-07: update thread last_activity_at + message_count
+            if _DB_ENABLED:
+                try:
+                    await _db_repo.touch_thread(thread_id)
+                except Exception:
+                    pass
 
     return StreamingResponse(stream(), media_type='text/event-stream',
                              headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})

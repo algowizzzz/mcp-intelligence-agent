@@ -117,30 +117,27 @@ def _truncate_result(result: dict, tool_name: str) -> dict:
     }
 
 
-def _log_audit(tool_name: str, duration_ms: float, status: str):
+_DB_ENABLED = bool(os.getenv('DATABASE_URL'))
+if _DB_ENABLED:
+    import sys as _sys
+    _sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / 'sajhamcpserver'))
+    from sajha.db import repo as _db_repo  # noqa: E402
+
+
+async def _log_audit(tool_name: str, duration_ms: float, status: str):
     """Audit log — dual-write to PostgreSQL (REQ-07) and JSONL fallback."""
     import datetime
     ctx = _worker_ctx.get()
     user_id = ctx.get('user_id', '')
     worker_id = ctx.get('worker_id', '')
 
-    # PostgreSQL path (non-blocking fire-and-forget)
-    if os.getenv('DATABASE_URL'):
+    # PostgreSQL path — direct await (caller is always async)
+    if _DB_ENABLED:
         try:
-            import asyncio
-            import sys as _sys
-            _sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / 'sajhamcpserver'))
-            from sajha.db import repo as _db_repo
-            async def _write():
-                await _db_repo.log_tool_call(
-                    user_id=user_id, worker_id=worker_id, tool_name=tool_name,
-                    elapsed_ms=round(duration_ms, 1), status=status,
-                )
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.ensure_future(_write())
-            else:
-                loop.run_until_complete(_write())
+            await _db_repo.log_tool_call(
+                user_id=user_id, worker_id=worker_id, tool_name=tool_name,
+                elapsed_ms=round(duration_ms, 1), status=status,
+            )
         except Exception:
             pass
 
@@ -183,7 +180,7 @@ async def _call_sajha(tool_name: str, args: dict) -> dict:
         status = 'error'
         return {'error': f'{tool_name} failed: {str(e)}'}
     finally:
-        _log_audit(tool_name, (time.time() - t0) * 1000, status)
+        await _log_audit(tool_name, (time.time() - t0) * 1000, status)
 
 
 # ================================================================
