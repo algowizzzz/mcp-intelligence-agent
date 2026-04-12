@@ -668,8 +668,9 @@
       item.addEventListener('mouseleave', function () { item.style.background = ''; });
       item.addEventListener('click', function (ev) {
         ev.stopPropagation();
+        ev.preventDefault();
         menu.remove();
-        fn();
+        try { fn(); } catch (e) { console.error('[BPulseFileTree] menu action error:', e); }
       });
       menu.appendChild(item);
     }
@@ -721,6 +722,7 @@
      ------------------------------------------------------------ */
   BPulseFileTree.prototype._showMoveDialog = function (srcPath, srcType, srcName) {
     var self = this;
+    console.log('[BPulseFileTree] _showMoveDialog called:', srcPath, srcType, srcName);
 
     // Collect all folder paths from tree
     var folders = [{ path: '', name: '/ (root)', indent: 0 }];
