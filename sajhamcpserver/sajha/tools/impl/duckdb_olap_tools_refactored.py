@@ -6,6 +6,7 @@ With Auto-Refresh Support
 
 import os
 import json
+import time
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from sajha.tools.base_mcp_tool import BaseMCPTool
@@ -687,6 +688,9 @@ class DuckDbQueryTool(DuckDbBaseTool):
         limit = arguments.get('limit', 100)
         output_format = arguments.get('output_format', 'json')
 
+        # Re-scan data files with current worker context on every call
+        self._initialize_views_from_files()
+
         # Prevent destructive operations
         forbidden_keywords = ['DROP', 'DELETE', 'TRUNCATE', 'ALTER', 'CREATE', 'INSERT', 'UPDATE']
         query_upper = sql_query.upper()
@@ -1044,6 +1048,9 @@ class DuckDbListFilesTool(DuckDbBaseTool):
         """Execute list files operation"""
         file_type = arguments.get('file_type', 'all')
         include_metadata = arguments.get('include_metadata', True)
+
+        # Re-scan with current worker context
+        self._initialize_views_from_files()
 
         try:
             files = self._scan_data_files(file_type)
