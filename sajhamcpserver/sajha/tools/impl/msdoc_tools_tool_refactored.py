@@ -38,7 +38,7 @@ class MsDocBaseTool(BaseMCPTool):
         )
 
     def _resolve_docs_dir(self, section: str = 'domain_data') -> str:
-        """Return the docs directory for the given section, using per-request
+        """Return the primary docs directory for the given section, using per-request
         worker context (flask g) when available, falling back to config."""
         try:
             from flask import g as _g
@@ -50,17 +50,62 @@ class MsDocBaseTool(BaseMCPTool):
                 r = getattr(_g, 'worker_common_root', None)
                 if r:
                     return r.rstrip('/')
-            else:  # domain_data — docs live under a 'msdocs' subfolder
+            else:  # domain_data
                 r = getattr(_g, 'worker_data_root', None)
                 if r:
-                    return r.rstrip('/') + '/msdocs'
+                    return r.rstrip('/')
         except RuntimeError:
             pass
         return self.docs_directory
 
+    def _candidate_paths(self, filename: str) -> list:
+        """Return all candidate absolute paths to search for a file, in priority order.
+
+        Searches across all data layers so the tool finds the file regardless of
+        which folder it was uploaded to:
+          1. domain_data root
+          2. domain_data/msdocs  (legacy subfolder)
+          3. my_data/{user_id}   (user private files)
+          4. common              (shared library)
+        """
+        candidates = []
+        try:
+            from flask import g as _g
+            # domain_data root (highest priority — where files are normally uploaded)
+            r = getattr(_g, 'worker_data_root', None)
+            if r:
+                candidates.append(os.path.join(r.rstrip('/'), filename))
+                candidates.append(os.path.join(r.rstrip('/'), 'msdocs', filename))
+            # my_data
+            r = getattr(_g, 'worker_my_data_root', None)
+            if r:
+                candidates.append(os.path.join(r.rstrip('/'), filename))
+            # common
+            r = getattr(_g, 'worker_common_root', None)
+            if r:
+                candidates.append(os.path.join(r.rstrip('/'), filename))
+        except RuntimeError:
+            pass
+        # Fallback to config-based directory
+        candidates.append(os.path.join(self.docs_directory, filename))
+        return candidates
+
     def _get_file_path(self, filename: str, section: str = 'domain_data') -> str:
-        """Get full absolute path for a file in the given section."""
-        return os.path.join(self._resolve_docs_dir(section), filename)
+        """Get full absolute path for a file, searching across all data folders.
+
+        If section is specified it is tried first; then all other folders are
+        checked in order so the tool finds the file regardless of where it lives.
+        """
+        # Try the requested section's primary dir first
+        primary = os.path.join(self._resolve_docs_dir(section), filename)
+        if os.path.isfile(primary):
+            return primary
+        # Fall back to searching all candidate paths
+        for path in self._candidate_paths(filename):
+            if os.path.isfile(path):
+                return path
+        # Nothing found — return primary path so callers get a meaningful "not found" error
+        return primary
 
     def _extract_word_heading(self, doc, heading_query: str) -> tuple:
         """
@@ -323,12 +368,55 @@ class MsDocListFilesTool(MsDocBaseTool):
         }
     
     def execute(self, arguments: Dict[str, Any]) -> Dict:
-        """Execute list files"""
+        """Execute list files — scans all data layers when section is 'domain_data'
+        so documents are found regardless of which subfolder they were uploaded to."""
         section = arguments.get('section', 'domain_data')
         file_type = arguments.get('file_type', 'all')
+
+        # When listing domain_data, scan root + msdocs subfolder + my_data + common
+        # so the agent can discover all available documents.
+        if section == 'domain_data':
+            dirs_to_scan = []
+            try:
+                from flask import g as _g
+                r = getattr(_g, 'worker_data_root', None)
+                if r:
+                    dirs_to_scan.append(r.rstrip('/'))
+                    msdocs_sub = r.rstrip('/') + '/msdocs'
+                    if os.path.isdir(msdocs_sub):
+                        dirs_to_scan.append(msdocs_sub)
+                r2 = getattr(_g, 'worker_my_data_root', None)
+                if r2:
+                    dirs_to_scan.append(r2.rstrip('/'))
+                r3 = getattr(_g, 'worker_common_root', None)
+                if r3:
+                    dirs_to_scan.append(r3.rstrip('/'))
+            except RuntimeError:
+                pass
+            if not dirs_to_scan:
+                dirs_to_scan = [self.docs_directory]
+
+            seen = set()
+            all_files = []
+            for d in dirs_to_scan:
+                for f in self._list_files_by_type(file_type, d):
+                    key = f['filename']
+                    if key not in seen:
+                        seen.add(key)
+                        all_files.append(f)
+
+            return {
+                'directory': dirs_to_scan[0],
+                'section': section,
+                'file_type': file_type,
+                'count': len(all_files),
+                'files': all_files,
+                '_source': ', '.join(dirs_to_scan),
+            }
+
+        # For my_data / common — single directory as before
         docs_dir = self._resolve_docs_dir(section)
         files = self._list_files_by_type(file_type, docs_dir)
-
         return {
             'directory': docs_dir,
             'section': section,
