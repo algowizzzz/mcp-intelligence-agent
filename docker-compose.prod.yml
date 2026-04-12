@@ -1,0 +1,125 @@
+###############################################################################
+# SAJHA MCP Agent — Production Docker Compose (Hetzner CPX32)
+#
+# Services:
+#   1. app       — SAJHA + Agent + nginx (single container, supervisord)
+#   2. postgres  — PostgreSQL 16 for checkpoints + persistent state
+#   3. watchtower — Auto-pull new images from GHCR
+#
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Data volumes persist across restarts in /opt/sajha/data
+###############################################################################
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: sajha-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sajha}
+      POSTGRES_USER: ${POSTGRES_USER:-sajha}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    ports:
+      - "127.0.0.1:5432:5432"   # only accessible from localhost
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sajha} -d ${POSTGRES_DB:-sajha}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sajha-net
+
+  app:
+    image: ghcr.io/${GITHUB_REPO:?Set GITHUB_REPO in .env}/sajha-agent:latest
+    container_name: sajha-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # --- Core ---
+      PORT: "80"
+      PYTHONUNBUFFERED: "1"
+
+      # --- LLM ---
+      LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?Set ANTHROPIC_API_KEY in .env}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-20250514}
+      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-8192}
+
+      # --- Database ---
+      CHECKPOINT_DB_PATH: "postgresql+asyncpg://${POSTGRES_USER:-sajha}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-sajha}"
+      DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER:-sajha}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-sajha}"
+
+      # --- Auth ---
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      AGENT_API_KEYS: ${AGENT_API_KEYS:-}
+
+      # --- SAJHA ---
+      SAJHA_BASE_URL: "http://127.0.0.1:3002"
+      SAJHA_API_KEY: ${SAJHA_API_KEY:-sja_full_access_admin}
+
+      # --- External APIs ---
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+
+      # --- Storage ---
+      STORAGE_BACKEND: local
+      DATA_ROOT: /app/sajhamcpserver/data
+
+      # --- Context ---
+      CONTEXT_TRIGGER_TOKENS: ${CONTEXT_TRIGGER_TOKENS:-180000}
+      CONTEXT_TARGET_PCT: ${CONTEXT_TARGET_PCT:-0.18}
+
+    volumes:
+      - app_data:/app/sajhamcpserver/data
+      - app_logs:/var/log
+    networks:
+      - sajha-net
+
+  # Auto-update: pulls latest image from GHCR every 5 minutes
+  watchtower:
+    image: containrrr/watchtower
+    container_name: sajha-watchtower
+    restart: unless-stopped
+    environment:
+      WATCHTOWER_CLEANUP: "true"
+      WATCHTOWER_POLL_INTERVAL: "300"
+      WATCHTOWER_LABEL_ENABLE: "false"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /root/.docker/config.json:/config.json:ro
+    networks:
+      - sajha-net
+
+volumes:
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/sajha/data/postgres
+  app_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/sajha/data/app
+  app_logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/sajha/data/logs
+
+networks:
+  sajha-net:
+    driver: bridge
