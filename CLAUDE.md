@@ -328,7 +328,7 @@ Single container with 3 processes managed by supervisord:
 
 nginx routes: `/api/*` → FastAPI, `/mcp-studio/*` → Flask, `/*.html` → static files.
 SSE streaming config: `proxy_buffering off`, `proxy_read_timeout 300s`, `chunked_transfer_encoding on`.
-Railway deployment via `railway.toml` with `/health` check.
+Deployed to Hetzner via GitHub Actions (`.github/workflows/deploy.yml`) with `/health` check.
 
 ## External API Integrations
 SEC EDGAR, Tavily Search, Yahoo Finance, FRED, ECB, IMF, World Bank,
