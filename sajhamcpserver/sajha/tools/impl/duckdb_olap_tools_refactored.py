@@ -18,7 +18,21 @@ from sajha.path_resolver import resolve as path_resolve
 def _get_worker_ctx():
     try:
         from flask import g as _g
-        return getattr(_g, 'worker_ctx', {}) or {}
+        # Prefer explicit worker_ctx dict; fall back to building one from flat g attributes
+        ctx = getattr(_g, 'worker_ctx', None)
+        if ctx:
+            return ctx
+        # SAJHA sets g.worker_data_root / g.worker_id directly via request headers
+        worker_data_root = getattr(_g, 'worker_data_root', '') or ''
+        worker_id = getattr(_g, 'worker_id', '') or ''
+        if worker_data_root or worker_id:
+            return {
+                'worker_id': worker_id,
+                'domain_data_path': worker_data_root,
+                'my_data_path': getattr(_g, 'worker_my_data_root', '') or '',
+                'common_data_path': getattr(_g, 'worker_common_root', '') or '',
+            }
+        return {}
     except RuntimeError:
         return {}
 
