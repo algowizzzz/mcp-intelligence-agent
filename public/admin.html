@@ -427,6 +427,8 @@
     .ft-row.admin-drop-target { background: rgba(255,255,255,0.10); outline: 1px solid rgba(255,255,255,0.20); border-radius: 4px; }
     .ft-row.wf-active { background: rgba(255,255,255,0.08); }
     .ft-row.drag-over { outline: 1px solid rgba(255,255,255,0.18); border-radius: 4px; }
+    .ft-row--upload-target { background: rgba(59,130,246,0.12) !important; border-left: 2px solid rgba(59,130,246,0.55); }
+    .ft-upload-target-indicator { font-size: 11px; color: #60a5fa; padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; display: inline-block; vertical-align: middle; opacity: 0.85; }
 
     .ft-indent { flex-shrink: 0; }
 
@@ -834,9 +836,10 @@
             <div class="filetree-toolbar">
               <button class="btn btn-secondary btn-sm" onclick="document.getElementById('bpft-upload-input-dd').click()" title="Upload files">↑ Upload</button>
               <button class="btn btn-secondary btn-sm" onclick="document.getElementById('bpft-folder-input-dd').click()" title="Upload entire folder with subfolders">↑ Folder</button>
-              <button class="btn btn-secondary btn-sm" onclick="window._bpft_dd && window._bpft_dd.mkdir()" title="New folder">+ Folder</button>
+              <button class="btn btn-secondary btn-sm" onclick="window._bpft_dd && window._bpft_dd.mkdir(window._bpft_dd.getSelectedFolder())" title="New folder inside selected folder">+ Folder</button>
               <button class="btn btn-secondary btn-sm" id="dd-select-btn" onclick="window._bpft_dd && (window._bpft_dd.toggleBulkMode(),this.textContent=window._bpft_dd._bulkMode?'Cancel':'Select')">Select</button>
               <button class="btn btn-danger btn-sm" id="dd-bulk-delete-btn" onclick="window._bpft_dd && window._bpft_dd.bulkDelete()" disabled>Delete</button>
+              <span class="ft-upload-target-indicator" id="dd-upload-target" title="Files will upload here"></span>
             </div>
             <div class="ft-search-wrap">
               <input class="ft-search-input" type="text" placeholder="Search files…" oninput="window._bpft_dd && window._bpft_dd.search(this.value)" id="ft-search-dd">
@@ -881,9 +884,10 @@
             <div class="filetree-toolbar">
               <button class="btn btn-secondary btn-sm" onclick="document.getElementById('bpft-upload-input-common').click()" title="Upload files">↑ Upload</button>
               <button class="btn btn-secondary btn-sm" onclick="document.getElementById('bpft-folder-input-common').click()" title="Upload entire folder with subfolders">↑ Folder</button>
-              <button class="btn btn-secondary btn-sm" onclick="window._bpft_common && window._bpft_common.mkdir()" title="New folder">+ Folder</button>
+              <button class="btn btn-secondary btn-sm" onclick="window._bpft_common && window._bpft_common.mkdir(window._bpft_common.getSelectedFolder())" title="New folder inside selected folder">+ Folder</button>
               <button class="btn btn-secondary btn-sm" id="common-select-btn" onclick="window._bpft_common && (window._bpft_common.toggleBulkMode(),this.textContent=window._bpft_common._bulkMode?'Cancel':'Select')">Select</button>
               <button class="btn btn-danger btn-sm" id="common-bulk-delete-btn" onclick="window._bpft_common && window._bpft_common.bulkDelete()" disabled>Delete</button>
+              <span class="ft-upload-target-indicator" id="common-upload-target" title="Files will upload here"></span>
             </div>
             <div class="ft-search-wrap">
               <input class="ft-search-input" type="text" placeholder="Search files…" oninput="window._bpft_common && window._bpft_common.search(this.value)" id="ft-search-common">
@@ -926,7 +930,8 @@
           <div class="filetree-sidebar">
             <div class="filetree-toolbar">
               <button class="btn btn-secondary btn-sm" onclick="document.getElementById('bpft-upload-input-wf').click()">↑ Upload .md</button>
-              <button class="btn btn-secondary btn-sm" onclick="window._bpft_wf && window._bpft_wf.createMd('')">+ New</button>
+              <button class="btn btn-secondary btn-sm" onclick="window._bpft_wf && window._bpft_wf.createMd(window._bpft_wf.getSelectedFolder())">+ New</button>
+              <span class="ft-upload-target-indicator" id="wf-upload-target" title="Files will upload here"></span>
               <button class="btn btn-secondary btn-sm" id="wf-select-btn" onclick="window._bpft_wf && (window._bpft_wf.toggleBulkMode(),this.textContent=window._bpft_wf._bulkMode?'Cancel':'Select')">Select</button>
               <button class="btn btn-danger btn-sm" id="wf-bulk-delete-btn" onclick="window._bpft_wf && window._bpft_wf.bulkDelete()" disabled>Delete</button>
             </div>
@@ -2775,6 +2780,10 @@ function _bpftConfirm(msg, cb) {
     onFileClick: function(section, path, name) {
       if (typeof previewFile === 'function') previewFile({ stopPropagation: function(){} }, section, path, name);
     },
+    onFolderSelect: function(path, name) {
+      var el = document.getElementById('dd-upload-target');
+      if (el) { el.textContent = path ? '\u2192 ' + name : ''; el.title = path ? 'Uploading into: ' + path : 'Files will upload here'; }
+    },
   });
 
   window._bpft_wf = new BPulseFileTree({
@@ -2788,6 +2797,10 @@ function _bpftConfirm(msg, cb) {
     onConfirm: _bpftConfirm,
     onFileClick: function(section, path, name) {
       if (typeof previewFile === 'function') previewFile({ stopPropagation: function(){} }, section, path, name);
+    },
+    onFolderSelect: function(path, name) {
+      var el = document.getElementById('wf-upload-target');
+      if (el) { el.textContent = path ? '\u2192 ' + name : ''; el.title = path ? 'Uploading into: ' + path : 'Files will upload here'; }
     },
   });
 
@@ -2811,6 +2824,10 @@ function _bpftConfirm(msg, cb) {
     onFileClick: function(section, path, name) {
       if (typeof previewFile === 'function') previewFile({ stopPropagation: function(){} }, section, path, name);
     },
+    onFolderSelect: function(path, name) {
+      var el = document.getElementById('common-upload-target');
+      if (el) { el.textContent = path ? '\u2192 ' + name : ''; el.title = path ? 'Uploading into: ' + path : 'Files will upload here'; }
+    },
   });
   // Hide Delete/Select for non-super_admin (REQ-10 access model)
   if (typeof _user !== 'undefined' && _user && _user.role !== 'super_admin') {
@@ -2822,11 +2839,11 @@ function _bpftConfirm(msg, cb) {
 
   // Wire upload inputs (individual files)
   var ddInput = document.getElementById('bpft-upload-input-dd');
-  if (ddInput) ddInput.onchange = function() { window._bpft_dd && window._bpft_dd.upload(Array.from(this.files), ''); this.value = ''; };
+  if (ddInput) ddInput.onchange = function() { window._bpft_dd && window._bpft_dd.upload(Array.from(this.files), window._bpft_dd.getSelectedFolder()); this.value = ''; };
   var wfInput = document.getElementById('bpft-upload-input-wf');
-  if (wfInput) wfInput.onchange = function() { window._bpft_wf && window._bpft_wf.upload(Array.from(this.files), ''); this.value = ''; };
+  if (wfInput) wfInput.onchange = function() { window._bpft_wf && window._bpft_wf.upload(Array.from(this.files), window._bpft_wf.getSelectedFolder()); this.value = ''; };
   var commonInput = document.getElementById('bpft-upload-input-common');
-  if (commonInput) commonInput.onchange = function() { window._bpft_common && window._bpft_common.upload(Array.from(this.files), ''); this.value = ''; };
+  if (commonInput) commonInput.onchange = function() { window._bpft_common && window._bpft_common.upload(Array.from(this.files), window._bpft_common.getSelectedFolder()); this.value = ''; };
 
   // Wire folder upload inputs (preserves subfolder structure via webkitRelativePath)
   var ddFolderInput = document.getElementById('bpft-folder-input-dd');
@@ -2836,7 +2853,7 @@ function _bpftConfirm(msg, cb) {
       var count = files.length;
       var topFolder = (files[0].webkitRelativePath || '').split('/')[0] || 'folder';
       if (confirm('Upload ' + count + ' files from "' + topFolder + '/" preserving folder structure?')) {
-        window._bpft_dd.uploadFolder(files, '');
+        window._bpft_dd.uploadFolder(files, window._bpft_dd.getSelectedFolder());
       }
     }
     this.value = '';
@@ -2848,7 +2865,7 @@ function _bpftConfirm(msg, cb) {
       var count = files.length;
       var topFolder = (files[0].webkitRelativePath || '').split('/')[0] || 'folder';
       if (confirm('Upload ' + count + ' files from "' + topFolder + '/" preserving folder structure?')) {
-        window._bpft_common.uploadFolder(files, '');
+        window._bpft_common.uploadFolder(files, window._bpft_common.getSelectedFolder());
       }
     }
     this.value = '';

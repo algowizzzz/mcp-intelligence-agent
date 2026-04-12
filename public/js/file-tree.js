@@ -281,6 +281,10 @@
     // Search
     this._searchQuery = '';
 
+    // Selected folder (upload target)
+    this._selectedFolder = '';
+    this._onFolderSelect = config.onFolderSelect || null;
+
     // Closed-over ref for event handlers
     var self = this;
     // Dismiss context menu on click outside
@@ -416,7 +420,8 @@
         if (!q) isOpen = !!self._expanded[node.path];
         var chevronCls = 'ft-row-chevron' + (isOpen ? ' open' : '');
         var isWritable = self._writable && !self._readOnly && !self._bulkMode;
-        html += '<div class="ft-row bpft-item" data-path="' + esc(node.path) + '" data-type="folder" data-name="' + esc(node.name) + '"' +
+        var uploadTargetCls = (node.path === self._selectedFolder) ? ' ft-row--upload-target' : '';
+        html += '<div class="ft-row bpft-item' + uploadTargetCls + '" data-path="' + esc(node.path) + '" data-type="folder" data-name="' + esc(node.name) + '"' +
           ' draggable="' + (isWritable ? 'true' : 'false') + '">' +
           guides +
           '<div class="' + chevronCls + '">' + _CHEVRON_SVG + '</div>' +
@@ -498,6 +503,8 @@
         row.addEventListener('click', function (e) {
           if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
           self._expanded[path] = !self._expanded[path];
+          self._selectedFolder = path;
+          if (self._onFolderSelect) self._onFolderSelect(path, name);
           self._render();
         });
       }
@@ -621,9 +628,18 @@
       if (self._drag) return; // internal drop handled elsewhere
       var files = Array.from(e.dataTransfer.files);
       if (!files.length) return;
-      var destFolder = '';
-      var target = e.target.closest('[data-type="folder"]');
-      if (target) destFolder = target.getAttribute('data-path');
+      var destFolder = self._selectedFolder || '';
+      var folderTarget = e.target.closest('[data-type="folder"]');
+      if (folderTarget) {
+        destFolder = folderTarget.getAttribute('data-path');
+      } else {
+        var fileTarget = e.target.closest('[data-type="file"]');
+        if (fileTarget) {
+          var parts = (fileTarget.getAttribute('data-path') || '').split('/');
+          parts.pop();
+          if (parts.length) destFolder = parts.join('/');
+        }
+      }
       self.upload(files, destFolder);
     });
   };
@@ -671,6 +687,7 @@
       });
     }
     if (self._writable && !self._readOnly) {
+      addItem('Move to\u2026', function () { self._showMoveDialog(path, type, name); });
       addItem('Rename', function () { self.rename(path, type === 'folder', name); });
     }
     if (type === 'file') {
@@ -690,6 +707,92 @@
     if (y + menu.offsetHeight > window.innerHeight) y = y - menu.offsetHeight;
     menu.style.left = x + 'px';
     menu.style.top  = y + 'px';
+  };
+
+  /* ------------------------------------------------------------
+     getSelectedFolder — current upload target folder
+     ------------------------------------------------------------ */
+  BPulseFileTree.prototype.getSelectedFolder = function () {
+    return this._selectedFolder || '';
+  };
+
+  /* ------------------------------------------------------------
+     _showMoveDialog — folder picker modal for moving files/folders
+     ------------------------------------------------------------ */
+  BPulseFileTree.prototype._showMoveDialog = function (srcPath, srcType, srcName) {
+    var self = this;
+
+    // Collect all folder paths from tree
+    var folders = [{ path: '', name: '/ (root)', indent: 0 }];
+    function collectFolders(nodes, indent) {
+      (nodes || []).forEach(function (n) {
+        if (n.type === 'folder' || n.type === 'directory') {
+          if (srcType === 'folder' && (n.path === srcPath || n.path.indexOf(srcPath + '/') === 0)) return;
+          folders.push({ path: n.path, name: n.name, indent: indent });
+          collectFolders(n.children, indent + 1);
+        }
+      });
+    }
+    collectFolders(self._tree && self._tree.tree, 1);
+
+    var srcParent = srcPath.split('/').slice(0, -1).join('/');
+
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:10000;display:flex;align-items:center;justify-content:center';
+
+    var modal = document.createElement('div');
+    modal.style.cssText = 'background:#1c1c1c;border:1px solid rgba(255,255,255,0.15);border-radius:8px;min-width:280px;max-width:360px;max-height:440px;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.5)';
+
+    var header = document.createElement('div');
+    header.style.cssText = 'padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;color:#ddd;font-weight:500;flex-shrink:0';
+    header.textContent = 'Move \u201c' + srcName + '\u201d to\u2026';
+    modal.appendChild(header);
+
+    var list = document.createElement('div');
+    list.style.cssText = 'overflow-y:auto;flex:1;padding:6px 0';
+
+    folders.forEach(function (f) {
+      if (f.path === srcParent) return; // already there
+      var item = document.createElement('div');
+      item.style.cssText = 'padding:7px 16px 7px ' + (16 + f.indent * 14) + 'px;cursor:pointer;font-size:12px;color:#cccccc;display:flex;align-items:center;gap:7px';
+      var folderIcon = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#888" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>';
+      item.innerHTML = folderIcon + '<span>' + esc(f.name) + '</span>';
+      item.addEventListener('mouseenter', function () { item.style.background = 'rgba(255,255,255,0.07)'; });
+      item.addEventListener('mouseleave', function () { item.style.background = ''; });
+      item.addEventListener('click', function () {
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        var srcBase = srcPath.split('/').pop();
+        var dst = f.path ? f.path + '/' + srcBase : srcBase;
+        if (dst === srcPath) return;
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', self._url('move'));
+        var h = self._headers(true);
+        for (var k in h) { if (Object.prototype.hasOwnProperty.call(h, k)) xhr.setRequestHeader(k, h[k]); }
+        xhr.onload = function () {
+          if (xhr.status >= 200 && xhr.status < 300) { self._toast('Moved to ' + (f.name), 'success'); self.load(); }
+          else { self._toast('Move failed', 'error'); }
+        };
+        xhr.onerror = function () { self._toast('Move failed', 'error'); };
+        xhr.send(JSON.stringify({ src: srcPath, dst: dst }));
+      });
+      list.appendChild(item);
+    });
+    modal.appendChild(list);
+
+    var footer = document.createElement('div');
+    footer.style.cssText = 'padding:10px 16px;border-top:1px solid rgba(255,255,255,0.08);display:flex;justify-content:flex-end;flex-shrink:0';
+    var cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.cssText = 'padding:5px 14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:4px;color:#bbb;cursor:pointer;font-size:12px';
+    cancelBtn.addEventListener('click', function () { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); });
+    footer.appendChild(cancelBtn);
+    modal.appendChild(footer);
+
+    overlay.appendChild(modal);
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    });
+    document.body.appendChild(overlay);
   };
 
   /* ------------------------------------------------------------
