@@ -501,8 +501,8 @@ async def _lifespan(app: FastAPI):
         # PostgreSQL checkpointer — production path
         try:
             from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-            # Convert asyncpg URL to psycopg URL format for langgraph-checkpoint-postgres
-            pg_conn = _pg_url.replace('postgresql+asyncpg://', 'postgresql://').replace('postgresql+psycopg2://', 'postgresql://')
+            # Convert SQLAlchemy URL to plain psycopg URL for langgraph-checkpoint-postgres
+            pg_conn = _pg_url.replace('postgresql+asyncpg://', 'postgresql://').replace('postgresql+psycopg2://', 'postgresql://').replace('postgresql+psycopg://', 'postgresql://')
             async with AsyncPostgresSaver.from_conn_string(pg_conn) as cp:
                 await cp.setup()  # creates checkpoint tables if not exists
                 _agent_module.set_checkpointer(cp)
