@@ -3,7 +3,9 @@ Copyright All rights Reserved 2025-2030, Ashutosh Sinha, Email: ajsinha@gmail.co
 Tavily Search MCP Tool Implementation - Refactored with Individual Tools
 """
 
+import os
 import json
+import logging
 import urllib.parse
 import urllib.request
 from typing import Dict, Any, List, Optional
@@ -12,23 +14,32 @@ from sajha.tools.base_mcp_tool import BaseMCPTool
 from sajha.tools.http_utils import safe_json_response, ENCODINGS_ALL
 from sajha.core.properties_configurator import PropertiesConfigurator
 
+logger = logging.getLogger(__name__)
+
 
 class TavilyBaseTool(BaseMCPTool):
     """
     Base class for Tavily search tools with shared functionality
     """
-    
+
     def __init__(self, config: Dict = None):
         """Initialize Tavily base tool"""
         super().__init__(config)
-        
+
         # Tavily API endpoint
         self.api_url = PropertiesConfigurator().get('tool.tavily.api_url', 'https://api.tavily.com/search')
-        
-        # API key (required for production use)
-        self.api_key = config.get('api_key', '') if config else ''
-        
-        # Demo mode if no API key
+
+        # API key: prefer config injection (via application.properties → tool config),
+        # fall back to direct env var read so the tool works even if the properties
+        # pipeline doesn't inject it correctly.
+        self.api_key = (config.get('api_key', '') if config else '') or os.getenv('TAVILY_API_KEY', '')
+
+        if not self.api_key:
+            logger.warning(
+                "TAVILY_API_KEY is not set. Tavily search tools will return empty results. "
+                "Set the TAVILY_API_KEY environment variable to enable search."
+            )
+
         self.demo_mode = not self.api_key
     
     def _search(
