@@ -64,6 +64,7 @@ def create_llm():
             temperature=0,
             streaming=True,
             max_tokens=int(max_tok),
+            stream_options={"include_usage": True},
         )
 
     elif provider == 'huggingface':
@@ -81,6 +82,7 @@ def create_llm():
             temperature=0,
             streaming=True,
             max_tokens=int(max_tok),
+            stream_options={"include_usage": True},
         )
 
     elif provider == 'bedrock':

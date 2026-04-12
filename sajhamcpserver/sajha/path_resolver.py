@@ -14,7 +14,7 @@ import os
 
 
 _STORAGE_BACKEND = os.environ.get('STORAGE_BACKEND', 'local')
-_AWS_BUCKET = os.environ.get('AWS_BUCKET', '')
+_S3_BUCKET = os.environ.get('S3_BUCKET', os.environ.get('AWS_BUCKET', ''))  # REQ-08a: S3_BUCKET is canonical
 
 
 def resolve(category: str, worker_ctx: dict, user_id: str = None) -> str:
@@ -32,7 +32,7 @@ def resolve(category: str, worker_ctx: dict, user_id: str = None) -> str:
     worker_ctx is the worker dict from workers.json.
     Raises ValueError for unknown categories or missing user_id for my_data.
     """
-    if _STORAGE_BACKEND == 's3' and _AWS_BUCKET:
+    if _STORAGE_BACKEND == 's3' and _S3_BUCKET:
         return _resolve_s3(category, worker_ctx, user_id)
     return _resolve_local(category, worker_ctx, user_id)
 
@@ -88,8 +88,8 @@ def _resolve_local(category: str, worker_ctx: dict, user_id: str = None) -> str:
 
 
 def _resolve_s3(category: str, worker_ctx: dict, user_id: str = None) -> str:
-    """Resolve to S3 prefix. Future use — not activated locally."""
+    """Resolve to S3 key prefix. REQ-08a: activated when STORAGE_BACKEND=s3."""
     local_path = _resolve_local(category, worker_ctx, user_id)
-    # Strip leading ./ or / and prefix with s3://bucket/
+    # Strip leading ./ or / — S3 keys don't have a leading slash
     rel = local_path.lstrip('./').lstrip('/')
-    return f"s3://{_AWS_BUCKET}/{rel}"
+    return f"s3://{_S3_BUCKET}/{rel}"

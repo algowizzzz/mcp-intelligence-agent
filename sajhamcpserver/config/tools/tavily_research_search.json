@@ -4,7 +4,7 @@
   "description": "Deep research search for comprehensive financial analysis, regulatory filings, academic/professional content requiring broad coverage. Use for: annual reports, industry studies, macro analysis, technical deep-dives. Prefer over web_search when depth matters.",
   "version": "2.9.8",
   "enabled": true,
-  "api_key": "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",
+  "api_key": "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",
   "min_score": 0.4,
   "inputSchema": {
     "type": "object",

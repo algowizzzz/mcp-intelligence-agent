@@ -6,6 +6,15 @@ set -e
 VENV="$(dirname "$0")/venv/bin/python"
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 
+# Load .env so all child processes (SAJHA + agent server) inherit API keys + DATABASE_URL
+if [ -f "$ROOT/.env" ]; then
+  set -a
+  source "$ROOT/.env"
+  set +a
+fi
+# Default DATABASE_URL for local dev (Homebrew PostgreSQL, no password)
+export DATABASE_URL="${DATABASE_URL:-postgresql+asyncpg://$(whoami)@localhost/bpulse}"
+
 cleanup() {
   echo ""
   echo "Stopping SAJHA..."

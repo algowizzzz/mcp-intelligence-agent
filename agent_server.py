@@ -11,8 +11,9 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional, List
 from dotenv import load_dotenv
+load_dotenv()  # must run before any os.getenv() checks (incl. _DB_ENABLED below)
 import httpx
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver  # kept as fallback
 import agent.agent as _agent_module
 from agent.agent import create_agent_for_worker
 from agent.prompt import get_system_prompt, SYSTEM_PROMPT
@@ -31,6 +32,11 @@ _sys.path.insert(0, str(pathlib.Path(__file__).parent / 'sajhamcpserver'))
 from sajha.tools.impl.fs_index import build_index, get_index
 from sajha.worker_repository import WorkerRepository as _WorkerRepository
 
+# REQ-07: PostgreSQL DB layer (enabled when DATABASE_URL is set)
+_DB_ENABLED = bool(os.getenv('DATABASE_URL'))
+if _DB_ENABLED:
+    from sajha.db import repo as _db_repo
+
 _JWT_SECRET = os.getenv('JWT_SECRET', 'sajha-dev-secret-change-in-prod')
 _SAJHA_USERS_FILE  = pathlib.Path('sajhamcpserver/config/users.json')
 _SAJHA_WORKERS_FILE = pathlib.Path('sajhamcpserver/config/workers.json')
@@ -42,11 +48,15 @@ _worker_repo = _WorkerRepository(config_path=str(_SAJHA_WORKERS_FILE))
 
 
 def serve_file(path: str, media_type: str = None) -> Response:
-    """Serve a file. Local: FileResponse. S3: pre-signed URL (not implemented locally). (REQ-PREP-07)"""
+    """Serve a file. Local: FileResponse. S3: redirect to pre-signed URL. (REQ-08a)"""
     if _STORAGE_BACKEND == 'local':
         return FileResponse(path, media_type=media_type) if media_type else FileResponse(path)
     else:
-        raise NotImplementedError("S3 file serving not configured")
+        # S3: return pre-signed URL as a redirect
+        from sajha.storage import storage as _storage
+        url = _storage.generate_presigned_url(path, expiry=300)
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=url, status_code=302)
 
 
 # ── JWT helpers ────────────────────────────────────────────────────────────────
@@ -89,6 +99,19 @@ def _jwt_decode(token: str) -> dict:
 # ── Users & Workers persistence ────────────────────────────────────────────────
 
 def _load_users() -> list:
+    """Load users — from PostgreSQL when DB is enabled, else JSON file."""
+    if _DB_ENABLED:
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    future = pool.submit(asyncio.run, _db_repo.list_users())
+                    return future.result(timeout=5)
+            return loop.run_until_complete(_db_repo.list_users())
+        except Exception:
+            pass
     try:
         return json.loads(_SAJHA_USERS_FILE.read_text()).get('users', [])
     except Exception:
@@ -96,14 +119,46 @@ def _load_users() -> list:
 
 
 def _save_users(users: list):
-    """Persist users list. Strips deprecated plaintext password and roles[] on every write (G-10, G-11)."""
+    """Persist users. Dual-write: PostgreSQL (if enabled) + JSON file."""
     for u in users:
         u.pop('password', None)
         u.pop('roles', None)
+    if _DB_ENABLED:
+        import asyncio
+        async def _upsert_all():
+            for u in users:
+                try:
+                    await _db_repo.upsert_user(u)
+                except Exception:
+                    pass
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    pool.submit(asyncio.run, _upsert_all()).result(timeout=5)
+            else:
+                loop.run_until_complete(_upsert_all())
+        except Exception:
+            pass
+    # Always keep JSON in sync (dual-write)
     _SAJHA_USERS_FILE.write_text(json.dumps({'users': users}, indent=2))
 
 
 def _find_user(user_id: str) -> Optional[dict]:
+    """Find user by ID — PostgreSQL first, JSON fallback."""
+    if _DB_ENABLED:
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    result = pool.submit(asyncio.run, _db_repo.get_user(user_id)).result(timeout=5)
+                    return result
+            return loop.run_until_complete(_db_repo.get_user(user_id))
+        except Exception:
+            pass
     for u in _load_users():
         if u.get('user_id') == user_id:
             return u
@@ -189,8 +244,6 @@ def _clone_worker_folder(src_id: str, dst_id: str):
     (dst / 'my_data').mkdir(parents=True, exist_ok=True)
 
 
-load_dotenv()
-
 _DATA_ROOT     = pathlib.Path('sajhamcpserver/data')
 _COMMON_DATA   = _DATA_ROOT / 'common'
 _AUDIT_LOG     = _DATA_ROOT / 'audit' / 'tool_calls.jsonl'
@@ -208,7 +261,8 @@ _THREAD_REGISTRY_FILE = _DATA_ROOT / 'threads.jsonl'
 _thread_registry: dict = {}
 
 def _load_thread_registry():
-    """Load thread registry from disk on startup (G-08 persistence)."""
+    """Load thread registry — JSONL file into in-memory dict (startup fallback).
+    When DB is enabled, thread lookups use PostgreSQL directly at query time."""
     if not _THREAD_REGISTRY_FILE.exists():
         return
     for line in _THREAD_REGISTRY_FILE.read_text().splitlines():
@@ -220,8 +274,20 @@ def _load_thread_registry():
         except Exception:
             pass
 
-def _persist_thread(thread_id: str, meta: dict):
-    """Append a new thread registration to disk."""
+
+async def _persist_thread(thread_id: str, meta: dict):
+    """Register a new thread. Dual-write: PostgreSQL (if enabled) + JSONL file."""
+    if _DB_ENABLED:
+        try:
+            await _db_repo.register_thread(
+                thread_id,
+                meta.get('user_id', ''),
+                meta.get('worker_id', ''),
+                title=meta.get('title'),
+            )
+        except Exception:
+            pass
+    # Always append to JSONL (dual-write)
     _THREAD_REGISTRY_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(_THREAD_REGISTRY_FILE, 'a') as f:
         f.write(json.dumps({'thread_id': thread_id, **meta}) + '\n')
@@ -359,15 +425,88 @@ _AUDIT_LOG.parent.mkdir(parents=True, exist_ok=True)
 _load_thread_registry()
 
 
+def _parse_worker_section_from_path(root_path: str) -> tuple[str | None, str | None]:
+    """Extract (worker_id, section) from a worker-scoped local path.
+    e.g. 'sajhamcpserver/data/workers/w-market-risk/domain_data' → ('w-market-risk', 'domain_data')
+    Returns (None, None) for paths outside the worker tree (e.g. common/).
+    """
+    import re
+    m = re.search(r'workers/([^/]+)/([^/]+)', root_path.replace('\\', '/'))
+    if m:
+        return m.group(1), m.group(2)
+    if 'common' in root_path:
+        return None, 'common'
+    return None, None
+
+
+def _build_and_sync(root_path: str, worker_id: str = None, section: str = None,
+                    user_id: str = None) -> dict:
+    """REQ-08a: Call build_index() (local filesystem) and background-sync to PostgreSQL file_metadata.
+    worker_id/section auto-detected from path when not provided.
+    Returns the index dict (same as build_index).
+    """
+    idx = build_index(root_path)
+    if _DB_ENABLED:
+        # Auto-detect context from path when not provided
+        if not worker_id or not section:
+            _wid, _sec = _parse_worker_section_from_path(root_path)
+            worker_id = worker_id or _wid
+            section   = section   or _sec
+        if worker_id and section:
+            import asyncio
+            async def _sync():
+                try:
+                    await _db_repo.upsert_file_metadata(
+                        worker_id=worker_id, section=section,
+                        rel_path=root_path, file_name=os.path.basename(root_path),
+                        is_folder=True, user_id=user_id,
+                    )
+                    for entry in idx.get('tree', []):
+                        await _db_repo.upsert_file_metadata(
+                            worker_id=worker_id, section=section,
+                            rel_path=entry['path'], file_name=entry['name'],
+                            size_bytes=entry.get('size_bytes'),
+                            mime_type=entry.get('mime'),
+                            is_folder=(entry['type'] == 'folder'),
+                            user_id=user_id,
+                        )
+                except Exception:
+                    pass
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.ensure_future(_sync())
+                else:
+                    loop.run_until_complete(_sync())
+            except Exception:
+                pass
+    return idx
+
+
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
-    """Initialize AsyncSqliteSaver on startup; close it on shutdown."""
+    """Initialize checkpointer on startup. Uses PostgresSaver when DATABASE_URL is set,
+    falls back to AsyncSqliteSaver for local development. (REQ-07)"""
+    _pg_url = os.getenv('DATABASE_URL')
+    if _pg_url:
+        # PostgreSQL checkpointer — production path
+        try:
+            from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+            # Convert asyncpg URL to psycopg URL format for langgraph-checkpoint-postgres
+            pg_conn = _pg_url.replace('postgresql+asyncpg://', 'postgresql://').replace('postgresql+psycopg2://', 'postgresql://')
+            async with AsyncPostgresSaver.from_conn_string(pg_conn) as cp:
+                await cp.setup()  # creates checkpoint tables if not exists
+                _agent_module.set_checkpointer(cp)
+                yield
+            return
+        except Exception as e:
+            print(f'WARNING: PostgresSaver failed ({e}), falling back to SQLite checkpointer')
+    # SQLite fallback — local dev without DATABASE_URL
     _db_path = os.getenv('CHECKPOINT_DB_PATH', './sajhamcpserver/data/checkpoints.db')
     pathlib.Path(_db_path).parent.mkdir(parents=True, exist_ok=True)
     async with AsyncSqliteSaver.from_conn_string(_db_path) as cp:
         _agent_module.set_checkpointer(cp)
         yield
-    # AsyncSqliteSaver context exits automatically — connection closed
 
 
 app = FastAPI(title='MCP Intelligence Agent', lifespan=_lifespan)
@@ -1239,7 +1378,7 @@ async def upload_file(file: UploadFile = File(...), payload: dict = Depends(requ
             dest = user_dir / safe_name
 
         await _stream_upload(file, dest)
-        build_index(str(user_dir))   # refresh tree cache immediately
+        _build_and_sync(str(user_dir))   # refresh tree cache immediately
         stat = dest.stat()
         return JSONResponse(content={
             'success': True,
@@ -1461,7 +1600,7 @@ async def fs_upload(
     dest = folder / pathlib.Path(file.filename).name
     await _stream_upload(file, dest)
     if not batch_id:
-        build_index(str(root))
+        _build_and_sync(str(root))
     return {'ok': True, 'path': str(dest.relative_to(root)).replace('\\', '/')}
 
 
@@ -1478,7 +1617,7 @@ async def fs_update_file(section: str, req: FsUpdateRequest, payload: dict = Dep
     root = _resolve_fs_path(worker, uid, section)
     full = _resolve_fs_path(worker, uid, section, req.path)
     full.write_text(req.content, encoding='utf-8')
-    build_index(str(root))
+    _build_and_sync(str(root))
     return {'ok': True}
 
 
@@ -1494,7 +1633,7 @@ async def fs_mkdir(section: str, req: FsMkdirRequest, payload: dict = Depends(re
     root = _resolve_fs_path(worker, uid, section)
     full = _resolve_fs_path(worker, uid, section, req.path)
     full.mkdir(parents=True, exist_ok=True)
-    build_index(str(root))
+    _build_and_sync(str(root))
     return {'ok': True}
 
 
@@ -1515,7 +1654,7 @@ async def fs_move(section: str, req: FsMoveRequest, payload: dict = Depends(requ
         raise HTTPException(status_code=404, detail='Source not found')
     dst_full.parent.mkdir(parents=True, exist_ok=True)
     shutil.move(str(src_full), str(dst_full))
-    build_index(str(root))
+    _build_and_sync(str(root))
     return {'ok': True}
 
 
@@ -1536,7 +1675,7 @@ async def fs_rename(section: str, req: FsRenameRequest, payload: dict = Depends(
     new_name = pathlib.Path(req.new_name).name
     new_full = full.parent / new_name
     full.rename(new_full)
-    build_index(str(root))
+    _build_and_sync(str(root))
     return {'ok': True}
 
 
@@ -1560,7 +1699,7 @@ async def fs_copy(section: str, req: FsCopyRequest, payload: dict = Depends(requ
     dst_full.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(str(src_full), str(dst_full))
     dst_root = _resolve_fs_path(worker, uid, req.dest_section)
-    build_index(str(dst_root))
+    _build_and_sync(str(dst_root))
     return {'ok': True, 'dest_path': req.dest_path}
 
 
@@ -1593,7 +1732,7 @@ async def fs_batch_delete(section: str, req: FsBatchDeleteRequest, payload: dict
             deleted.append(p)
         except Exception as e:
             errors.append({'path': p, 'error': str(e)})
-    build_index(str(root))
+    _build_and_sync(str(root))
     return {'deleted': deleted, 'errors': errors}
 
 
@@ -1605,7 +1744,7 @@ async def fs_reindex(section: str, payload: dict = Depends(require_jwt)):
     uid = payload['user_id']
     root = _resolve_fs_path(worker, uid, section)
     t0 = time.time()
-    idx = build_index(str(root))
+    idx = _build_and_sync(str(root))
     elapsed = round((time.time() - t0) * 1000, 1)
     file_count = _count_files_in_tree(idx.get('tree', []))
     return {'indexed_files': file_count, 'elapsed_ms': elapsed, 'section': section}
@@ -1662,7 +1801,7 @@ async def fs_delete_file(section: str, path: str = '', payload: dict = Depends(r
     if not full.exists():
         raise HTTPException(status_code=404, detail='File not found')
     full.unlink()
-    build_index(str(root))
+    _build_and_sync(str(root))
     return {'ok': True}
 
 
@@ -1680,7 +1819,7 @@ async def fs_delete_folder(section: str, path: str = '', payload: dict = Depends
         full.rmdir()
     except OSError:
         raise HTTPException(status_code=400, detail='Folder is not empty')
-    build_index(str(root))
+    _build_and_sync(str(root))
     return {'ok': True}
 
 
@@ -1811,7 +1950,7 @@ async def admin_upload(
     if len(content) > 20 * 1024 * 1024:
         raise HTTPException(status_code=413, detail='File exceeds 20 MB limit')
     dest.write_bytes(content)
-    build_index(str(root))
+    _build_and_sync(str(root))
     stat = dest.stat()
     from datetime import datetime, timezone
     return {
@@ -1826,7 +1965,7 @@ async def admin_folder(req: AdminFolderRequest, _: dict = Depends(require_admin)
     root = _resolve_admin_path(req.section)
     full = _resolve_admin_path(req.section, req.path)
     full.mkdir(parents=True, exist_ok=True)
-    build_index(str(root))
+    _build_and_sync(str(root))
     return {'created': True, 'path': req.path}
 
 
@@ -1844,7 +1983,7 @@ async def admin_delete(req: AdminDeleteRequest, _: dict = Depends(require_admin)
         shutil.rmtree(full)
     else:
         full.unlink()
-    build_index(str(root))
+    _build_and_sync(str(root))
     return {'ok': True}
 
 
@@ -1864,7 +2003,7 @@ async def admin_rename(req: AdminRenameRequest, _: dict = Depends(require_admin)
     if new_full.exists():
         raise HTTPException(status_code=409, detail='A file or folder with this name already exists')
     full.rename(new_full)
-    build_index(str(root))
+    _build_and_sync(str(root))
     new_path = str(new_full.relative_to(root.resolve())).replace('\\', '/')
     return {'new_path': new_path}
 
@@ -1886,7 +2025,7 @@ async def admin_move(req: AdminMoveRequest, _: dict = Depends(require_admin)):
         raise HTTPException(status_code=409, detail=f'"{src_full.name}" already exists in target folder')
     dst_full.parent.mkdir(parents=True, exist_ok=True)
     shutil.move(str(src_full), str(dst_full))
-    build_index(str(root))
+    _build_and_sync(str(root))
     return {'ok': True, 'new_path': str(dst_full.relative_to(root)).replace('\\', '/')}
 
 
@@ -1899,7 +2038,7 @@ async def admin_new_file(req: AdminFileRequest, _: dict = Depends(require_admin)
     name = pathlib.Path(req.filename).name
     dest = folder_full / name
     dest.write_text(_MD_STUB, encoding='utf-8')
-    build_index(str(root))
+    _build_and_sync(str(root))
     rel_path = str(dest.relative_to(root)).replace('\\', '/')
     return {'path': rel_path}
 
@@ -2040,23 +2179,39 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
                 raise HTTPException(status_code=403, detail='Thread belongs to a different user or worker')
     if not (req.thread_id or req.resume):
         import datetime
+        # Derive a short title from the query (first 80 chars, trimmed)
+        _raw_title = (req.query or '').strip()
+        _thread_title = (_raw_title[:77] + '...') if len(_raw_title) > 80 else _raw_title or None
         meta = {
             'user_id': payload['user_id'],
             'worker_id': worker['worker_id'],
+            'title': _thread_title,
             'created_at': datetime.datetime.utcnow().isoformat() + 'Z',
         }
         _thread_registry[thread_id] = meta
-        _persist_thread(thread_id, meta)
+        await _persist_thread(thread_id, meta)
 
     async def stream():
         # Inject worker context into ContextVar for this async task (G-04 + G-13)
-        ctx_token = _worker_ctx.set({**worker, 'user_id': payload['user_id']})
+        # thread_id included so _log_audit in tools.py can correlate all tool events
+        ctx_token = _worker_ctx.set({**worker, 'user_id': payload['user_id'], 'thread_id': thread_id})
         # REQ-13: SSE queue for sub-agent task events
         import asyncio as _asyncio
         _sse_queue = _asyncio.Queue()
         _sse_token = _set_stream_writer(_sse_queue.put_nowait)
+        _run_start = time.time()
         try:
             yield f"data: {json.dumps({'type': 'session', 'thread_id': thread_id})}\n\n"
+            # Log user query to DB
+            if _DB_ENABLED and req.query and not req.resume:
+                try:
+                    await _db_repo.log_event(
+                        'query', payload['user_id'], worker['worker_id'],
+                        thread_id=thread_id,
+                        detail={'query': req.query[:2000]},
+                    )
+                except Exception:
+                    pass
             inp = ({'messages': [{'role': 'user', 'content': req.query}]}
                    if not req.resume else {'resume': req.resume})
             full_text = []
@@ -2070,6 +2225,19 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
                 while not _sse_queue.empty():
                     sa_evt = _sse_queue.get_nowait()
                     yield f"data: {json.dumps(sa_evt)}\n\n"
+                    # DB audit for sub-agent lifecycle events
+                    if _DB_ENABLED:
+                        _sa_type = sa_evt.get('type', '')
+                        if _sa_type in ('task_started', 'task_completed', 'task_failed', 'task_timed_out'):
+                            try:
+                                await _db_repo.log_event(
+                                    'subagent', payload['user_id'], worker['worker_id'],
+                                    thread_id=thread_id,
+                                    detail={k: v for k, v in sa_evt.items() if k != 'type'},
+                                    tool_name=_sa_type,
+                                )
+                            except Exception:
+                                pass
                 t = event['event']
                 if t == 'on_chat_model_stream':
                     chunk = event['data']['chunk']
@@ -2143,10 +2311,29 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
                             chart_title = output.get('title', 'Chart')
                             chart_url = '/api/fs/charts/' + output['html_file']
                             yield f"data: {json.dumps({'type': 'canvas', 'title': chart_title, 'content': '', 'canvas_type': 'chart', 'chart_url': chart_url})}\n\n"
+                            if _DB_ENABLED:
+                                try:
+                                    await _db_repo.log_event(
+                                        'canvas', payload['user_id'], worker['worker_id'],
+                                        thread_id=thread_id,
+                                        detail={'canvas_type': 'chart', 'title': chart_title, 'chart_url': chart_url},
+                                    )
+                                except Exception:
+                                    pass
                         elif output.get('figures'):
                             first_fig = output['figures'][0]
                             chart_title = output.get('title', 'Python Chart')
                             yield f"data: {json.dumps({'type': 'canvas', 'title': chart_title, 'canvas_type': 'chart', 'chart_url': first_fig['url']})}\n\n"
+                            if _DB_ENABLED:
+                                try:
+                                    await _db_repo.log_event(
+                                        'canvas', payload['user_id'], worker['worker_id'],
+                                        thread_id=thread_id,
+                                        detail={'canvas_type': 'chart', 'title': chart_title,
+                                                'chart_url': first_fig['url']},
+                                    )
+                                except Exception:
+                                    pass
                 elif t == 'on_interrupt':
                     yield f"data: {json.dumps({'type': 'hitl', 'question': event['data'].get('question', ''), 'options': event['data'].get('options', []), 'thread_id': thread_id})}\n\n"
                 elif t == 'on_chat_model_end':
@@ -2158,6 +2345,20 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
                             usage = um if isinstance(um, dict) else dict(um)
                     if usage:
                         yield f"data: {json.dumps({'type': 'usage', 'usage': usage})}\n\n"
+                        if _DB_ENABLED:
+                            try:
+                                await _db_repo.log_event(
+                                    'usage', payload['user_id'], worker['worker_id'],
+                                    thread_id=thread_id,
+                                    detail={
+                                        'input_tokens': usage.get('input_tokens', 0),
+                                        'output_tokens': usage.get('output_tokens', 0),
+                                        'total_tokens': usage.get('total_tokens',
+                                            usage.get('input_tokens', 0) + usage.get('output_tokens', 0)),
+                                    },
+                                )
+                            except Exception:
+                                pass
             import json as _json, re as _re
             # Flush any remaining look-ahead buffer
             if _text_pending and not _canvas_streaming:
@@ -2230,6 +2431,29 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
                 canvas = envelope['canvas']
                 yield f"data: {_json.dumps({'type': 'replace_text', 'text': envelope.get('summary', '')})}\n\n"
                 yield f"data: {_json.dumps({'type': 'canvas', 'title': canvas.get('title','Document'), 'content': canvas.get('content',''), 'canvas_type': canvas.get('type','report')})}\n\n"
+                if _DB_ENABLED:
+                    try:
+                        await _db_repo.log_event(
+                            'canvas', payload['user_id'], worker['worker_id'],
+                            thread_id=thread_id,
+                            detail={'canvas_type': canvas.get('type', 'report'),
+                                    'title': canvas.get('title', 'Document'),
+                                    'summary': envelope.get('summary', '')[:500]},
+                        )
+                    except Exception:
+                        pass
+
+            # Log assembled response text to DB
+            if _DB_ENABLED and assembled:
+                try:
+                    _response_text = assembled[:5000]
+                    await _db_repo.log_event(
+                        'response', payload['user_id'], worker['worker_id'],
+                        thread_id=thread_id,
+                        detail={'text': _response_text, 'truncated': len(assembled) > 5000},
+                    )
+                except Exception:
+                    pass
             # REQ-05: emit context gauge + summary notice if compression fired
             try:
                 final_state = await agent_instance.aget_state(config)
@@ -2250,13 +2474,37 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
             yield f"data: {json.dumps({'type': 'budget_exceeded', 'used': be.used, 'budget': be.budget})}\n\n"
             yield f"data: {json.dumps({'type': 'error', 'message': f'Token budget exceeded ({be.used}/{be.budget} tokens). Response may be incomplete.'})}\n\n"
             yield 'data: [DONE]\n\n'
+            if _DB_ENABLED:
+                try:
+                    await _db_repo.log_event(
+                        'error', payload['user_id'], worker['worker_id'],
+                        thread_id=thread_id,
+                        detail={'error_type': 'budget_exceeded', 'used': be.used, 'budget': be.budget},
+                    )
+                except Exception:
+                    pass
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
             yield 'data: [DONE]\n\n'
+            if _DB_ENABLED:
+                try:
+                    await _db_repo.log_event(
+                        'error', payload['user_id'], worker['worker_id'],
+                        thread_id=thread_id,
+                        detail={'error_type': type(e).__name__, 'message': str(e)[:1000]},
+                    )
+                except Exception:
+                    pass
         finally:
             from agent.sub_agent_tool import _sse_writer_ctx
             _sse_writer_ctx.reset(_sse_token)
             _worker_ctx.reset(ctx_token)
+            # REQ-07: update thread last_activity_at + message_count
+            if _DB_ENABLED:
+                try:
+                    await _db_repo.touch_thread(thread_id)
+                except Exception:
+                    pass
 
     return StreamingResponse(stream(), media_type='text/event-stream',
                              headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
@@ -2313,7 +2561,7 @@ async def super_worker_upload(
         raise HTTPException(status_code=409, detail='File already exists')
     await _stream_upload(file, dest)
     if not batch_id:
-        build_index(str(root))
+        _build_and_sync(str(root))
     from datetime import datetime, timezone
     stat = dest.stat()
     return {
@@ -2346,7 +2594,7 @@ async def super_worker_reindex(
         raise HTTPException(status_code=404, detail='Worker not found')
     root = _resolve_admin_path_for_worker(w, section)
     t0 = time.time()
-    idx = build_index(str(root))
+    idx = _build_and_sync(str(root))
     elapsed = round((time.time() - t0) * 1000, 1)
     file_count = _count_files_in_tree(idx.get('tree', []))
     return {'indexed_files': file_count, 'elapsed_ms': elapsed, 'section': section}
@@ -2386,7 +2634,7 @@ async def admin_worker_upload(
         raise HTTPException(status_code=409, detail='File already exists')
     await _stream_upload(file, dest)
     if not batch_id:
-        build_index(str(root))
+        _build_and_sync(str(root))
     from datetime import datetime, timezone
     stat = dest.stat()
     return {
@@ -2404,7 +2652,7 @@ async def admin_worker_reindex(section: str, payload: dict = Depends(require_adm
         raise HTTPException(status_code=404, detail='Worker not found')
     root = _resolve_worker_path(w, section)
     t0 = time.time()
-    idx = build_index(str(root))
+    idx = _build_and_sync(str(root))
     elapsed = round((time.time() - t0) * 1000, 1)
     file_count = _count_files_in_tree(idx.get('tree', []))
     return {'indexed_files': file_count, 'elapsed_ms': elapsed, 'section': section}
@@ -2430,7 +2678,7 @@ async def admin_common_upload(
         raise HTTPException(status_code=409, detail='File already exists')
     await _stream_upload(file, dest)
     if not batch_id:
-        build_index(str(common_root))
+        _build_and_sync(str(common_root))
     from datetime import datetime, timezone
     stat = dest.stat()
     return {
@@ -2460,7 +2708,7 @@ def _wf_write(w, section, path, content, _res=None):
     full = _r(w, section, path)
     full.parent.mkdir(parents=True, exist_ok=True)
     full.write_text(content, encoding='utf-8')
-    build_index(str(_r(w, section)))
+    _build_and_sync(str(_r(w, section)))
     return {'ok': True}
 
 def _wf_delete_file(w, section, path, _res=None):
@@ -2469,7 +2717,7 @@ def _wf_delete_file(w, section, path, _res=None):
     if not full.exists():
         raise HTTPException(status_code=404, detail='File not found')
     full.unlink()
-    build_index(str(_r(w, section)))
+    _build_and_sync(str(_r(w, section)))
     return {'ok': True}
 
 def _wf_delete_folder(w, section, path, recursive: bool = False, _res=None):
@@ -2482,14 +2730,14 @@ def _wf_delete_folder(w, section, path, recursive: bool = False, _res=None):
     if count > 0 and not recursive:
         raise HTTPException(status_code=409, detail=f'Folder contains {count} items. Use recursive=true to delete.')
     shutil.rmtree(full)
-    build_index(str(_r(w, section)))
+    _build_and_sync(str(_r(w, section)))
     return {'ok': True}
 
 def _wf_mkdir(w, section, path, _res=None):
     _r = _res or _resolve_worker_path
     full = _r(w, section, path)
     full.mkdir(parents=True, exist_ok=True)
-    build_index(str(_r(w, section)))
+    _build_and_sync(str(_r(w, section)))
     return {'ok': True}
 
 def _wf_rename(w, section, path, new_name, _res=None):
@@ -2505,7 +2753,7 @@ def _wf_rename(w, section, path, new_name, _res=None):
         raise HTTPException(status_code=409, detail='A file or folder with this name already exists')
     full.rename(new_full)
     root = _r(w, section)
-    build_index(str(root))
+    _build_and_sync(str(root))
     return {'new_path': str(new_full.relative_to(root)).replace('\\', '/')}
 
 def _wf_move(w, section, src, dest_folder, _res=None):
@@ -2524,7 +2772,7 @@ def _wf_move(w, section, src, dest_folder, _res=None):
         raise HTTPException(status_code=409, detail=f'"{src_full.name}" already exists in target folder')
     dst_full.parent.mkdir(parents=True, exist_ok=True)
     shutil.move(str(src_full), str(dst_full))
-    build_index(str(root))
+    _build_and_sync(str(root))
     return {'ok': True, 'new_path': str(dst_full.relative_to(root)).replace('\\', '/')}
 
 
@@ -2685,15 +2933,70 @@ async def worker_tools_list(worker_id: str, payload: dict = Depends(require_jwt)
 
 @app.get('/api/agent/threads')
 async def list_threads(payload: dict = Depends(require_jwt)):
-    """List thread IDs owned by the calling user + worker."""
+    """List thread IDs owned by the calling user + worker. REQ-07: reads from PostgreSQL when enabled."""
     user_id = payload['user_id']
     worker_id = payload.get('worker_id')
+    if _DB_ENABLED:
+        try:
+            threads = await _db_repo.list_threads(user_id, worker_id)
+            return {'threads': threads}
+        except Exception:
+            pass
+    # Fallback to in-memory registry
     threads = [
         {'thread_id': tid, **meta}
         for tid, meta in _thread_registry.items()
         if meta['user_id'] == user_id and meta.get('worker_id') == worker_id
     ]
     return {'threads': threads}
+
+
+@app.get('/api/agent/threads/{thread_id}/messages')
+async def get_thread_messages(thread_id: str, payload: dict = Depends(require_jwt)):
+    """Return the message history for a thread from LangGraph checkpoint.
+    Used by the frontend to restore chat UI after logout/login."""
+    user_id = payload['user_id']
+    worker_id = payload.get('worker_id')
+
+    # Verify ownership: thread must belong to this user+worker
+    if _DB_ENABLED:
+        try:
+            t = await _db_repo.get_thread(thread_id)
+            if not t or t['user_id'] != user_id:
+                raise HTTPException(status_code=403, detail='Thread not accessible')
+        except HTTPException:
+            raise
+        except Exception:
+            pass
+
+    # Load checkpoint from LangGraph using the shared checkpointer
+    try:
+        cp = _agent_module.checkpointer
+        if cp is None:
+            return {'messages': [], 'error': 'Checkpointer not initialised'}
+        config = {'configurable': {'thread_id': thread_id}}
+        state = await cp.aget(config)
+        if not state or not state.get('channel_values'):
+            return {'messages': []}
+        msgs = state['channel_values'].get('messages', [])
+        out = []
+        for m in msgs:
+            role = getattr(m, 'type', None) or getattr(m, 'role', None)
+            # LangGraph message types: HumanMessage→'human', AIMessage→'ai'
+            if role in ('human', 'ai'):
+                content = m.content if isinstance(m.content, str) else ''
+                if isinstance(m.content, list):
+                    content = ' '.join(
+                        block.get('text', '') if isinstance(block, dict) else str(block)
+                        for block in m.content
+                    ).strip()
+                if content.strip():
+                    out.append({'role': role, 'content': content})
+        return {'messages': out}
+    except HTTPException:
+        raise
+    except Exception as e:
+        return {'messages': [], 'error': str(e)}
 
 
 # ── Audit log (G-13) ───────────────────────────────────────────────────────────
@@ -2706,7 +3009,19 @@ async def super_audit_log(
     offset: int = 0,
     _: dict = Depends(require_super_admin),
 ):
-    """Return recent tool-call audit log lines, optionally filtered. Supports pagination via offset."""
+    """Return recent audit log entries. REQ-07: reads from PostgreSQL when enabled (fixes field-name bug)."""
+    if _DB_ENABLED:
+        try:
+            entries = await _db_repo.query_audit(
+                worker_id=worker_id or None,
+                user_id=user_id or None,
+                limit=limit,
+                offset=offset,
+            )
+            return {'entries': entries, 'total_returned': len(entries), 'offset': offset, 'limit': limit}
+        except Exception:
+            pass
+    # Fallback: JSONL file
     if not _AUDIT_LOG.exists():
         return {'entries': [], 'total_matched': 0, 'offset': offset, 'limit': limit}
     lines = _AUDIT_LOG.read_text().splitlines()
