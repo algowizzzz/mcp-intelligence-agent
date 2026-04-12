@@ -34,7 +34,8 @@ RUN pip install --no-cache-dir \
 # The sandbox venv is gitignored so it must be built during the image build.
 RUN python -m venv sajhamcpserver/python_sandbox_venv && \
     sajhamcpserver/python_sandbox_venv/bin/pip install --no-cache-dir \
-        pandas numpy scipy matplotlib plotly openpyxl pyarrow statsmodels
+        pandas numpy scipy matplotlib plotly openpyxl pyarrow statsmodels \
+        scikit-learn arch riskfolio-lib networkx xarray
 
 # ── Application code ─────────────────────────────────────────────────────────��
 COPY agent/             ./agent/
