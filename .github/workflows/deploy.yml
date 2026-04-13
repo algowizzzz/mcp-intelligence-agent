@@ -108,6 +108,7 @@ jobs:
           LLM_MAX_TOKENS=8192
           SAJHA_API_KEY=sja_full_access_admin
           TAVILY_API_KEY=${{ secrets.TAVILY_API_KEY }}
+          XAI_API_KEY=${{ secrets.XAI_API_KEY }}
           STORAGE_BACKEND=local
           ENV
 
