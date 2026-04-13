@@ -692,7 +692,12 @@ class DuckDbQueryTool(DuckDbBaseTool):
     def __init__(self, config: Dict = None):
         default_config = {
             'name': 'duckdb_query',
-            'description': 'Execute SQL queries on data files using DuckDB',
+            'description': (
+                'Execute SQL queries on data files using DuckDB. '
+                'Always call duckdb_list_files first to get view_name for each file, '
+                'then query using: SELECT * FROM <view_name> LIMIT 10. '
+                'Do NOT use read_csv_auto() with raw file paths — views are already registered.'
+            ),
             'version': '1.0.0',
             'enabled': True
         }
@@ -1054,7 +1059,12 @@ class DuckDbListFilesTool(DuckDbBaseTool):
     def __init__(self, config: Dict = None):
         default_config = {
             'name': 'duckdb_list_files',
-            'description': 'List available data files in the data directory',
+            'description': (
+                'List all queryable data files (CSV, Parquet, JSON) across domain_data, my_data, and common. '
+                'Each file has a view_name field — use that in duckdb_query SQL: '
+                'SELECT COUNT(*) FROM <view_name>. '
+                'Do NOT use read_csv_auto() with file paths — use the view_name instead.'
+            ),
             'version': '1.0.0',
             'enabled': True
         }
@@ -1088,26 +1098,30 @@ class DuckDbListFilesTool(DuckDbBaseTool):
                 'total_size_bytes': sum(f.get('file_size_bytes', 0) for f in files)
             }
 
-            # Check which files are loaded
+            # Derive the view name for each file (same logic as _initialize_views_from_files)
+            # and check whether the view exists in DuckDB.
             try:
                 conn = self._get_connection()
                 tables_result = conn.execute("SELECT table_name FROM information_schema.tables").fetchall()
-                loaded_tables = [row[0] for row in tables_result]
+                loaded_tables = {row[0] for row in tables_result}
+            except Exception:
+                loaded_tables = set()
 
-                for file_info in files:
-                    table_name = os.path.splitext(file_info['filename'])[0]
-                    file_info['is_loaded'] = table_name in loaded_tables
-                    if file_info['is_loaded']:
-                        file_info['table_name'] = table_name
-            except:
-                pass
+            for file_info in files:
+                unique_key = file_info.get('unique_key', file_info['filename'])
+                # Sanitise to get the actual view name (mirrors _initialize_views_from_files)
+                view_name = os.path.splitext(unique_key)[0]
+                view_name = ''.join(c if c.isalnum() or c == '_' else '_' for c in view_name)
+                file_info['view_name'] = view_name          # always expose the view name
+                file_info['is_loaded'] = view_name in loaded_tables
 
             return {
                 'data_directory': self.data_directory,
                 'files': files,
                 'total_files': len(files),
                 'summary': summary,
-                '_source': self.data_directory
+                '_source': self.data_directory,
+                '_usage': 'Use view_name in SQL: SELECT COUNT(*) FROM <view_name>',
             }
 
         except Exception as e:
