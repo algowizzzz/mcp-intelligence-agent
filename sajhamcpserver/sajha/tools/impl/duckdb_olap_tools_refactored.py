@@ -712,51 +712,75 @@ class DuckDbQueryTool(DuckDbBaseTool):
         return self.config.get('outputSchema', {})
 
     def execute(self, arguments: Dict[str, Any]) -> Dict:
-        """Execute SQL query"""
+        """Execute SQL query using a fresh per-request DuckDB connection.
+
+        A shared connection causes crashes when eventlet yields during CSV I/O
+        and another greenlet hits the same connection concurrently.  A fresh
+        in-memory connection per request is safe and fast — views are lazy SQL
+        strings, so creation takes < 1 ms regardless of file size.
+        """
+        import duckdb as _duckdb
+
         sql_query = arguments['sql_query']
         limit = arguments.get('limit', 100)
-        output_format = arguments.get('output_format', 'json')
-
-        # Re-scan data files with current worker context on every call
-        self._initialize_views_from_files()
 
         # Prevent destructive operations
-        forbidden_keywords = ['DROP', 'DELETE', 'TRUNCATE', 'ALTER', 'CREATE', 'INSERT', 'UPDATE']
+        forbidden_keywords = ['DROP', 'DELETE', 'TRUNCATE', 'ALTER', 'INSERT', 'UPDATE']
         query_upper = sql_query.upper()
         for keyword in forbidden_keywords:
             if keyword in query_upper:
-                raise ValueError(f"Forbidden operation: {keyword}. Only read-only queries are allowed.")
+                return {'error': f'Forbidden operation: {keyword}. Only SELECT queries allowed.', 'success': False}
 
+        # Add LIMIT if not already present and not a COUNT/aggregation query
+        if 'LIMIT' not in query_upper and 'COUNT(' not in query_upper:
+            sql_query = f"{sql_query.rstrip(';')} LIMIT {limit}"
+
+        # Build fresh connection and register views for all known data files.
+        # Do NOT call _initialize_views_from_files() — that uses the shared
+        # connection which blocks eventlet.  _scan_data_files() is pure filesystem
+        # I/O (rglob + stat) and is safe to call directly.
+        conn = _duckdb.connect(':memory:')
         try:
+            files = self._scan_data_files()
+            for file_info in files:
+                unique_key = file_info.get('unique_key', file_info['filename'])
+                view_name = os.path.splitext(unique_key)[0]
+                view_name = ''.join(c if c.isalnum() or c == '_' else '_' for c in view_name)
+                fp = file_info['file_path']
+                ft = file_info['file_type']
+                try:
+                    if ft == 'csv':
+                        conn.execute(f"CREATE VIEW {view_name} AS SELECT * FROM read_csv_auto('{fp}', header=true, sample_size=100)")
+                    elif ft == 'parquet':
+                        conn.execute(f"CREATE VIEW {view_name} AS SELECT * FROM read_parquet('{fp}')")
+                    elif ft == 'json':
+                        conn.execute(f"CREATE VIEW {view_name} AS SELECT * FROM read_json_auto('{fp}')")
+                    elif ft == 'tsv':
+                        conn.execute(f"CREATE VIEW {view_name} AS SELECT * FROM read_csv_auto('{fp}', header=true, delim='\\t', sample_size=100)")
+                except Exception:
+                    pass  # skip files that can't be viewed
+
             start_time = time.time()
-
-            # Add LIMIT if not already present
-            if 'LIMIT' not in query_upper:
-                sql_query = f"{sql_query.rstrip(';')} LIMIT {limit}"
-
-            conn = self._get_connection()
             result = conn.execute(sql_query)
-
-            # Get results as DataFrame for easier manipulation
             df = result.fetchdf()
+            execution_time = (time.time() - start_time) * 1000
 
-            execution_time = (time.time() - start_time) * 1000  # Convert to ms
-
-            response = {
+            return {
                 'query': sql_query,
                 'columns': list(df.columns),
                 'rows': df.to_dict(orient='records'),
                 'row_count': len(df),
                 'execution_time_ms': round(execution_time, 2),
-                'limited': len(df) >= limit,
-                '_source': self.data_directory
+                'limited': 'LIMIT' in sql_query.upper() and len(df) >= limit,
+                '_source': self.data_directory,
+                'success': True,
             }
 
-            return response
-
         except Exception as e:
-            self.logger.error(f"Failed to execute query: {e}")
-            raise
+            self.logger.error(f"duckdb_query failed: {e}")
+            return {'error': str(e), 'success': False}
+        finally:
+            conn.close()
 
 
 class DuckDbRefreshViewsTool(DuckDbBaseTool):
@@ -1079,12 +1103,14 @@ class DuckDbListFilesTool(DuckDbBaseTool):
         return self.config.get('outputSchema', {})
 
     def execute(self, arguments: Dict[str, Any]) -> Dict:
-        """Execute list files operation"""
-        file_type = arguments.get('file_type', 'all')
-        include_metadata = arguments.get('include_metadata', True)
+        """Execute list files operation.
 
-        # Re-scan with current worker context
-        self._initialize_views_from_files()
+        Only scans the filesystem — does NOT call _initialize_views_from_files()
+        because that creates a DuckDB shared connection which blocks eventlet.
+        The view_name field is derived from the same sanitisation logic so the
+        agent can pass it directly to duckdb_query without a separate init step.
+        """
+        file_type = arguments.get('file_type', 'all')
 
         try:
             files = self._scan_data_files(file_type)
@@ -1098,22 +1124,13 @@ class DuckDbListFilesTool(DuckDbBaseTool):
                 'total_size_bytes': sum(f.get('file_size_bytes', 0) for f in files)
             }
 
-            # Derive the view name for each file (same logic as _initialize_views_from_files)
-            # and check whether the view exists in DuckDB.
-            try:
-                conn = self._get_connection()
-                tables_result = conn.execute("SELECT table_name FROM information_schema.tables").fetchall()
-                loaded_tables = {row[0] for row in tables_result}
-            except Exception:
-                loaded_tables = set()
-
+            # Derive view_name using the same sanitisation as duckdb_query —
+            # no DuckDB connection needed here.
             for file_info in files:
                 unique_key = file_info.get('unique_key', file_info['filename'])
-                # Sanitise to get the actual view name (mirrors _initialize_views_from_files)
                 view_name = os.path.splitext(unique_key)[0]
                 view_name = ''.join(c if c.isalnum() or c == '_' else '_' for c in view_name)
-                file_info['view_name'] = view_name          # always expose the view name
-                file_info['is_loaded'] = view_name in loaded_tables
+                file_info['view_name'] = view_name
 
             return {
                 'data_directory': self.data_directory,

@@ -66,6 +66,15 @@ _TOOL_TIMEOUTS: dict = {
     'edgar_earnings_brief':   90.0,
     'edgar_company_brief':    90.0,
     'stream_sec_section':    120.0,
+    # DuckDB: first-call initializes C extension thread pool — give extra headroom
+    'duckdb_list_files':      60.0,
+    'duckdb_query':           60.0,
+    'duckdb_list_tables':     60.0,
+    'duckdb_get_schema':      60.0,
+    'duckdb_refresh_views':   60.0,
+    # Python execution can involve computation-heavy analytics
+    'python_execute':         120.0,
+    'python_run_script':      120.0,
 }
 
 # Tools that return large HTML content — strip html field, set _chart_ready flag instead
