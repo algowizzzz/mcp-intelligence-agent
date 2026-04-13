@@ -95,8 +95,10 @@ class MsDocBaseTool(BaseMCPTool):
 
         If section is specified it is tried first; then all other folders are
         checked in order so the tool finds the file regardless of where it lives.
+        Also does a recursive walk so files inside subfolders (e.g. 'bmo financials/')
+        are found even when the caller passes just the bare filename.
         """
-        # Try the requested section's primary dir first
+        # Try the requested section's primary dir first (handles subfolder-qualified names too)
         primary = os.path.join(self._resolve_docs_dir(section), filename)
         if os.path.isfile(primary):
             return primary
@@ -104,6 +106,22 @@ class MsDocBaseTool(BaseMCPTool):
         for path in self._candidate_paths(filename):
             if os.path.isfile(path):
                 return path
+        # Last resort: recursive walk across domain_data for bare filenames
+        # (handles "Suppq425.xlsx" when it lives in "domain_data/bmo financials/Suppq425.xlsx")
+        bare = os.path.basename(filename)
+        try:
+            from flask import g as _g
+            roots_to_walk = []
+            for attr in ('worker_data_root', 'worker_my_data_root', 'worker_common_root'):
+                r = getattr(_g, attr, None)
+                if r:
+                    roots_to_walk.append(r.rstrip('/'))
+            for root in roots_to_walk:
+                for dirpath, _, filenames in os.walk(root):
+                    if bare in filenames:
+                        return os.path.join(dirpath, bare)
+        except (RuntimeError, Exception):
+            pass
         # Nothing found — return primary path so callers get a meaningful "not found" error
         return primary
 
@@ -188,19 +206,19 @@ class MsDocBaseTool(BaseMCPTool):
         return '\n'.join(lines), match_title, [h[2] for h in heading_map]
 
     def _list_files_by_type(self, file_type: str = 'all', docs_dir: str = None) -> List[Dict]:
-        """List files by type using storage abstraction (REQ-PREP-03)."""
+        """List files by type, scanning recursively into subfolders."""
         directory = docs_dir or self.docs_directory
         files = []
         try:
-            import pathlib
             for rel_path in storage.list_prefix(directory):
-                # list_prefix returns relative paths; skip nested directories
-                if os.sep in rel_path or '/' in rel_path:
-                    continue
                 extension = os.path.splitext(rel_path)[1].lower()
+                if not extension:
+                    continue  # skip bare directory entries
                 if file_type == 'word' and extension not in ['.docx', '.doc']:
                     continue
                 elif file_type == 'excel' and extension not in ['.xlsx', '.xls', '.xlsm']:
+                    continue
+                elif file_type == 'all' and extension not in ['.docx', '.doc', '.xlsx', '.xls', '.xlsm']:
                     continue
                 abs_path = os.path.join(directory, rel_path)
                 try:
@@ -373,8 +391,9 @@ class MsDocListFilesTool(MsDocBaseTool):
         section = arguments.get('section', 'domain_data')
         file_type = arguments.get('file_type', 'all')
 
-        # When listing domain_data, scan root + msdocs subfolder + my_data + common
-        # so the agent can discover all available documents.
+        # When listing domain_data, scan the full domain_data tree (recursive)
+        # plus my_data and common — so files in any subfolder (e.g. "bmo financials/")
+        # are discovered without needing to know the subfolder name in advance.
         if section == 'domain_data':
             dirs_to_scan = []
             try:
@@ -382,9 +401,6 @@ class MsDocListFilesTool(MsDocBaseTool):
                 r = getattr(_g, 'worker_data_root', None)
                 if r:
                     dirs_to_scan.append(r.rstrip('/'))
-                    msdocs_sub = r.rstrip('/') + '/msdocs'
-                    if os.path.isdir(msdocs_sub):
-                        dirs_to_scan.append(msdocs_sub)
                 r2 = getattr(_g, 'worker_my_data_root', None)
                 if r2:
                     dirs_to_scan.append(r2.rstrip('/'))
@@ -400,7 +416,9 @@ class MsDocListFilesTool(MsDocBaseTool):
             all_files = []
             for d in dirs_to_scan:
                 for f in self._list_files_by_type(file_type, d):
-                    key = f['filename']
+                    # Use subfolder-relative filename as dedup key so
+                    # "bmo financials/Suppq425.xlsx" and "Suppq425.xlsx" are distinct
+                    key = f['path']
                     if key not in seen:
                         seen.add(key)
                         all_files.append(f)
