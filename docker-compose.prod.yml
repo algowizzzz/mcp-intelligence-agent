@@ -71,6 +71,9 @@ services:
 
       # --- External APIs ---
       TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+      XAI_API_KEY: ${XAI_API_KEY:-}
+      XAI_MODEL: ${XAI_MODEL:-grok-3}
+      HF_API_KEY: ${HF_API_KEY:-}
 
       # --- Storage ---
       STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
