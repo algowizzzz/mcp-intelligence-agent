@@ -78,6 +78,11 @@ except (ImportError, ValueError, _resource.error):
 _FIGURES = []
 _SANDBOX_DIR = _os.environ.get('SANDBOX_DIR', '/tmp/sandbox')
 
+# DATA_DIR — absolute path to the worker's domain_data directory.
+# Use this to read files directly: pd.read_csv(f"{DATA_DIR}/iris/iris_combined.csv")
+# os module is blocked in user code; use this variable instead.
+DATA_DIR = _os.environ.get('DATA_DIR', '')
+
 # Matplotlib intercept
 try:
     import matplotlib as _mpl
@@ -285,7 +290,8 @@ def _copy_context_files(context_files: List[str], tmpdir: str, worker_ctx: dict,
                 except Exception:
                     pass
 
-        # Fallback: treat as bare filename and search all three sections
+        # Fallback: treat as bare/relative filename and search all three sections.
+        # Handles both "iris_combined.csv" (bare) and "iris/iris_combined.csv" (subfolder).
         if resolved is None and worker_ctx:
             for section in ('my_data', 'domain_data', 'common_data'):
                 try:
@@ -294,6 +300,22 @@ def _copy_context_files(context_files: List[str], tmpdir: str, worker_ctx: dict,
                     candidate = os.path.join(base, rel_path)
                     if os.path.isfile(candidate):
                         resolved = candidate
+                        break
+                except Exception:
+                    pass
+
+        # Last resort: recursive walk — finds "iris_combined.csv" even inside subfolders
+        if resolved is None and worker_ctx:
+            bare = os.path.basename(rel_path)
+            for section in ('my_data', 'domain_data', 'common_data'):
+                try:
+                    kw = {'user_id': user_id} if section == 'my_data' and user_id else {}
+                    base = path_resolve(section, worker_ctx, **kw)
+                    for dirpath, _, fnames in os.walk(base):
+                        if bare in fnames:
+                            resolved = os.path.join(dirpath, bare)
+                            break
+                    if resolved:
                         break
                 except Exception:
                     pass
@@ -342,16 +364,21 @@ class PythonExecuteTool(BaseMCPTool):
                     'description': (
                         'Python code to execute. Available libraries: '
                         'pandas, numpy, scipy, matplotlib, plotly, openpyxl, '
-                        'pyarrow, statsmodels.'
+                        'pyarrow, statsmodels, arch, riskfolio, sklearn, networkx, xarray. '
+                        'The variable DATA_DIR is pre-set to the worker domain_data path — '
+                        'use it to read files directly: pd.read_csv(f"{DATA_DIR}/iris/iris_combined.csv"). '
+                        'The os module is blocked; use DATA_DIR instead of os.path.'
                     ),
                 },
                 'context_files': {
                     'type': 'array',
                     'items': {'type': 'string'},
                     'description': (
-                        'Optional list of file paths from domain_data or my_data '
-                        'to make available in the sandbox as local files. '
-                        'Prefix with "my_data/" or "domain_data/".'
+                        'Optional: copy specific files into the sandbox working directory. '
+                        'Accepts relative paths from domain_data (e.g. "iris/iris_combined.csv") '
+                        'or prefixed paths ("my_data/report.csv", "domain_data/iris/data.csv"). '
+                        'Files are then accessible by basename only: pd.read_csv("iris_combined.csv"). '
+                        'Prefer DATA_DIR for direct access without copying.'
                     ),
                 },
                 'timeout_seconds': {
@@ -414,13 +441,25 @@ class PythonExecuteTool(BaseMCPTool):
         worker_ctx = _get_worker_ctx()
         user_id = _get_user_id()
 
+        # Resolve domain_data path to inject into sandbox as DATA_DIR env var.
+        # This lets agent code do: pd.read_csv(f"{os.environ['DATA_DIR']}/iris/iris_combined.csv")
+        # without needing context_files and without os module access to the host filesystem.
+        extra_env: dict = {}
+        if worker_ctx:
+            try:
+                dd = path_resolve('domain_data', worker_ctx)
+                if dd:
+                    extra_env['DATA_DIR'] = dd
+            except Exception:
+                pass
+
         with tempfile.TemporaryDirectory(prefix='sajha_sandbox_') as tmpdir:
             # Copy requested context files into the sandbox working dir
             if context_files:
                 _copy_context_files(context_files, tmpdir, worker_ctx, user_id)
 
             # Execute
-            run_result = _run_sandboxed(code, tmpdir, timeout=timeout)
+            run_result = _run_sandboxed(code, tmpdir, timeout=timeout, extra_env=extra_env or None)
 
             # Collect figures
             c_dir = _charts_dir(worker_ctx, user_id)

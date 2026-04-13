@@ -88,11 +88,32 @@ class SqlSelectBaseTool(BaseMCPTool):
         return self.data_directory
 
     def _ensure_worker_sources(self):
-        """Re-register data sources if the effective worker directory has changed."""
+        """Re-register data sources if the effective worker directory has changed.
+
+        Two passes:
+        1. Static sources from config (data_sources dict) — explicit, high priority.
+        2. Auto-discovery of CSV/Parquet files in domain_data root and subfolders —
+           so any file uploaded to domain_data becomes immediately queryable without
+           needing to pre-register it in the tool config.
+        """
         effective_dir = self._resolve_worker_data_dir()
-        if effective_dir == getattr(self, '_loaded_data_dir', self.data_directory):
+
+        # Also resolve domain_data root for auto-discovery
+        domain_data_dir = ''
+        try:
+            from flask import g as _g
+            r = getattr(_g, 'worker_data_root', None)
+            if r:
+                domain_data_dir = r.rstrip('/')
+        except RuntimeError:
+            pass
+
+        cache_key = f"{effective_dir}|{domain_data_dir}"
+        if cache_key == getattr(self, '_loaded_data_dir', ''):
             return  # already up to date
-        self._loaded_data_dir = effective_dir
+        self._loaded_data_dir = cache_key
+
+        # Pass 1: static registered sources
         for source_name, source_config in self.data_sources.items():
             try:
                 file_path = os.path.join(effective_dir, source_config['file'])
@@ -112,9 +133,49 @@ class SqlSelectBaseTool(BaseMCPTool):
                     self.connection.execute(
                         f"CREATE OR REPLACE TABLE {source_name} AS "
                         f"SELECT * FROM read_json_auto('{file_path}')")
-                self.logger.info(f"Re-registered {source_name} from {file_path}")
+                self.logger.info(f"Re-registered static source: {source_name}")
             except Exception as e:
                 self.logger.error(f"Error re-registering {source_name}: {e}")
+
+        # Pass 2: auto-discover CSV/Parquet/JSON in domain_data (recursive)
+        # Generates table names from file path: "iris/iris_combined.csv" → "iris__iris_combined"
+        if not domain_data_dir or not os.path.isdir(domain_data_dir):
+            return
+        static_files = {cfg['file'] for cfg in self.data_sources.values()}
+        for dirpath, _, filenames in os.walk(domain_data_dir):
+            for fname in filenames:
+                ext = os.path.splitext(fname)[1].lower()
+                if ext not in ('.csv', '.parquet', '.pq', '.json', '.jsonl'):
+                    continue
+                abs_path = os.path.join(dirpath, fname)
+                rel = os.path.relpath(abs_path, domain_data_dir)
+                # Skip if already registered as a static source
+                if rel in static_files or fname in static_files:
+                    continue
+                # Build safe table name from relative path
+                name_no_ext = os.path.splitext(rel)[0]
+                table_name = name_no_ext.replace(os.sep, '__').replace('/', '__').replace(' ', '_').replace('-', '_')
+                # Strip leading dots from hidden dirs
+                table_name = '__'.join(p.lstrip('.') for p in table_name.split('__') if p.lstrip('.'))
+                if not table_name:
+                    continue
+                try:
+                    safe_path = abs_path.replace("'", "''")
+                    if ext == '.csv':
+                        self.connection.execute(
+                            f"CREATE OR REPLACE TABLE {table_name} AS "
+                            f"SELECT * FROM read_csv_auto('{safe_path}')")
+                    elif ext in ('.parquet', '.pq'):
+                        self.connection.execute(
+                            f"CREATE OR REPLACE TABLE {table_name} AS "
+                            f"SELECT * FROM read_parquet('{safe_path}')")
+                    elif ext in ('.json', '.jsonl'):
+                        self.connection.execute(
+                            f"CREATE OR REPLACE TABLE {table_name} AS "
+                            f"SELECT * FROM read_json_auto('{safe_path}')")
+                    self.logger.info(f"Auto-registered: {table_name} ← {rel}")
+                except Exception as e:
+                    self.logger.warning(f"Auto-register skipped {rel}: {e}")
 
     def _error_response(self, error_message: str) -> Dict[str, Any]:
         """Generate error response"""

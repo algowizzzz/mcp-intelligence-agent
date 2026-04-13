@@ -189,12 +189,12 @@ class DuckDbBaseTool(BaseMCPTool):
                 continue
 
             # REQ-PREP-04: use storage.list_prefix instead of os.listdir
+            # storage.list_prefix uses rglob — returns relative paths including subfolders.
+            # We include subfolder files and encode the subfolder into the view name so
+            # "iris/iris_combined.csv" becomes view "iris__iris_combined".
             relative_paths = storage.list_prefix(data_dir)
             for rel_path in relative_paths:
-                # Only process top-level files (no subdirectory traversal for DuckDB views)
-                if os.sep in rel_path or '/' in rel_path:
-                    continue
-                filename = rel_path
+                filename = os.path.basename(rel_path)
                 if filename.startswith('.') or filename.endswith('.db'):
                     continue
 
@@ -202,12 +202,15 @@ class DuckDbBaseTool(BaseMCPTool):
                 if file_ext not in extensions:
                     continue
 
-                # If same filename exists in a higher-priority layer, prefix with section
-                unique_key = filename
-                if filename in seen_filenames:
-                    unique_key = f"{section_name}__{filename}"
+                # Build a unique view key that encodes the subfolder path.
+                # "iris/iris_combined.csv" → unique_key "iris__iris_combined"
+                # Top-level "data.csv" → unique_key "data"
+                rel_no_ext = os.path.splitext(rel_path)[0]
+                # Normalise path separators and replace with double-underscore
+                safe_key = rel_no_ext.replace('\\', '/').replace('/', '__').replace(' ', '_').replace('-', '_')
+                unique_key = f"{section_name}__{safe_key}" if safe_key in seen_filenames else safe_key
 
-                file_path = os.path.join(data_dir, filename)
+                file_path = os.path.join(data_dir, rel_path)
 
                 # Determine file type
                 if file_ext in ['.csv']:
@@ -222,7 +225,7 @@ class DuckDbBaseTool(BaseMCPTool):
                     continue
 
                 file_info = {
-                    'filename': filename,
+                    'filename': rel_path,   # full relative path including subfolder
                     'unique_key': unique_key,
                     'section': section_name,
                     'file_type': ftype,
@@ -238,7 +241,7 @@ class DuckDbBaseTool(BaseMCPTool):
                     pass
 
                 files.append(file_info)
-                seen_filenames.add(filename)
+                seen_filenames.add(safe_key)
 
         return files
 
