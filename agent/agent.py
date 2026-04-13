@@ -54,14 +54,21 @@ class MessageTrimmer(AgentMiddleware):
         return await handler(request.override(messages=trimmed))
 
 
-llm = create_llm()
+try:
+    llm = create_llm()
+except Exception as _llm_init_err:
+    import logging as _logging
+    _logging.getLogger(__name__).error(
+        f"LLM failed to initialise at startup: {_llm_init_err}. "
+        "Server will start but agent calls will fail until config is fixed."
+    )
+    llm = None
 
 
 def reload_llm() -> str:
     """Recreate the LLM from the current config file. Returns new provider name."""
     global llm
-    llm = create_llm()
-    # Return provider name for confirmation
+    llm = create_llm()  # intentionally raises — caller handles the error
     from agent.llm_factory import _load_file_config
     cfg = _load_file_config()
     return cfg.get('provider', 'anthropic')

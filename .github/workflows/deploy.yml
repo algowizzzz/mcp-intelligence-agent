@@ -103,7 +103,7 @@ jobs:
           POSTGRES_DB=sajha
           POSTGRES_USER=sajha
           POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
-          LLM_PROVIDER=anthropic
+          LLM_PROVIDER=xai
           ANTHROPIC_MODEL=claude-sonnet-4-20250514
           LLM_MAX_TOKENS=8192
           SAJHA_API_KEY=sja_full_access_admin
