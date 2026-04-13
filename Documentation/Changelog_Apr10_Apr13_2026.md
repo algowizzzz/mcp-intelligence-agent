@@ -1,12 +1,13 @@
 # B-Pulse Platform — Engineering Changelog
-### April 10–13, 2026 (54 commits)
+### April 6–13, 2026 (72 commits)
 
-This document covers every commit made to the `main` branch during the 3-day sprint ending April 13, 2026. Commits are grouped thematically and listed in reverse-chronological order within each group. Each entry describes what changed, which files were modified, and why.
+This document covers every commit made to the `main` branch during the 7-day period ending April 13, 2026. Commits are grouped thematically and listed in reverse-chronological order within each group. Each entry describes what changed, which files were modified, and why.
 
 ---
 
 ## Table of Contents
 
+**April 10–13 (54 commits)**
 1. [DuckDB Tool Engine — Subfolder Access & Concurrency Fixes](#1-duckdb-tool-engine)
 2. [MsDocs & Python Executor — Subfolder Access Fixes](#2-msdocs--python-executor)
 3. [SQLSelect — Auto-Discovery for Unfamiliar Files](#3-sqlselect)
@@ -19,6 +20,14 @@ This document covers every commit made to the `main` branch during the 3-day spr
 10. [Documentation & AWS Guides](#10-documentation--aws-guides)
 11. [Tool Bug Fixes (Tavily, PDF, EDGAR)](#11-tool-bug-fixes)
 12. [April 11 — DB Audit & LLM Factory](#12-april-11--db-audit--llm-factory)
+
+**April 6 (18 commits)**
+13. [REQ-12 — Heading Extraction, HuggingFace LLM, Handover Package](#13-april-6--req-12-heading-extraction-huggingface-llm-handover-package)
+14. [Tool Additions — file_read, xAI Grok, LLM Config UI](#14-april-6--tool-additions--llm-config-ui)
+15. [EDGAR Fixes & New Workflow](#15-april-6--edgar-fixes--sec-filing-workflow)
+16. [Worker Path Resolution & Upload Tools](#16-april-6--worker-path-resolution--upload-tools)
+17. [Frontend — Auth Guards, Canvas, UI Hardening](#17-april-6--frontend-auth-guards-canvas-ui-hardening)
+18. [Sub-Agent Deadlock Fix](#18-april-6--sub-agent-deadlock-fix)
 
 ---
 
@@ -541,8 +550,226 @@ xAI (Grok) and HuggingFace providers were not returning token usage in streaming
 | Documentation | 10 | ~2,500 |
 | Tool bug fixes (Tavily, PDF) | 3 | ~100 |
 | DB audit + LLM factory | 2 | ~200 |
-| **Total** | **54** | **~7,100** |
+| **Apr 10–13 Total** | **54** | **~7,100** |
 
 ---
 
-*Generated: 2026-04-13. Covers commits `2797a32` through `0ee10b3` on branch `main`.*
+---
+
+## April 6, 2026 — 18 Commits
+
+---
+
+## 13. April 6 — REQ-12: Heading Extraction, HuggingFace LLM, Handover Package
+
+### `4c22047` — REQ-12: Heading extraction for Word/PDF, msdoc section standardization, HuggingFace LLM switch
+**Date:** 2026-04-06 | **Files:** Many — see sub-entries below
+
+This was the largest single-day commit of the sprint. It landed three major things simultaneously:
+
+**1. Heading extraction (msdoc + pdf_read):** Both `msdoc_read_word` and `pdf_read` gained a `heading=` parameter. When specified, the tool returns only the section under that heading (e.g. `heading="Risk Factors"`) rather than the full document. This makes long documents usable within the context window — a 200-page Word doc produces ~500 tokens for a specific section instead of 50,000 tokens for the whole thing.
+
+**2. HuggingFace LLM switch:** `llm_config.json` updated to support `huggingface` as a provider. `llm_factory.py` extended to instantiate `ChatHuggingFace` with `meta-llama/Llama-3.3-70B-Instruct` as the default HuggingFace model. Provider switchable via admin panel without restart.
+
+**3. Handover package (new `handover/` directory):** Created a structured 6-subdirectory handover package for client/team onboarding:
+- `handover/00_START_HERE.md` — navigation index, 107 lines
+- `handover/01_project_overview/` — `CREDENTIALS.md` (92 lines), `NEXT_STEPS.md` (163 lines)
+- `handover/02_architecture/` — `SAJHA_MCP_Server_Architecture.md` (1,789 lines — full architecture reference), `Glossary.md` (779 lines), 6 ERD diagrams as Word docs
+- `handover/03_requirements/` — `Requirements_Gap_Analysis.md` (243 lines) + 12 requirements docs (REQ-01a through REQ-11)
+- `handover/04_uat_and_testing/` — `UAT_Master_Index.md` (162 lines), `Functional_Test_Results.md` (457 lines), `GAP_Fixes_UAT_Results.md` (71 lines), 11 UAT plans and results docs
+- `handover/05_user_guides/` — all 6 user-facing Word documents (Admin Guide, Super Admin Guide, End User Guide, Deployment Guide, Connectors Guide, Technical Documentation)
+- `handover/06_tools_reference/` — 10 individual tool reference guides (DuckDB, SQL Select, EDGAR, Tavily, Yahoo Finance, Federal Reserve, Bank of Canada, Investor Relations, MCP Studio REST creator, MCP Studio Python creator) — total ~15,000 lines of documentation
+
+**Misc config updates:** 12 DuckDB and OLAP tool JSON configs updated to point at the refactored implementation class names.
+
+---
+
+### `9ea1649` — Add heading= extraction to msdoc_read_word and pdf_read
+**Date:** 2026-04-06 | **Files:** `agent/tools.py`, `msdoc_read_word.json`, `pdf_read.json`, `msdoc_tools_tool_refactored.py`, `operational_tools.py`
+
+Implementation commit for the heading extraction feature:
+- `msdoc_tools_tool_refactored.py`: Added `_extract_section_by_heading()` method. Uses `python-docx` paragraph style inspection to find the heading, then collects all body text until the next heading of the same or higher level.
+- `operational_tools.py`: Added `_extract_pdf_section_by_heading()` method. Uses `pdfplumber` to find text lines matching the heading pattern, then extracts subsequent lines until the next major heading is detected.
+- `pdf_read.json`: Added `heading` to the input schema as an optional string parameter.
+- `msdoc_read_word.json`: Added `heading` to the input schema.
+- `agent/tools.py`: Updated `_TOOL_OUTPUT_LIMITS` — `msdoc_read_word` raised from 12k to 60k chars (heading extraction can still return large sections; 60k = ~15k tokens, matching `pdf_read`'s limit).
+
+---
+
+## 14. April 6 — Tool Additions & LLM Config UI
+
+### `cbc0ca7` — LLM Provider config in Super Admin UI
+**Date:** 2026-04-06 | **Files:** `agent/agent.py`, `agent/llm_factory.py`, `agent_server.py`, `public/admin.html`, `sajhamcpserver/config/llm_config.json`
+
+Added a full LLM provider configuration panel to the Super Admin UI:
+- **`admin.html`**: New "LLM Config" tab (273 lines added). Dropdowns for provider (`anthropic`, `xai`, `huggingface`, `bedrock`) and model name. On save, calls `PUT /api/super/llm-config`. Shows current provider/model at top.
+- **`agent_server.py`**: Added `GET /api/super/llm-config` and `PUT /api/super/llm-config` endpoints. Write updates `llm_config.json` on disk. After write, calls `agent.reload_llm()` so the running agent picks up the new config without restart.
+- **`agent/agent.py`**: Added `reload_llm()` function that re-reads `llm_config.json` and re-instantiates the LLM client. Wired to the hot-reload mechanism.
+- **`agent/llm_factory.py`**: Refactored to read from `llm_config.json` on every call to `get_llm()` rather than caching at startup. Added `HuggingFaceEndpoint` support alongside existing Anthropic, xAI, and AWS Bedrock providers.
+- **`llm_config.json`**: Added `huggingface` block with model, API key env var, and inference endpoint URL.
+
+---
+
+### `59a32c47` — Add file_read tool — read text files from all three data layers
+**Date:** 2026-04-06 | **Files (new):** `sajhamcpserver/config/tools/file_read.json`, `sajhamcpserver/sajha/tools/impl/file_read_tool.py`
+
+New tool: `file_read` — reads any plain-text file (`.md`, `.txt`, `.py`, `.json`, `.csv`, `.yaml`) from domain_data, my_data, or common. 186-line implementation:
+- Accepts `file_path` (relative to data root) and optional `section` (`domain_data` / `my_data` / `common`)
+- Resolves the file against the correct worker-scoped directory
+- Returns full text content up to 60,000 chars (truncates with a warning at limit)
+- Used by the agent to read Python scripts, markdown documents, and config files that don't need the full msdoc/pdf parser overhead
+
+---
+
+### `067e750` — Add xAI Grok provider to LLM factory
+**Date:** 2026-04-06 | **Files:** `agent/llm_factory.py`
+
+Added xAI Grok as a configurable LLM provider. Uses the `langchain-xai` package's `ChatXAI` class. Default model: `grok-3`. API key from `XAI_API_KEY` env var. Temperature=0, streaming=True, max_tokens from config. Added to the provider switch in `get_llm()` alongside Anthropic, HuggingFace, and Bedrock.
+
+---
+
+## 15. April 6 — EDGAR Fixes & SEC Filing Workflow
+
+### `75fb96e` — Fix EDGAR timeout + add sec_filing_to_markdown workflow
+**Date:** 2026-04-06 | **Files:** `agent/tools.py`, `workflows/verified/sec_filing_to_markdown.md`, `sajhamcpserver/sajha/tools/impl/edgar_tavily_client.py`
+
+- **EDGAR timeout fix**: `edgar_tavily_client.py` was using a 10s HTTP timeout for SEC EDGAR archive requests. Large 10-K filings can be 10–15MB HTML files — hitting the timeout consistently. Raised to 60s. Also added streaming response handling for very large files.
+- **`agent/tools.py`**: Added `edgar_extract_section` and `stream_sec_section` to `_TOOL_TIMEOUTS` with 120s timeout each.
+- **New workflow `sec_filing_to_markdown.md`** (99 lines): Multi-agent workflow that takes a company ticker, fetches the most recent 10-K from SEC EDGAR, extracts MD&A + Risk Factors sections, and saves the result as a structured markdown file to `my_data`. Demonstrates the `edgar_extract_section` → `file_write` → `bm25_search` chain.
+
+---
+
+### `6115db7` — file_read: heading extraction for markdown + 60k output limit
+**Date:** 2026-04-06 | **Files:** `agent/tools.py`, `sajhamcpserver/sajha/tools/impl/file_read_tool.py`
+
+Extended `file_read_tool.py` to support `heading=` extraction for Markdown files (mirrors the Word/PDF feature). When `heading="Risk Management"` is passed, the tool returns only the markdown section starting with that `#` heading through the next heading of the same level. Added output limit of 60,000 chars to `_TOOL_OUTPUT_LIMITS` in `agent/tools.py`.
+
+---
+
+## 16. April 6 — Worker Path Resolution & Upload Tools
+
+### `0ddec8d` — Fix msdoc + sqlselect: standardized worker-scoped data path resolution
+**Date:** 2026-04-06 | **Files:** 11 msdoc JSON tool configs, `msdoc_tools_tool_refactored.py`, `sqlselect_tool_refactored.py`
+
+**Problem:** msdoc and sqlselect tools were using hardcoded absolute paths from their JSON configs (`tool.msdoc.docs_directory`, `tool.sqlselect.data_directory`). When a different worker made a request, the tools still pointed at the default worker's data directory.
+
+**Fix:**
+- `msdoc_tools_tool_refactored.py` (303 lines changed): Replaced all hardcoded path reads with `path_resolve('domain_data', worker_ctx)` called per-request inside `execute()`. Added support for `my_data` and `common` data layers. Updated all 11 msdoc tool JSON configs to remove the static `data_directory` property.
+- `sqlselect_tool_refactored.py` (46 lines added): Added per-request worker context resolution — `_ensure_worker_sources()` now reads `g.worker_data_root` on each call rather than once at init.
+
+---
+
+### `4f6fc27` — Fix worker-scoped path resolution, compact file listing, and UI robustness
+**Date:** 2026-04-06 | **Files:** `CLAUDE.md`, `agent/prompt.py`, `agent_server.py`, `public/admin.html`, `public/js/file-tree.js`, `public/mcp-agent.html`, `sajhamcpserver/config/users.json`, `sajhamcpserver/config/workers.json`, `sajhamcpserver/sajha/tools/impl/python_executor.py`, `sajhamcpserver/sajha/tools/impl/upload_tools.py`
+
+Large robustness commit:
+- **`CLAUDE.md`**: Expanded from stub to 337-line developer reference covering all architecture layers, data paths, API endpoints, middleware stack, SSE protocol, and worker configuration options (the document is now the primary dev onboarding reference).
+- **`agent/prompt.py`**: Added `PYTHON_ADDENDUM` (injected when python tools are enabled) and `MULTI_AGENT_ADDENDUM` (injected for multi-agent workers) to the system prompt factory. These addenda give the agent specific instructions for using python_execute with DATA_DIR, and for spawning sub-agents via the `task()` tool.
+- **`agent_server.py`**: Fixed the `GET /api/fs/{section}/tree` endpoint to return a compact flat-list format instead of a deeply nested tree object (the nested tree was causing JSON serialisation timeouts for workers with many files).
+- **`python_executor.py`**: Added `DATA_DIR` environment variable injection — every sandbox execution now has `DATA_DIR` set to the worker's `domain_data` path so scripts can read files with `pd.read_csv(f"{DATA_DIR}/iris/data.csv")` without needing `os` module access.
+- **`upload_tools.py`**: Rewrote `list_uploaded_files` to search all three data layers (domain_data, my_data, common) and return compact `{filename, path, size, modified}` records instead of verbose metadata objects. Fixed `upload_file` to use worker-scoped destination path.
+- **Config updates**: `users.json` — added test users, fixed bcrypt hashes. `workers.json` — updated enabled_tools lists, fixed data paths.
+- **Admin/frontend**: Multiple `admin.html` and `file-tree.js` improvements — loading states, error messages on file ops, breadcrumb path display.
+
+---
+
+## 17. April 6 — Frontend: Auth Guards, Canvas, UI Hardening
+
+### `8569f50` — UI security hardening: auth guards, 401 handling, remove deprecated key
+**Date:** 2026-04-06 | **Files:** `public/admin.html`, `public/mcp-agent.html`, `public/regression_tests.html`, `public/regression_tests_v2.html`
+
+- **`admin.html`**: Added auth guard — checks for valid JWT in localStorage on page load, redirects to `/login.html` if missing or expired.
+- **`mcp-agent.html`**: Added `401` response handler on all API calls — if a response comes back 401, clears the stored token and redirects to login.
+- **`public/regression_tests_v2.html`** (new, 1,356 lines): Full regression test runner — 45 test cases covering auth, file ops, tool calls, workflow execution, and HITL. Runs in-browser, reports pass/fail per test with response time.
+
+---
+
+### `a5e00b8` — mcp-agent.html: redirect to login if no session token
+**Date:** 2026-04-06 | **Files:** `public/mcp-agent.html`
+
+Added check at page load: if `localStorage.getItem('rg_token')` is null or empty, immediately redirect to `/login.html`. Prevents the chat UI from loading in a broken state for unauthenticated users (previously showed an empty chat with all API calls returning 401).
+
+---
+
+### `99505630` — index.html: add auth guard — route to login or role-appropriate page
+**Date:** 2026-04-06 | **Files:** `public/index.html`
+
+`index.html` is the default landing page. Added a JS auth check on load:
+- No token → redirect to `/login.html`
+- Token present, role = `super_admin` → redirect to `/admin.html`
+- Token present, role = `admin` → redirect to `/admin.html`
+- Token present, role = `user` → redirect to `/mcp-agent.html`
+
+---
+
+### `48218a5` — Fix canvas detection + shared library preview
+**Date:** 2026-04-06 | **Files:** `agent_server.py`
+
+Fixed the canvas SSE event detection logic in `agent_server.py`. The agent was returning Plotly HTML chart outputs as tool results — the server-side SSE handler needed to detect the `_chart_ready: true` flag in the tool result and emit a `canvas` event with the chart URL instead of embedding the raw HTML in the text stream. Previously the detection was checking the wrong field name; fixed to check `result.get('_chart_ready')`.
+
+---
+
+### `84d07f1` — Fix markdown headers + shared library preview in admin panel
+**Date:** 2026-04-06 | **Files:** `public/admin.html`, `public/mcp-agent.html`
+
+- **`admin.html`**: Fixed the "Shared Library" (common data) preview pane — it was showing raw JSON instead of rendered content. Added `marked.js` rendering for `.md` files and a table viewer for `.csv` files.
+- **`mcp-agent.html`**: Fixed markdown header rendering in the chat canvas — `##` and `###` headers were being escaped as literals instead of rendering as `<h2>` / `<h3>` elements. Fixed the `marked.js` config to not sanitise heading tags.
+
+---
+
+### `dcbc704` — mcp-agent.html: remove cost pill, keep context gauge only
+**Date:** 2026-04-06 | **Files:** `public/mcp-agent.html`
+
+Removed the "cost" display pill from the chat header (54 lines removed). Cost calculations were unreliable across different LLM providers (Anthropic token pricing differs from xAI/HuggingFace). Kept the context window gauge (shows % of 200k context used) which is provider-agnostic and genuinely useful.
+
+---
+
+## 18. April 6 — Sub-Agent Deadlock Fix
+
+### `ea668b8` — Fix sub-agent checkpointer event-loop deadlock + UI insertBefore DOM error
+**Date:** 2026-04-06 | **Files:** `agent/agent.py`, `agent/sub_agent_executor.py`, `public/mcp-agent.html`
+
+**Deadlock fix (`sub_agent_executor.py`):** Sub-agents were being initialised with `AsyncSqliteSaver` (the async LangGraph checkpointer) inside a `ThreadPoolExecutor` thread. The async checkpointer tried to get the running event loop — which doesn't exist in a bare thread — and deadlocked. Fixed by using `MemorySaver` (in-memory, no I/O) for sub-agents. Sub-agent state doesn't need to be persisted across sessions, so memory saver is correct and eliminates the async/thread boundary problem.
+
+**`agent/agent.py`**: Added `sub_agent=True` parameter to `create_agent_for_worker()`. When True, uses `MemorySaver` and skips the async DB checkpoint initialisation.
+
+**DOM error (`mcp-agent.html`)**: The sub-agent status cards were being inserted with `insertBefore(node, null)` — in some browsers this throws a `TypeError`. Changed to `appendChild()`.
+
+---
+
+### `62a930e` — Housekeeping: config updates, docs reorganisation, data files
+**Date:** 2026-04-06 | **Files:** Many — config, requirements docs, data directory scaffolding
+
+Organisational commit:
+- Moved root-level planning files (`INSTRUCTIONS.md`, `NEXT_STEPS.md`, `PLAN.md`, `PROMPTS.md`) into `requirements/` directory to reduce root clutter.
+- Deleted stale draft documents from `requirements/drafts/` (9 Word/Markdown files that had been superseded by the handover package).
+- `sajhamcpserver/config/users.json`: Added 102 lines — additional test users for QA.
+- `sajhamcpserver/config/workers.json`: Updated worker definitions — corrected `domain_data_path` values for 3 workers that were pointing at non-existent paths.
+- `sajhamcpserver/config/llm_config.json`: Added `temperature`, `max_tokens`, and `stream` fields to all provider configs for explicit control.
+- Created scaffold `.index.json` files for 3 new worker data directories (`w-1ddc8c61`, `w-76933a6b`, `w-da082632`).
+- Added initial domain data files to common layer for testing (freshness test markers, policy test markers, FRTB sensitivity doc).
+
+---
+
+## Summary Statistics — Full 7-Day Period
+
+| Category | Apr 6 Commits | Apr 10–13 Commits | Total Commits |
+|---|---|---|---|
+| DuckDB tool engine | — | 6 | 6 |
+| MsDocs / Python executor | 2 | 2 | 4 |
+| SQLSelect | 1 | 1 | 2 |
+| Agent stability / sub-agent | 1 | 3 | 4 |
+| Production deployment | — | 9 | 9 |
+| Storage layer (DB + S3) | — | 5 | 5 |
+| Frontend / UI | 6 | 7 | 13 |
+| Requirements & dependencies | — | 4 | 4 |
+| New workers & config | 1 | 2 | 3 |
+| Documentation | 1 | 10 | 11 |
+| Tool additions & bug fixes | 4 | 3 | 7 |
+| DB audit & LLM config | 1 | 2 | 3 |
+| Housekeeping & handover | 1 | — | 1 |
+| **Total** | **18** | **54** | **72** |
+
+---
+
+*Generated: 2026-04-13. Covers commits `067e750` (Apr 6) through `0ee10b3` (Apr 12) on branch `main`.*
