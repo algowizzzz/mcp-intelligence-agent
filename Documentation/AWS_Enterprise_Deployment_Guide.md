@@ -6,6 +6,52 @@
 
 ---
 
+## Quick Reference — Read This First
+
+### What Actually Changes (the 4 swaps)
+
+> The application is already infrastructure-agnostic. Zero application code changes required. You are replacing four infrastructure pieces underneath an app that doesn't know what cloud it's on.
+
+| Hetzner | AWS | Change required |
+|---|---|---|
+| Postgres in Docker container | RDS PostgreSQL 16 | Connection string only |
+| Docker named volume (`/opt/sajha/data/app`) | EFS mounted at same path | Zero — POSIX filesystem preserved |
+| `.env` file written by SSH | Secrets Manager → ECS injects as env vars | ECS task definition JSON |
+| SSH + `docker compose pull` in CI | `aws ecs update-service` | deploy.yml only |
+
+**Total application code changes: zero.**
+
+---
+
+### The 9 Deployment Steps
+
+1. **VPC + security groups** — private subnets for RDS and EFS, ECS task in private subnet behind ALB
+2. **RDS PostgreSQL 16** — `db.t3.medium`, Multi-AZ, private subnet, no public access
+3. **EFS** — create filesystem + mount target in same VPC, allow NFS from ECS security group
+4. **Secrets Manager** — store all env vars (Anthropic key, JWT secret, DB password, Tavily key)
+5. **ECR** — create repo, push same Docker image (IAM auth, no PAT needed)
+6. **ECS Fargate** — task definition with EFS mount at `/app/sajhamcpserver/data` + Secrets Manager injection
+7. **ALB** — internet-facing, HTTPS with ACM cert, health check hits `/health`
+8. **GitHub Actions** — replace SSH deploy step with `aws ecs update-service`
+9. **Data migration** — `pg_dump` → `pg_restore` to RDS; rsync file volume → EFS via EC2 bastion
+
+---
+
+### Critical Gotchas
+
+1. **`SAJHA_BASE_URL` stays `http://127.0.0.1:3002`** — single container, localhost works inside ECS task
+2. **EFS mount target must be in the same VPC as ECS** — container starts but data path is empty if wrong
+3. **Watchtower doesn't exist in ECS** — remove it, ECS rolling updates replace it
+4. **Fargate needs NAT gateway** if placed in a private subnet (to pull ECR images)
+
+---
+
+### Multi-Client Scale (CDK)
+
+Once one manual deploy works, parameterize it as a CDK stack. Each enterprise client gets: isolated RDS, isolated EFS, ALB with their subdomain, their own Secrets Manager entries — all pointing at the **same Docker image**. `cdk deploy sajha-client-bmo` provisions everything in one command.
+
+---
+
 ## Mental Model First
 
 Before touching AWS, make sure everyone on the team understands **why this is easy**:
