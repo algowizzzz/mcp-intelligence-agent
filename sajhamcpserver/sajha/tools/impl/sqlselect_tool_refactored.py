@@ -161,19 +161,20 @@ class SqlSelectBaseTool(BaseMCPTool):
                     continue
                 try:
                     safe_path = abs_path.replace("'", "''")
+                    # Use CREATE VIEW (lazy) not TABLE (eager) — no data loaded at registration
                     if ext == '.csv':
                         self.connection.execute(
-                            f"CREATE OR REPLACE TABLE {table_name} AS "
-                            f"SELECT * FROM read_csv_auto('{safe_path}')")
+                            f"CREATE OR REPLACE VIEW {table_name} AS "
+                            f"SELECT * FROM read_csv_auto('{safe_path}', header=true, sample_size=100)")
                     elif ext in ('.parquet', '.pq'):
                         self.connection.execute(
-                            f"CREATE OR REPLACE TABLE {table_name} AS "
+                            f"CREATE OR REPLACE VIEW {table_name} AS "
                             f"SELECT * FROM read_parquet('{safe_path}')")
                     elif ext in ('.json', '.jsonl'):
                         self.connection.execute(
-                            f"CREATE OR REPLACE TABLE {table_name} AS "
+                            f"CREATE OR REPLACE VIEW {table_name} AS "
                             f"SELECT * FROM read_json_auto('{safe_path}')")
-                    self.logger.info(f"Auto-registered: {table_name} ← {rel}")
+                    self.logger.info(f"Auto-registered view: {table_name} ← {rel}")
                 except Exception as e:
                     self.logger.warning(f"Auto-register skipped {rel}: {e}")
 

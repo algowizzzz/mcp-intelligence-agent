@@ -113,6 +113,9 @@ class DuckDbBaseTool(BaseMCPTool):
         # Track file states for change detection
         self._file_states = {}  # {filename: {'mtime': timestamp, 'size': bytes, 'view_name': str}}
 
+        # Cache key for last successful view init — avoids re-scanning on every request
+        self._last_init_worker_key = None
+
         # REQ-PREP-04: auto-refresh thread removed (was _start_auto_refresh / _auto_refresh_worker)
 
         # Initialize views from data files
@@ -245,26 +248,54 @@ class DuckDbBaseTool(BaseMCPTool):
 
         return files
 
-    def _initialize_views_from_files(self):
-        """
-        Initialize views from all data files in the data directory.
-        Creates a view for each CSV, Parquet, JSON, and TSV file found.
-        """
+    def _worker_init_key(self) -> str:
+        """Return a cache key representing the current worker context data directories."""
         try:
-            # Get connection
-            conn = self._get_connection()
+            from flask import g as _g
+            r = getattr(_g, 'worker_data_root', '') or ''
+            r2 = getattr(_g, 'worker_my_data_root', '') or ''
+            r3 = getattr(_g, 'worker_common_root', '') or ''
+            return f"{r}|{r2}|{r3}"
+        except RuntimeError:
+            return ''
 
-            # Scan for all data files
+    def _initialize_views_from_files(self):
+        """Initialize DuckDB views for all data files.
+
+        Skips re-initialization when the worker context (data directories) has
+        not changed since the last call — avoids re-scanning on every request.
+        Views are lazy (no data loaded at creation); sample_size=100 keeps
+        schema detection fast.
+        """
+        # Guard: skip if worker context unchanged
+        current_key = self._worker_init_key()
+        if current_key and current_key == self._last_init_worker_key:
+            return
+        # Re-resolve data directories from current worker context before scanning
+        worker_ctx = _get_worker_ctx()
+        if worker_ctx:
+            try:
+                new_dd = path_resolve('domain_data', worker_ctx)
+                if new_dd:
+                    self.data_directory = new_dd
+                    self.data_directories = [
+                        (n, p) if n != 'domain_data' else ('domain_data', new_dd)
+                        for n, p in self.data_directories
+                    ]
+            except Exception:
+                pass
+
+        try:
+            conn = self._get_connection()
             files = self._scan_data_files()
 
             if not files:
                 self.logger.info(f"No data files found in {self.data_directory}")
+                self._last_init_worker_key = current_key
                 return
 
-            dirs_str = ', '.join(d for _, d in self.data_directories)
-            self.logger.info(f"Found {len(files)} data files across layers: {dirs_str}")
+            self.logger.info(f"Initialising {len(files)} DuckDB views")
 
-            # Create views for each file
             for file_info in files:
                 try:
                     filename = file_info['filename']
@@ -272,59 +303,44 @@ class DuckDbBaseTool(BaseMCPTool):
                     file_type = file_info['file_type']
                     unique_key = file_info.get('unique_key', filename)
 
-                    # Generate view name from unique_key (remove extension and sanitize)
+                    # Sanitise view name: strip extension, replace non-alnum with _
                     view_name = os.path.splitext(unique_key)[0]
-                    # Replace special characters with underscores
                     view_name = ''.join(c if c.isalnum() or c == '_' else '_' for c in view_name)
 
-                    # Drop existing view if it exists
                     try:
                         conn.execute(f"DROP VIEW IF EXISTS {view_name}")
-                    except:
+                    except Exception:
                         pass
 
-                    # Create view based on file type
+                    # Create lazy view — no data loaded at creation time.
+                    # sample_size=100 is sufficient for schema detection and is fast.
                     if file_type == 'csv':
-                        # DuckDB can read CSV files directly
-                        create_view_sql = f"""
-                            CREATE VIEW {view_name} AS 
-                            SELECT * FROM read_csv_auto('{file_path}', 
-                                header=true, 
-                                auto_detect=true,
-                                sample_size=-1
-                            )
-                        """
+                        create_view_sql = (
+                            f"CREATE VIEW {view_name} AS "
+                            f"SELECT * FROM read_csv_auto('{file_path}', "
+                            f"header=true, auto_detect=true, sample_size=100)"
+                        )
                     elif file_type == 'parquet':
-                        # DuckDB can read Parquet files directly
-                        create_view_sql = f"""
-                            CREATE VIEW {view_name} AS 
-                            SELECT * FROM read_parquet('{file_path}')
-                        """
+                        create_view_sql = (
+                            f"CREATE VIEW {view_name} AS "
+                            f"SELECT * FROM read_parquet('{file_path}')"
+                        )
                     elif file_type == 'json':
-                        # DuckDB can read JSON files directly
-                        create_view_sql = f"""
-                            CREATE VIEW {view_name} AS 
-                            SELECT * FROM read_json_auto('{file_path}')
-                        """
+                        create_view_sql = (
+                            f"CREATE VIEW {view_name} AS "
+                            f"SELECT * FROM read_json_auto('{file_path}')"
+                        )
                     elif file_type == 'tsv':
-                        # Read TSV as CSV with tab delimiter
-                        create_view_sql = f"""
-                            CREATE VIEW {view_name} AS 
-                            SELECT * FROM read_csv_auto('{file_path}', 
-                                header=true,
-                                delim='\\t',
-                                auto_detect=true,
-                                sample_size=-1
-                            )
-                        """
+                        create_view_sql = (
+                            f"CREATE VIEW {view_name} AS "
+                            f"SELECT * FROM read_csv_auto('{file_path}', "
+                            f"header=true, delim='\\t', auto_detect=true, sample_size=100)"
+                        )
                     else:
-                        self.logger.warning(f"Unsupported file type '{file_type}' for {filename}")
                         continue
 
-                    # Execute the CREATE VIEW statement
                     conn.execute(create_view_sql)
 
-                    # Track file state for change detection
                     try:
                         stat = os.stat(file_path)
                         self._file_states[filename] = {
@@ -334,28 +350,19 @@ class DuckDbBaseTool(BaseMCPTool):
                             'file_type': file_type,
                             'file_path': file_path
                         }
-                    except:
+                    except Exception:
                         pass
 
-                    # Get row count for verification
-                    try:
-                        row_count = conn.execute(f"SELECT COUNT(*) FROM {view_name}").fetchone()[0]
-                        self.logger.info(f"✓ Created view '{view_name}' from {filename} ({row_count:,} rows)")
-                    except Exception as e:
-                        self.logger.info(f"✓ Created view '{view_name}' from {filename}")
+                    self.logger.info(f"✓ View '{view_name}' ← {filename}")
 
                 except Exception as e:
                     self.logger.error(f"Failed to create view for {filename}: {e}")
                     continue
 
-            # Log summary
-            views_result = conn.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_type = 'VIEW'").fetchone()
-            total_views = views_result[0] if views_result else 0
-            self.logger.info(f"Initialization complete: {total_views} views available")
+            self._last_init_worker_key = current_key
 
         except Exception as e:
             self.logger.error(f"Failed to initialize views from files: {e}")
-            # Don't raise - allow the tool to continue even if initialization fails
 
     # REQ-PREP-04: _start_auto_refresh, _stop_auto_refresh, and _auto_refresh_worker
     # removed — background refresh thread is not compatible with stateless/S3 deployment.
