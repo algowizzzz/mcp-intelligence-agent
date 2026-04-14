@@ -648,26 +648,48 @@ class DuckDbDescribeTableTool(DuckDbBaseTool):
         return self.config.get('outputSchema', {})
 
     def execute(self, arguments: Dict[str, Any]) -> Dict:
-        """Execute describe table operation"""
+        """Execute describe table operation using a fresh per-request connection.
+
+        Uses the same fresh-connection + view-registration pattern as DuckDbQueryTool
+        and DuckDbListTablesTool so that worker-scoped subdirectory views (e.g.
+        iris__iris_combined) are visible.
+        """
+        import duckdb as _duckdb
+
         table_name = arguments['table_name']
         include_sample = arguments.get('include_sample_data', False)
         sample_size = arguments.get('sample_size', 5)
 
+        conn = _duckdb.connect(':memory:')
         try:
-            conn = self._get_connection()
+            # Register views for all files in the current worker context
+            files = self._scan_data_files()
+            for file_info in files:
+                unique_key = file_info.get('unique_key', file_info['filename'])
+                view_name = os.path.splitext(unique_key)[0]
+                view_name = ''.join(c if c.isalnum() or c == '_' else '_' for c in view_name)
+                fp = file_info['file_path']
+                ft = file_info['file_type']
+                try:
+                    if ft == 'csv':
+                        conn.execute(f"CREATE VIEW {view_name} AS SELECT * FROM read_csv_auto('{fp}', header=true, sample_size=100)")
+                    elif ft == 'parquet':
+                        conn.execute(f"CREATE VIEW {view_name} AS SELECT * FROM read_parquet('{fp}')")
+                    elif ft == 'json':
+                        conn.execute(f"CREATE VIEW {view_name} AS SELECT * FROM read_json_auto('{fp}')")
+                    elif ft == 'tsv':
+                        conn.execute(f"CREATE VIEW {view_name} AS SELECT * FROM read_csv_auto('{fp}', header=true, delim='\\t', sample_size=100)")
+                except Exception:
+                    pass
 
             # Get table type
-            table_type_query = f"""
-                SELECT table_type 
-                FROM information_schema.tables 
-                WHERE table_name = '{table_name}'
-            """
-            table_type_result = conn.execute(table_type_query).fetchone()
+            table_type_result = conn.execute(
+                f"SELECT table_type FROM information_schema.tables WHERE table_name = '{table_name}'"
+            ).fetchone()
             table_type = 'view' if table_type_result and table_type_result[0].lower() == 'view' else 'table'
 
             # Get column information
-            describe_query = f"DESCRIBE {table_name}"
-            describe_result = conn.execute(describe_query).fetchall()
+            describe_result = conn.execute(f"DESCRIBE {table_name}").fetchall()
 
             columns = []
             for row in describe_result:
@@ -677,15 +699,12 @@ class DuckDbDescribeTableTool(DuckDbBaseTool):
                     'nullable': row[2] == 'YES' if len(row) > 2 else True,
                     'is_primary_key': False
                 }
-
                 if len(row) > 3 and row[3]:
                     column_info['default_value'] = str(row[3])
-
                 columns.append(column_info)
 
             # Get row count
-            count_query = f"SELECT COUNT(*) FROM {table_name}"
-            row_count = conn.execute(count_query).fetchone()[0]
+            row_count = conn.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
 
             result = {
                 'table_name': table_name,
@@ -697,8 +716,7 @@ class DuckDbDescribeTableTool(DuckDbBaseTool):
 
             # Get sample data if requested
             if include_sample:
-                sample_query = f"SELECT * FROM {table_name} LIMIT {sample_size}"
-                sample_result = conn.execute(sample_query).fetchdf()
+                sample_result = conn.execute(f"SELECT * FROM {table_name} LIMIT {sample_size}").fetchdf()
                 result['sample_data'] = sample_result.to_dict(orient='records')
 
             return result
@@ -706,6 +724,8 @@ class DuckDbDescribeTableTool(DuckDbBaseTool):
         except Exception as e:
             self.logger.error(f"Failed to describe table: {e}")
             raise
+        finally:
+            conn.close()
 
 
 class DuckDbQueryTool(DuckDbBaseTool):
