@@ -1,6 +1,6 @@
 {
   "name": "python_execute",
-  "description": "Execute Python code in a sandboxed environment. Available libraries: pandas, numpy, scipy, matplotlib, plotly, openpyxl, pyarrow, statsmodels. No network access. Timeout: 60s. Use plotly for charts (they render in the canvas panel). Call fig.show() or plt.show() to capture figures.",
+  "description": "Execute Python code in a sandboxed environment. TO READ DATA FILES use the DATA_DIR env variable — it points to the worker's domain_data folder. Example: df = pd.read_csv(f\"{os.environ['DATA_DIR']}/iris/iris_combined.csv\"). Do NOT import duckdb, sqlalchemy, or any DB connector — they are not installed. Use the duckdb_query tool to fetch data into rows/columns first, then reconstruct a DataFrame: df = pd.DataFrame(rows, columns=columns). Available libraries: pandas, numpy, scipy, matplotlib, plotly, openpyxl, pyarrow, statsmodels, scikit-learn, arch, riskfolio, networkx, xarray. No network access. Timeout: 60s. Use plotly for charts — call fig.show() to render in the canvas panel.",
   "version": "1.0.0",
   "enabled": true,
   "implementation": "sajha.tools.impl.python_executor.PythonExecuteTool"
