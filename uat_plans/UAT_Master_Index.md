@@ -1,7 +1,7 @@
 # UAT Master Index — RiskGPT MCP Intelligence Agent
 
-**Last updated:** 2026-04-06
-**Overall status: ✅ REQ-01 through REQ-04, REQ-09, REQ-10, REQ-11 fully verified. CI tests all PASS. BT pending.**
+**Last updated:** 2026-04-14
+**Overall status: ✅ REQ-01 through REQ-04, REQ-09, REQ-10, REQ-11 fully verified. Platform UAT (S3 + Postgres + full-stack) in progress.**
 
 ---
 
@@ -16,7 +16,8 @@
 | REQ-09 BM25 Document Search (CI) | 10 | 10 | 0 | 0 | Python inline |
 | REQ-10 Common Data Path | 13 CI + 9 BT | 13 CI PASS | — | BT pending | Python inline + Playwright |
 | REQ-11 Parallel Upload Engine | 14 CI + 6 BT | 14 CI PASS | — | BT pending | Python inline + Playwright |
-| **Total** | **236** | **220** | **0** | **3** | |
+| **Platform UAT (S3 + Postgres + full-stack)** | **106** | **⏳ In Progress** | — | — | Python inline + Playwright |
+| **Total** | **342** | **220+ in progress** | **0** | **3** | |
 
 † 3 skips are environment-only (empty domain-data tree in admin context; no `.md` files in test worker `my_workflows`). Same functionality verified via equivalent tests.
 
@@ -43,6 +44,7 @@
 | [REQ-10_UAT_Results.md](REQ-10_UAT_Results.md) | REQ-10 CI test results — 13/13 PASS | ✅ CI PASS | 13 CI tests |
 | [REQ-11_UAT_Plan.md](REQ-11_UAT_Plan.md) | Multi-File Parallel Upload — streaming writes, 4 concurrent slots, batch_id deferred reindex, cancel/retry | ✅ 14 CI PASS / BT pending | 14 CI + 6 BT |
 | [REQ-11_UAT_Results.md](REQ-11_UAT_Results.md) | REQ-11 CI test results — 14/14 PASS | ✅ CI PASS | 14 CI tests |
+| [PLATFORM_UAT_Plan.md](PLATFORM_UAT_Plan.md) | **Platform UAT** — S3 + Postgres + Workers + Agent + Tools + Workflows + Connectors + UI (11 phases, 106 tests) | ⏳ In Progress | 106 tests |
 
 † REQ-03 VIZ-TEST-001: PARTIAL PASS — agent chose `python_execute` over `generate_chart` for chart generation; canvas pipeline verified via direct `openCanvasChart()` call. All 6 component fixes confirmed working.
 
