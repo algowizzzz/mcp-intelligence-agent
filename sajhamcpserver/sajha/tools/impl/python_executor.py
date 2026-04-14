@@ -66,10 +66,11 @@ def scan_code(code: str) -> List[str]:
 SANDBOX_PREAMBLE = r"""
 import os as _os, sys as _sys, json as _json, atexit as _atexit
 
-# Memory limit (512 MB) — only available on Linux; silently skip on macOS/Windows
+# Memory limit (1.5 GB) — only available on Linux; silently skip on macOS/Windows
+# Plotly template initialisation requires ~800MB+ address space; 512MB caused MemoryError.
 try:
     import resource as _resource
-    _MEM = 512 * 1024 * 1024
+    _MEM = 1536 * 1024 * 1024
     _resource.setrlimit(_resource.RLIMIT_AS, (_MEM, _MEM))
 except (ImportError, ValueError, _resource.error):
     pass
