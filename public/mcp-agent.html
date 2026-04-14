@@ -5747,7 +5747,7 @@
 
     function ftPreviewFile(section, path, name) {
       var ext = (name.split('.').pop() || '').toLowerCase();
-      var url = _agentBase + '/api/fs/' + section + '/file?path=' + encodeURIComponent(path);
+      var url = _ftApiPrefix() + '/' + section + '/file?path=' + encodeURIComponent(path);
       // Show canvas panel
       document.body.classList.add('canvas-active');
       var titleEl = document.getElementById('canvas-title');
@@ -5870,12 +5870,16 @@
     }
 
     function ftLoadSheet(section, path, ext) {
-      var url = _agentBase + '/api/fs/' + section + '/file?path=' + encodeURIComponent(path);
+      var url = _ftApiPrefix() + '/' + section + '/file?path=' + encodeURIComponent(path);
+      var tableEl = document.getElementById('sheet-table-container');
       fetch(url, { headers: _ftHeaders() })
-        .then(function(r) { return r.json(); })
+        .then(function(r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
         .then(function(data) {
           if (typeof XLSX === 'undefined') {
-            document.getElementById('sheet-table-container').innerHTML = '<p style="color:var(--text-muted);padding:24px">SheetJS not loaded</p>';
+            tableEl.innerHTML = '<p style="color:var(--text-muted);padding:24px">SheetJS not loaded</p>';
             return;
           }
           var wb;
@@ -5885,11 +5889,19 @@
             wb = XLSX.read(data.content, { type: 'string' });
           }
           var tabsEl = document.getElementById('sheet-tabs');
-          var tableEl = document.getElementById('sheet-table-container');
+          var sheetHtmls = wb.SheetNames.map(function(n) { return XLSX.utils.sheet_to_html(wb.Sheets[n]); });
           tabsEl.innerHTML = wb.SheetNames.map(function(n, i) {
-            return '<div class="sheet-tab' + (i === 0 ? ' active' : '') + '" onclick="sheetShowTab(this,' + JSON.stringify(XLSX.utils.sheet_to_html(wb.Sheets[n])) + ')">' + esc(n) + '</div>';
+            return '<div class="sheet-tab' + (i === 0 ? ' active' : '') + '" data-idx="' + i + '">' + esc(n) + '</div>';
           }).join('');
-          tableEl.innerHTML = XLSX.utils.sheet_to_html(wb.Sheets[wb.SheetNames[0]]);
+          tabsEl.querySelectorAll('.sheet-tab').forEach(function(tab) {
+            tab.addEventListener('click', function() {
+              sheetShowTab(tab, sheetHtmls[parseInt(tab.getAttribute('data-idx'))]);
+            });
+          });
+          tableEl.innerHTML = sheetHtmls[0];
+        })
+        .catch(function(err) {
+          tableEl.innerHTML = '<p style="color:var(--text-muted);padding:24px">Preview failed: ' + (err.message || err) + '</p>';
         });
     }
 
