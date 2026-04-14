@@ -27,14 +27,51 @@ jobs:
           ssh -o StrictHostKeyChecking=no root@${{ secrets.SERVER_IP }} << 'SCRIPT'
             set -e
 
-            # Install AWS CLI if not present
+            # Install AWS CLI via pip3 (boto3 already on server; awscli is quickest)
             if ! command -v aws &>/dev/null; then
-              echo "Installing AWS CLI..."
-              apt-get install -y awscli 2>/dev/null || \
-              pip3 install awscli --quiet 2>/dev/null || \
-              (curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip && \
-               unzip -q /tmp/awscliv2.zip -d /tmp && \
-               /tmp/aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli)
+              echo "Installing AWS CLI via pip3..."
+              pip3 install awscli --quiet --break-system-packages 2>/dev/null || \
+              pip3 install awscli --quiet 2>/dev/null || true
+            fi
+
+            # Fallback: use Python + boto3 for the sync if aws CLI still missing
+            if ! command -v aws &>/dev/null; then
+              echo "aws CLI not available — falling back to Python boto3 sync"
+              python3 - << 'PYEOF'
+import os, boto3, pathlib
+
+src = pathlib.Path("/opt/sajha/data/app")
+bucket = "sajha-storage"
+endpoint = "https://hel1.your-objectstorage.com"
+
+s3 = boto3.client(
+    "s3",
+    endpoint_url=endpoint,
+    region_name="eu-central-1",
+    aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+    aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+)
+
+if not src.exists():
+    print(f"Source {src} does not exist — nothing to migrate")
+    exit(0)
+
+uploaded = 0
+for fpath in src.rglob("*"):
+    if not fpath.is_file():
+        continue
+    key = str(fpath.relative_to(src))
+    print(f"  upload: {key}")
+    s3.upload_file(str(fpath), bucket, key)
+    uploaded += 1
+
+print(f"Uploaded {uploaded} files to s3://{bucket}")
+
+# Verify
+resp = s3.list_objects_v2(Bucket=bucket)
+print(f"Objects in bucket: {resp.get('KeyCount', '?')}")
+PYEOF
+              exit 0
             fi
 
             echo "AWS CLI: $(aws --version)"
