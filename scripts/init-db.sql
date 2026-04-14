@@ -63,6 +63,22 @@ CREATE TABLE IF NOT EXISTS workers (
 
 CREATE INDEX IF NOT EXISTS idx_workers_enabled ON workers (enabled);
 
+-- Conversation threads (chat history index — REQ-07)
+CREATE TABLE IF NOT EXISTS conversation_threads (
+    thread_id       UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id         TEXT NOT NULL,
+    worker_id       TEXT NOT NULL,
+    title           TEXT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_activity_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    archived_at     TIMESTAMPTZ,
+    message_count   INTEGER NOT NULL DEFAULT 0,
+    token_count_est INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_threads_user_worker ON conversation_threads (user_id, worker_id);
+CREATE INDEX IF NOT EXISTS idx_threads_active ON conversation_threads (user_id, archived_at);
+
 -- Session tracking
 CREATE TABLE IF NOT EXISTS sessions (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

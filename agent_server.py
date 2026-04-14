@@ -551,6 +551,12 @@ async def _lifespan(app: FastAPI):
     """Initialize checkpointer on startup. Uses PostgresSaver when DATABASE_URL is set,
     falls back to AsyncSqliteSaver for local development. (REQ-07)"""
     _pg_url = os.getenv('DATABASE_URL')
+    if _pg_url and _DB_ENABLED:
+        # Ensure conversation_threads table exists (may be missing on older installs)
+        try:
+            await _db_repo._ensure_conversation_threads_table()
+        except Exception as _ct_err:
+            logging.getLogger(__name__).warning("conversation_threads ensure failed: %s", _ct_err)
     if _pg_url:
         # PostgreSQL checkpointer — production path
         try:
@@ -3204,9 +3210,11 @@ async def list_threads(payload: dict = Depends(require_jwt)):
             return {'threads': threads}
         except Exception:
             pass
-    # Fallback to in-memory registry
+    # Fallback to in-memory registry (JSONL file).
+    # Inject message_count=1 so the frontend filter (message_count > 0) shows these threads.
+    # Threads in the registry exist because at least one agent run completed for them.
     threads = [
-        {'thread_id': tid, **meta}
+        {'thread_id': tid, 'message_count': 1, **meta}
         for tid, meta in _thread_registry.items()
         if meta['user_id'] == user_id and meta.get('worker_id') == worker_id
     ]

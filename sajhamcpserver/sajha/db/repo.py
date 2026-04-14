@@ -11,8 +11,39 @@ from typing import Optional
 from sqlalchemy import select, delete, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .engine import AsyncSessionLocal
+from .engine import AsyncSessionLocal, engine
 from .models import User, Worker, Connector, ConversationThread, AuditEvent, FileMetadata
+
+
+async def _ensure_conversation_threads_table() -> None:
+    """Create conversation_threads if missing — safe to call on every startup."""
+    from sqlalchemy import text
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS conversation_threads (
+                    thread_id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id          TEXT NOT NULL,
+                    worker_id        TEXT NOT NULL,
+                    title            TEXT,
+                    created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    last_activity_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    archived_at      TIMESTAMPTZ,
+                    message_count    INTEGER NOT NULL DEFAULT 0,
+                    token_count_est  INTEGER NOT NULL DEFAULT 0
+                )
+            """))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_threads_user_worker "
+                "ON conversation_threads (user_id, worker_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_threads_active "
+                "ON conversation_threads (user_id, archived_at)"
+            ))
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("_ensure_conversation_threads_table failed: %s", e)
 
 
 # ── Users ──────────────────────────────────────────────────────────────────────
