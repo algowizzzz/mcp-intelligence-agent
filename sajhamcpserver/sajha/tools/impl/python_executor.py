@@ -228,7 +228,9 @@ def _collect_figures(tmpdir: str, charts_dir: str) -> List[Dict[str, str]]:
     except Exception:
         return []
 
-    os.makedirs(charts_dir, exist_ok=True)
+    # mkdir only for local paths; S3 storage creates "directories" on write
+    if not str(charts_dir).startswith('s3://'):
+        os.makedirs(charts_dir, exist_ok=True)
     figures: List[Dict[str, str]] = []
     for entry in raw_figures:
         src_path = entry.get('path', '')
@@ -266,7 +268,7 @@ def _copy_context_files(context_files: List[str], tmpdir: str, worker_ctx: dict,
                 try:
                     base = path_resolve('my_data', worker_ctx, user_id=user_id)
                     candidate = os.path.join(base, inner)
-                    if os.path.isfile(candidate):
+                    if storage.exists(candidate):
                         resolved = candidate
                 except Exception:
                     pass
@@ -276,7 +278,7 @@ def _copy_context_files(context_files: List[str], tmpdir: str, worker_ctx: dict,
                 try:
                     base = path_resolve('domain_data', worker_ctx)
                     candidate = os.path.join(base, inner)
-                    if os.path.isfile(candidate):
+                    if storage.exists(candidate):
                         resolved = candidate
                 except Exception:
                     pass
@@ -288,7 +290,7 @@ def _copy_context_files(context_files: List[str], tmpdir: str, worker_ctx: dict,
                 try:
                     base = path_resolve('common_data', worker_ctx)
                     candidate = os.path.join(base, inner)
-                    if os.path.isfile(candidate):
+                    if storage.exists(candidate):
                         resolved = candidate
                 except Exception:
                     pass
@@ -607,14 +609,19 @@ class PythonRunScriptTool(BaseMCPTool):
                 resolve_errors.append(f'{try_section}: {exc}')
                 continue
 
-            candidate = os.path.normpath(os.path.join(candidate_root, script_path))
+            # S3-safe path join and traversal guard (avoid os.path.normpath which corrupts s3://)
+            if candidate_root.startswith('s3://'):
+                candidate = candidate_root.rstrip('/') + '/' + script_path.lstrip('/')
+                if not candidate.startswith(candidate_root.rstrip('/')):
+                    resolve_errors.append(f'{try_section}: path traversal blocked')
+                    continue
+            else:
+                candidate = os.path.normpath(os.path.join(candidate_root, script_path))
+                if not candidate.startswith(os.path.normpath(candidate_root)):
+                    resolve_errors.append(f'{try_section}: path traversal blocked')
+                    continue
 
-            # Security: prevent path traversal outside section root
-            if not candidate.startswith(os.path.normpath(candidate_root)):
-                resolve_errors.append(f'{try_section}: path traversal blocked')
-                continue
-
-            if os.path.isfile(candidate):
+            if storage.exists(candidate):
                 abs_script = candidate
                 section_root = candidate_root
                 break
@@ -629,10 +636,9 @@ class PythonRunScriptTool(BaseMCPTool):
                 '_python_ready': False,
             }
 
-        # Read script source
+        # Read script source (storage.read_text works for both local and S3 paths)
         try:
-            with open(abs_script, encoding='utf-8') as fh:
-                code = fh.read()
+            code = storage.read_text(abs_script, encoding='utf-8')
         except Exception as exc:
             return {
                 'stdout': '', 'stderr': str(exc), 'exit_code': 1,

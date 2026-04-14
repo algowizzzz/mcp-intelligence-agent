@@ -62,14 +62,15 @@ SUPPORTED_TYPES = ['bar','bar_horizontal','line','area','scatter','histogram',
 PLOTLY_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js'
 
 
-def _resolve_charts_dir(worker_ctx: dict = None, user_id: str = None) -> Path:
-    """Return per-user charts directory: my_data/{user_id}/charts/.
+def _resolve_charts_dir(worker_ctx: dict = None, user_id: str = None) -> str:
+    """Return per-user charts directory path: my_data/{user_id}/charts/.
+    Returns a plain string so s3:// URIs are not corrupted by pathlib normalisation.
     Falls back to data/uploads/charts only if no worker context available.
     """
     if worker_ctx:
         try:
             base = path_resolve('my_data', worker_ctx, user_id=user_id or '_shared')
-            return Path(base) / 'charts'
+            return base.rstrip('/') + '/charts'
         except Exception:
             pass
     # No worker context — error rather than silently using old path
@@ -77,7 +78,7 @@ def _resolve_charts_dir(worker_ctx: dict = None, user_id: str = None) -> Path:
         from flask import g as _g
         my_data_root = getattr(_g, 'worker_my_data_root', '') or ''
         if my_data_root:
-            return Path(my_data_root.strip()) / 'charts'
+            return my_data_root.strip().rstrip('/') + '/charts'
     except RuntimeError:
         pass
     raise RuntimeError('Cannot resolve charts directory: no worker context available')
@@ -452,11 +453,13 @@ class GenerateChartTool(BaseMCPTool):
                 if not fname.endswith('.png'):
                     fname += '.png'
                 charts_dir = _resolve_charts_dir(worker_ctx, user_id)
-                charts_dir.mkdir(parents=True, exist_ok=True)
-                out_path = charts_dir / fname
+                # mkdir only for local paths; S3 storage creates "directories" implicitly
+                if not charts_dir.startswith('s3://'):
+                    Path(charts_dir).mkdir(parents=True, exist_ok=True)
+                out_path = charts_dir.rstrip('/') + '/' + fname
                 img_bytes = pio.to_image(fig, format='png', width=width, height=height, scale=2)
-                storage.write_bytes(str(out_path), img_bytes)
-                png_path = str(out_path)
+                storage.write_bytes(out_path, img_bytes)
+                png_path = out_path
                 png_size = len(img_bytes)
             except ImportError:
                 warnings.append('Kaleido not installed — PNG export skipped. Install with: pip install kaleido')
@@ -473,11 +476,13 @@ class GenerateChartTool(BaseMCPTool):
             try:
                 ts = datetime.now(tz=timezone.utc).strftime('%Y%m%d_%H%M%S')
                 charts_dir = _resolve_charts_dir(worker_ctx, user_id)
-                charts_dir.mkdir(parents=True, exist_ok=True)
+                # mkdir only for local paths; S3 storage creates "directories" implicitly
+                if not charts_dir.startswith('s3://'):
+                    Path(charts_dir).mkdir(parents=True, exist_ok=True)
                 html_fname = f"chart_{chart_type}_{ts}.html"
-                html_out = charts_dir / html_fname
-                storage.write_text(str(html_out), html_content, encoding='utf-8')
-                html_file_path = str(html_out)
+                html_out = charts_dir.rstrip('/') + '/' + html_fname
+                storage.write_text(html_out, html_content, encoding='utf-8')
+                html_file_path = html_out
             except Exception:
                 pass
 

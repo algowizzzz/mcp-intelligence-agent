@@ -165,9 +165,10 @@ class ListUploadedFilesTool(BaseMCPTool):
         searched_dirs = []
 
         for section_name, base_path in roots:
-            root = os.path.normpath(base_path)
+            # Avoid os.path.normpath — it corrupts s3:// URIs (converts // to /)
+            root = base_path.rstrip('/')
             if subfolder:
-                root = os.path.join(root, subfolder)
+                root = root + '/' + subfolder
             searched_dirs.append(root)
 
             for rel_key in storage.list_prefix(root):
@@ -182,12 +183,12 @@ class ListUploadedFilesTool(BaseMCPTool):
                     continue
                 if file_type != 'all' and ext != file_type:
                     continue
-                fpath = os.path.join(root, rel_key)
+                fpath = root + '/' + rel_key
                 sub = os.path.dirname(rel_key)
                 files.append({
                     'filename': fname,
                     'relative_path': rel_key,
-                    'file_path': os.path.abspath(fpath),
+                    'file_path': fpath,
                     'section': section_name,
                     'subfolder': sub if sub != '.' else '',
                     'file_type': ext,

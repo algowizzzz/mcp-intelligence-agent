@@ -120,9 +120,10 @@ class DuckDbBaseTool(BaseMCPTool):
             if cd:
                 self.data_directories.append(('common', cd))
 
-        # Ensure all data directories exist
+        # Ensure all data directories exist (skip for S3 paths — no local mkdir needed)
         for _, d in self.data_directories:
-            os.makedirs(d, exist_ok=True)
+            if not str(d).startswith('s3://'):
+                os.makedirs(d, exist_ok=True)
 
         # REQ-PREP-04: in-memory DuckDB connection (no persistent db_path)
         # S3/httpfs stub: to activate S3 reads, uncomment and configure:
@@ -363,10 +364,10 @@ class DuckDbBaseTool(BaseMCPTool):
                     conn.execute(create_view_sql)
 
                     try:
-                        stat = os.stat(file_path)
+                        size = storage.get_size(file_path)
                         self._file_states[filename] = {
-                            'mtime': stat.st_mtime,
-                            'size': stat.st_size,
+                            'mtime': 0,
+                            'size': size,
                             'view_name': view_name,
                             'file_type': file_type,
                             'file_path': file_path
@@ -433,27 +434,30 @@ class DuckDbBaseTool(BaseMCPTool):
                     view_name = os.path.splitext(filename)[0]
                     view_name = ''.join(c if c.isalnum() or c == '_' else '_' for c in view_name)
 
+                    # S3 compat: download to /tmp so DuckDB can open the file
+                    local_path = _ensure_local(file_path)
+
                     # Create view based on file type
                     if file_type == 'csv':
                         create_view_sql = f"""
-                            CREATE VIEW {view_name} AS 
-                            SELECT * FROM read_csv_auto('{file_path}', 
+                            CREATE VIEW {view_name} AS
+                            SELECT * FROM read_csv_auto('{local_path}',
                                 header=true, auto_detect=true, sample_size=-1)
                         """
                     elif file_type == 'parquet':
                         create_view_sql = f"""
-                            CREATE VIEW {view_name} AS 
-                            SELECT * FROM read_parquet('{file_path}')
+                            CREATE VIEW {view_name} AS
+                            SELECT * FROM read_parquet('{local_path}')
                         """
                     elif file_type == 'json':
                         create_view_sql = f"""
-                            CREATE VIEW {view_name} AS 
-                            SELECT * FROM read_json_auto('{file_path}')
+                            CREATE VIEW {view_name} AS
+                            SELECT * FROM read_json_auto('{local_path}')
                         """
                     elif file_type == 'tsv':
                         create_view_sql = f"""
-                            CREATE VIEW {view_name} AS 
-                            SELECT * FROM read_csv_auto('{file_path}', 
+                            CREATE VIEW {view_name} AS
+                            SELECT * FROM read_csv_auto('{local_path}',
                                 header=true, delim='\\t', auto_detect=true, sample_size=-1)
                         """
                     else:
@@ -462,11 +466,11 @@ class DuckDbBaseTool(BaseMCPTool):
                     # Create the view
                     conn.execute(create_view_sql)
 
-                    # Track the new file
-                    stat = os.stat(file_path)
+                    # Track the new file (use storage.get_size — works for both local and S3)
+                    size = storage.get_size(file_path)
                     self._file_states[filename] = {
-                        'mtime': stat.st_mtime,
-                        'size': stat.st_size,
+                        'mtime': 0,
+                        'size': size,
                         'view_name': view_name,
                         'file_type': file_type,
                         'file_path': file_path
@@ -485,11 +489,11 @@ class DuckDbBaseTool(BaseMCPTool):
                     file_info = current_file_map[filename]
                     file_path = file_info['file_path']
 
-                    # Check if file was modified
-                    stat = os.stat(file_path)
+                    # Check if file was modified — use storage.get_size (works for S3 + local)
+                    current_size = storage.get_size(file_path)
                     old_state = self._file_states[filename]
 
-                    if stat.st_mtime != old_state['mtime'] or stat.st_size != old_state['size']:
+                    if current_size != old_state['size']:
                         # File was modified - reload the view
                         view_name = old_state['view_name']
                         file_type = old_state['file_type']
@@ -497,26 +501,29 @@ class DuckDbBaseTool(BaseMCPTool):
                         # Drop and recreate the view
                         conn.execute(f"DROP VIEW IF EXISTS {view_name}")
 
+                        # S3 compat: download to /tmp so DuckDB can open the file
+                        local_path = _ensure_local(file_path)
+
                         if file_type == 'csv':
                             create_view_sql = f"""
-                                CREATE VIEW {view_name} AS 
-                                SELECT * FROM read_csv_auto('{file_path}', 
+                                CREATE VIEW {view_name} AS
+                                SELECT * FROM read_csv_auto('{local_path}',
                                     header=true, auto_detect=true, sample_size=-1)
                             """
                         elif file_type == 'parquet':
                             create_view_sql = f"""
-                                CREATE VIEW {view_name} AS 
-                                SELECT * FROM read_parquet('{file_path}')
+                                CREATE VIEW {view_name} AS
+                                SELECT * FROM read_parquet('{local_path}')
                             """
                         elif file_type == 'json':
                             create_view_sql = f"""
-                                CREATE VIEW {view_name} AS 
-                                SELECT * FROM read_json_auto('{file_path}')
+                                CREATE VIEW {view_name} AS
+                                SELECT * FROM read_json_auto('{local_path}')
                             """
                         elif file_type == 'tsv':
                             create_view_sql = f"""
-                                CREATE VIEW {view_name} AS 
-                                SELECT * FROM read_csv_auto('{file_path}', 
+                                CREATE VIEW {view_name} AS
+                                SELECT * FROM read_csv_auto('{local_path}',
                                     header=true, delim='\\t', auto_detect=true, sample_size=-1)
                             """
                         else:
@@ -525,8 +532,8 @@ class DuckDbBaseTool(BaseMCPTool):
                         conn.execute(create_view_sql)
 
                         # Update tracked state
-                        self._file_states[filename]['mtime'] = stat.st_mtime
-                        self._file_states[filename]['size'] = stat.st_size
+                        self._file_states[filename]['mtime'] = 0
+                        self._file_states[filename]['size'] = current_size
 
                         self.logger.info(f"🔄 Reloaded view '{view_name}' (file modified: {filename})")
                         changes_made = True

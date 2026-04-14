@@ -73,8 +73,55 @@ def _templates_dir():
         pass
     return _resolve(_props().get('data.templates_dir', './data/domain_data/templates'))
 
+class _S3PseudoPath:
+    """Minimal pathlib.Path-compatible wrapper for s3:// URIs.
+    Exposes .name, .stem, .suffix, .parent, .exists(), and str() so that
+    callers written for local paths work transparently in S3 mode.
+    """
+    def __init__(self, uri: str):
+        self._uri = uri
+        self._basename = os.path.basename(uri.rstrip('/'))
+        base, ext = os.path.splitext(self._basename)
+        self._stem = base
+        self._suffix = ext
+
+    @property
+    def name(self) -> str:
+        return self._basename
+
+    @property
+    def stem(self) -> str:
+        return self._stem
+
+    @property
+    def suffix(self) -> str:
+        return self._suffix
+
+    @property
+    def parent(self) -> '_S3PseudoPath':
+        parent_uri = self._uri[:self._uri.rfind('/')]
+        return _S3PseudoPath(parent_uri)
+
+    def with_suffix(self, suffix: str) -> '_S3PseudoPath':
+        new_uri = self._uri[:self._uri.rfind('.')] + suffix if '.' in os.path.basename(self._uri) else self._uri + suffix
+        return _S3PseudoPath(new_uri)
+
+    def exists(self) -> bool:
+        return storage.exists(self._uri)
+
+    def __str__(self) -> str:
+        return self._uri
+
+    def __fspath__(self) -> str:
+        return self._uri
+
+
 def _safe_path(path_str, *allowed_roots):
-    """Return resolved Path if it's within one of the allowed roots, else None."""
+    """Return a Path (or _S3PseudoPath) if within one of the allowed roots, else None.
+    S3 mode: s3:// URIs bypass local-path validation; bucket-level IAM is the boundary.
+    """
+    if str(path_str).startswith('s3://'):
+        return _S3PseudoPath(str(path_str))
     try:
         p = Path(path_str).resolve()
     except Exception:
@@ -141,7 +188,7 @@ class PdfReadTool(BaseMCPTool):
         safe = _safe_path(file_path, _domain_root(), _my_data_root(), _common_root())
         if not safe:
             return {"error": f"File not found or access denied: {file_path}"}
-        if not safe.exists():
+        if not storage.exists(str(safe)):
             return {"error": f"File not found or access denied: {file_path}"}
         if safe.suffix.lower() != ".pdf":
             return {"error": "pdf_read only accepts .pdf files."}
@@ -561,7 +608,7 @@ class MdToDocxTool(BaseMCPTool):
         include_toc = arguments.get("include_toc", False)
 
         safe = _safe_path(file_path, _domain_root(), _my_data_root(), _common_root())
-        if not safe or not safe.exists():
+        if not safe or not storage.exists(str(safe)):
             return {"error": f"File not found or access denied: {file_path}"}
         if safe.suffix.lower() != ".md":
             return {"error": "md_to_docx only accepts .md files."}
@@ -772,39 +819,56 @@ class SearchFilesTool(BaseMCPTool):
         else:
             pattern = re.compile(re.escape(query), re.IGNORECASE)
 
-        # Collect candidate files
+        # Collect candidate root paths.
+        # Use raw worker context strings (not resolved absolute paths) so that
+        # storage._key() normalises them correctly in S3 mode.
+        try:
+            from flask import g as _g
+            _dd = getattr(_g, 'worker_data_root', None) or ''
+            _cd = getattr(_g, 'worker_common_root', None) or ''
+            _md = getattr(_g, 'worker_my_data_root', None) or ''
+        except RuntimeError:
+            _dd = _cd = _md = ''
+        _dd = _dd or _props().get('data.domain_data.dir', './data/domain_data')
+        _cd = _cd or _props().get('data.common_data.dir', './data/common')
+        _md = _md or _props().get('data.my_data.dir', './data/uploads')
+
         roots = []
-        if section in ("domain_data", "all"):
-            roots.append(("domain_data", _domain_root()))
-        if section in ("my_data", "all"):
-            roots.append(("my_data", _my_data_root()))
-        if section in ("common", "all"):
-            roots.append(("common", _common_root()))
+        if section in ("domain_data", "all") and _dd:
+            roots.append(("domain_data", _dd.rstrip('/')))
+        if section in ("my_data", "all") and _md:
+            roots.append(("my_data", _md.rstrip('/')))
+        if section in ("common", "all") and _cd:
+            roots.append(("common", _cd.rstrip('/')))
 
         candidates = []
-        for sec_name, root in roots:
-            if not root.exists():
-                continue
-            for f in root.rglob("*"):
-                if not f.is_file():
+        for sec_name, root_str in roots:
+            # Use storage.list_prefix — works for both local filesystem and S3
+            try:
+                rel_paths = storage.list_prefix(root_str)
+            except Exception:
+                rel_paths = []
+            for rel_path in rel_paths:
+                fname = os.path.basename(rel_path)
+                if fname.startswith("."):
                     continue
-                if f.name.startswith("."):
+                if folder_filter and folder_filter.lower() not in rel_path.lower():
                     continue
-                if folder_filter and folder_filter.lower() not in str(f.parent).lower():
-                    continue
-                ext = f.suffix.lower().lstrip(".")
+                ext = os.path.splitext(fname)[1].lower().lstrip(".")
                 if file_type != "all" and ext != file_type:
                     continue
                 if ext in ("parquet", "pq", "db", "wal", "pyc"):
                     continue
-                candidates.append((sec_name, f, ext))
+                # Build the full path string (works for both local and s3://)
+                f_path = root_str + '/' + rel_path
+                candidates.append((sec_name, f_path, fname, ext))
 
         results = []
-        for sec_name, f, ext in candidates:
+        for sec_name, f_path, fname, ext in candidates:
             if len(results) >= max_results:
                 break
             try:
-                text = self._extract_text(f, ext)
+                text = self._extract_text(f_path, ext)
             except Exception:
                 continue
             if not text:
@@ -821,13 +885,13 @@ class SearchFilesTool(BaseMCPTool):
                 snippet = pattern.sub(lambda x: f"[{x.group()}]", snippet)
                 excerpts.append(snippet)
             results.append({
-                "filename": f.name,
-                "path": str(f),
+                "filename": fname,
+                "path": f_path,
                 "file_type": ext,
                 "section": sec_name,
                 "match_count": len(matches),
                 "excerpts": excerpts,
-                "_source": str(f),
+                "_source": f_path,
             })
 
         return {
@@ -843,7 +907,9 @@ class SearchFilesTool(BaseMCPTool):
             return storage.read_text(str(path), encoding="utf-8")
         if ext == "docx":
             from docx import Document
-            doc = Document(str(path))
+            # Use BytesIO so this works with S3 paths and local paths alike
+            raw = storage.read_bytes(str(path))
+            doc = Document(io.BytesIO(raw))
             parts = [p.text for p in doc.paragraphs]
             for table in doc.tables:
                 for row in table.rows:
@@ -852,7 +918,9 @@ class SearchFilesTool(BaseMCPTool):
             return "\n".join(parts)
         if ext in ("xlsx", "xls"):
             import openpyxl
-            wb = openpyxl.load_workbook(str(path), read_only=True, data_only=True)
+            # Use BytesIO so this works with S3 paths and local paths alike
+            raw = storage.read_bytes(str(path))
+            wb = openpyxl.load_workbook(io.BytesIO(raw), read_only=True, data_only=True)
             parts = []
             for ws in wb.worksheets:
                 for row in ws.iter_rows(values_only=True):
@@ -915,11 +983,11 @@ class FillTemplateTool(BaseMCPTool):
         # Security: template must be within worker templates dir or common templates dir
         tmpl_dir = _templates_dir()
         safe = _safe_path(template_path, tmpl_dir)
-        if not safe or not safe.exists():
+        if not safe or not storage.exists(str(safe)):
             # Also try common/templates
             common_tmpl_dir = _common_root() / "templates"
             safe = _safe_path(template_path, common_tmpl_dir)
-        if not safe or not safe.exists():
+        if not safe or not storage.exists(str(safe)):
             return {"error": "Template access denied"}
         if safe.suffix.lower() != ".md":
             return {"error": "fill_template only accepts .md template files."}
@@ -1034,28 +1102,32 @@ class ListVersionsTool(BaseMCPTool):
         canonical = None
         versions = []
 
-        search_paths = list(search_root.rglob("*")) if search_root.exists() else []
-        for f in search_paths:
-            if not f.is_file():
-                continue
-            stat = f.stat()
-            mtime = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
+        # Use storage.list_prefix so this works with S3 and local backends
+        try:
+            rel_paths = storage.list_prefix(str(search_root))
+        except Exception:
+            rel_paths = []
+        for rel_path in rel_paths:
+            fname = os.path.basename(rel_path)
+            f_path = str(search_root).rstrip('/') + '/' + rel_path
+            size = storage.get_size(f_path)
+            mtime = datetime.now(tz=timezone.utc)  # S3 has no local mtime; use now as fallback
 
-            if f.name.lower() == filename.lower():
+            if fname.lower() == filename.lower():
                 canonical = {
-                    "filename": f.name,
-                    "path": str(f),
+                    "filename": fname,
+                    "path": f_path,
                     "modified_at": mtime.isoformat(),
-                    "size_bytes": stat.st_size,
+                    "size_bytes": size,
                 }
             else:
-                m = version_pattern.match(f.name)
+                m = version_pattern.match(fname)
                 if m:
                     versions.append({
-                        "filename": f.name,
-                        "path": str(f),
-                        "archived_at": mtime.isoformat(),
-                        "size_bytes": stat.st_size,
+                        "filename": fname,
+                        "path": f_path,
+                        "archived_at": m.group(1),
+                        "size_bytes": size,
                         "_ts": m.group(1),
                     })
 

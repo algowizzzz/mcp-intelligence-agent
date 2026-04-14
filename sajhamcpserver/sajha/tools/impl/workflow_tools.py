@@ -42,10 +42,9 @@ def _workflows_base():
 def _metadata():
     """Load .metadata.json sidecar if present."""
     d = _workflows_dir()
-    meta_path = os.path.join(d, ".metadata.json")
+    meta_path = d.rstrip('/') + '/.metadata.json'
     try:
-        with open(meta_path) as f:
-            return json.load(f)
+        return json.loads(storage.read_text(meta_path))
     except Exception:
         return {}
 
@@ -181,18 +180,18 @@ class WorkflowGetTool(BaseMCPTool):
         filename = filename.lstrip("/").lstrip("./")
         if not filename.endswith(".md"):
             filename += ".md"
-        # Safety: resolve and confirm inside base
-        full_path = os.path.realpath(os.path.join(base, filename))
-        if not full_path.startswith(os.path.realpath(base)):
+        # Safety: confirm path stays within base (S3-safe — no os.path.realpath)
+        full_path = base.rstrip('/') + '/' + filename
+        if not full_path.startswith(base.rstrip('/')):
             return {"error": "Access denied"}
-        if not os.path.exists(full_path):
+        if not storage.exists(full_path):
             # Fallback: try searching verified/ and my/ by basename
             basename = os.path.basename(filename)
             for sub in ["verified", "my"]:
-                candidate = os.path.join(base, sub, basename)
-                if os.path.exists(candidate):
+                candidate = base.rstrip('/') + '/' + sub + '/' + basename
+                if storage.exists(candidate):
                     full_path = candidate
-                    filename = os.path.join(sub, basename).replace("\\", "/")
+                    filename = sub + '/' + basename
                     break
             else:
                 return {"error": f"Workflow not found: {filename}"}
