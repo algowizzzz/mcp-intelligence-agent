@@ -27,7 +27,6 @@ uat_plans/
 handover/
 Documentation/
 requirements/
-scripts/
 test_playwright.js
 package.json
 package-lock.json
