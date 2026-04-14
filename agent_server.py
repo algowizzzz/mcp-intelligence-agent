@@ -1041,22 +1041,30 @@ async def super_delete_user(user_id: str, _: dict = Depends(require_super_admin)
 
 
 class ResetPasswordRequest(BaseModel):
-    pass
+    new_password: Optional[str] = None  # If supplied, use it; otherwise generate a temp password
 
 @app.post('/api/super/users/{user_id}/reset-password')
-async def super_reset_password(user_id: str, _: dict = Depends(require_super_admin)):
+async def super_reset_password(user_id: str, req: ResetPasswordRequest = ResetPasswordRequest(),
+                               _: dict = Depends(require_super_admin)):
     import secrets, string
-    tmp = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))
+    if req.new_password:
+        if len(req.new_password) < 10:
+            raise HTTPException(status_code=400, detail='Password must be at least 10 characters')
+        new_pwd = req.new_password
+        force_onboarding = False
+    else:
+        new_pwd = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))
+        force_onboarding = True   # temp password → force re-onboarding so user sets their own
     users = _load_users()
     for u in users:
         if u['user_id'] == user_id:
-            ph = _hash_password(tmp)
+            ph = _hash_password(new_pwd)
             if ph: u['password_hash'] = ph
             u.pop('password', None)
-            u['onboarding_complete'] = False
+            u['onboarding_complete'] = not force_onboarding
             break
     _save_users(users)
-    return {'temp_password': tmp, 'onboarding_complete': False}
+    return {'temp_password': new_pwd, 'onboarding_complete': not force_onboarding}
 
 
 # ── Super Admin — LLM Provider Config ─────────────────────────────────────────

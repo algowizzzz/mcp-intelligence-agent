@@ -34,7 +34,6 @@
 | 6 | Core Tools — S3-Backed Data | 🟠 HIGH | TOOL-01–14 | ⏳ |
 | 7 | Workflows (single + multi-agent) | 🟠 HIGH | WF-01–08 | ⏳ |
 | 8 | External Data Tools | 🟡 MEDIUM | EXT-01–06 | ⏳ |
-| 9 | Connector Tools (Teams, Jira, Outlook) | 🟡 MEDIUM | CONN-01–08 | ⏳ |
 | 10 | Admin + Chat UI — Playwright | 🟡 MEDIUM | UI-01–14 | ⏳ |
 | 11 | Audit, Sessions & Observability | 🟢 LOW | AUD-01–06 | ⏳ |
 
@@ -1417,137 +1416,6 @@ print(f"EXT-06 — SEC XBRL response: {text[:200]}")
 
 ---
 
-## Phase 9 — Connector Tools
-
-> **Goal:** Microsoft Teams, Jira, Outlook tools execute successfully using configured credentials.
-
-### CONN-01 — Teams: list channels
-```python
-r = requests.post(f"{BASE}/api/agent/run",
-    headers={**auth(TOKEN), "Accept": "text/event-stream"},
-    json={"query": "List channels in the Market Risk Teams team",
-          "worker_id": WID}, stream=True)
-text = ""
-for event in sseclient.SSEClient(r).events():
-    if event.event == "text":
-        text += json.loads(event.data).get("content", "")
-    if event.event == "error" or len(text) > 300:
-        break
-assert "B-Pulse" in text or "channel" in text.lower() or "Market Risk" in text, \
-    f"Teams channels not returned: {text[:200]}"
-print(f"CONN-01 PASS — Teams channels: {text[:100]}")
-```
-
-### CONN-02 — Teams: get recent messages from B-Pulse Alerts channel
-```python
-r = requests.post(f"{BASE}/api/agent/run",
-    headers={**auth(TOKEN), "Accept": "text/event-stream"},
-    json={"query": "Get the last 5 messages from the B-Pulse Alerts channel",
-          "worker_id": WID}, stream=True)
-text = ""
-for event in sseclient.SSEClient(r).events():
-    if event.event == "text":
-        text += json.loads(event.data).get("content", "")
-    if event.event == "error" or len(text) > 400:
-        break
-print(f"CONN-02 — Teams messages: {text[:200]}")
-```
-
-### CONN-03 — Teams: send message (requires ChannelMessage.Send.Group permission)
-```python
-r = requests.post(f"{BASE}/api/agent/run",
-    headers={**auth(TOKEN), "Accept": "text/event-stream"},
-    json={"query": "Send a message to B-Pulse Alerts channel: UAT test message from agent",
-          "worker_id": WID}, stream=True)
-text = ""
-for event in sseclient.SSEClient(r).events():
-    if event.event == "text":
-        text += json.loads(event.data).get("content", "")
-    if event.event == "error" or len(text) > 300:
-        break
-print(f"CONN-03 — Teams send: {text[:200]}")
-```
-
-### CONN-04 — Jira: list projects
-```python
-r = requests.post(f"{BASE}/api/agent/run",
-    headers={**auth(TOKEN), "Accept": "text/event-stream"},
-    json={"query": "List Jira projects available", "worker_id": WID},
-    stream=True)
-text = ""
-for event in sseclient.SSEClient(r).events():
-    if event.event == "text":
-        text += json.loads(event.data).get("content", "")
-    if event.event == "error" or len(text) > 300:
-        break
-assert "MRISK" in text or "Market Risk" in text or "project" in text.lower(), \
-    f"Jira projects not returned: {text[:200]}"
-print(f"CONN-04 PASS — Jira projects: {text[:100]}")
-```
-
-### CONN-05 — Jira: create and close issue
-```python
-r = requests.post(f"{BASE}/api/agent/run",
-    headers={**auth(TOKEN), "Accept": "text/event-stream"},
-    json={"query": "Create a Jira issue in MRISK project: title='UAT Test Issue', description='Automated UAT test'",
-          "worker_id": WID}, stream=True)
-text = ""
-for event in sseclient.SSEClient(r).events():
-    if event.event == "text":
-        text += json.loads(event.data).get("content", "")
-    if event.event == "error" or len(text) > 400:
-        break
-issue_created = "MRISK-" in text or "created" in text.lower() or "issue" in text.lower()
-print(f"CONN-05 — Jira create: {text[:200]}")
-```
-
-### CONN-06 — Outlook: list emails
-```python
-r = requests.post(f"{BASE}/api/agent/run",
-    headers={**auth(TOKEN), "Accept": "text/event-stream"},
-    json={"query": "List the last 5 emails in my Outlook inbox",
-          "worker_id": WID}, stream=True)
-text = ""
-for event in sseclient.SSEClient(r).events():
-    if event.event == "text":
-        text += json.loads(event.data).get("content", "")
-    if event.event == "error" or len(text) > 400:
-        break
-print(f"CONN-06 — Outlook emails: {text[:200]}")
-```
-
-### CONN-07 — SharePoint: list sites
-```python
-r = requests.post(f"{BASE}/api/agent/run",
-    headers={**auth(TOKEN), "Accept": "text/event-stream"},
-    json={"query": "List available SharePoint sites", "worker_id": WID},
-    stream=True)
-text = ""
-for event in sseclient.SSEClient(r).events():
-    if event.event == "text":
-        text += json.loads(event.data).get("content", "")
-    if event.event == "error" or len(text) > 300:
-        break
-print(f"CONN-07 — SharePoint sites: {text[:200]}")
-```
-
-### CONN-08 — Jira: list sprint issues
-```python
-r = requests.post(f"{BASE}/api/agent/run",
-    headers={**auth(TOKEN), "Accept": "text/event-stream"},
-    json={"query": "Show me current sprint issues in the MRISK Jira board",
-          "worker_id": WID}, stream=True)
-text = ""
-for event in sseclient.SSEClient(r).events():
-    if event.event == "text":
-        text += json.loads(event.data).get("content", "")
-    if event.event == "error" or len(text) > 400:
-        break
-print(f"CONN-08 — Jira sprint: {text[:200]}")
-```
-
----
-
 ## Phase 10 — Admin & Chat UI (Playwright)
 
 > **Goal:** All key UI flows work end-to-end in a real browser — login, admin panel, worker config, file upload, chat with tool use, canvas rendering.
@@ -1827,7 +1695,6 @@ print("AUD-06 PASS — No sensitive values in audit log")
 - [ ] **Phase 6 (TOOL):** DuckDB, BM25, Python executor, read_file all work with S3-stored data
 - [ ] **Phase 7 (WF):** Workflow create/execute/delete cycle works; multi-agent events fire
 - [ ] **Phase 8 (EXT):** Tavily and Yahoo Finance return real data; SEC EDGAR returns filing info
-- [ ] **Phase 9 (CONN):** Teams list_channels and Jira list_projects return real data
 - [ ] **Phase 10 (UI):** Login, chat, file upload, worker config, audit log all functional in browser
 - [ ] **Phase 11 (AUD):** Audit entries in Postgres, tool_name populated, sensitive fields redacted
 
@@ -1835,7 +1702,7 @@ print("AUD-06 PASS — No sensitive values in audit log")
 
 ## How to Execute
 
-### API Tests (Phases 1–9, 11)
+### API Tests (Phases 1–8, 11)
 ```bash
 cd /Users/saadahmed/Desktop/react_agent
 # Install dependencies
