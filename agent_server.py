@@ -1570,10 +1570,12 @@ async def list_workflows(payload: dict = Depends(require_jwt)):
                                 'size': f.stat().st_size,
                                 'last_used': meta.get(f.name),
                             })
-    except Exception as _e:
-        raise HTTPException(status_code=500, detail=f'list_workflows error: {_tb.format_exc()[-800:]}')
-    workflows.sort(key=lambda w: w['last_used'] or '', reverse=True)
-    return {'workflows': workflows}
+        workflows.sort(key=lambda w: (w['last_used'] or ''), reverse=True)
+        return {'workflows': workflows}
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail=f'list_workflows error: {_tb.format_exc()[-1000:]}')
 
 
 @app.get('/api/workflows/{filename}')
