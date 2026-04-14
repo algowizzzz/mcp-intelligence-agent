@@ -1553,22 +1553,24 @@ async def list_workflows(payload: dict = Depends(require_jwt)):
                 for rel in _storage.list_prefix(str(wf_dir)):
                     if rel.endswith('.md') and '/' not in rel and rel not in seen:
                         seen.add(rel)
+                        mv = meta.get(rel)
                         workflows.append({
                             'filename': rel,
                             'name': rel.rsplit('.', 1)[0].replace('_', ' ').title(),
                             'size': 0,
-                            'last_used': meta.get(rel),
+                            'last_used': mv.get('last_used') if isinstance(mv, dict) else mv,
                         })
             else:
                 if wf_dir.exists():
                     for f in sorted(wf_dir.iterdir()):
                         if f.is_file() and f.suffix == '.md' and f.name not in seen:
                             seen.add(f.name)
+                            mv = meta.get(f.name)
                             workflows.append({
                                 'filename': f.name,
                                 'name': f.stem.replace('_', ' ').title(),
                                 'size': f.stat().st_size,
-                                'last_used': meta.get(f.name),
+                                'last_used': mv.get('last_used') if isinstance(mv, dict) else mv,
                             })
         workflows.sort(key=lambda w: (w['last_used'] or ''), reverse=True)
         return {'workflows': workflows}
