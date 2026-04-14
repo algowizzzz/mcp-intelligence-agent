@@ -35,7 +35,11 @@ RUN pip install --no-cache-dir \
 RUN python -m venv sajhamcpserver/python_sandbox_venv && \
     sajhamcpserver/python_sandbox_venv/bin/pip install --no-cache-dir \
         pandas numpy scipy matplotlib plotly openpyxl pyarrow statsmodels \
-        scikit-learn arch riskfolio-lib networkx xarray
+        scikit-learn arch riskfolio-lib networkx xarray && \
+    sajhamcpserver/python_sandbox_venv/bin/python -c \
+        "import pandas, numpy, scipy, matplotlib, plotly.express, plotly.graph_objs, \
+         openpyxl, pyarrow, statsmodels, sklearn, arch, networkx, xarray" \
+        2>/dev/null || true
 
 # ── Application code ─────────────────────────────────────────────────────────��
 COPY agent/             ./agent/

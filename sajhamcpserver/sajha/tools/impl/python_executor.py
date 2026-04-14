@@ -453,6 +453,17 @@ class PythonExecuteTool(BaseMCPTool):
             except Exception:
                 pass
 
+        # Fallback: g.worker_ctx is not reconstructed from headers, but g.worker_data_root is.
+        # (Same pattern as _charts_dir fallback above.)
+        if not extra_env.get('DATA_DIR'):
+            try:
+                from flask import g as _g
+                wr = getattr(_g, 'worker_data_root', '') or ''
+                if wr:
+                    extra_env['DATA_DIR'] = wr.strip()
+            except RuntimeError:
+                pass
+
         with tempfile.TemporaryDirectory(prefix='sajha_sandbox_') as tmpdir:
             # Copy requested context files into the sandbox working dir
             if context_files:
