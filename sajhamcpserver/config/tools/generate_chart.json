@@ -1,7 +1,7 @@
 {
   "name": "generate_chart",
   "implementation": "sajha.tools.impl.visualisation_tools.GenerateChartTool",
-  "description": "Generate an interactive Plotly chart (12 types) from any row-dict data. Returns self-contained HTML for canvas and optionally saves a PNG. Chain after data_transform or parquet_read, or pass rows from any tool result.",
+  "description": "Generate an interactive Plotly chart from row-dict data. PREFER THIS over python_execute for standard charts — it is more reliable in the sandbox. 12 chart types: bar, bar_horizontal, line, area, scatter, histogram, pie, donut, heatmap, box, treemap, waterfall. Pass rows directly from duckdb_query, iris tools, or any tool result. Key params: data (list of row dicts), chart_type, x (column name), y (column name or list for multi-series), color (column for series split), theme (riskgpt|minimal|dark), bar_mode (group|stack), title, x_label, y_label. Returns self-contained HTML rendered in canvas panel.",
   "version": "1.0.0",
   "enabled": true,
   "inputSchema": {
