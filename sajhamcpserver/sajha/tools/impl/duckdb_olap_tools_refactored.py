@@ -552,21 +552,46 @@ class DuckDbListTablesTool(DuckDbBaseTool):
         return self.config.get('outputSchema', {})
 
     def execute(self, arguments: Dict[str, Any]) -> Dict:
-        """Execute list tables operation"""
+        """Execute list tables operation using a fresh per-request connection.
+
+        Uses the same fresh-connection pattern as DuckDbQueryTool so that the
+        full worker-scoped domain_data tree (including subdirectories like iris/)
+        is reflected, rather than the startup-time shared connection which only
+        saw the duckdb/ subfolder.
+        """
+        import duckdb as _duckdb
+
         include_system = arguments.get('include_system_tables', False)
 
+        conn = _duckdb.connect(':memory:')
         try:
-            conn = self._get_connection()
+            # Register views for all files visible in the current worker context
+            files = self._scan_data_files()
+            for file_info in files:
+                unique_key = file_info.get('unique_key', file_info['filename'])
+                view_name = os.path.splitext(unique_key)[0]
+                view_name = ''.join(c if c.isalnum() or c == '_' else '_' for c in view_name)
+                fp = file_info['file_path']
+                ft = file_info['file_type']
+                try:
+                    if ft == 'csv':
+                        conn.execute(f"CREATE VIEW {view_name} AS SELECT * FROM read_csv_auto('{fp}', header=true, sample_size=100)")
+                    elif ft == 'parquet':
+                        conn.execute(f"CREATE VIEW {view_name} AS SELECT * FROM read_parquet('{fp}')")
+                    elif ft == 'json':
+                        conn.execute(f"CREATE VIEW {view_name} AS SELECT * FROM read_json_auto('{fp}')")
+                    elif ft == 'tsv':
+                        conn.execute(f"CREATE VIEW {view_name} AS SELECT * FROM read_csv_auto('{fp}', header=true, delim='\\t', sample_size=100)")
+                except Exception:
+                    pass
 
-            # Get all tables and views
             query = """
-                SELECT 
+                SELECT
                     table_name as name,
                     table_type as type,
                     'main' as schema
                 FROM information_schema.tables
             """
-
             if not include_system:
                 query += " WHERE table_schema = 'main'"
 
@@ -579,26 +604,25 @@ class DuckDbListTablesTool(DuckDbBaseTool):
                     'type': 'view' if row[1].lower() == 'view' else 'table',
                     'schema': row[2]
                 }
-
-                # Try to get row count
                 try:
-                    count_query = f"SELECT COUNT(*) FROM {row[0]}"
-                    count_result = conn.execute(count_query).fetchone()
+                    count_result = conn.execute(f"SELECT COUNT(*) FROM {row[0]}").fetchone()
                     table_info['row_count'] = count_result[0] if count_result else 0
-                except:
+                except Exception:
                     table_info['row_count'] = None
-
                 tables.append(table_info)
 
             return {
                 'tables': tables,
                 'total_count': len(tables),
-                '_source': self.data_directory
+                '_source': self.data_directory,
+                '_note': 'view_name is the SQL identifier to use in queries (e.g. SELECT * FROM iris__iris_combined)',
             }
 
         except Exception as e:
             self.logger.error(f"Failed to list tables: {e}")
             raise
+        finally:
+            conn.close()
 
 
 class DuckDbDescribeTableTool(DuckDbBaseTool):

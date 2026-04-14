@@ -49,12 +49,24 @@ def _my_data_root():
     v = PropertiesConfigurator().get('data.my_data.dir', './data/uploads')
     return _resolve(v)
 
+def _common_root():
+    """Return common data root. Uses per-request worker context if set via Flask g."""
+    try:
+        from flask import g as _g
+        v = getattr(_g, 'worker_common_root', None)
+        if v:
+            return _resolve(v)
+    except RuntimeError:
+        pass
+    v = PropertiesConfigurator().get('data.common_data.dir', './data/common')
+    return _resolve(v)
+
 def _safe_path(path_str):
     try:
         p = Path(path_str).resolve()
     except Exception:
         return None
-    for root in (_domain_root(), _my_data_root()):
+    for root in (_domain_root(), _my_data_root(), _common_root()):
         try:
             p.relative_to(root)
             return p

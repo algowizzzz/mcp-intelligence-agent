@@ -190,6 +190,7 @@ class ListUploadedFilesTool(BaseMCPTool):
                     files.append({
                         'filename': fname,
                         'relative_path': rel,
+                        'file_path': os.path.abspath(fpath),
                         'section': section_name,
                         'subfolder': sub if sub != '.' else '',
                         'file_type': ext,

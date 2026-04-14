@@ -138,7 +138,7 @@ class PdfReadTool(BaseMCPTool):
         max_chars = arguments.get("max_chars", 50000)
         heading = (arguments.get("heading") or "").strip()
 
-        safe = _safe_path(file_path, _domain_root(), _my_data_root())
+        safe = _safe_path(file_path, _domain_root(), _my_data_root(), _common_root())
         if not safe:
             return {"error": f"File not found or access denied: {file_path}"}
         if not safe.exists():
@@ -560,7 +560,7 @@ class MdToDocxTool(BaseMCPTool):
         output_path = arguments.get("output_path")
         include_toc = arguments.get("include_toc", False)
 
-        safe = _safe_path(file_path, _domain_root(), _my_data_root())
+        safe = _safe_path(file_path, _domain_root(), _my_data_root(), _common_root())
         if not safe or not safe.exists():
             return {"error": f"File not found or access denied: {file_path}"}
         if safe.suffix.lower() != ".md":

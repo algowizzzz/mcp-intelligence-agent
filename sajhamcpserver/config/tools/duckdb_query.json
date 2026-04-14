@@ -12,7 +12,7 @@
     "properties": {
       "sql_query": {
         "type": "string",
-        "description": "SQL query to execute. Tables available: customers, orders, products (auto-created from CSV files in data directory)",
+        "description": "SQL query to execute. Always call duckdb_list_files first to discover available view names. Files in subdirectories are named with double-underscore prefix: e.g. iris/iris_combined.csv becomes view iris__iris_combined. Use that exact name in SQL: SELECT * FROM iris__iris_combined LIMIT 10.",
         "minLength": 1
       },
       "limit": {
