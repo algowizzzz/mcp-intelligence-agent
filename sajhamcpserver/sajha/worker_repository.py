@@ -83,10 +83,81 @@ class PostgresWorkerRepository:
             'postgresql://',
             raw,
         )
+        self._ensure_table_and_seed()
 
     def _connect(self):
         import psycopg  # psycopg3 — in main requirements.txt as psycopg[binary]
         return psycopg.connect(self._dsn)
+
+    def _ensure_table_and_seed(self) -> None:
+        """Create workers table if missing, then seed from workers.json if empty."""
+        try:
+            import psycopg
+            with psycopg.connect(self._dsn) as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        CREATE TABLE IF NOT EXISTS workers (
+                            worker_id        TEXT PRIMARY KEY,
+                            name             TEXT NOT NULL,
+                            description      TEXT DEFAULT '',
+                            system_prompt    TEXT DEFAULT '',
+                            enabled_tools    JSONB DEFAULT '["*"]',
+                            domain_data_path TEXT DEFAULT '',
+                            verified_wf_path TEXT DEFAULT '',
+                            connector_scope  JSONB DEFAULT '{}',
+                            enabled          BOOLEAN DEFAULT true,
+                            created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                            updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                        )
+                    """)
+                    conn.commit()
+
+                    # Seed from workers.json if table is empty
+                    cur.execute("SELECT COUNT(*) FROM workers")
+                    count = cur.fetchone()[0]
+                    if count == 0:
+                        self._seed_from_json(cur)
+                        conn.commit()
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning("workers table init failed: %s", e)
+
+    def _seed_from_json(self, cur) -> None:
+        """Insert workers from workers.json into the workers table."""
+        import json as _json
+        base = os.path.dirname(os.path.abspath(__file__))
+        json_path = os.path.join(base, '..', 'config', 'workers.json')
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                data = _json.load(f)
+            workers = data if isinstance(data, list) else data.get('workers', [])
+        except Exception:
+            return
+        for w in workers:
+            wid = w.get('worker_id') or w.get('id', '')
+            if not wid:
+                continue
+            cur.execute(
+                """
+                INSERT INTO workers
+                    (worker_id, name, description, system_prompt,
+                     enabled_tools, domain_data_path, verified_wf_path,
+                     connector_scope, enabled)
+                VALUES (%s, %s, %s, %s, %s::jsonb, %s, %s, %s::jsonb, %s)
+                ON CONFLICT (worker_id) DO NOTHING
+                """,
+                (
+                    wid,
+                    w.get('name', wid),
+                    w.get('description', ''),
+                    w.get('system_prompt', ''),
+                    _json.dumps(w.get('enabled_tools', ['*'])),
+                    w.get('domain_data_path', ''),
+                    w.get('verified_wf_path', ''),
+                    _json.dumps(w.get('connector_scope', {})),
+                    bool(w.get('enabled', True)),
+                ),
+            )
 
     @staticmethod
     def _row_to_dict(row) -> dict:

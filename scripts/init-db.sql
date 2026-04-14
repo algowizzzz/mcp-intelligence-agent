@@ -46,6 +46,23 @@ CREATE TABLE IF NOT EXISTS agent_memory (
 CREATE INDEX IF NOT EXISTS idx_memory_worker ON agent_memory (worker_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_memory_expires ON agent_memory (expires_at) WHERE expires_at IS NOT NULL;
 
+-- Workers table (REQ-07: Postgres-backed worker registry)
+CREATE TABLE IF NOT EXISTS workers (
+    worker_id           TEXT PRIMARY KEY,
+    name                TEXT NOT NULL,
+    description         TEXT DEFAULT '',
+    system_prompt       TEXT DEFAULT '',
+    enabled_tools       JSONB DEFAULT '["*"]'::jsonb,
+    domain_data_path    TEXT DEFAULT '',
+    verified_wf_path    TEXT DEFAULT '',
+    connector_scope     JSONB DEFAULT '{}'::jsonb,
+    enabled             BOOLEAN DEFAULT true,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_workers_enabled ON workers (enabled);
+
 -- Session tracking
 CREATE TABLE IF NOT EXISTS sessions (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
