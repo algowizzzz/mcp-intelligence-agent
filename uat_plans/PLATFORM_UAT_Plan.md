@@ -1592,6 +1592,24 @@ console.log(`UI-14 PASS — File tree shows ${files} S3 files`);
 
 ---
 
+### Network Layer Assertions (NET-01–09)
+
+> **Goal:** Verify that UI actions trigger the correct backend API calls with correct HTTP status codes and response shapes — things DOM-only tests cannot catch. Script: `node uat_plans/phase10_network.mjs`
+
+| Test | What is verified |
+|------|-----------------|
+| NET-01 | `POST /api/auth/login` returns 200, response body contains `token` (captured via `page.route()` before page consumes body) |
+| NET-02 | `GET /api/auth/me` with valid token returns `user_id=risk_agent`, `role=super_admin` |
+| NET-03 | `POST /api/agent/run` returns HTTP 200, `Content-Type: text/event-stream` |
+| NET-04 | SSE stream delivers `session` event type with a `thread_id` UUID (fetch wrapper injected via `addInitScript`; parses `type` from JSON `data:` lines — no `event:` prefix in this server's SSE format) |
+| NET-05 | Loading admin.html triggers `GET /api/super/workers` → 200, non-empty array |
+| NET-06 | Clicking Users nav triggers `GET /api/super/users` → 200, non-empty array |
+| NET-07 | Clicking "Data & Workflows" tab triggers `GET .../files/{section}/tree` for all 5 sections → all 200 (super_admin path: `/api/super/workers/{id}/files/{section}/tree`) |
+| NET-08 | `GET /api/fs/quota` returns 200, `used_bytes` is a number |
+| NET-09 | `GET /api/super/audit` after agent run returns `entries` array with `tool_name` populated |
+
+---
+
 ## Phase 11 — Audit, Sessions & Observability
 
 > **Goal:** Audit log entries are written to Postgres after tool use, sessions are tracked, entries are queryable and paginated.

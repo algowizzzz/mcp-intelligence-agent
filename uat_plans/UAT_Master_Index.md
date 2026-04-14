@@ -1,7 +1,7 @@
 # UAT Master Index — RiskGPT MCP Intelligence Agent
 
 **Last updated:** 2026-04-14
-**Overall status: ✅ REQ-01 through REQ-04, REQ-09, REQ-10, REQ-11 fully verified. ✅ Platform UAT (S3 + Postgres + full-stack) COMPLETE — 100/100 PASS, 0 FAIL, 0 WARN. WF-05 fixed (d169f83). AUTH-RESET-01 fixed. FS-07 confirmed not a bug.**
+**Overall status: ✅ REQ-01 through REQ-04, REQ-09, REQ-10, REQ-11 fully verified. ✅ Platform UAT (S3 + Postgres + full-stack) COMPLETE — 109/109 PASS, 0 FAIL, 0 WARN. Includes 9 network-layer assertions (NET-01–09). WF-05 fixed. AUTH-RESET-01 fixed. FS-07 confirmed not a bug.**
 
 ---
 
@@ -16,7 +16,7 @@
 | REQ-09 BM25 Document Search (CI) | 10 | 10 | 0 | 0 | Python inline |
 | REQ-10 Common Data Path | 13 CI + 9 BT | 13 CI PASS | — | BT pending | Python inline + Playwright |
 | REQ-11 Parallel Upload Engine | 14 CI + 6 BT | 14 CI PASS | — | BT pending | Python inline + Playwright |
-| **Platform UAT (S3 + Postgres + full-stack)** | **100** | **100** | **0** | **0** | Python inline + Playwright |
+| **Platform UAT (S3 + Postgres + full-stack)** | **109** | **109** | **0** | **0** | Python inline + Playwright |
 | **Total** | **336** | **317** | **0** | **5** | |
 
 † 3 skips are environment-only (empty domain-data tree in admin context; no `.md` files in test worker `my_workflows`). Same functionality verified via equivalent tests.
@@ -44,8 +44,8 @@
 | [REQ-10_UAT_Results.md](REQ-10_UAT_Results.md) | REQ-10 CI test results — 13/13 PASS | ✅ CI PASS | 13 CI tests |
 | [REQ-11_UAT_Plan.md](REQ-11_UAT_Plan.md) | Multi-File Parallel Upload — streaming writes, 4 concurrent slots, batch_id deferred reindex, cancel/retry | ✅ 14 CI PASS / BT pending | 14 CI + 6 BT |
 | [REQ-11_UAT_Results.md](REQ-11_UAT_Results.md) | REQ-11 CI test results — 14/14 PASS | ✅ CI PASS | 14 CI tests |
-| [PLATFORM_UAT_Plan.md](PLATFORM_UAT_Plan.md) | **Platform UAT** — S3 + Postgres + Workers + Agent + Tools + Workflows + UI (10 phases, 100 tests; Phase 9 Connectors removed) | ✅ 100/100 PASS | 100 tests |
-| [PLATFORM_UAT_Results.md](PLATFORM_UAT_Results.md) | **Platform UAT Results** — full results by phase, bug registry, environment details | ✅ Complete | 100 tests |
+| [PLATFORM_UAT_Plan.md](PLATFORM_UAT_Plan.md) | **Platform UAT** — S3 + Postgres + Workers + Agent + Tools + Workflows + UI (10 phases + network assertions; Phase 9 Connectors removed) | ✅ 109/109 PASS | 109 tests |
+| [PLATFORM_UAT_Results.md](PLATFORM_UAT_Results.md) | **Platform UAT Results** — full results by phase, bug registry, environment details | ✅ Complete | 109 tests |
 
 † REQ-03 VIZ-TEST-001: PARTIAL PASS — agent chose `python_execute` over `generate_chart` for chart generation; canvas pipeline verified via direct `openCanvasChart()` call. All 6 component fixes confirmed working.
 

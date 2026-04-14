@@ -20,8 +20,9 @@
 | Phase 7 — Workflows | 8 | 8 | 0 | 0 | ✅ PASS |
 | Phase 8 — External Data Tools | 6 | 6 | 0 | 0 | ✅ PASS |
 | Phase 10 — Admin & Chat UI (Playwright) | 14 | 14 | 0 | 0 | ✅ PASS |
+| Phase 10 — Network Layer Assertions | 9 | 9 | 0 | 0 | ✅ PASS |
 | Phase 11 — Audit, Sessions & Observability | 7 | 7 | 0 | 0 | ✅ PASS |
-| **TOTAL** | **100** | **100** | **0** | **0** | |
+| **TOTAL** | **109** | **109** | **0** | **0** | |
 
 ---
 
@@ -212,6 +213,22 @@ All external API integrations (Tavily, Yahoo Finance, SEC EDGAR) are live and fu
 | UI-12 | ✅ PASS | LLM config nav section navigates |
 | UI-13 | ✅ PASS | Tools section navigates; 340 tool-category elements rendered |
 | UI-14 | ✅ PASS | Zero JS console errors on admin page load |
+
+### Network Layer Assertions — 9/9 PASS
+
+Script: `node uat_plans/phase10_network.mjs`
+
+| Test | Status | Notes |
+|------|--------|-------|
+| NET-01 | ✅ PASS | `POST /api/auth/login` → 200, `has_token=true`, `role=super_admin` (captured via `page.route()`) |
+| NET-02 | ✅ PASS | `GET /api/auth/me` → 200, `user_id=risk_agent`, `role=super_admin` |
+| NET-03 | ✅ PASS | `POST /api/agent/run` → 200, `content-type=text/event-stream` |
+| NET-04 | ✅ PASS | SSE stream delivers `session` + `text` events with `thread_id` UUID (fetch wrapper via `addInitScript`; `type` encoded in JSON `data:` lines) |
+| NET-05 | ✅ PASS | admin.html load fires `GET /api/super/workers` → 200, 14 workers |
+| NET-06 | ✅ PASS | Users nav click fires `GET /api/super/users` → 200, 16 users |
+| NET-07 | ✅ PASS | "Data & Workflows" tab click fires 10 tree requests (5 sections × 2 for dedup) → all 200; super_admin path: `/api/super/workers/{id}/files/{section}/tree` |
+| NET-08 | ✅ PASS | `GET /api/fs/quota` → 200, `used_bytes=1535` (numeric) |
+| NET-09 | ✅ PASS | `GET /api/super/audit` → 200, 20 entries, `latest_tool=tavily_web_search` |
 
 ---
 
