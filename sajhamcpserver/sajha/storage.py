@@ -106,11 +106,20 @@ class S3StorageBackend:
 
     def _key(self, path: str) -> str:
         """Normalise a path to a clean S3 key.
-        Strips DATA_ROOT prefix (if set) so keys are relative to data root,
-        matching the layout written by migrate_to_s3.py.
+
+        Handles three input forms:
+          s3://bucket/key/path  → key/path   (path_resolver S3 URIs)
+          ./data/workers/...    → data/workers/...  (relative local paths)
+          /abs/data/root/...    → stripped of DATA_ROOT prefix then relative
         """
+        # 1. Strip s3://bucket/ prefix (path_resolver returns these in S3 mode)
+        if path.startswith('s3://'):
+            rest = path[len('s3://'):]
+            slash = rest.find('/')
+            return rest[slash + 1:] if slash >= 0 else ''
+        # 2. Strip relative ./ prefix then any leading /
         norm = path.lstrip('./')
-        # Strip absolute data root prefix (e.g. /app/sajhamcpserver/data/)
+        # 3. Strip absolute DATA_ROOT prefix (e.g. /app/sajhamcpserver/data/)
         if self._data_root and norm.startswith(self._data_root.lstrip('/')):
             norm = norm[len(self._data_root.lstrip('/')):]
         return norm.lstrip('/')
