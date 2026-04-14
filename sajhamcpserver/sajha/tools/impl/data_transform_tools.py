@@ -62,6 +62,18 @@ def _common_root():
     return _resolve(v)
 
 def _safe_path(path_str):
+    # S3 mode: s3:// URIs are valid — download to /tmp and return local path
+    if str(path_str).startswith('s3://'):
+        import hashlib, tempfile, os as _os
+        ext = _os.path.splitext(str(path_str))[1]
+        cache_key = hashlib.md5(str(path_str).encode()).hexdigest()
+        tmp = Path(tempfile.gettempdir()) / f'data_transform_{cache_key}{ext}'
+        if not tmp.exists():
+            try:
+                tmp.write_bytes(storage.read_bytes(str(path_str)))
+            except Exception:
+                return None
+        return tmp
     try:
         p = Path(path_str).resolve()
     except Exception:

@@ -592,7 +592,7 @@ class DuckDbListTablesTool(DuckDbBaseTool):
                 unique_key = file_info.get('unique_key', file_info['filename'])
                 view_name = os.path.splitext(unique_key)[0]
                 view_name = ''.join(c if c.isalnum() or c == '_' else '_' for c in view_name)
-                fp = file_info['file_path']
+                fp = _ensure_local(file_info['file_path'])
                 ft = file_info['file_type']
                 try:
                     if ft == 'csv':
@@ -689,7 +689,7 @@ class DuckDbDescribeTableTool(DuckDbBaseTool):
                 unique_key = file_info.get('unique_key', file_info['filename'])
                 view_name = os.path.splitext(unique_key)[0]
                 view_name = ''.join(c if c.isalnum() or c == '_' else '_' for c in view_name)
-                fp = file_info['file_path']
+                fp = _ensure_local(file_info['file_path'])
                 ft = file_info['file_type']
                 try:
                     if ft == 'csv':
@@ -811,7 +811,9 @@ class DuckDbQueryTool(DuckDbBaseTool):
                 unique_key = file_info.get('unique_key', file_info['filename'])
                 view_name = os.path.splitext(unique_key)[0]
                 view_name = ''.join(c if c.isalnum() or c == '_' else '_' for c in view_name)
-                fp = file_info['file_path']
+                # _ensure_local: downloads s3:// files to /tmp so DuckDB can read them
+                # without needing httpfs S3 credentials (Hetzner endpoint != AWS format)
+                fp = _ensure_local(file_info['file_path'])
                 ft = file_info['file_type']
                 try:
                     if ft == 'csv':
