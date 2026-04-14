@@ -81,7 +81,7 @@ services:
       S3_BUCKET: ${S3_BUCKET:-sajha-storage}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
-      AWS_REGION: ${AWS_REGION:-eu-central-1}
+      AWS_REGION: ${AWS_REGION:-hel1}
       DATA_ROOT: /app/sajhamcpserver/data
 
       # --- Context ---

@@ -17,7 +17,7 @@ except ImportError:
 SRC    = pathlib.Path("/opt/sajha/data/app")
 BUCKET = "sajha-storage"
 ENDPOINT = "https://hel1.your-objectstorage.com"
-REGION = "eu-central-1"
+REGION = "hel1"
 
 KEY_ID  = os.environ.get("AWS_ACCESS_KEY_ID")
 SECRET  = os.environ.get("AWS_SECRET_ACCESS_KEY")
