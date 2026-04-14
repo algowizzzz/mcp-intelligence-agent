@@ -72,7 +72,9 @@ class PostgresWorkerRepository:
     # Columns to SELECT from the workers table (order must match _row_to_dict)
     _COLS = (
         "worker_id, name, description, system_prompt, enabled_tools, "
-        "domain_data_path, verified_wf_path, connector_scope, enabled"
+        "domain_data_path, verified_wf_path, connector_scope, enabled, "
+        "COALESCE(my_workflows_path,''), COALESCE(templates_path,''), "
+        "COALESCE(my_data_path,''), COALESCE(common_data_path,'')"
     )
 
     def __init__(self):
@@ -97,19 +99,37 @@ class PostgresWorkerRepository:
                 with conn.cursor() as cur:
                     cur.execute("""
                         CREATE TABLE IF NOT EXISTS workers (
-                            worker_id        TEXT PRIMARY KEY,
-                            name             TEXT NOT NULL,
-                            description      TEXT DEFAULT '',
-                            system_prompt    TEXT DEFAULT '',
-                            enabled_tools    JSONB DEFAULT '["*"]',
-                            domain_data_path TEXT DEFAULT '',
-                            verified_wf_path TEXT DEFAULT '',
-                            connector_scope  JSONB DEFAULT '{}',
-                            enabled          BOOLEAN DEFAULT true,
-                            created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                            updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                            worker_id          TEXT PRIMARY KEY,
+                            name               TEXT NOT NULL,
+                            description        TEXT DEFAULT '',
+                            system_prompt      TEXT DEFAULT '',
+                            enabled_tools      JSONB DEFAULT '["*"]',
+                            domain_data_path   TEXT DEFAULT '',
+                            verified_wf_path   TEXT DEFAULT '',
+                            connector_scope    JSONB DEFAULT '{}',
+                            enabled            BOOLEAN DEFAULT true,
+                            my_workflows_path  TEXT DEFAULT '',
+                            templates_path     TEXT DEFAULT '',
+                            my_data_path       TEXT DEFAULT '',
+                            common_data_path   TEXT DEFAULT '',
+                            created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                            updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
                         )
                     """)
+                    # Add columns for existing installs that pre-date this migration
+                    for _col, _type in [
+                        ('my_workflows_path', 'TEXT DEFAULT \'\''),
+                        ('templates_path',    'TEXT DEFAULT \'\''),
+                        ('my_data_path',      'TEXT DEFAULT \'\''),
+                        ('common_data_path',  'TEXT DEFAULT \'\''),
+                    ]:
+                        try:
+                            cur.execute(
+                                f"ALTER TABLE workers ADD COLUMN IF NOT EXISTS "
+                                f"{_col} {_type}"
+                            )
+                        except Exception:
+                            pass
                     conn.commit()
 
                     # Seed from workers.json if table is empty
@@ -142,8 +162,9 @@ class PostgresWorkerRepository:
                 INSERT INTO workers
                     (worker_id, name, description, system_prompt,
                      enabled_tools, domain_data_path, verified_wf_path,
-                     connector_scope, enabled)
-                VALUES (%s, %s, %s, %s, %s::jsonb, %s, %s, %s::jsonb, %s)
+                     connector_scope, enabled,
+                     my_workflows_path, templates_path, my_data_path, common_data_path)
+                VALUES (%s, %s, %s, %s, %s::jsonb, %s, %s, %s::jsonb, %s, %s, %s, %s, %s)
                 ON CONFLICT (worker_id) DO NOTHING
                 """,
                 (
@@ -153,70 +174,70 @@ class PostgresWorkerRepository:
                     w.get('system_prompt', ''),
                     _json.dumps(w.get('enabled_tools', ['*'])),
                     w.get('domain_data_path', ''),
-                    w.get('verified_wf_path', ''),
+                    w.get('verified_wf_path') or w.get('workflows_path', ''),
                     _json.dumps(w.get('connector_scope', {})),
                     bool(w.get('enabled', True)),
+                    w.get('my_workflows_path', ''),
+                    w.get('templates_path', ''),
+                    w.get('my_data_path', ''),
+                    w.get('common_data_path', ''),
                 ),
             )
 
     @staticmethod
     def _row_to_dict(row) -> dict:
         return {
-            'worker_id':        row[0],
-            'name':             row[1],
-            'description':      row[2],
-            'system_prompt':    row[3],
-            'enabled_tools':    row[4] if row[4] is not None else ['*'],
-            'domain_data_path': row[5],
-            'verified_wf_path': row[6],
-            'connector_scope':  row[7] if row[7] is not None else {},
-            'enabled':          row[8],
+            'worker_id':          row[0],
+            'name':               row[1],
+            'description':        row[2],
+            'system_prompt':      row[3],
+            'enabled_tools':      row[4] if row[4] is not None else ['*'],
+            'domain_data_path':   row[5] or '',
+            # verified_wf_path is the Postgres column name; expose as both
+            # keys so _resolve_worker_path (which uses 'workflows_path') works
+            # whether the worker came from Postgres or workers.json.
+            'verified_wf_path':   row[6] or '',
+            'workflows_path':     row[6] or '',
+            'connector_scope':    row[7] if row[7] is not None else {},
+            'enabled':            row[8],
+            'my_workflows_path':  row[9]  or '',
+            'templates_path':     row[10] or '',
+            'my_data_path':       row[11] or '',
+            'common_data_path':   row[12] or '',
         }
 
     def find(self, worker_id: str) -> Optional[dict]:
-        try:
-            with self._connect() as conn:
-                with conn.cursor() as cur:
-                    cur.execute(
-                        f"SELECT {self._COLS} FROM workers WHERE worker_id = %s",
-                        (worker_id,),
-                    )
-                    row = cur.fetchone()
-            return self._row_to_dict(row) if row else None
-        except Exception:
-            return None
+        with self._connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"SELECT {self._COLS} FROM workers WHERE worker_id = %s",
+                    (worker_id,),
+                )
+                row = cur.fetchone()
+        return self._row_to_dict(row) if row else None
 
     def list(self) -> list:
-        try:
-            with self._connect() as conn:
-                with conn.cursor() as cur:
-                    cur.execute(
-                        f"SELECT {self._COLS} FROM workers ORDER BY name"
-                    )
-                    rows = cur.fetchall()
-            return [self._row_to_dict(r) for r in rows]
-        except Exception:
-            return []
+        with self._connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"SELECT {self._COLS} FROM workers ORDER BY name"
+                )
+                rows = cur.fetchall()
+        return [self._row_to_dict(r) for r in rows]
 
     def find_by_user(self, user_id: str) -> Optional[dict]:
         """Return the worker a user is assigned to via users.worker_id FK."""
-        try:
-            with self._connect() as conn:
-                with conn.cursor() as cur:
-                    cur.execute(
-                        "SELECT w.worker_id, w.name, w.description, w.system_prompt, "
-                        "w.enabled_tools, w.domain_data_path, w.verified_wf_path, "
-                        "w.connector_scope, w.enabled "
-                        "FROM workers w "
-                        "JOIN users u ON u.worker_id = w.worker_id "
-                        "WHERE u.user_id = %s "
-                        "LIMIT 1",
-                        (user_id,),
-                    )
-                    row = cur.fetchone()
-            return self._row_to_dict(row) if row else None
-        except Exception:
-            return None
+        with self._connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"SELECT {self._COLS} FROM workers w "
+                    "JOIN users u ON u.worker_id = w.worker_id "
+                    "WHERE u.user_id = %s "
+                    "LIMIT 1",
+                    (user_id,),
+                )
+                row = cur.fetchone()
+        return self._row_to_dict(row) if row else None
 
     def reload(self) -> None:
         """No-op — Postgres always reads fresh data per query."""

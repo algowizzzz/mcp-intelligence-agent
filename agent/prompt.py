@@ -1,32 +1,12 @@
-import json
-import pathlib
+"""
+agent/prompt.py — System prompt builder.
 
-_WORKERS_FILE = pathlib.Path('sajhamcpserver/config/workers.json')
-_DEFAULT_WORKER_ID = 'w-market-risk'
+get_system_prompt(worker, agent_mode) extracts the system_prompt directly
+from the worker dict (already loaded from PostgreSQL by the caller) so there
+is no JSON-file read and no hardcoded default worker ID.
+"""
 
 _FALLBACK_PROMPT = '''You are a sophisticated financial risk intelligence agent.'''
-
-
-def _load_prompt_from_workers() -> str:
-    """Load system_prompt from the first enabled worker in workers.json.
-    Falls back to _FALLBACK_PROMPT if the file is missing or the prompt is blank.
-    """
-    try:
-        data = json.loads(_WORKERS_FILE.read_text())
-        workers = data.get('workers', [])
-        for w in workers:
-            if w.get('worker_id') == _DEFAULT_WORKER_ID and w.get('enabled', True):
-                prompt = w.get('system_prompt', '').strip()
-                if prompt:
-                    return prompt
-        for w in workers:
-            if w.get('enabled', True):
-                prompt = w.get('system_prompt', '').strip()
-                if prompt:
-                    return prompt
-    except Exception:
-        pass
-    return _FALLBACK_PROMPT
 
 
 _PYTHON_ADDENDUM = """
@@ -138,25 +118,22 @@ def _augment_prompt(prompt: str, agent_mode: str = 'single') -> str:
     return result
 
 
-SYSTEM_PROMPT = _augment_prompt(_load_prompt_from_workers())
+# Module-level fallback — only used if something imports SYSTEM_PROMPT directly.
+# Per-request calls must always use get_system_prompt(worker, agent_mode).
+SYSTEM_PROMPT = _augment_prompt(_FALLBACK_PROMPT)
 
 
-def get_system_prompt(worker_id: str, agent_mode: str = 'single') -> str:
-    """Load the system_prompt for a specific worker at call time (not cached).
-    Called per-request so admin prompt updates take effect immediately.
-    Appends platform addenda (Python guidance etc.) to the worker prompt.
-    Falls back to the default worker prompt if not found.
+def get_system_prompt(worker: dict, agent_mode: str = 'single') -> str:
+    """Return the augmented system prompt for a worker.
+
+    `worker` is the dict already loaded from PostgreSQL (or JSON) by the caller
+    — no file I/O happens here.  Falls back to _FALLBACK_PROMPT if
+    system_prompt is absent or blank.
     """
-    try:
-        data = json.loads(_WORKERS_FILE.read_text())
-        for w in data.get('workers', []):
-            if w.get('worker_id') == worker_id and w.get('enabled', True):
-                prompt = w.get('system_prompt', '').strip()
-                if prompt:
-                    return _augment_prompt(prompt, agent_mode)
-    except Exception:
-        pass
-    return _augment_prompt(_load_prompt_from_workers(), agent_mode)
+    prompt = (worker.get('system_prompt') or '').strip()
+    if not prompt:
+        prompt = _FALLBACK_PROMPT
+    return _augment_prompt(prompt, agent_mode)
 
 
 SUMMARISE_PROMPT = """You are a context compressor for a financial risk intelligence session on the B-Pulse platform.

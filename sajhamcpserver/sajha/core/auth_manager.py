@@ -58,6 +58,7 @@ class AuthManager:
         self.sessions: Dict[str, Dict] = {}
         self.failed_attempts: Dict[str, List[datetime]] = {}
         self._lock = threading.RLock()
+        self._users_mtime: float = 0.0  # last-seen mtime of users.json for hot-reload
         
         self.logger.info(f"AuthManager initializing:")
         self.logger.info(f"  Users config: {self.users_config_path} (exists: {self.users_config_path.exists()})")
@@ -74,6 +75,18 @@ class AuthManager:
         self.max_login_attempts = 5
         self.lockout_duration_minutes = 5
     
+    def _reload_if_stale(self):
+        """Re-read users.json when the file has been modified since last load.
+        Called on every authenticate() so new users created by agent_server are
+        visible without restarting SAJHA.
+        """
+        try:
+            mtime = self.users_config_path.stat().st_mtime
+            if mtime != self._users_mtime:
+                self.load_users()
+        except Exception:
+            pass
+
     def load_users(self):
         """Load users from configuration file"""
         try:
@@ -81,6 +94,7 @@ class AuthManager:
                 with open(self.users_config_path, 'r') as f:
                     config = json.load(f)
                     self.users = {user['user_id']: user for user in config.get('users', [])}
+                    self._users_mtime = self.users_config_path.stat().st_mtime
                     self.logger.info(f"Loaded {len(self.users)} users from {self.users_config_path}")
             else:
                 # Create default admin user if no config exists
@@ -119,6 +133,7 @@ class AuthManager:
         Returns:
             Session token if successful, None otherwise
         """
+        self._reload_if_stale()
         with self._lock:
             # Check if user is locked out
             if self.is_user_locked_out(user_id):

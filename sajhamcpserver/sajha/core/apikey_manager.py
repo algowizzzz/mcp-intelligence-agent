@@ -49,39 +49,46 @@ class APIKeyManager:
         self._lock = threading.RLock()
         self._apikeys: Dict[str, Dict] = {}
         self._settings: Dict = {}
-        
+        self._file_mtime: float = 0.0  # last-seen mtime for hot-reload
+
         logger.info(f"APIKeyManager initializing with config: {self.config_path}")
-        
+
         # Load existing keys
         self._load_keys()
     
+    def _reload_if_stale(self):
+        """Re-read apikeys.json when the file has been modified since last load."""
+        try:
+            mtime = self.config_path.stat().st_mtime
+            if mtime != self._file_mtime:
+                self._load_keys()
+        except Exception:
+            pass
+
     def _load_keys(self):
         """Load API keys from JSON file"""
         with self._lock:
-            logger.info(f"Loading API keys from: {self.config_path}")
-            logger.info(f"  File exists: {self.config_path.exists()}")
-            
             if not self.config_path.exists():
                 logger.warning(f"API keys config not found at {self.config_path}, creating default")
-                # Create default config
                 self._create_default_config()
                 return
-            
+
             try:
                 with open(self.config_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                
+
                 self._settings = data.get('settings', {})
-                
+
                 # Index by key for fast lookup
                 self._apikeys = {}
                 for key_data in data.get('apikeys', []):
                     key = key_data.get('key')
                     if key:
                         self._apikeys[key] = key_data
-                
+
+                self._file_mtime = self.config_path.stat().st_mtime
                 logger.info(f"Loaded {len(self._apikeys)} API keys from {self.config_path}")
-                
+
             except Exception as e:
                 logger.error(f"Error loading API keys from {self.config_path}: {e}")
                 self._apikeys = {}
@@ -242,7 +249,10 @@ class APIKeyManager:
         """
         if not key:
             return False, None, "No API key provided"
-        
+
+        # Hot-reload if apikeys.json was updated externally
+        self._reload_if_stale()
+
         # Check prefix
         prefix = self._settings.get('key_prefix', self.KEY_PREFIX)
         if not key.startswith(prefix):

@@ -150,11 +150,34 @@ class AuditMiddleware(AgentMiddleware):
     # ------------------------------------------------------------------
 
     def _write_event(self, event: dict) -> None:
-        """Write event dict as a JSON line. Non-blocking via thread."""
+        """Write event — Postgres primary (fire-and-forget thread), JSONL fallback."""
         if not self.enabled:
             return
 
         def _write():
+            # 1. Postgres insert (preferred)
+            try:
+                import asyncio
+                from sajhamcpserver.sajha.db import repo as _repo
+                asyncio.run(_repo.log_event(
+                    event_type=event.get('event_type', 'unknown'),
+                    user_id=event.get('user_id', ''),
+                    worker_id=event.get('worker_id', ''),
+                    thread_id=event.get('session_id') or None,
+                    tool_name=event.get('tool_name') or None,
+                    elapsed_ms=event.get('duration_ms'),
+                    tool_result_ok=None,
+                    detail={
+                        k: v for k, v in event.items()
+                        if k not in ('event_type', 'user_id', 'worker_id',
+                                     'session_id', 'tool_name', 'duration_ms',
+                                     'created_at', 'id')
+                    },
+                ))
+                return  # success — skip JSONL
+            except Exception:
+                pass
+            # 2. JSONL fallback (local dev or when DB unavailable)
             try:
                 os.makedirs(os.path.dirname(os.path.abspath(self.log_path)), exist_ok=True)
                 line = json.dumps(event, default=str) + "\n"

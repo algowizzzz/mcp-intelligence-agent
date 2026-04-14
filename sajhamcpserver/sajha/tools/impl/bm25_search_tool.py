@@ -179,9 +179,12 @@ class DocumentSearchTool(BaseMCPTool):
                 return root.rstrip('/')
         except RuntimeError:
             pass
-        return PropertiesConfigurator().get(
-            'data.domain_data.dir',
-            './data/workers/w-market-risk/domain_data',
+        prop = PropertiesConfigurator().get('data.domain_data.dir', '')
+        if prop:
+            return prop
+        raise RuntimeError(
+            'BM25Search: no worker context available and data.domain_data.dir '
+            'is not set in application.properties'
         )
 
     def _my_data_dir(self) -> str:
@@ -192,9 +195,12 @@ class DocumentSearchTool(BaseMCPTool):
                 return root.rstrip('/')
         except RuntimeError:
             pass
-        return PropertiesConfigurator().get(
-            'data.my_data.dir',
-            './data/workers/w-market-risk/my_data/risk_agent',
+        prop = PropertiesConfigurator().get('data.my_data.dir', '')
+        if prop:
+            return prop
+        raise RuntimeError(
+            'BM25Search: no worker context available and data.my_data.dir '
+            'is not set in application.properties'
         )
 
     def _common_dir(self) -> str:

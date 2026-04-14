@@ -16,7 +16,7 @@ import httpx
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver  # kept as fallback
 import agent.agent as _agent_module
 from agent.agent import create_agent_for_worker
-from agent.prompt import get_system_prompt, SYSTEM_PROMPT
+from agent.prompt import get_system_prompt
 from agent.tools import _service_headers, _worker_ctx, SAJHA_BASE, get_tools_for_worker, AGENT_TOOLS
 from agent.summariser import count_tokens_accurate
 
@@ -104,19 +104,15 @@ def _jwt_decode(token: str) -> dict:
 # ── Users & Workers persistence ────────────────────────────────────────────────
 
 def _load_users() -> list:
-    """Load users — from PostgreSQL when DB is enabled, else JSON file."""
+    """Load users — PostgreSQL when DB is enabled, JSON file in local dev."""
     if _DB_ENABLED:
         import asyncio
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                import concurrent.futures
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                    future = pool.submit(asyncio.run, _db_repo.list_users())
-                    return future.result(timeout=5)
-            return loop.run_until_complete(_db_repo.list_users())
-        except Exception:
-            pass
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                return pool.submit(asyncio.run, _db_repo.list_users()).result(timeout=5)
+        return loop.run_until_complete(_db_repo.list_users())
     try:
         return json.loads(_SAJHA_USERS_FILE.read_text()).get('users', [])
     except Exception:
@@ -151,19 +147,15 @@ def _save_users(users: list):
 
 
 def _find_user(user_id: str) -> Optional[dict]:
-    """Find user by ID — PostgreSQL first, JSON fallback."""
+    """Find user by ID — PostgreSQL when DB enabled, JSON file in local dev."""
     if _DB_ENABLED:
         import asyncio
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                import concurrent.futures
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                    result = pool.submit(asyncio.run, _db_repo.get_user(user_id)).result(timeout=5)
-                    return result
-            return loop.run_until_complete(_db_repo.get_user(user_id))
-        except Exception:
-            pass
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                return pool.submit(asyncio.run, _db_repo.get_user(user_id)).result(timeout=5)
+        return loop.run_until_complete(_db_repo.get_user(user_id))
     for u in _load_users():
         if u.get('user_id') == user_id:
             return u
@@ -195,18 +187,24 @@ def _save_workers(workers: list):
                             INSERT INTO workers
                                 (worker_id, name, description, system_prompt,
                                  enabled_tools, domain_data_path, verified_wf_path,
-                                 connector_scope, enabled, updated_at)
-                            VALUES (%s,%s,%s,%s,%s::jsonb,%s,%s,%s::jsonb,%s,NOW())
+                                 connector_scope, enabled,
+                                 my_workflows_path, templates_path, my_data_path,
+                                 common_data_path, updated_at)
+                            VALUES (%s,%s,%s,%s,%s::jsonb,%s,%s,%s::jsonb,%s,%s,%s,%s,%s,NOW())
                             ON CONFLICT (worker_id) DO UPDATE SET
-                                name             = EXCLUDED.name,
-                                description      = EXCLUDED.description,
-                                system_prompt    = EXCLUDED.system_prompt,
-                                enabled_tools    = EXCLUDED.enabled_tools,
-                                domain_data_path = EXCLUDED.domain_data_path,
-                                verified_wf_path = EXCLUDED.verified_wf_path,
-                                connector_scope  = EXCLUDED.connector_scope,
-                                enabled          = EXCLUDED.enabled,
-                                updated_at       = NOW()
+                                name               = EXCLUDED.name,
+                                description        = EXCLUDED.description,
+                                system_prompt      = EXCLUDED.system_prompt,
+                                enabled_tools      = EXCLUDED.enabled_tools,
+                                domain_data_path   = EXCLUDED.domain_data_path,
+                                verified_wf_path   = EXCLUDED.verified_wf_path,
+                                connector_scope    = EXCLUDED.connector_scope,
+                                enabled            = EXCLUDED.enabled,
+                                my_workflows_path  = EXCLUDED.my_workflows_path,
+                                templates_path     = EXCLUDED.templates_path,
+                                my_data_path       = EXCLUDED.my_data_path,
+                                common_data_path   = EXCLUDED.common_data_path,
+                                updated_at         = NOW()
                             """,
                             (
                                 wid,
@@ -215,9 +213,13 @@ def _save_workers(workers: list):
                                 w.get('system_prompt', ''),
                                 json.dumps(w.get('enabled_tools', ['*'])),
                                 w.get('domain_data_path', ''),
-                                w.get('verified_wf_path', ''),
+                                w.get('verified_wf_path') or w.get('workflows_path', ''),
                                 json.dumps(w.get('connector_scope', {})),
                                 bool(w.get('enabled', True)),
+                                w.get('my_workflows_path', ''),
+                                w.get('templates_path', ''),
+                                w.get('my_data_path', ''),
+                                w.get('common_data_path', ''),
                             )
                         )
                     # Delete workers removed from the list
@@ -336,7 +338,7 @@ def _load_thread_registry():
 
 
 async def _persist_thread(thread_id: str, meta: dict):
-    """Register a new thread. Dual-write: PostgreSQL (if enabled) + JSONL file."""
+    """Register a new thread — PostgreSQL primary, JSONL fallback for local dev."""
     if _DB_ENABLED:
         try:
             await _db_repo.register_thread(
@@ -345,12 +347,16 @@ async def _persist_thread(thread_id: str, meta: dict):
                 meta.get('worker_id', ''),
                 title=meta.get('title'),
             )
+            return
         except Exception:
             pass
-    # Always append to JSONL (dual-write)
-    _THREAD_REGISTRY_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(_THREAD_REGISTRY_FILE, 'a') as f:
-        f.write(json.dumps({'thread_id': thread_id, **meta}) + '\n')
+    # Local dev fallback: JSONL file
+    try:
+        _THREAD_REGISTRY_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(_THREAD_REGISTRY_FILE, 'a') as f:
+            f.write(json.dumps({'thread_id': thread_id, **meta}) + '\n')
+    except Exception:
+        pass
 
 # Login rate-limit: {user_id: [timestamp, ...]}
 _login_attempts: dict = {}
@@ -552,11 +558,19 @@ async def _lifespan(app: FastAPI):
     falls back to AsyncSqliteSaver for local development. (REQ-07)"""
     _pg_url = os.getenv('DATABASE_URL')
     if _pg_url and _DB_ENABLED:
-        # Ensure conversation_threads table exists (may be missing on older installs)
+        # Ensure auxiliary tables exist (safe to call on every startup)
         try:
             await _db_repo._ensure_conversation_threads_table()
         except Exception as _ct_err:
             logging.getLogger(__name__).warning("conversation_threads ensure failed: %s", _ct_err)
+        try:
+            await _db_repo.ensure_app_config_table()
+        except Exception as _ac_err:
+            logging.getLogger(__name__).warning("app_config table ensure failed: %s", _ac_err)
+        try:
+            await _db_repo.ensure_workflow_metadata_table()
+        except Exception as _wm_err:
+            logging.getLogger(__name__).warning("workflow_metadata table ensure failed: %s", _wm_err)
     if _pg_url:
         # PostgreSQL checkpointer — production path
         try:
@@ -1086,6 +1100,21 @@ def _mask_key(key: str) -> str:
     return '••••' + key[-4:]
 
 def _read_llm_config() -> dict:
+    """Read LLM config — Postgres first (app_config key), JSON file fallback."""
+    if _DB_ENABLED:
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    cfg = pool.submit(asyncio.run, _db_repo.get_app_config('llm_config')).result(timeout=5)
+            else:
+                cfg = loop.run_until_complete(_db_repo.get_app_config('llm_config'))
+            if cfg:
+                return cfg
+        except Exception:
+            pass
     if _LLM_CONFIG_FILE.exists():
         try:
             return json.loads(_LLM_CONFIG_FILE.read_text())
@@ -1094,7 +1123,24 @@ def _read_llm_config() -> dict:
     return {'provider': os.getenv('LLM_PROVIDER', 'anthropic')}
 
 def _write_llm_config(cfg: dict) -> None:
-    _LLM_CONFIG_FILE.write_text(json.dumps(cfg, indent=2))
+    """Write LLM config — Postgres primary, JSON file kept in sync."""
+    if _DB_ENABLED:
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    pool.submit(asyncio.run, _db_repo.set_app_config('llm_config', cfg)).result(timeout=5)
+            else:
+                loop.run_until_complete(_db_repo.set_app_config('llm_config', cfg))
+        except Exception:
+            pass
+    # Keep JSON in sync as a readable backup
+    try:
+        _LLM_CONFIG_FILE.write_text(json.dumps(cfg, indent=2))
+    except Exception:
+        pass
 
 
 @app.get('/api/super/llm-config')
@@ -1492,15 +1538,38 @@ async def upload_file(file: UploadFile = File(...), payload: dict = Depends(requ
         return JSONResponse(status_code=500, content={'success': False, 'error': str(e)})
 
 
-def _read_metadata() -> dict:
+def _read_metadata(worker_id: str = '') -> dict:
+    """Return {filename: last_used_iso} — Postgres primary, JSON file fallback."""
+    if _DB_ENABLED and worker_id:
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    return pool.submit(asyncio.run, _db_repo.get_workflow_metadata(worker_id)).result(timeout=5)
+            return loop.run_until_complete(_db_repo.get_workflow_metadata(worker_id))
+        except Exception:
+            pass
     try:
-        return json.loads(_METADATA_FILE.read_text()) if _METADATA_FILE.exists() else {}
+        raw = json.loads(_METADATA_FILE.read_text()) if _METADATA_FILE.exists() else {}
+        # Normalise: values may be ISO strings or {"last_used": "..."} dicts
+        return {
+            k: (v.get('last_used') if isinstance(v, dict) else v)
+            for k, v in raw.items()
+        }
     except Exception:
         return {}
 
-def _write_metadata(data: dict):
-    _METADATA_FILE.parent.mkdir(parents=True, exist_ok=True)
-    _METADATA_FILE.write_text(json.dumps(data, indent=2))
+
+def _write_metadata(data: dict, worker_id: str = ''):
+    """Persist metadata — Postgres primary, JSON file kept in sync (local dev)."""
+    # JSON backup (local dev / fallback)
+    try:
+        _METADATA_FILE.parent.mkdir(parents=True, exist_ok=True)
+        _METADATA_FILE.write_text(json.dumps(data, indent=2))
+    except Exception:
+        pass
 
 def _safe_filename(filename: str) -> str:
     name = pathlib.Path(filename).name
@@ -1544,7 +1613,7 @@ async def list_workflows(payload: dict = Depends(require_jwt)):
         worker = _resolve_worker_for_user(user) if user else None
         if not worker:
             raise HTTPException(status_code=404, detail='No worker assigned to this user')
-        meta = _read_metadata()
+        meta = _read_metadata(worker.get('worker_id', ''))
         seen: set = set()
         workflows = []
         for section in ('verified_workflows', 'my_workflows'):
@@ -1634,9 +1703,13 @@ async def delete_workflow(filename: str, payload: dict = Depends(require_jwt)):
         _storage.delete(str(path))
     else:
         path.unlink()
-    meta = _read_metadata()
-    meta.pop(name, None)
-    _write_metadata(meta)
+    worker_id = worker.get('worker_id', '')
+    if _DB_ENABLED and worker_id:
+        await _db_repo.delete_workflow_metadata(worker_id, name)
+    else:
+        meta = _read_metadata()
+        meta.pop(name, None)
+        _write_metadata(meta)
     return {'ok': True}
 
 
@@ -1647,11 +1720,15 @@ async def mark_workflow_used(filename: str, payload: dict = Depends(require_jwt)
     if not worker:
         raise HTTPException(status_code=404, detail='No worker assigned to this user')
     name = _safe_filename(filename)
-    wf_dir = _resolve_worker_path(worker, 'verified_workflows')
     from datetime import datetime, timezone
-    meta = _read_metadata()
-    meta[name] = {"last_used": datetime.now(timezone.utc).isoformat()}
-    _write_metadata(meta)
+    now_iso = datetime.now(timezone.utc).isoformat()
+    worker_id = worker.get('worker_id', '')
+    if _DB_ENABLED and worker_id:
+        await _db_repo.set_workflow_last_used(worker_id, name, now_iso)
+    else:
+        meta = _read_metadata()
+        meta[name] = now_iso
+        _write_metadata(meta)
     return {'ok': True}
 
 
@@ -1968,18 +2045,29 @@ async def fs_mark_file_used(section: str, request: Request, path: str = '', payl
         _storage.write_text(str(meta_path), json.dumps(meta, indent=2))
     else:
         meta_path.write_text(json.dumps(meta, indent=2))
-    # Audit log (BUG-FS-002)
-    entry = {
-        'user_id': payload.get('sub', ''),
-        'worker_id': payload.get('worker_id', ''),
-        'section': section,
-        'path': path,
-        'used_at': now_iso
-    }
-    audit_path = pathlib.Path('sajhamcpserver/data/audit/file_used.jsonl')
-    audit_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(audit_path, 'a') as f:
-        f.write(json.dumps(entry) + '\n')
+    # Audit log (BUG-FS-002) — Postgres primary, JSONL fallback
+    if _DB_ENABLED:
+        try:
+            await _db_repo.log_file_access(
+                user_id=payload.get('user_id', ''),
+                worker_id=worker.get('worker_id', ''),
+                file_path=path,
+                section=section,
+                detail={'used_at': now_iso},
+            )
+        except Exception:
+            pass
+    else:
+        audit_path = pathlib.Path('sajhamcpserver/data/audit/file_used.jsonl')
+        audit_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(audit_path, 'a') as f:
+            f.write(json.dumps({
+                'user_id': payload.get('user_id', ''),
+                'worker_id': worker.get('worker_id', ''),
+                'section': section,
+                'path': path,
+                'used_at': now_iso,
+            }) + '\n')
     return {'ok': True, 'path': path}
 
 
@@ -2356,7 +2444,7 @@ async def run_agent(req: RunRequest, payload: dict = Depends(require_jwt)):
 
     # Per-request agent: fresh system prompt + filtered tools on every call (G-01 + G-02)
     agent_mode = worker.get('agent_mode', 'single')
-    system_prompt = get_system_prompt(worker['worker_id'], agent_mode)
+    system_prompt = get_system_prompt(worker, agent_mode)
     tools = get_tools_for_worker(worker.get('enabled_tools', ['*']))
 
     # REQ-14: build optional middlewares from worker config
@@ -3365,17 +3453,33 @@ _CONNECTOR_DEFAULTS = [
 
 
 def _load_connectors() -> list:
-    try:
-        data = json.loads(_CONNECTORS_FILE.read_text())
-        saved = {c['connector_type']: c for c in data.get('connectors', [])}
-    except Exception:
-        saved = {}
+    """Load connectors — Postgres primary, JSON file fallback."""
+    saved: dict = {}
+    if _DB_ENABLED:
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    rows = pool.submit(asyncio.run, _db_repo.list_connectors()).result(timeout=5)
+            else:
+                rows = loop.run_until_complete(_db_repo.list_connectors())
+            saved = {r['connector_type']: r for r in rows}
+        except Exception:
+            pass
+    if not saved:
+        try:
+            data = json.loads(_CONNECTORS_FILE.read_text())
+            saved = {c['connector_type']: c for c in data.get('connectors', [])}
+        except Exception:
+            saved = {}
     result = []
     for d in _CONNECTOR_DEFAULTS:
         ct = d['connector_type']
         if ct in saved:
             safe = {k: v for k, v in saved[ct].items() if k != 'credentials'}
-            safe['has_credentials'] = bool(saved[ct].get('credentials'))
+            safe['has_credentials'] = bool(saved[ct].get('credentials') or saved[ct].get('has_credentials'))
             safe.setdefault('tool_count', d['tool_count'])
             result.append(safe)
         else:
@@ -3384,13 +3488,30 @@ def _load_connectors() -> list:
 
 
 def _save_connector(connector_type: str, data: dict):
+    """Save connector — Postgres primary, JSON file kept in sync."""
+    if _DB_ENABLED:
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    pool.submit(asyncio.run, _db_repo.upsert_connector(connector_type, data)).result(timeout=5)
+            else:
+                loop.run_until_complete(_db_repo.upsert_connector(connector_type, data))
+        except Exception:
+            pass
+    # Keep JSON file in sync as backup
     try:
         existing = json.loads(_CONNECTORS_FILE.read_text())
         connectors = {c['connector_type']: c for c in existing.get('connectors', [])}
     except Exception:
         connectors = {}
     connectors[connector_type] = data
-    _CONNECTORS_FILE.write_text(json.dumps({'connectors': list(connectors.values())}, indent=2))
+    try:
+        _CONNECTORS_FILE.write_text(json.dumps({'connectors': list(connectors.values())}, indent=2))
+    except Exception:
+        pass
 
 
 @app.get('/api/super/connectors')

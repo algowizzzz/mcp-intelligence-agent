@@ -412,3 +412,124 @@ async def get_storage_used_bytes(worker_id: str) -> int:
         )
         total = result.scalar_one_or_none()
         return int(total or 0)
+
+
+# ── App Config (key-value store for LLM config, feature flags, etc.) ──────────
+
+async def ensure_app_config_table() -> None:
+    """Create app_config table if missing — safe to call on every startup."""
+    from sqlalchemy import text
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS app_config (
+                    key        TEXT PRIMARY KEY,
+                    value      JSONB NOT NULL DEFAULT '{}',
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+            """))
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("ensure_app_config_table failed: %s", e)
+
+
+async def get_app_config(key: str) -> Optional[dict]:
+    """Return stored JSON value for a config key, or None if not set."""
+    from sqlalchemy import text
+    try:
+        async with engine.begin() as conn:
+            result = await conn.execute(
+                text("SELECT value FROM app_config WHERE key = :key"),
+                {"key": key},
+            )
+            row = result.fetchone()
+            return dict(row[0]) if row else None
+    except Exception:
+        return None
+
+
+async def set_app_config(key: str, value: dict) -> None:
+    """Upsert a config key with a JSON value."""
+    from sqlalchemy import text
+    try:
+        import json as _json
+        async with engine.begin() as conn:
+            await conn.execute(text("""
+                INSERT INTO app_config (key, value, updated_at)
+                VALUES (:key, :value::jsonb, NOW())
+                ON CONFLICT (key) DO UPDATE
+                    SET value = EXCLUDED.value, updated_at = NOW()
+            """), {"key": key, "value": _json.dumps(value)})
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("set_app_config failed: %s", e)
+
+
+# ── Workflow Metadata ──────────────────────────────────────────────────────────
+
+async def ensure_workflow_metadata_table() -> None:
+    """Create workflow_metadata table if missing."""
+    from sqlalchemy import text
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS workflow_metadata (
+                    worker_id  TEXT NOT NULL,
+                    filename   TEXT NOT NULL,
+                    last_used  TIMESTAMPTZ,
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    PRIMARY KEY (worker_id, filename)
+                )
+            """))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_wf_meta_worker "
+                "ON workflow_metadata (worker_id)"
+            ))
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("ensure_workflow_metadata_table failed: %s", e)
+
+
+async def get_workflow_metadata(worker_id: str) -> dict:
+    """Return {filename: last_used_iso} for a worker. Empty dict if none."""
+    from sqlalchemy import text
+    try:
+        async with engine.begin() as conn:
+            result = await conn.execute(
+                text("SELECT filename, last_used FROM workflow_metadata WHERE worker_id = :wid"),
+                {"wid": worker_id},
+            )
+            return {
+                row[0]: row[1].isoformat() if row[1] else None
+                for row in result.fetchall()
+            }
+    except Exception:
+        return {}
+
+
+async def set_workflow_last_used(worker_id: str, filename: str, last_used: str) -> None:
+    """Upsert last_used timestamp for a workflow file."""
+    from sqlalchemy import text
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("""
+                INSERT INTO workflow_metadata (worker_id, filename, last_used, updated_at)
+                VALUES (:wid, :fn, :ts::timestamptz, NOW())
+                ON CONFLICT (worker_id, filename) DO UPDATE
+                    SET last_used = EXCLUDED.last_used, updated_at = NOW()
+            """), {"wid": worker_id, "fn": filename, "ts": last_used})
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("set_workflow_last_used failed: %s", e)
+
+
+async def delete_workflow_metadata(worker_id: str, filename: str) -> None:
+    """Remove workflow metadata entry when a workflow is deleted."""
+    from sqlalchemy import text
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text(
+                "DELETE FROM workflow_metadata WHERE worker_id = :wid AND filename = :fn"
+            ), {"wid": worker_id, "fn": filename})
+    except Exception:
+        pass
