@@ -99,10 +99,21 @@ class S3StorageBackend:
         )
         # Track endpoint for path-style forcing (MinIO requires it)
         self._path_style = endpoint is not None
+        # DATA_ROOT prefix to strip so S3 keys are clean relative paths
+        # e.g. /app/sajhamcpserver/data/common/foo.md → common/foo.md
+        data_root = os.environ.get('DATA_ROOT', '')
+        self._data_root = data_root.rstrip('/') + '/' if data_root else ''
 
     def _key(self, path: str) -> str:
-        """Normalise a path to an S3 key — strip leading ./ and //."""
-        return path.lstrip('./').lstrip('/')
+        """Normalise a path to a clean S3 key.
+        Strips DATA_ROOT prefix (if set) so keys are relative to data root,
+        matching the layout written by migrate_to_s3.py.
+        """
+        norm = path.lstrip('./')
+        # Strip absolute data root prefix (e.g. /app/sajhamcpserver/data/)
+        if self._data_root and norm.startswith(self._data_root.lstrip('/')):
+            norm = norm[len(self._data_root.lstrip('/')):]
+        return norm.lstrip('/')
 
     def read_bytes(self, path: str) -> bytes:
         resp = self.client.get_object(Bucket=self.bucket, Key=self._key(path))
