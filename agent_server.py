@@ -1538,6 +1538,7 @@ async def list_workspace_files(payload: dict = Depends(require_jwt)):
 
 @app.get('/api/workflows')
 async def list_workflows(payload: dict = Depends(require_jwt)):
+    import traceback as _tb
     user = _find_user(payload['user_id'])
     worker = _resolve_worker_for_user(user) if user else None
     if not worker:
@@ -1545,29 +1546,32 @@ async def list_workflows(payload: dict = Depends(require_jwt)):
     meta = _read_metadata()
     seen: set = set()
     workflows = []
-    for section in ('verified_workflows', 'my_workflows'):
-        wf_dir = _resolve_worker_path(worker, section)
-        if _S3_MODE:
-            for rel in _storage.list_prefix(str(wf_dir)):
-                if rel.endswith('.md') and '/' not in rel and rel not in seen:
-                    seen.add(rel)
-                    workflows.append({
-                        'filename': rel,
-                        'name': rel.rsplit('.', 1)[0].replace('_', ' ').title(),
-                        'size': 0,
-                        'last_used': meta.get(rel),
-                    })
-        else:
-            if wf_dir.exists():
-                for f in sorted(wf_dir.iterdir()):
-                    if f.is_file() and f.suffix == '.md' and f.name not in seen:
-                        seen.add(f.name)
+    try:
+        for section in ('verified_workflows', 'my_workflows'):
+            wf_dir = _resolve_worker_path(worker, section)
+            if _S3_MODE:
+                for rel in _storage.list_prefix(str(wf_dir)):
+                    if rel.endswith('.md') and '/' not in rel and rel not in seen:
+                        seen.add(rel)
                         workflows.append({
-                            'filename': f.name,
-                            'name': f.stem.replace('_', ' ').title(),
-                            'size': f.stat().st_size,
-                            'last_used': meta.get(f.name),
+                            'filename': rel,
+                            'name': rel.rsplit('.', 1)[0].replace('_', ' ').title(),
+                            'size': 0,
+                            'last_used': meta.get(rel),
                         })
+            else:
+                if wf_dir.exists():
+                    for f in sorted(wf_dir.iterdir()):
+                        if f.is_file() and f.suffix == '.md' and f.name not in seen:
+                            seen.add(f.name)
+                            workflows.append({
+                                'filename': f.name,
+                                'name': f.stem.replace('_', ' ').title(),
+                                'size': f.stat().st_size,
+                                'last_used': meta.get(f.name),
+                            })
+    except Exception as _e:
+        raise HTTPException(status_code=500, detail=f'list_workflows error: {_tb.format_exc()[-800:]}')
     workflows.sort(key=lambda w: w['last_used'] or '', reverse=True)
     return {'workflows': workflows}
 
