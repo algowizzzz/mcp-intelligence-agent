@@ -36,9 +36,13 @@ SECRET   = os.environ.get('AWS_SECRET_ACCESS_KEY')
 
 # Source: sajhamcpserver/data/ (relative to project root)
 # Key prefix: "data/" so that key = "data/" + relative_path_under_data_dir
-SCRIPT_DIR = pathlib.Path(__file__).parent.resolve()
+# Source: prefer the Hetzner server bind-mount path (/opt/sajha/data/app),
+# fall back to local dev path (sajhamcpserver/data/ relative to project root).
+_SERVER_PATH = pathlib.Path('/opt/sajha/data/app')
+SCRIPT_DIR   = pathlib.Path(__file__).parent.resolve()
 PROJECT_ROOT = SCRIPT_DIR.parent
-SRC = PROJECT_ROOT / 'sajhamcpserver' / 'data'
+_LOCAL_PATH  = PROJECT_ROOT / 'sajhamcpserver' / 'data'
+SRC = _SERVER_PATH if _SERVER_PATH.exists() else _LOCAL_PATH
 KEY_PREFIX = 'data'   # keys will be data/workers/..., data/common/...
 
 # Files to skip (non-data or binary DB files that DuckDB re-creates)

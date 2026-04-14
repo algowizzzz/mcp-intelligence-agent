@@ -89,6 +89,7 @@ jobs:
           scp -o StrictHostKeyChecking=no \
             docker-compose.prod.yml \
             scripts/init-db.sql \
+            scripts/migrate_to_s3.py \
             root@${{ secrets.SERVER_IP }}:/opt/sajha/
 
       - name: Deploy on server
@@ -131,16 +132,29 @@ jobs:
 
             # Wait for health check
             echo "Waiting for health check..."
+            HEALTHY=0
             for i in $(seq 1 30); do
               if curl -sf http://localhost/health > /dev/null 2>&1; then
                 echo "Health check passed!"
-                exit 0
+                HEALTHY=1
+                break
               fi
               echo "  Attempt $i/30..."
               sleep 5
             done
 
-            echo "WARNING: Health check did not pass within 150s"
-            docker compose -f docker-compose.prod.yml logs --tail=50
-            exit 1
+            if [ "$HEALTHY" = "0" ]; then
+              echo "ERROR: Health check did not pass within 150s"
+              docker compose -f docker-compose.prod.yml logs --tail=50
+              exit 1
+            fi
+
+            # ── S3 data migration (idempotent — skips files already in bucket at same size) ──
+            echo "Running S3 data migration..."
+            AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
+            AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+            S3_BUCKET=sajha-storage \
+            S3_ENDPOINT_URL=https://hel1.your-objectstorage.com \
+            AWS_REGION=hel1 \
+              python3 /opt/sajha/migrate_to_s3.py && echo "Migration complete" || echo "Migration warning (non-fatal)"
           DEPLOY_SCRIPT

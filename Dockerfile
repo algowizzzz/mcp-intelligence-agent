@@ -46,7 +46,14 @@ COPY agent/             ./agent/
 COPY agent_server.py    .
 COPY run_sajha.py       .
 COPY public/            ./public/
-COPY sajhamcpserver/    ./sajhamcpserver/
+# Copy application code only — data/ is intentionally excluded (lives in S3 + Docker volume).
+# Baking data/ into the image creates a ghost local copy that makes STORAGE_BACKEND=s3
+# appear to work even when S3 is empty, masking migration failures.
+COPY sajhamcpserver/config/          ./sajhamcpserver/config/
+COPY sajhamcpserver/sajha/           ./sajhamcpserver/sajha/
+COPY sajhamcpserver/run_server.py    ./sajhamcpserver/
+COPY sajhamcpserver/verify_installation.py ./sajhamcpserver/
+COPY sajhamcpserver/requirements.txt ./sajhamcpserver/
 
 # ── nginx configuration ───────────────────────────────────────────────────────
 # Place as a template; scripts/start.sh runs envsubst to inject $PORT at runtime.
@@ -65,6 +72,9 @@ RUN chmod +x /start.sh
 RUN mkdir -p \
         sajhamcpserver/logs \
         sajhamcpserver/data/flask_session \
+        sajhamcpserver/data/audit \
+        sajhamcpserver/data/workers \
+        sajhamcpserver/data/common \
         /var/log \
         /var/run
 

@@ -1,0 +1,33 @@
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+.env
+.env.*
+
+# --- Data (lives in S3 + Docker volume, must NOT be baked into the image) ---
+sajhamcpserver/data/
+sajhamcpserver/python_sandbox_venv/
+
+# --- Dev / test artefacts ---
+node_modules/
+*.log
+.DS_Store
+.git/
+.gitignore
+*.md
+uat_plans/
+handover/
+Documentation/
+requirements/
+scripts/
+test_playwright.js
+package.json
+package-lock.json
