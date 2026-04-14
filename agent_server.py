@@ -176,8 +176,59 @@ def _load_workers() -> list:
 
 
 def _save_workers(workers: list):
-    """Persist workers to disk, then reload the repository cache (REQ-PREP-06)."""
+    """Persist workers to disk (for SAJHA hot-reload) and sync to Postgres when DB is enabled."""
     _SAJHA_WORKERS_FILE.write_text(json.dumps({'workers': workers}, indent=2))
+    if _DB_ENABLED:
+        # Sync full worker list to Postgres so PostgresWorkerRepository reads are consistent
+        try:
+            import psycopg, re as _re
+            raw_dsn = os.getenv('DATABASE_URL', '')
+            dsn = _re.sub(r'^postgresql(\+asyncpg|\+psycopg2?|\+psycopg)?://', 'postgresql://', raw_dsn)
+            with psycopg.connect(dsn) as conn:
+                with conn.cursor() as cur:
+                    for w in workers:
+                        wid = w.get('worker_id') or w.get('id', '')
+                        if not wid:
+                            continue
+                        cur.execute(
+                            """
+                            INSERT INTO workers
+                                (worker_id, name, description, system_prompt,
+                                 enabled_tools, domain_data_path, verified_wf_path,
+                                 connector_scope, enabled, updated_at)
+                            VALUES (%s,%s,%s,%s,%s::jsonb,%s,%s,%s::jsonb,%s,NOW())
+                            ON CONFLICT (worker_id) DO UPDATE SET
+                                name             = EXCLUDED.name,
+                                description      = EXCLUDED.description,
+                                system_prompt    = EXCLUDED.system_prompt,
+                                enabled_tools    = EXCLUDED.enabled_tools,
+                                domain_data_path = EXCLUDED.domain_data_path,
+                                verified_wf_path = EXCLUDED.verified_wf_path,
+                                connector_scope  = EXCLUDED.connector_scope,
+                                enabled          = EXCLUDED.enabled,
+                                updated_at       = NOW()
+                            """,
+                            (
+                                wid,
+                                w.get('name', wid),
+                                w.get('description', ''),
+                                w.get('system_prompt', ''),
+                                json.dumps(w.get('enabled_tools', ['*'])),
+                                w.get('domain_data_path', ''),
+                                w.get('verified_wf_path', ''),
+                                json.dumps(w.get('connector_scope', {})),
+                                bool(w.get('enabled', True)),
+                            )
+                        )
+                    # Delete workers removed from the list
+                    if workers:
+                        ids = [w.get('worker_id') or w.get('id', '') for w in workers if w.get('worker_id') or w.get('id')]
+                        placeholders = ','.join(['%s'] * len(ids))
+                        cur.execute(f"DELETE FROM workers WHERE worker_id NOT IN ({placeholders})", ids)
+                conn.commit()
+        except Exception as _e:
+            import logging
+            logging.getLogger(__name__).warning("_save_workers Postgres sync failed: %s", _e)
     _worker_repo.reload()
 
 
