@@ -107,12 +107,15 @@ def _load_users() -> list:
     """Load users — PostgreSQL when DB is enabled, JSON file in local dev."""
     if _DB_ENABLED:
         import asyncio
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                return pool.submit(asyncio.run, _db_repo.list_users()).result(timeout=5)
-        return loop.run_until_complete(_db_repo.list_users())
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    return pool.submit(asyncio.run, _db_repo.list_users()).result(timeout=5)
+            return loop.run_until_complete(_db_repo.list_users())
+        except Exception as _e:
+            raise HTTPException(status_code=503, detail=f'Database unavailable: {_e}')
     try:
         return json.loads(_SAJHA_USERS_FILE.read_text()).get('users', [])
     except Exception:
@@ -150,12 +153,17 @@ def _find_user(user_id: str) -> Optional[dict]:
     """Find user by ID — PostgreSQL when DB enabled, JSON file in local dev."""
     if _DB_ENABLED:
         import asyncio
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                return pool.submit(asyncio.run, _db_repo.get_user(user_id)).result(timeout=5)
-        return loop.run_until_complete(_db_repo.get_user(user_id))
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    return pool.submit(asyncio.run, _db_repo.get_user(user_id)).result(timeout=5)
+            return loop.run_until_complete(_db_repo.get_user(user_id))
+        except HTTPException:
+            raise
+        except Exception as _e:
+            raise HTTPException(status_code=503, detail=f'Database unavailable: {_e}')
     for u in _load_users():
         if u.get('user_id') == user_id:
             return u
