@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional
 
 from sajha.tools.base_mcp_tool import BaseMCPTool
 from sajha.path_resolver import resolve as path_resolve
+from sajha.storage import storage
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -237,7 +238,8 @@ def _collect_figures(tmpdir: str, charts_dir: str) -> List[Dict[str, str]]:
         filename = os.path.basename(src_path)
         dest = os.path.join(charts_dir, filename)
         try:
-            shutil.copy2(src_path, dest)
+            import pathlib as _pl
+            storage.write_bytes(dest, _pl.Path(src_path).read_bytes())
             figures.append({
                 'type': fig_type,
                 'filename': filename,
@@ -299,7 +301,7 @@ def _copy_context_files(context_files: List[str], tmpdir: str, worker_ctx: dict,
                     kw = {'user_id': user_id} if section == 'my_data' and user_id else {}
                     base = path_resolve(section, worker_ctx, **kw)
                     candidate = os.path.join(base, rel_path)
-                    if os.path.isfile(candidate):
+                    if storage.exists(candidate):
                         resolved = candidate
                         break
                 except Exception:
@@ -312,9 +314,9 @@ def _copy_context_files(context_files: List[str], tmpdir: str, worker_ctx: dict,
                 try:
                     kw = {'user_id': user_id} if section == 'my_data' and user_id else {}
                     base = path_resolve(section, worker_ctx, **kw)
-                    for dirpath, _, fnames in os.walk(base):
-                        if bare in fnames:
-                            resolved = os.path.join(dirpath, bare)
+                    for rel_key in storage.list_prefix(base):
+                        if os.path.basename(rel_key) == bare:
+                            resolved = os.path.join(base, rel_key)
                             break
                     if resolved:
                         break
@@ -324,7 +326,8 @@ def _copy_context_files(context_files: List[str], tmpdir: str, worker_ctx: dict,
         if resolved:
             dest = os.path.join(tmpdir, os.path.basename(resolved))
             try:
-                shutil.copy2(resolved, dest)
+                with open(dest, 'wb') as _f:
+                    _f.write(storage.read_bytes(resolved))
             except Exception:
                 pass
 

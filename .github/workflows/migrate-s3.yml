@@ -1,0 +1,66 @@
+###############################################################################
+# REQ-16: One-time S3 data migration — VPS Docker volume → Hetzner sajha-storage
+# Trigger manually via: gh workflow run migrate-s3.yml
+# Safe to re-run (aws s3 sync is idempotent).
+###############################################################################
+
+name: Migrate data to Hetzner S3
+
+on:
+  workflow_dispatch:
+
+jobs:
+  migrate:
+    name: Sync VPS data → Hetzner S3
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.HETZNER_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Install AWS CLI on VPS and run sync
+        run: |
+          ssh -o StrictHostKeyChecking=no root@${{ secrets.SERVER_IP }} << 'SCRIPT'
+            set -e
+
+            # Install AWS CLI if not present
+            if ! command -v aws &>/dev/null; then
+              echo "Installing AWS CLI..."
+              apt-get install -y awscli 2>/dev/null || \
+              pip3 install awscli --quiet 2>/dev/null || \
+              (curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip && \
+               unzip -q /tmp/awscliv2.zip -d /tmp && \
+               /tmp/aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli)
+            fi
+
+            echo "AWS CLI: $(aws --version)"
+
+            # Export credentials
+            export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+            export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            export AWS_DEFAULT_REGION=eu-central-1
+
+            ENDPOINT=https://hel1.your-objectstorage.com
+            BUCKET=sajha-storage
+            SOURCE=/opt/sajha/data/app
+
+            echo "=== Source directory contents ==="
+            du -sh $SOURCE 2>/dev/null || echo "(empty or not found)"
+            find $SOURCE -type f | wc -l | xargs echo "Files to sync:"
+
+            echo "=== Starting sync ==="
+            aws s3 sync $SOURCE s3://$BUCKET \
+              --endpoint-url $ENDPOINT \
+              --region eu-central-1 \
+              --no-progress
+
+            echo "=== Verifying ==="
+            aws s3 ls s3://$BUCKET --endpoint-url $ENDPOINT --region eu-central-1 --recursive \
+              | wc -l | xargs echo "Objects in bucket:"
+
+            echo "Migration complete."
+          SCRIPT

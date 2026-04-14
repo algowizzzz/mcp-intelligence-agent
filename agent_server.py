@@ -30,7 +30,7 @@ from agent.sub_agent_tool import set_stream_writer as _set_stream_writer
 
 _sys.path.insert(0, str(pathlib.Path(__file__).parent / 'sajhamcpserver'))
 from sajha.tools.impl.fs_index import build_index, get_index
-from sajha.worker_repository import WorkerRepository as _WorkerRepository
+from sajha.worker_repository import WorkerRepository as _WorkerRepository, PostgresWorkerRepository as _PGWorkerRepository
 from sajha.storage import storage as _storage
 _S3_MODE = os.getenv('STORAGE_BACKEND', 'local') == 's3'
 
@@ -45,8 +45,11 @@ _SAJHA_WORKERS_FILE = pathlib.Path('sajhamcpserver/config/workers.json')
 
 _STORAGE_BACKEND = _os.environ.get('STORAGE_BACKEND', 'local')
 
-# WorkerRepository singleton — all worker config reads go through this (REQ-PREP-06)
-_worker_repo = _WorkerRepository(config_path=str(_SAJHA_WORKERS_FILE))
+# WorkerRepository singleton — Postgres when DATABASE_URL set, JSON fallback (REQ-07 P1)
+if _DB_ENABLED:
+    _worker_repo = _PGWorkerRepository()
+else:
+    _worker_repo = _WorkerRepository(config_path=str(_SAJHA_WORKERS_FILE))
 
 
 def serve_file(path: str, media_type: str = None) -> Response:
@@ -3212,7 +3215,20 @@ async def super_audit_log(
     offset: int = 0,
     _: dict = Depends(require_super_admin),
 ):
-    """Return recent audit log entries. REQ-07: reads from PostgreSQL when enabled (fixes field-name bug)."""
+    """Return recent audit log entries. REQ-07: reads from PostgreSQL when enabled."""
+    def _normalise(entry: dict) -> dict:
+        """Normalise DB field names to match the JSONL schema the UI expects."""
+        return {
+            'timestamp':   entry.get('created_at') or entry.get('timestamp'),
+            'worker_id':   entry.get('worker_id'),
+            'user_id':     entry.get('user_id'),
+            'tool_name':   entry.get('tool_name'),
+            'status':      ('success' if entry.get('tool_result_ok') else 'error')
+                           if entry.get('tool_result_ok') is not None
+                           else entry.get('status', '—'),
+            'duration_ms': entry.get('elapsed_ms') if entry.get('elapsed_ms') is not None
+                           else entry.get('duration_ms'),
+        }
     if _DB_ENABLED:
         try:
             entries = await _db_repo.query_audit(
@@ -3221,7 +3237,7 @@ async def super_audit_log(
                 limit=limit,
                 offset=offset,
             )
-            return {'entries': entries, 'total_returned': len(entries), 'offset': offset, 'limit': limit}
+            return {'entries': [_normalise(e) for e in entries], 'total_returned': len(entries), 'offset': offset, 'limit': limit}
         except Exception:
             pass
     # Fallback: JSONL file

@@ -42,6 +42,26 @@ except ImportError:
     raise ImportError("DuckDB is required. Install with: pip install duckdb --break-system-packages")
 
 
+def _ensure_local(path: str) -> str:
+    """Interim S3 compat helper (REQ-16 Phase 2).
+    Local mode: returns path unchanged.
+    S3 mode: downloads file to /tmp and returns the local cached path so
+    DuckDB read_csv_auto/read_parquet can open it.
+    Phase 6 will replace this with direct s3:// URIs via DuckDB httpfs.
+    """
+    import hashlib, tempfile
+    if os.getenv('STORAGE_BACKEND', 'local') != 's3':
+        return path
+    ext = os.path.splitext(path)[1]
+    cache_key = hashlib.md5(path.encode()).hexdigest()
+    local_path = os.path.join(tempfile.gettempdir(), f'duckdb_s3_{cache_key}{ext}')
+    if not os.path.exists(local_path):
+        data = storage.read_bytes(path)
+        with open(local_path, 'wb') as _f:
+            _f.write(data)
+    return local_path
+
+
 class DuckDbBaseTool(BaseMCPTool):
     """
     Base class for DuckDB tools with shared functionality
@@ -188,7 +208,7 @@ class DuckDbBaseTool(BaseMCPTool):
         seen_filenames = set()  # Avoid duplicate view names across layers
 
         for section_name, data_dir in self.data_directories:
-            if not os.path.isdir(data_dir):
+            if not storage.list_prefix(data_dir) and not os.path.isdir(data_dir):
                 continue
 
             # REQ-PREP-04: use storage.list_prefix instead of os.listdir
@@ -236,10 +256,9 @@ class DuckDbBaseTool(BaseMCPTool):
                 }
 
                 try:
-                    stat = os.stat(file_path)
-                    file_info['file_size_bytes'] = stat.st_size
-                    file_info['file_size_human'] = self._format_file_size(stat.st_size)
-                    file_info['modified_date'] = datetime.fromtimestamp(stat.st_mtime).isoformat()
+                    size = storage.get_size(file_path)
+                    file_info['file_size_bytes'] = size
+                    file_info['file_size_human'] = self._format_file_size(size)
                 except Exception:
                     pass
 
@@ -314,26 +333,28 @@ class DuckDbBaseTool(BaseMCPTool):
 
                     # Create lazy view — no data loaded at creation time.
                     # sample_size=100 is sufficient for schema detection and is fast.
+                    # _ensure_local: in S3 mode, downloads to /tmp so DuckDB can open it.
+                    local_path = _ensure_local(file_path)
                     if file_type == 'csv':
                         create_view_sql = (
                             f"CREATE VIEW {view_name} AS "
-                            f"SELECT * FROM read_csv_auto('{file_path}', "
+                            f"SELECT * FROM read_csv_auto('{local_path}', "
                             f"header=true, auto_detect=true, sample_size=100)"
                         )
                     elif file_type == 'parquet':
                         create_view_sql = (
                             f"CREATE VIEW {view_name} AS "
-                            f"SELECT * FROM read_parquet('{file_path}')"
+                            f"SELECT * FROM read_parquet('{local_path}')"
                         )
                     elif file_type == 'json':
                         create_view_sql = (
                             f"CREATE VIEW {view_name} AS "
-                            f"SELECT * FROM read_json_auto('{file_path}')"
+                            f"SELECT * FROM read_json_auto('{local_path}')"
                         )
                     elif file_type == 'tsv':
                         create_view_sql = (
                             f"CREATE VIEW {view_name} AS "
-                            f"SELECT * FROM read_csv_auto('{file_path}', "
+                            f"SELECT * FROM read_csv_auto('{local_path}', "
                             f"header=true, delim='\\t', auto_detect=true, sample_size=100)"
                         )
                     else:

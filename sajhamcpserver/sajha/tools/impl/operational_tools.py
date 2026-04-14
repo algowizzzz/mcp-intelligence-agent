@@ -497,27 +497,27 @@ class MdSaveTool(BaseMCPTool):
         dest = folder / filename
         archived_as = None
 
-        if dest.exists() and not overwrite:
+        if storage.exists(str(dest)) and not overwrite:
             if versioning:
-                mtime = datetime.fromtimestamp(dest.stat().st_mtime, tz=timezone.utc)
-                ts = mtime.strftime("%Y-%m-%d_%H%M%S")
+                ts = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d_%H%M%S")
                 stem = dest.stem
                 archive_name = f"{stem}_{ts}.md"
                 archive_path = folder / archive_name
-                shutil.move(str(dest), str(archive_path))
+                storage.copy(str(dest), str(archive_path))
+                storage.delete(str(dest))
                 archived_as = archive_name
 
         storage.write_text(str(dest), content, encoding="utf-8")
-        stat = dest.stat()
+        size_bytes = storage.get_size(str(dest)) or len(content.encode("utf-8"))
 
         return {
             "path": str(dest),
             "filename": filename,
             "subfolder": subfolder,
-            "size_bytes": stat.st_size,
+            "size_bytes": size_bytes,
             "versioned": archived_as is not None,
             "archived_as": archived_as,
-            "written_at": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+            "written_at": datetime.now(tz=timezone.utc).isoformat(),
             "_source": str(dest),
         }
 
@@ -686,11 +686,15 @@ class MdToDocxTool(BaseMCPTool):
         else:
             out = safe.with_suffix(".docx")
 
-        doc.save(str(out))
+        import io as _io
+        _buf = _io.BytesIO()
+        doc.save(_buf)
+        _docx_bytes = _buf.getvalue()
+        storage.write_bytes(str(out), _docx_bytes)
         return {
             "source_md": str(safe),
             "output_docx": str(out),
-            "size_bytes": out.stat().st_size,
+            "size_bytes": len(_docx_bytes),
             "style": arguments.get("style", "standard"),
             "toc_included": include_toc,
             "_source": str(out),
@@ -834,9 +838,9 @@ class SearchFilesTool(BaseMCPTool):
 
     def _extract_text(self, path, ext):
         if ext in ("md", "txt", "csv", "tsv"):
-            return path.read_text(encoding="utf-8", errors="ignore")
+            return storage.read_text(str(path), encoding="utf-8")
         if ext == "json":
-            return path.read_text(encoding="utf-8", errors="ignore")
+            return storage.read_text(str(path), encoding="utf-8")
         if ext == "docx":
             from docx import Document
             doc = Document(str(path))

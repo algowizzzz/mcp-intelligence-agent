@@ -78,7 +78,8 @@ def _pq_to_df(path):
     """Read parquet avoiding pandas extension type conflicts."""
     import pyarrow.parquet as pq_mod
     import pandas as pd
-    table = pq_mod.read_table(str(path))
+    buf = io.BytesIO(storage.read_bytes(str(path)))
+    table = pq_mod.read_table(buf)
     # Convert column by column to basic pandas types to avoid extension conflicts
     data = {}
     for i, col in enumerate(table.schema.names):
@@ -515,12 +516,12 @@ class DataExportTool(BaseMCPTool):
 
         # Versioning
         archived_as = None
-        if dest.exists() and versioning:
-            mtime = datetime.fromtimestamp(dest.stat().st_mtime, tz=timezone.utc)
-            ts = mtime.strftime('%Y-%m-%d_%H%M%S')
+        if storage.exists(str(dest)) and versioning:
+            ts = datetime.now(tz=timezone.utc).strftime('%Y-%m-%d_%H%M%S')
             stem = dest.stem
             archive_name = f"{stem}_{ts}{dest.suffix}"
-            shutil.move(str(dest), str(folder / archive_name))
+            storage.copy(str(dest), str(folder / archive_name))
+            storage.delete(str(dest))
             archived_as = archive_name
 
         # Write via storage abstraction
@@ -529,22 +530,24 @@ class DataExportTool(BaseMCPTool):
                 buf = io.BytesIO()
                 _df_to_pq(df, buf)
                 storage.write_bytes(str(dest), buf.getvalue())
+                size_bytes = len(buf.getvalue())
             else:
                 csv_buf = io.StringIO()
                 df.to_csv(csv_buf, index=include_index, encoding='utf-8')
-                storage.write_text(str(dest), csv_buf.getvalue(), encoding='utf-8')
+                csv_text = csv_buf.getvalue()
+                storage.write_text(str(dest), csv_text, encoding='utf-8')
+                size_bytes = len(csv_text.encode('utf-8'))
         except Exception as e:
             return {'error': f'Export failed: {e}'}
 
-        stat = dest.stat()
         return {
             'path': str(dest),
             'filename': filename,
             'format': fmt,
             'rows_written': len(df),
-            'size_bytes': stat.st_size,
+            'size_bytes': size_bytes,
             'versioned': archived_as is not None,
             'archived_as': archived_as,
-            'written_at': datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+            'written_at': datetime.now(tz=timezone.utc).isoformat(),
             '_source': str(dest),
         }

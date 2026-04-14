@@ -170,31 +170,28 @@ class ListUploadedFilesTool(BaseMCPTool):
                 root = os.path.join(root, subfolder)
             searched_dirs.append(root)
 
-            if not os.path.exists(root):
-                continue
-
-            for dirpath, dirnames, fnames in os.walk(root):
-                # Skip hidden dirs
-                dirnames[:] = [d for d in dirnames if not d.startswith('.')]
-                for fname in fnames:
-                    if fname.startswith('.') or fname.startswith('_'):
-                        continue
-                    ext = fname.rsplit('.', 1)[-1].lower() if '.' in fname else ''
-                    if ext not in ALLOWED:
-                        continue
-                    if file_type != 'all' and ext != file_type:
-                        continue
-                    fpath = os.path.join(dirpath, fname)
-                    rel = os.path.relpath(fpath, os.path.normpath(base_path))
-                    sub = os.path.dirname(rel)
-                    files.append({
-                        'filename': fname,
-                        'relative_path': rel,
-                        'file_path': os.path.abspath(fpath),
-                        'section': section_name,
-                        'subfolder': sub if sub != '.' else '',
-                        'file_type': ext,
-                    })
+            for rel_key in storage.list_prefix(root):
+                fname = os.path.basename(rel_key)
+                if fname.startswith('.') or fname.startswith('_'):
+                    continue
+                # Skip entries inside hidden directories
+                if any(part.startswith('.') for part in rel_key.replace('\\', '/').split('/')):
+                    continue
+                ext = fname.rsplit('.', 1)[-1].lower() if '.' in fname else ''
+                if ext not in ALLOWED:
+                    continue
+                if file_type != 'all' and ext != file_type:
+                    continue
+                fpath = os.path.join(root, rel_key)
+                sub = os.path.dirname(rel_key)
+                files.append({
+                    'filename': fname,
+                    'relative_path': rel_key,
+                    'file_path': os.path.abspath(fpath),
+                    'section': section_name,
+                    'subfolder': sub if sub != '.' else '',
+                    'file_type': ext,
+                })
 
         files.sort(key=lambda x: (x['section'], x['subfolder'], x['filename']))
         return self._render_markdown(files)

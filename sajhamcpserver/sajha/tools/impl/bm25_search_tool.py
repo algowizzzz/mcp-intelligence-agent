@@ -49,10 +49,7 @@ def _fingerprint(directories: list) -> dict:
             continue
         for rel in storage.list_prefix(d):
             abs_path = os.path.join(d, rel)
-            try:
-                fp[abs_path] = os.path.getmtime(abs_path)
-            except OSError:
-                pass
+            fp[abs_path] = storage.get_size(abs_path)
     return fp
 
 

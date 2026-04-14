@@ -114,26 +114,27 @@ class WorkflowListTool(BaseMCPTool):
         }
         workflows = []
         for source, root in roots.items():
-            if not os.path.exists(root):
-                continue
-            for dirpath, _, files in os.walk(root):
-                for fname in sorted(files):
-                    if not fname.endswith(".md") or fname.startswith("."):
-                        continue
-                    full_path = os.path.join(dirpath, fname)
-                    rel_path = os.path.relpath(full_path, base).replace("\\", "/")
-                    try:
-                        content = storage.read_text(full_path)
-                        name, description, inputs = _parse_workflow_meta(fname, content)
-                        workflows.append({
-                            "filename": rel_path,
-                            "name": name,
-                            "description": description,
-                            "inputs": inputs,
-                            "source": source,
-                        })
-                    except Exception as e:
-                        workflows.append({"filename": rel_path, "error": str(e)})
+            for rel_key in storage.list_prefix(root):
+                fname = os.path.basename(rel_key)
+                if not fname.endswith(".md") or fname.startswith("."):
+                    continue
+                full_path = os.path.join(root, rel_key)
+                # Build rel_path relative to base (e.g. "verified/subdir/file.md")
+                rel_path = os.path.join(
+                    os.path.relpath(root, base), rel_key
+                ).replace("\\", "/")
+                try:
+                    content = storage.read_text(full_path)
+                    name, description, inputs = _parse_workflow_meta(fname, content)
+                    workflows.append({
+                        "filename": rel_path,
+                        "name": name,
+                        "description": description,
+                        "inputs": inputs,
+                        "source": source,
+                    })
+                except Exception as e:
+                    workflows.append({"filename": rel_path, "error": str(e)})
         return {"workflows": workflows, "count": len(workflows)}
 
 

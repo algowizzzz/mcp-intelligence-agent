@@ -15,7 +15,28 @@ from typing import Dict, Any, List, Optional
 from pathlib import Path
 
 from sajha.tools.base_mcp_tool import BaseMCPTool
+from sajha.storage import storage
 from sajha.olap.semantic_layer import SemanticLayer
+
+
+def _ensure_local(path: str) -> str:
+    """Interim S3 compat helper (REQ-16 Phase 2).
+    Local mode: returns path unchanged.
+    S3 mode: downloads file to /tmp and returns the local cached path so
+    DuckDB read_csv_auto/read_parquet can open it.
+    Phase 6 will replace this with direct s3:// URIs via DuckDB httpfs.
+    """
+    import hashlib, tempfile
+    if os.getenv('STORAGE_BACKEND', 'local') != 's3':
+        return path
+    ext = os.path.splitext(path)[1]
+    cache_key = hashlib.md5(path.encode()).hexdigest()
+    local_path = os.path.join(tempfile.gettempdir(), f'duckdb_s3_{cache_key}{ext}')
+    if not os.path.exists(local_path):
+        data = storage.read_bytes(path)
+        with open(local_path, 'wb') as _f:
+            _f.write(data)
+    return local_path
 from sajha.olap.pivot_engine import PivotEngine, PivotSpec
 from sajha.olap.rollup_engine import RollupEngine, RollupSpec
 from sajha.olap.window_engine import WindowEngine, WindowSpec, WindowCalculation
@@ -1181,11 +1202,14 @@ class CustomerOLAPTool(BaseMCPTool):
         """Get the base FROM/JOIN clause for customer OLAP queries."""
         base_path = self._get_data_path()
         
+        c = _ensure_local(f'{base_path}/customers.csv')
+        o = _ensure_local(f'{base_path}/orders.csv')
+        p = _ensure_local(f'{base_path}/products.csv')
         return f"""
-        FROM read_csv_auto('{base_path}/customers.csv') AS customers
-        LEFT JOIN read_csv_auto('{base_path}/orders.csv') AS orders
+        FROM read_csv_auto('{c}') AS customers
+        LEFT JOIN read_csv_auto('{o}') AS orders
             ON customers.customer_id = orders.customer_id
-        LEFT JOIN read_csv_auto('{base_path}/products.csv') AS products
+        LEFT JOIN read_csv_auto('{p}') AS products
             ON orders.product_name = products.product_name
         """
     
@@ -1456,9 +1480,10 @@ class DuckDBSQLTool(BaseMCPTool):
             csv_files = ['customers', 'orders', 'products']
             for table_name in csv_files:
                 file_path = f"{self.data_dir}/{table_name}.csv"
+                local_fp = _ensure_local(file_path)
                 create_view = f"""
-                    CREATE OR REPLACE VIEW {table_name} AS 
-                    SELECT * FROM read_csv_auto('{file_path}')
+                    CREATE OR REPLACE VIEW {table_name} AS
+                    SELECT * FROM read_csv_auto('{local_fp}')
                 """
                 self.conn.execute(create_view)
             

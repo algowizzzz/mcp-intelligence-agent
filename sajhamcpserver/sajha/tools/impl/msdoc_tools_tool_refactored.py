@@ -100,11 +100,11 @@ class MsDocBaseTool(BaseMCPTool):
         """
         # Try the requested section's primary dir first (handles subfolder-qualified names too)
         primary = os.path.join(self._resolve_docs_dir(section), filename)
-        if os.path.isfile(primary):
+        if storage.exists(primary):
             return primary
         # Fall back to searching all candidate paths
         for path in self._candidate_paths(filename):
-            if os.path.isfile(path):
+            if storage.exists(path):
                 return path
         # Last resort: recursive walk across domain_data for bare filenames
         # (handles "Suppq425.xlsx" when it lives in "domain_data/bmo financials/Suppq425.xlsx")
@@ -117,9 +117,9 @@ class MsDocBaseTool(BaseMCPTool):
                 if r:
                     roots_to_walk.append(r.rstrip('/'))
             for root in roots_to_walk:
-                for dirpath, _, filenames in os.walk(root):
-                    if bare in filenames:
-                        return os.path.join(dirpath, bare)
+                for rel_key in storage.list_prefix(root):
+                    if os.path.basename(rel_key) == bare:
+                        return os.path.join(root, rel_key)
         except (RuntimeError, Exception):
             pass
         # Nothing found — return primary path so callers get a meaningful "not found" error

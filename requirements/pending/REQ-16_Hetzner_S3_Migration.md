@@ -1,22 +1,23 @@
 # REQ-16 — Hetzner Object Storage Migration (S3-Compatible)
 
-**Status:** Pending  
-**Version:** 1.0 (2026-04-12)  
+**Status:** In Progress  
+**Version:** 2.0 (2026-04-14)  
 **Author:** Saad Ahmed  
-**Branch:** `feature/req-16-hetzner-s3`  
-**Prerequisite:** REQ-07 (PostgreSQL running on Hetzner — already complete)  
+**Prerequisite:** REQ-07 (PostgreSQL — code complete), REQ-08a (S3 storage layer — code complete)
 
 ---
 
 ## 1. Objective
 
-Migrate all file storage from Docker local volumes to Hetzner Object Storage.  
-Hetzner Object Storage is S3-compatible — the AWS SDK (boto3) works unchanged with a custom `endpoint_url`. This means the same code will run on AWS S3 later by only changing environment variables — no code changes required at migration time.
+Migrate all file storage from Docker local volumes to Hetzner Object Storage (S3-compatible).
+The storage abstraction layer (`storage.py`), S3 backend, and PostgreSQL layer are already
+built and wired into the server. This REQ is about fixing the 9 tool files that bypass that
+abstraction, then activating it with env vars and migrating the data.
 
 **What this is NOT:**
-- Not an AWS migration (that's a future infra swap, zero code changes needed after this)
-- Not changing the database (Postgres stays on Hetzner VPS)
-- Not changing the compute layer (Docker on Hetzner stays as-is)
+- Not building new infrastructure code — `storage.py`, `path_resolver.py`, DB layer are complete
+- Not an AWS migration — that's a future env-var-only swap, no code changes needed after this
+- Not changing the compute layer — Docker on Hetzner VPS stays as-is
 
 ---
 
@@ -24,12 +25,11 @@ Hetzner Object Storage is S3-compatible — the AWS SDK (boto3) works unchanged 
 
 | Problem Today | Impact |
 |---|---|
-| All files in Docker volume `/app/sajhamcpserver/data` | Data is tied to one container — volume rebuild = data loss |
-| 15 tool files bypass the storage abstraction | Direct `os.walk`, `open()`, `shutil` calls will silently break if volume isn't mounted |
+| All files in Docker volume `/app/sajhamcpserver/data` | Volume rebuild = data loss; can't scale horizontally |
+| 9 tool files bypass storage abstraction | Direct `os.walk`, `open()`, `shutil` silently break without a mounted volume |
+| DuckDB passes local filesystem paths | `read_csv_auto('/path/to/file.csv')` fails on object storage |
 | BM25 index written to local disk | Lost on container restart, rebuilt from scratch every time |
-| DuckDB passes local filesystem paths | `read_csv_auto('/path/to/file.csv')` — won't work on object storage without DuckDB httpfs |
 | No disaster recovery for user files | Hetzner volume failure = unrecoverable |
-| AWS migration blocked | Can't move to ECS/Fargate without object storage for files |
 
 ---
 
@@ -49,198 +49,137 @@ Agent Server (FastAPI :8000)
         │         sajhamcpserver/data/workers/{worker_id}/templates/
         │         sajhamcpserver/data/common/
         │
-        └──► PostgreSQL (already on Hetzner VPS)
-                  checkpoints, audit, user config — unchanged
+        └──► PostgreSQL (Hetzner VPS)
+                  users, workers, audit, checkpoints, file_metadata
 ```
 
-On AWS migration: change `S3_ENDPOINT_URL` → empty, update `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` to IAM role. Nothing in application code changes.
+On AWS migration later: remove `S3_ENDPOINT_URL`, update credentials to IAM role. Zero code changes.
 
 ---
 
-## 4. Current State (Audit Results — 2026-04-12)
+## 4. What Is Already Built (Do Not Touch)
 
-### 4.1 Storage abstraction — already complete
-
-`sajhamcpserver/sajha/storage.py` has a fully implemented `S3StorageBackend` class with:
-- `read_bytes`, `write_bytes`, `read_text`, `write_text`
-- `list_prefix`, `exists`, `delete`, `copy`
-- `generate_presigned_url`
-- `write_stream` (buffers to memory then PUT — safe for files ≤ 50MB)
-- Switches on `STORAGE_BACKEND=s3` env var
-- Reads `S3_ENDPOINT_URL`, `S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
-
-**No changes needed to `storage.py`.**
-
-### 4.2 Files that bypass the storage abstraction (must be fixed)
-
-Full audit across all 41 tool implementation files:
-
-| # | File | Severity | What bypasses storage |
-|---|------|----------|----------------------|
-| 1 | `fs_index.py` | HIGH | `os.walk`, `open()` for index cache — index never persists across restarts |
-| 2 | `python_executor.py` | HIGH | `shutil.copy2()` copies chart output to local path — charts lost on restart |
-| 3 | `operational_tools.py` | HIGH | `shutil.move()` for file versioning; `doc.save()` writes DOCX directly to disk |
-| 4 | `workflow_tools.py` | HIGH | `os.walk` to discover workflows — returns empty on object storage |
-| 5 | `duckdb_olap_tools_refactored.py` | HIGH | `read_csv_auto('/local/path')` — DuckDB needs httpfs for S3 paths |
-| 6 | `sqlselect_tool_refactored.py` | HIGH | `read_csv_auto('/local/path')` — same DuckDB issue |
-| 7 | `duckdb_olap_advanced.py` | HIGH | Hardcoded local CSV paths (`customers.csv`, `orders.csv`, `products.csv`) |
-| 8 | `upload_tools.py` | MEDIUM | `os.walk` for file listing — returns empty without volume |
-| 9 | `bm25_search_tool.py` | MEDIUM | `os.path.getmtime` for cache fingerprint — fails silently on S3 |
-| 10 | `msdoc_tools_tool_refactored.py` | MEDIUM | `os.path.isfile` existence checks — returns false on S3 |
-| 11 | `data_transform_tools.py` | MEDIUM | PyArrow `read_table(str(path))` and `write_table()` use direct filesystem paths |
-| 12 | `file_read_tool.py` | LOW | `target.read_text()` direct pathlib call — should use `storage.read_text()` |
-
-### 4.3 Clean — no changes needed (29 files)
-
-All connector tools (Teams, Outlook, Jira, Confluence, SharePoint, PowerBI), all web/API tools (EDGAR, Tavily, Yahoo Finance, IR tools), all CCR/risk data tools (counterparty, credit limits, trades, VaR, historical exposure), and all helper modules (connector_base, connector_client, edgar helpers, studio_saad_fib).
+| Component | File | Status |
+|---|---|---|
+| S3 + Local storage backends | `sajhamcpserver/sajha/storage.py` | Complete |
+| Path resolver (local ↔ S3 routing) | `sajhamcpserver/sajha/path_resolver.py` | Complete |
+| `serve_file()` presigned URL redirect | `agent_server.py` | Complete |
+| `STORAGE_BACKEND` env var check | `agent_server.py` line 35 | Complete |
+| PostgreSQL models + Alembic migrations | `sajhamcpserver/sajha/db/` | Complete |
+| Dual-write pattern (DB + JSON fallback) | `agent_server.py` lines 103–172 | Complete |
+| Migration script (JSON → Postgres) | `scripts/migrate_json_to_pg.py` | Complete — already run in production |
+| `fs_index.py` S3 path | `sajhamcpserver/sajha/tools/impl/fs_index.py` | S3 path done; local path still uses `os.walk` |
 
 ---
 
 ## 5. Phase Plan
 
-### Phase 1 — Infrastructure Setup (Hetzner Console)
-Create the bucket and credentials in Hetzner. No code changes.
+### Execution Sequence
 
-**Steps:**
-1. Log into Hetzner Cloud Console → Object Storage
-2. Create bucket: `sajha-prod` in region `nbg1` (same DC as VPS)
-3. Generate S3-compatible Access Key and Secret Key
-4. Save credentials — will go into server `.env` and GitHub Secrets
-
-**Bucket settings:**
-- Access: Private (no public read)
-- Versioning: Enabled (protects against accidental deletes)
-- CORS: allow `https://yourdomain.com` for presigned URL downloads
-
-**Hetzner S3 endpoint format:**
 ```
-https://{bucket}.{region}.your-objectstorage.com
-# e.g.: https://sajha-prod.nbg1.your-objectstorage.com
+Phase 1 — Provision Hetzner bucket + keys        (30 min, no code)
+       ↓
+Phase 2 — Fix 9 tool files + /tmp DuckDB interim (1–2 days, code)
+       ↓
+Phase 3 — Data migration: aws s3 sync            (1 hour, ops)
+       ↓
+Phase 4 — Deploy: add env vars, activate S3+PG   (30 min, config)
+       ↓
+Phase 5 — Smoke test                             (2 hours)
+       ↓
+Phase 6 — DuckDB httpfs (deferred, post-cutover) (separate PR)
 ```
 
-Or path-style (used in boto3 `endpoint_url`):
+**Important:** Phase 2 must be complete before Phase 4. Setting `STORAGE_BACKEND=s3` before
+tool files are fixed will cause silent failures (tools return empty results, charts lost, etc).
+
+---
+
+### Phase 1 — Provision Hetzner Object Storage
+
+**COMPLETE.** Bucket already provisioned. Credentials in `CREDENTIALS.md`.
+
+| Field | Value |
+|---|---|
+| Bucket | `sajha-storage` |
+| Endpoint | `hel1.your-objectstorage.com` |
+| Access Key ID | `KV4XOKA59Z0DYQB6ZF5G` |
+| Secret Key | in CREDENTIALS.md |
+
+**Remaining action:** Add credentials to GitHub Secrets:
+- `S3_ENDPOINT_URL` = `https://hel1.your-objectstorage.com`
+- `S3_BUCKET` = `sajha-storage`
+- `AWS_ACCESS_KEY_ID` = `KV4XOKA59Z0DYQB6ZF5G`
+- `AWS_SECRET_ACCESS_KEY` = _(from CREDENTIALS.md)_
+
+**DuckDB httpfs endpoint (Phase 6):**
 ```
-https://{region}.your-objectstorage.com
+s3://sajha-storage/path/to/key
+SET s3_endpoint='hel1.your-objectstorage.com';
 ```
 
 ---
 
-### Phase 2 — Environment Variable Updates
+### Phase 2 — Fix Tool Files
 
-Update `docker-compose.prod.yml` and `.github/workflows/deploy.yml`:
+9 files that bypass `storage.*`. Fix these before activating S3.
 
-**Add to `docker-compose.prod.yml` `app` service environment:**
-```yaml
-STORAGE_BACKEND: ${STORAGE_BACKEND:-local}      # change to 's3' at cutover
-S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-}           # e.g. https://nbg1.your-objectstorage.com
-S3_BUCKET: ${S3_BUCKET:-sajha-prod}
-AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
-AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
-AWS_REGION: ${AWS_REGION:-eu-central-1}
-```
+#### 2A — `fs_index.py`
 
-**Add to GitHub Secrets (used in deploy.yml .env write step):**
-```
-S3_ENDPOINT_URL
-S3_BUCKET
-AWS_ACCESS_KEY_ID
-AWS_SECRET_ACCESS_KEY
-```
-
-**Add to deploy.yml .env block:**
-```bash
-STORAGE_BACKEND=s3
-S3_ENDPOINT_URL=${{ secrets.S3_ENDPOINT_URL }}
-S3_BUCKET=${{ secrets.S3_BUCKET }}
-AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
-AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
-AWS_REGION=eu-central-1
-```
-
-**AWS migration later:** Remove `S3_ENDPOINT_URL`, update `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` to IAM role credentials or use instance profile (no key needed). Zero code changes.
-
----
-
-### Phase 3 — Fix Tool Files (12 files)
-
-#### 3A — `fs_index.py` (HIGH)
-
-Replace `os.walk` directory scan and local `open()` index cache with storage-abstracted equivalents.
+Local path still uses `os.walk`. Complete the S3 path and unify:
 
 ```python
-# BEFORE
-def build_tree(base, rel=""):
-    for entry in os.listdir(os.path.join(base, rel)):
-        ...
+# BEFORE (local path)
+for entry in os.listdir(os.path.join(base, rel)):
+    ...
 
-def build_index(root_path):
-    tree = build_tree(root_path)
-    with open(os.path.join(root_path, '.index.json'), 'w') as f:
-        json.dump(tree, f)
-
-# AFTER
-def build_tree_from_prefix(prefix: str) -> dict:
-    keys = storage.list_prefix(prefix)
-    # Build nested dict from flat key list
-    tree = {}
-    for key in keys:
-        parts = key.split('/')
-        node = tree
-        for part in parts[:-1]:
-            node = node.setdefault(part, {})
-        node[parts[-1]] = {'type': 'file', 'key': key}
-    return tree
-
-def build_index(root_path):
-    tree = build_tree_from_prefix(root_path)
-    storage.write_text(
-        os.path.join(root_path, '.index.json'),
-        json.dumps(tree)
-    )
+# AFTER — unified, works local + S3
+keys = storage.list_prefix(prefix)
+# build nested tree dict from flat key list
 ```
 
-#### 3B — `workflow_tools.py` (HIGH)
+Index cache write:
+```python
+# BEFORE
+with open(os.path.join(root_path, '.index.json'), 'w') as f:
+    json.dump(tree, f)
 
-Replace `os.walk` with `storage.list_prefix()`:
+# AFTER
+storage.write_text(os.path.join(root_path, '.index.json'), json.dumps(tree))
+```
+
+#### 2B — `workflow_tools.py`
 
 ```python
 # BEFORE
 for dirpath, dirnames, filenames in os.walk(workflows_dir):
     for fname in filenames:
-        if fname.endswith('.md'):
-            ...
+        if fname.endswith('.md'): ...
 
 # AFTER
-keys = storage.list_prefix(workflows_dir)
-for key in keys:
+for key in storage.list_prefix(workflows_dir):
     if key.endswith('.md'):
-        content = storage.read_text(os.path.join(workflows_dir, key))
+        content = storage.read_text(key)
         ...
 ```
 
-#### 3C — `upload_tools.py` (MEDIUM)
-
-Replace `os.walk` with `storage.list_prefix()`:
+#### 2C — `upload_tools.py`
 
 ```python
 # BEFORE
 for root_path, section in data_roots:
-    if not os.path.exists(root_path):
-        continue
     for dirpath, _, filenames in os.walk(root_path):
-        for fname in filenames:
-            ...
+        for fname in filenames: ...
 
 # AFTER
 for root_path, section in data_roots:
-    keys = storage.list_prefix(root_path)
-    for key in keys:
+    for key in storage.list_prefix(root_path):
         ...
 ```
 
-#### 3D — `python_executor.py` (HIGH)
+#### 2D — `python_executor.py`
 
-After sandbox execution, push chart output to storage instead of relying on local disk:
+Chart output: write to `/tmp` during execution (fine), then push to storage:
 
 ```python
 # BEFORE
@@ -251,13 +190,9 @@ with open(src_path, 'rb') as f:
     storage.write_bytes(dest_path, f.read())
 ```
 
-Charts are written to `/tmp` during execution (ephemeral is fine) then pushed to storage as the final step. Reading them back for the canvas SSE event uses `storage.read_bytes()`.
+#### 2E — `operational_tools.py`
 
-#### 3E — `operational_tools.py` (HIGH)
-
-Two fixes:
-
-1. **File versioning** (`shutil.move` → `storage.copy` + `storage.delete`):
+File versioning:
 ```python
 # BEFORE
 shutil.move(str(dest), str(archive_path))
@@ -267,21 +202,18 @@ storage.copy(str(dest), str(archive_path))
 storage.delete(str(dest))
 ```
 
-2. **DOCX save** (`doc.save(path)` → write to buffer + `storage.write_bytes`):
+DOCX save via buffer:
 ```python
 # BEFORE
 doc.save(str(out_path))
 
 # AFTER
-import io
 buf = io.BytesIO()
 doc.save(buf)
 storage.write_bytes(str(out_path), buf.getvalue())
 ```
 
-#### 3F — `bm25_search_tool.py` (MEDIUM)
-
-Replace `os.path.getmtime` fingerprint with `storage.get_size()` which works on S3:
+#### 2F — `bm25_search_tool.py`
 
 ```python
 # BEFORE
@@ -289,15 +221,14 @@ mtime = os.path.getmtime(abs_path)
 fingerprint_parts.append(f"{rel}:{mtime}")
 
 # AFTER
-size = storage.get_size(abs_path)
+size = storage.get_size(abs_path)   # works on S3 via HeadObject
 fingerprint_parts.append(f"{rel}:{size}")
 ```
 
-Note: size-based fingerprinting is slightly less precise than mtime (won't detect same-size rewrites) but is correct, reliable, and S3-compatible. Acceptable tradeoff.
+Note: size-based fingerprinting won't detect same-size rewrites. Acceptable tradeoff
+vs. mtime which is unavailable on S3.
 
-#### 3G — `msdoc_tools_tool_refactored.py` (MEDIUM)
-
-Replace `os.path.isfile` with `storage.exists()`:
+#### 2G — `msdoc_tools_tool_refactored.py`
 
 ```python
 # BEFORE
@@ -309,16 +240,13 @@ if storage.exists(candidate_path):
     return candidate_path
 ```
 
-#### 3H — `data_transform_tools.py` (MEDIUM)
-
-Parquet read/write via buffer:
+#### 2H — `data_transform_tools.py`
 
 ```python
 # BEFORE — read
 table = pq.read_table(str(path))
 
 # AFTER — read
-import io
 raw = storage.read_bytes(str(path))
 table = pq.read_table(io.BytesIO(raw))
 
@@ -329,11 +257,13 @@ pq.write_table(table, str(out_path))
 buf = io.BytesIO()
 pq.write_table(table, buf)
 storage.write_bytes(str(out_path), buf.getvalue())
+
+# Versioned move
+# BEFORE: shutil.move(src, dst)
+# AFTER:  storage.copy(src, dst); storage.delete(src)
 ```
 
-#### 3I — `file_read_tool.py` (LOW)
-
-One-line fix:
+#### 2I — `file_read_tool.py`
 
 ```python
 # BEFORE
@@ -343,125 +273,183 @@ content = target.read_text(encoding='utf-8')
 content = storage.read_text(str(target), encoding='utf-8')
 ```
 
-#### 3J — DuckDB tools: `duckdb_olap_tools_refactored.py`, `sqlselect_tool_refactored.py`, `duckdb_olap_advanced.py` (HIGH — Phase 4)
+#### 2J — DuckDB tools: `/tmp` interim strategy
 
-DuckDB requires its `httpfs` extension to read from S3. This is the most complex fix and is deferred to Phase 4. In Phase 3, these tools continue reading from local paths.
+`duckdb_olap_tools_refactored.py`, `sqlselect_tool_refactored.py`, `duckdb_olap_advanced.py`
+call `read_csv_auto('/local/path')` — these cannot read S3 paths without the httpfs extension.
 
-**Interim strategy for Phase 3:** DuckDB data files (CSV, Parquet) are synced from S3 to a local temp directory on container startup using a bootstrap script. DuckDB reads local copies. Files are re-synced on upload via a background task.
+**Interim (Phase 2):** add a `_ensure_local()` helper that downloads a file from S3 to `/tmp`
+on demand if `STORAGE_BACKEND=s3`, then returns the local path:
 
 ```python
-# bootstrap.py — run at container start before SAJHA server starts
-import boto3, os
-s3 = boto3.client('s3', endpoint_url=os.environ['S3_ENDPOINT_URL'], ...)
-paginator = s3.get_paginator('list_objects_v2')
-for page in paginator.paginate(Bucket=bucket, Prefix='sajhamcpserver/data/'):
-    for obj in page.get('Contents', []):
-        local_path = obj['Key']
-        os.makedirs(os.path.dirname(local_path), exist_ok=True)
-        s3.download_file(bucket, obj['Key'], local_path)
+def _ensure_local(path: str) -> str:
+    """Return a local filesystem path usable by DuckDB.
+    In S3 mode: downloads to /tmp on first access, returns /tmp path.
+    In local mode: returns path unchanged.
+    """
+    if os.environ.get('STORAGE_BACKEND') != 's3':
+        return path
+    import hashlib, tempfile
+    cache_key = hashlib.md5(path.encode()).hexdigest()
+    tmp_path = os.path.join(tempfile.gettempdir(), f'sajha_duckdb_{cache_key}')
+    if not os.path.exists(tmp_path):
+        data = storage.read_bytes(path)
+        with open(tmp_path, 'wb') as f:
+            f.write(data)
+    return tmp_path
 ```
 
-This unblocks Phase 3 cutover while DuckDB httpfs work happens in Phase 4.
+Wrap every DuckDB file path with `_ensure_local()` before passing to `read_csv_auto()`.
+The file is cached in `/tmp` for the container lifetime — re-downloaded fresh on next restart.
+
+This is a temporary bridge. Phase 6 replaces it with direct `s3://` paths via httpfs.
 
 ---
 
-### Phase 4 — DuckDB httpfs (Deferred, post-cutover)
+### Phase 3 — Data Migration
 
-Configure DuckDB's S3 extension so all `read_csv_auto()` calls use `s3://` paths directly.
+Run once at cutover from the Hetzner VPS. Uploads all existing Docker volume data to the bucket.
 
-**DuckDB S3 configuration (run once per connection):**
+```bash
+# SSH into VPS: ssh root@62.238.3.148
+aws s3 sync /app/sajhamcpserver/data/ \
+    s3://sajha-storage/sajhamcpserver/data/ \
+    --endpoint-url https://hel1.your-objectstorage.com
+
+# Verify counts match
+aws s3 ls s3://sajha-storage/sajhamcpserver/data/ --recursive --summarize \
+    --endpoint-url https://hel1.your-objectstorage.com
+```
+
+Keep Docker volume mounted for 30 days as fallback. Remove after stable.
+
+---
+
+### Phase 4 — Deploy: Activate S3
+
+**PostgreSQL is already running.** `docker-compose.prod.yml` has a `postgres:16-alpine` sidecar
+container and `DATABASE_URL` is already wired into the app service. No Postgres activation
+needed here. See REQ-07 for remaining Postgres gaps (checkpointer, WorkerRepository, etc).
+
+This phase is purely about flipping S3 on.
+
+**Add to GitHub Secrets** (Settings → Secrets → Actions):
+```
+S3_ENDPOINT_URL  = https://hel1.your-objectstorage.com
+S3_BUCKET        = sajha-storage
+AWS_ACCESS_KEY_ID        = KV4XOKA59Z0DYQB6ZF5G
+AWS_SECRET_ACCESS_KEY    = <from CREDENTIALS.md>
+```
+
+**Add to `.github/workflows/deploy.yml`** (`.env` write step):
+```bash
+STORAGE_BACKEND=s3
+S3_ENDPOINT_URL=${{ secrets.S3_ENDPOINT_URL }}
+S3_BUCKET=${{ secrets.S3_BUCKET }}
+AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+AWS_REGION=eu-central-1
+```
+
+**Add to `docker-compose.prod.yml`** app service environment:
+```yaml
+STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
+S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-}
+S3_BUCKET: ${S3_BUCKET:-sajha-storage}
+AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+AWS_REGION: ${AWS_REGION:-eu-central-1}
+```
+
+Once deployed, `STORAGE_BACKEND=s3` activates the S3 backend throughout the app.
+`STORAGE_BACKEND=local` remains the default for local development.
+
+---
+
+### Phase 5 — Smoke Test Checklist
+
+- [ ] File tree loads in chat UI (domain_data, my_data, shared library)
+- [ ] File preview works for CSV, XLSX, PDF
+- [ ] File upload (admin UI + chat attachment) stores to S3
+- [ ] `duckdb_query` tool returns results (files downloaded to `/tmp`, query runs)
+- [ ] `python_execute` chart saved to S3, canvas renders
+- [ ] Workflow list populates correctly
+- [ ] BM25 search returns results after index rebuild
+- [ ] Container restart: file tree still populated, charts persist
+- [ ] `STORAGE_BACKEND=local` still works locally — no regression
+
+---
+
+### Phase 6 — DuckDB httpfs (Deferred, Post-Cutover)
+
+Replaces the `/tmp` interim from Phase 2J. DuckDB reads CSVs directly from S3 — no local cache needed.
+
+Configure once per DuckDB connection (add to `_get_connection()` in DuckDB tools when `STORAGE_BACKEND=s3`):
+
 ```sql
 INSTALL httpfs;
 LOAD httpfs;
-SET s3_endpoint='nbg1.your-objectstorage.com';
+SET s3_endpoint='hel1.your-objectstorage.com';
 SET s3_access_key_id='...';
 SET s3_secret_access_key='...';
 SET s3_region='eu-central-1';
-SET s3_url_style='path';   -- Hetzner uses path-style
+SET s3_url_style='path';   -- Hetzner uses path-style, not virtual-hosted
 ```
 
-**Path conversion helper:**
+Path conversion helper (replaces `_ensure_local()`):
+
 ```python
-def _to_s3_path(local_path: str) -> str:
-    """Convert local data path to s3:// key for DuckDB httpfs."""
+def _to_s3_uri(local_path: str) -> str:
+    """Convert local data path to s3:// URI for DuckDB httpfs."""
     if os.environ.get('STORAGE_BACKEND') != 's3':
-        return local_path   # local mode unchanged
+        return local_path
     bucket = os.environ['S3_BUCKET']
     key = local_path.lstrip('./').lstrip('/')
     return f's3://{bucket}/{key}'
 ```
 
-All three DuckDB tools call `_to_s3_path(file_path)` before passing to `read_csv_auto()`. The bootstrap sync script from Phase 3 is removed once this is complete.
+Remove the `/tmp` cache helper and replace `_ensure_local(path)` calls with `_to_s3_uri(path)`.
 
-**AWS compatibility note:** On AWS, `SET s3_endpoint` is not needed — DuckDB defaults to `s3.amazonaws.com`. The `_to_s3_path()` helper still works unchanged.
-
----
-
-### Phase 5 — Data Migration (Existing Files → Hetzner Object Storage)
-
-Run once at cutover. All existing data from the Docker volume is uploaded to the bucket.
-
-```bash
-# On the Hetzner VPS
-aws s3 sync /opt/sajha/data/app/workers/ \
-    s3://sajha-prod/sajhamcpserver/data/workers/ \
-    --endpoint-url https://nbg1.your-objectstorage.com \
-    --no-verify-ssl
-
-aws s3 sync /opt/sajha/data/app/common/ \
-    s3://sajha-prod/sajhamcpserver/data/common/ \
-    --endpoint-url https://nbg1.your-objectstorage.com \
-    --no-verify-ssl
-```
-
-After sync, set `STORAGE_BACKEND=s3` and redeploy. Docker volume can be kept as backup for 30 days then removed.
+**AWS compatibility:** On AWS, omit the `SET s3_endpoint` line — DuckDB defaults to `s3.amazonaws.com`. Helper unchanged.
 
 ---
 
-### Phase 6 — agent_server.py `serve_file()` Update
+## 6. Files Changed
 
-`serve_file()` currently returns `FileResponse` (local) or raises `NotImplementedError` (S3). Fix:
-
-```python
-def serve_file(path: str, media_type: str = None) -> Response:
-    if _STORAGE_BACKEND == 'local':
-        return FileResponse(path, media_type=media_type) if media_type else FileResponse(path)
-    else:
-        # S3: generate presigned URL and redirect
-        url = storage.generate_presigned_url(path, expiry=300)
-        from fastapi.responses import RedirectResponse
-        return RedirectResponse(url=url)
-```
-
-Also fix `_seed_worker_folders()` and `_clone_worker_folder()` which currently `return` immediately in S3 mode:
-
-```python
-def _seed_worker_folders(worker_id: str):
-    if _S3_MODE:
-        # S3 has no directories — write placeholder keys to establish structure
-        sections = ['domain_data', 'my_data', 'uploads', 'workflows/verified',
-                    'workflows/my', 'templates', 'charts']
-        for section in sections:
-            key = f'sajhamcpserver/data/workers/{worker_id}/{section}/.keep'
-            storage.write_text(key, '')
-        return
-    ...
-```
+| File | Change | Phase |
+|---|---|---|
+| `docker-compose.prod.yml` | Add S3 + DB env vars | 4 |
+| `.github/workflows/deploy.yml` | Add S3 + DB secrets to .env step | 4 |
+| `sajhamcpserver/requirements.txt` | Ensure `boto3>=1.34.0` present | 2 |
+| `sajhamcpserver/sajha/tools/impl/fs_index.py` | Unify local + S3 path to use `storage.*` | 2 |
+| `sajhamcpserver/sajha/tools/impl/workflow_tools.py` | `os.walk` → `storage.list_prefix()` | 2 |
+| `sajhamcpserver/sajha/tools/impl/upload_tools.py` | `os.walk` → `storage.list_prefix()` | 2 |
+| `sajhamcpserver/sajha/tools/impl/python_executor.py` | `shutil.copy2` → `storage.write_bytes` | 2 |
+| `sajhamcpserver/sajha/tools/impl/operational_tools.py` | `shutil.move` + `doc.save` → storage calls | 2 |
+| `sajhamcpserver/sajha/tools/impl/bm25_search_tool.py` | `os.path.getmtime` → `storage.get_size()` | 2 |
+| `sajhamcpserver/sajha/tools/impl/msdoc_tools_tool_refactored.py` | `os.path.isfile` → `storage.exists()` | 2 |
+| `sajhamcpserver/sajha/tools/impl/data_transform_tools.py` | PyArrow paths → buffer + storage | 2 |
+| `sajhamcpserver/sajha/tools/impl/file_read_tool.py` | `pathlib.read_text` → `storage.read_text` | 2 |
+| `sajhamcpserver/sajha/tools/impl/duckdb_olap_tools_refactored.py` | Add `_ensure_local()` helper | 2 (interim) |
+| `sajhamcpserver/sajha/tools/impl/sqlselect_tool_refactored.py` | Add `_ensure_local()` helper | 2 (interim) |
+| `sajhamcpserver/sajha/tools/impl/duckdb_olap_advanced.py` | Add `_ensure_local()` helper | 2 (interim) |
+| *(same 3 DuckDB files)* | Replace `_ensure_local` with httpfs + `_to_s3_uri` | 6 |
 
 ---
 
-## 6. Environment Variables Reference
+## 7. Environment Variables Reference
 
 | Variable | Hetzner Value | AWS Value | Notes |
 |---|---|---|---|
 | `STORAGE_BACKEND` | `s3` | `s3` | Same |
-| `S3_ENDPOINT_URL` | `https://nbg1.your-objectstorage.com` | *(empty)* | **Only difference between Hetzner and AWS** |
-| `S3_BUCKET` | `sajha-prod` | `sajha-prod` | Same bucket name |
-| `AWS_ACCESS_KEY_ID` | Hetzner Object Storage key | IAM key or empty (IAM role) | |
-| `AWS_SECRET_ACCESS_KEY` | Hetzner Object Storage secret | IAM secret or empty (IAM role) | |
-| `AWS_REGION` | `eu-central-1` | `us-east-1` (or your region) | |
+| `S3_ENDPOINT_URL` | `https://nbg1.your-objectstorage.com` | *(omit — use AWS default)* | **Only difference between Hetzner and AWS** |
+| `S3_BUCKET` | `sajha-prod` | `sajha-prod` | Same |
+| `AWS_ACCESS_KEY_ID` | Hetzner key | IAM key or empty (IAM role) | |
+| `AWS_SECRET_ACCESS_KEY` | Hetzner secret | IAM secret or empty (IAM role) | |
+| `AWS_REGION` | `eu-central-1` | `us-east-1` (or target region) | |
+| `DATABASE_URL` | `postgresql+psycopg://user:pass@host/db` | Same pattern | Activates Postgres; JSON fallback when unset |
 
-**Local development with MinIO (no Hetzner/AWS account needed):**
+**Local dev with MinIO:**
 ```bash
 STORAGE_BACKEND=s3
 S3_ENDPOINT_URL=http://localhost:9000
@@ -471,98 +459,42 @@ AWS_SECRET_ACCESS_KEY=minioadmin
 AWS_REGION=us-east-1
 ```
 
-Run MinIO locally:
-```bash
-docker run -p 9000:9000 -p 9001:9001 \
-  -e MINIO_ROOT_USER=minioadmin \
-  -e MINIO_ROOT_PASSWORD=minioadmin \
-  minio/minio server /data --console-address ":9001"
-```
-
----
-
-## 7. Add boto3 to requirements
-
-```
-# requirements.txt (root, for agent_server.py)
-boto3>=1.34.0
-
-# sajhamcpserver/requirements.txt (for SAJHA tools)
-boto3>=1.34.0
-```
-
 ---
 
 ## 8. AWS Migration Path (Future — Zero Code Changes)
 
-When an enterprise client (e.g., BMO) wants AWS deployment, the only changes are:
-
 1. Create S3 bucket in target AWS region
-2. Attach IAM role to ECS task with `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject`, `s3:ListBucket`
-3. Update env vars:
-   - Remove `S3_ENDPOINT_URL` (blank = real AWS)
-   - Update `AWS_REGION` to their region
-   - Remove `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` (IAM role handles auth)
-4. For DuckDB httpfs: remove `SET s3_endpoint` line from connection setup
+2. Attach IAM role with `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject`, `s3:ListBucket`
+3. Env var changes only: remove `S3_ENDPOINT_URL`, update region + credentials
+4. DuckDB httpfs: remove `SET s3_endpoint` line from connection setup
 
 No application code changes. Same Docker image. Same boto3 calls.
 
 ---
 
-## 9. Files Changed Summary
+## 9. Acceptance Criteria
 
-| File | Change |
-|---|---|
-| `docker-compose.prod.yml` | Add S3 env vars |
-| `.github/workflows/deploy.yml` | Add S3 secrets to .env write step |
-| `sajhamcpserver/requirements.txt` | Add `boto3>=1.34.0` |
-| `requirements.txt` | Add `boto3>=1.34.0` |
-| `sajhamcpserver/sajha/tools/impl/fs_index.py` | Replace `os.walk` + `open()` with `storage.*` |
-| `sajhamcpserver/sajha/tools/impl/workflow_tools.py` | Replace `os.walk` with `storage.list_prefix()` |
-| `sajhamcpserver/sajha/tools/impl/upload_tools.py` | Replace `os.walk` with `storage.list_prefix()` |
-| `sajhamcpserver/sajha/tools/impl/python_executor.py` | Replace `shutil.copy2` with `storage.write_bytes` |
-| `sajhamcpserver/sajha/tools/impl/operational_tools.py` | Replace `shutil.move` + `doc.save` with storage calls |
-| `sajhamcpserver/sajha/tools/impl/bm25_search_tool.py` | Replace `os.path.getmtime` with `storage.get_size()` |
-| `sajhamcpserver/sajha/tools/impl/msdoc_tools_tool_refactored.py` | Replace `os.path.isfile` with `storage.exists()` |
-| `sajhamcpserver/sajha/tools/impl/data_transform_tools.py` | Replace PyArrow direct paths with buffer + storage |
-| `sajhamcpserver/sajha/tools/impl/file_read_tool.py` | Replace `target.read_text()` with `storage.read_text()` |
-| `agent_server.py` | Fix `serve_file()`, `_seed_worker_folders()`, `_clone_worker_folder()` |
-| `sajhamcpserver/sajha/tools/impl/duckdb_olap_tools_refactored.py` | Phase 4: add httpfs config + `_to_s3_path()` |
-| `sajhamcpserver/sajha/tools/impl/sqlselect_tool_refactored.py` | Phase 4: add httpfs config + `_to_s3_path()` |
-| `sajhamcpserver/sajha/tools/impl/duckdb_olap_advanced.py` | Phase 4: add httpfs config + `_to_s3_path()` |
+### Phase 1–5 (Cutover)
+- [ ] Hetzner bucket `sajha-prod` created and credentials in GitHub Secrets
+- [ ] All 9 non-DuckDB tool files use `storage.*` — no `os.walk`, `open()`, `shutil` on user data
+- [ ] DuckDB tools use `_ensure_local()` — queries work in S3 mode via `/tmp` cache
+- [ ] Existing data migrated via `aws s3 sync`
+- [ ] `STORAGE_BACKEND=s3` deploy passes Phase 5 smoke test
+- [ ] Container restart: files persist, charts persist, workflows load
+- [ ] `STORAGE_BACKEND=local` still works — no regression
+
+### Phase 6 (DuckDB httpfs)
+- [ ] DuckDB connections load httpfs extension with Hetzner endpoint
+- [ ] `duckdb_query` executes SQL directly against `s3://` paths
+- [ ] `/tmp` cache helper removed
+- [ ] AWS S3 works by removing `SET s3_endpoint` line only
 
 ---
 
-## 10. Acceptance Criteria
+## 10. Out of Scope
 
-### Phase 1–3 (Cutover)
-- [ ] Hetzner Object Storage bucket `sajha-prod` created, credentials generated
-- [ ] `STORAGE_BACKEND=s3` + Hetzner endpoint works — file upload/download/list via admin UI
-- [ ] All 9 non-DuckDB tool files updated to use `storage.*` — no direct `os.walk`, `open()`, `shutil` on user data
-- [ ] `serve_file()` returns presigned redirect in S3 mode
-- [ ] `_seed_worker_folders()` creates placeholder keys in S3 mode
-- [ ] Existing data migrated from Docker volume to S3 bucket via `aws s3 sync`
-- [ ] Charts generated by `python_executor.py` survive a container restart (stored in S3)
-- [ ] Workflows listed correctly after container restart (no local index required)
-- [ ] BM25 search works after container restart (index rebuilt from S3 file list)
-- [ ] `STORAGE_BACKEND=local` still works unchanged — no regression on local dev
-
-### Phase 4 (DuckDB httpfs)
-- [ ] DuckDB connections configured with `LOAD httpfs` + Hetzner S3 endpoint
-- [ ] `duckdb_query` tool executes SQL against CSV files in S3 bucket
-- [ ] Bootstrap sync script removed
-- [ ] `read_csv_auto()` paths use `s3://` prefix in S3 mode, local paths in local mode
-
-### AWS Readiness Check
-- [ ] Removing `S3_ENDPOINT_URL` from env and pointing `AWS_REGION` + credentials at a real AWS S3 bucket works with zero code changes
-- [ ] DuckDB httpfs works against AWS S3 by removing `SET s3_endpoint` line
-
----
-
-## 11. Out of Scope
-
-- Apache Iceberg analytical tables → REQ-08b
-- CDK infrastructure-as-code for AWS → separate REQ
-- Multi-region replication
-- S3 lifecycle policies (charts expiry, versioning cleanup)
+- Apache Iceberg analytical tables → REQ-08b (depends on this REQ)
+- CDK / Terraform infrastructure-as-code → separate REQ
+- Multi-region replication, S3 lifecycle policies
 - Azure Blob / GCS compatibility
+- Supabase (REQ-15 killed)

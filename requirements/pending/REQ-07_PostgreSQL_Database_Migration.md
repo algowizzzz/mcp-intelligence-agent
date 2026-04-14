@@ -1,10 +1,10 @@
 # REQ-07 — PostgreSQL: Database Migration for User Config & Conversation History
-**Status:** Implementation Complete — Tests Passing
-**Version:** 1.2 (Updated 2026-04-06 — implementation complete, 21/21 tests passing)
-**Previous Version:** 1.1 (2026-04-11 — corrected checkpoint state, caching gaps, dependency audit)
-**Branch:** `feature/req-07-08a-postgres-s3` (do NOT merge to main until REQ-08a is also complete)
-**Prerequisite:** None — can start independently
-**Scope:** Migrate user configuration, conversation history, audit logs, and worker config from JSON/JSONL flat files to a PostgreSQL relational database. Domain data (financial files, documents) remains on the filesystem / S3 (see REQ-08a).
+**Status:** Partially Complete — 4 gaps remaining (see Section 12)
+**Version:** 1.3 (Updated 2026-04-14 — live production audit; remaining gaps identified)
+**Previous Version:** 1.2 (2026-04-06 — implementation complete, 21/21 tests passing)
+**Branch:** merged to main
+**Prerequisite:** None
+**Scope:** Migrate user configuration, conversation history, audit logs, and worker config from JSON/JSONL flat files to a PostgreSQL relational database. Domain data (financial files, documents) remains on the filesystem / S3 (see REQ-16).
 
 ---
 
@@ -396,44 +396,36 @@ RUN_MIGRATIONS_ON_STARTUP=false
 
 ---
 
-## 7. Migration Plan
+## 7. Migration Plan — Status
 
-### Phase 1 — Schema & Infrastructure (Week 1)
-1. Deploy PostgreSQL (Docker locally, RDS for production)
-2. Add `sqlalchemy[asyncio]`, `asyncpg`, `alembic`, `langgraph-checkpoint-postgres` to requirements
-3. Create `sajha/db/` module with models and engine
-4. Run Alembic migration `001_initial_schema.py` — creates all tables including `file_metadata`
-5. Validate empty schema with a health-check query
+### Phase 1 — Schema & Infrastructure ✅ COMPLETE
+- `postgres:16-alpine` sidecar running in `docker-compose.prod.yml`
+- `DATABASE_URL` wired into app container — `_DB_ENABLED = True` in production
+- `sajha/db/` module exists: `engine.py`, `models.py`, `repo.py`, `migrations/`
+- Alembic migration `001_initial_schema.py` run — all 8 tables exist
+- All packages installed: `sqlalchemy[asyncio]`, `asyncpg`, `alembic`, `langgraph-checkpoint-postgres`
 
-### Phase 2 — Users, Workers, Config (Week 1–2)
-1. Replace `_load_users()` no-cache pattern with `UserRepository` (interim in-memory, then DB)
-2. Write `scripts/migrate_json_to_pg.py`:
-   - `config/users.json` → `users` table
-   - `config/workers.json` → `workers` table
-   - `config/apikeys.json` → `api_keys` table
-   - `config/connectors.json` → `connectors` table (encrypted)
-3. Switch all auth and user management endpoints to read from PostgreSQL
-4. Enable dual-write for workers (JSON + DB) until verified
-5. Remove JSON writes
+### Phase 2 — Users, Workers, Config ✅ COMPLETE (partial — see gaps)
+- `_load_users()` no-cache pattern replaced — reads from DB when `DATABASE_URL` set
+- `scripts/migrate_json_to_pg.py` run: 14 users, 12 workers, 454 threads, 1,516 audit events migrated
+- All auth and user management endpoints read from PostgreSQL
+- Dual-write active — JSON kept in sync as fallback
+- ⚠️ **GAP:** `WorkerRepository` still reads `workers.json` — `PostgresWorkerRepository` stub not activated
 
-### Phase 3 — Conversation History (Week 2–3)
-1. Migrate `data/threads.jsonl` → `conversation_threads` table
-2. Upgrade LangGraph checkpointer: `AsyncSqliteSaver` → `AsyncPostgresSaver`
-   - Keep `checkpointer_override=None` in `sub_agent_executor.py` unchanged
-3. Thread list API (`/api/agent/threads`) reads from PostgreSQL
-4. Archive `checkpoints.db` (keep 30 days, then delete)
+### Phase 3 — Conversation History ⚠️ PARTIALLY COMPLETE
+- `conversation_threads` table exists and populated (454 threads migrated)
+- `/api/agent/threads` reads from PostgreSQL ✅
+- ⚠️ **GAP:** LangGraph checkpointer still `AsyncSqliteSaver` → `checkpoints.db` on Docker volume. `AsyncPostgresSaver` tables exist but app was never switched over. Conversation messages lost on container rebuild.
 
-### Phase 4 — Audit Log (Week 3–4)
-1. Migrate historical `tool_calls.jsonl` and `file_used.jsonl` → `audit_events` table
-2. Update `agent/tools.py` `_log_audit()` to write to PostgreSQL
-3. Update `agent_server.py` file-access audit to write to PostgreSQL
-4. Fix admin UI audit log (`/api/super/audit`) field name bug (Time + Tool columns showing "—")
-5. Enable date/user/tool filters via PostgreSQL queries
-6. Archive original JSONL files (90 days, then delete)
+### Phase 4 — Audit Log ✅ COMPLETE (partial — see gaps)
+- Historical JSONL migrated (1,516 events in `audit_events` table)
+- `agent/tools.py` and `agent_server.py` write audit events to PostgreSQL ✅
+- Audit query endpoint (`/api/super/audit`) uses PostgreSQL filters ✅
+- ⚠️ **GAP:** Admin UI audit log Time and Tool columns show "—" — frontend field-name mismatch bug
 
-### Phase 5 — Flask Sessions (Week 4)
-1. Replace filesystem sessions with PostgreSQL via `Flask-Session` + `SqlAlchemySessionInterface`
-2. Add nightly cleanup cron for expired sessions
+### Phase 5 — Flask Sessions ⏸ DEFERRED
+- Still using filesystem sessions (`data/flask_session/`)
+- Low impact for single-container deployment — deferred indefinitely
 
 ---
 
@@ -459,20 +451,41 @@ Without PgBouncer, each uvicorn worker holds persistent connections and exhausts
 
 ## 10. Acceptance Criteria
 
+### Completed
 - [x] All tables created via Alembic (no manual SQL)
-- [x] `file_metadata` table exists before REQ-08a work begins
+- [x] `file_metadata` table exists (required by REQ-16 S3 file tree)
 - [x] User login works after migration (bcrypt hashes verified correctly)
-- [x] `_load_users()` no-cache pattern replaced — auth endpoint no longer reads file on every call
-- [x] Worker config loads from PostgreSQL
-- [x] Conversation threads persist across server restarts via `AsyncPostgresSaver`
-- [x] Sub-agents still use `checkpointer_override=None` (no regression)
+- [x] `_load_users()` no-cache pattern replaced — auth reads from DB
 - [x] Audit log written to `audit_events` table from both `agent/tools.py` and `agent_server.py`
-- [ ] Admin UI audit log Time and Tool columns show correct values *(admin UI regression test pending)*
 - [x] Audit log supports filter by worker/user via PostgreSQL queries
-- [ ] Connector credentials encrypted at rest in `connectors` table *(encryption layer deferred — metadata stored, credentials remain in connectors.json)*
 - [x] Migration script runs idempotently (safe to run twice)
 - [x] Dual-write fallback active — system works without DATABASE_URL set
 - [x] Connection pool: asyncpg pool_size=10, max_overflow=5
+- [x] Sub-agents still use `checkpointer_override=None` (no regression)
+
+### Remaining Work (prioritised)
+- [ ] **P0 — Switch LangGraph checkpointer to `AsyncPostgresSaver`**  
+  Conversation messages still in `checkpoints.db` on Docker volume — lost on container rebuild.  
+  Change: `agent_server.py` — swap `AsyncSqliteSaver` for `AsyncPostgresSaver`.  
+  Keep `checkpointer_override=None` in `sub_agent_executor.py` unchanged.  
+  Archive `checkpoints.db` after verified stable (30 days).
+
+- [ ] **P1 — Activate `PostgresWorkerRepository`**  
+  `workers.json` is still the live source of truth. `PostgresWorkerRepository` stub exists in  
+  `sajhamcpserver/sajha/worker_repository.py` — activate it in `agent_server.py`.  
+  Workers table is already populated from migration script.
+
+- [ ] **P2 — Fix admin UI audit log columns**  
+  Time and Tool columns show "—" in `/api/super/audit` view.  
+  Frontend field-name mismatch — small bug, isolated to `admin.html`.
+
+- [ ] **P3 — Connector credentials encryption at rest**  
+  `connectors.json` still holds plaintext credentials (Teams secret, Jira token, etc).  
+  `connectors` table has `credentials_enc` bytea + `credentials_iv` bytea columns ready.  
+  Requires `CONNECTOR_ENCRYPTION_KEY` env var (32-byte hex) added to deploy.  
+  Deferred — no customer data at risk today, single-tenant VPS.
+
+- [ ] ~~Flask sessions~~ — deferred indefinitely (filesystem sessions fine for single container)
 
 ---
 
@@ -514,9 +527,48 @@ Without PgBouncer, each uvicorn worker holds persistent connections and exhausts
 
 ---
 
-## 12. Out of Scope
+## 12. Remaining Work Summary (2026-04-14 audit)
 
-- Domain data and document file storage → REQ-08a
+| Priority | Work Item | File | Effort |
+|---|---|---|---|
+| P0 | Switch checkpointer: `AsyncSqliteSaver` → `AsyncPostgresSaver` | `agent_server.py` | 1 hour |
+| P1 | Activate `PostgresWorkerRepository` | `agent_server.py` + `worker_repository.py` | 30 min |
+| P2 | Fix audit UI columns (Time + Tool show "—") | `public/admin.html` | 30 min |
+| P3 | Connector credential encryption at rest | `agent_server.py` connector CRUD endpoints | Half day |
+
+**P0 detail — checkpointer swap:**
+```python
+# agent_server.py — BEFORE (current)
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+async with AsyncSqliteSaver.from_conn_string(CHECKPOINT_DB_PATH) as cp:
+    _agent_module.set_checkpointer(cp)
+
+# AFTER
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+cp = AsyncPostgresSaver.from_conn_string(os.getenv('DATABASE_URL'))
+await cp.setup()   # creates checkpoint tables if not exist
+_agent_module.set_checkpointer(cp)
+```
+`sub_agent_executor.py` passes `checkpointer_override=None` — do not touch.
+
+**P1 detail — WorkerRepository:**
+```python
+# agent_server.py — BEFORE (current)
+_worker_repo = WorkerRepository(WORKERS_FILE)   # reads workers.json
+
+# AFTER (when DATABASE_URL set)
+if _DB_ENABLED:
+    _worker_repo = PostgresWorkerRepository(db_session)
+else:
+    _worker_repo = WorkerRepository(WORKERS_FILE)   # fallback unchanged
+```
+
+---
+
+## 13. Out of Scope
+
+- Domain data and document file storage → REQ-16
 - Real-time replication or read replicas
 - Database-level full-text search on document content
 - Multi-tenant database isolation
+- Flask session migration (deferred indefinitely)

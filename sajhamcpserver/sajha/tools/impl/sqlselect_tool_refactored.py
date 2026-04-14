@@ -9,6 +9,27 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 from sajha.tools.base_mcp_tool import BaseMCPTool
 from sajha.core.properties_configurator import PropertiesConfigurator
+from sajha.storage import storage
+
+
+def _ensure_local(path: str) -> str:
+    """Interim S3 compat helper (REQ-16 Phase 2).
+    Local mode: returns path unchanged.
+    S3 mode: downloads file to /tmp and returns the local cached path so
+    DuckDB read_csv_auto/read_parquet can open it.
+    Phase 6 will replace this with direct s3:// URIs via DuckDB httpfs.
+    """
+    import hashlib, tempfile
+    if os.getenv('STORAGE_BACKEND', 'local') != 's3':
+        return path
+    ext = os.path.splitext(path)[1]
+    cache_key = hashlib.md5(path.encode()).hexdigest()
+    local_path = os.path.join(tempfile.gettempdir(), f'duckdb_s3_{cache_key}{ext}')
+    if not os.path.exists(local_path):
+        data = storage.read_bytes(path)
+        with open(local_path, 'wb') as _f:
+            _f.write(data)
+    return local_path
 
 
 class SqlSelectBaseTool(BaseMCPTool):
@@ -50,25 +71,25 @@ class SqlSelectBaseTool(BaseMCPTool):
                 file_path = os.path.join(self.data_directory, source_config['file'])
                 file_type = source_config.get('type', 'csv').lower()
                 
-                if not os.path.exists(file_path):
+                if not storage.exists(file_path):
                     self.logger.warning(f"Data file not found: {file_path}")
                     continue
-                
+                local_fp = _ensure_local(file_path)
                 # Load data into table (not VIEW) so it's always queryable
                 if file_type == 'csv':
                     self.connection.execute(
                         f"CREATE OR REPLACE TABLE {source_name} AS "
-                        f"SELECT * FROM read_csv_auto('{file_path}')"
+                        f"SELECT * FROM read_csv_auto('{local_fp}')"
                     )
                 elif file_type == 'parquet':
                     self.connection.execute(
                         f"CREATE OR REPLACE TABLE {source_name} AS "
-                        f"SELECT * FROM read_parquet('{file_path}')"
+                        f"SELECT * FROM read_parquet('{local_fp}')"
                     )
                 elif file_type == 'json':
                     self.connection.execute(
                         f"CREATE OR REPLACE TABLE {source_name} AS "
-                        f"SELECT * FROM read_json_auto('{file_path}')"
+                        f"SELECT * FROM read_json_auto('{local_fp}')"
                     )
                 
                 self.logger.info(f"Registered data source: {source_name} ({file_type})")
@@ -118,65 +139,65 @@ class SqlSelectBaseTool(BaseMCPTool):
             try:
                 file_path = os.path.join(effective_dir, source_config['file'])
                 file_type = source_config.get('type', 'csv').lower()
-                if not os.path.exists(file_path):
+                if not storage.exists(file_path):
                     self.logger.warning(f"Data file not found: {file_path}")
                     continue
+                local_fp = _ensure_local(file_path)
                 if file_type == 'csv':
                     self.connection.execute(
                         f"CREATE OR REPLACE TABLE {source_name} AS "
-                        f"SELECT * FROM read_csv_auto('{file_path}')")
+                        f"SELECT * FROM read_csv_auto('{local_fp}')")
                 elif file_type == 'parquet':
                     self.connection.execute(
                         f"CREATE OR REPLACE TABLE {source_name} AS "
-                        f"SELECT * FROM read_parquet('{file_path}')")
+                        f"SELECT * FROM read_parquet('{local_fp}')")
                 elif file_type == 'json':
                     self.connection.execute(
                         f"CREATE OR REPLACE TABLE {source_name} AS "
-                        f"SELECT * FROM read_json_auto('{file_path}')")
+                        f"SELECT * FROM read_json_auto('{local_fp}')")
                 self.logger.info(f"Re-registered static source: {source_name}")
             except Exception as e:
                 self.logger.error(f"Error re-registering {source_name}: {e}")
 
         # Pass 2: auto-discover CSV/Parquet/JSON in domain_data (recursive)
         # Generates table names from file path: "iris/iris_combined.csv" → "iris__iris_combined"
-        if not domain_data_dir or not os.path.isdir(domain_data_dir):
+        if not domain_data_dir:
             return
         static_files = {cfg['file'] for cfg in self.data_sources.values()}
-        for dirpath, _, filenames in os.walk(domain_data_dir):
-            for fname in filenames:
-                ext = os.path.splitext(fname)[1].lower()
-                if ext not in ('.csv', '.parquet', '.pq', '.json', '.jsonl'):
-                    continue
-                abs_path = os.path.join(dirpath, fname)
-                rel = os.path.relpath(abs_path, domain_data_dir)
-                # Skip if already registered as a static source
-                if rel in static_files or fname in static_files:
-                    continue
-                # Build safe table name from relative path
-                name_no_ext = os.path.splitext(rel)[0]
-                table_name = name_no_ext.replace(os.sep, '__').replace('/', '__').replace(' ', '_').replace('-', '_')
-                # Strip leading dots from hidden dirs
-                table_name = '__'.join(p.lstrip('.') for p in table_name.split('__') if p.lstrip('.'))
-                if not table_name:
-                    continue
-                try:
-                    safe_path = abs_path.replace("'", "''")
-                    # Use CREATE VIEW (lazy) not TABLE (eager) — no data loaded at registration
-                    if ext == '.csv':
-                        self.connection.execute(
-                            f"CREATE OR REPLACE VIEW {table_name} AS "
-                            f"SELECT * FROM read_csv_auto('{safe_path}', header=true, sample_size=100)")
-                    elif ext in ('.parquet', '.pq'):
-                        self.connection.execute(
-                            f"CREATE OR REPLACE VIEW {table_name} AS "
-                            f"SELECT * FROM read_parquet('{safe_path}')")
-                    elif ext in ('.json', '.jsonl'):
-                        self.connection.execute(
-                            f"CREATE OR REPLACE VIEW {table_name} AS "
-                            f"SELECT * FROM read_json_auto('{safe_path}')")
-                    self.logger.info(f"Auto-registered view: {table_name} ← {rel}")
-                except Exception as e:
-                    self.logger.warning(f"Auto-register skipped {rel}: {e}")
+        for rel_key in storage.list_prefix(domain_data_dir):
+            fname = os.path.basename(rel_key)
+            ext = os.path.splitext(fname)[1].lower()
+            if ext not in ('.csv', '.parquet', '.pq', '.json', '.jsonl'):
+                continue
+            abs_path = os.path.join(domain_data_dir, rel_key)
+            # Skip if already registered as a static source
+            if rel_key in static_files or fname in static_files:
+                continue
+            # Build safe table name from relative path
+            name_no_ext = os.path.splitext(rel_key)[0]
+            table_name = name_no_ext.replace(os.sep, '__').replace('/', '__').replace(' ', '_').replace('-', '_')
+            # Strip leading dots from hidden dirs
+            table_name = '__'.join(p.lstrip('.') for p in table_name.split('__') if p.lstrip('.'))
+            if not table_name:
+                continue
+            try:
+                local_path = _ensure_local(abs_path).replace("'", "''")
+                # Use CREATE VIEW (lazy) not TABLE (eager) — no data loaded at registration
+                if ext == '.csv':
+                    self.connection.execute(
+                        f"CREATE OR REPLACE VIEW {table_name} AS "
+                        f"SELECT * FROM read_csv_auto('{local_path}', header=true, sample_size=100)")
+                elif ext in ('.parquet', '.pq'):
+                    self.connection.execute(
+                        f"CREATE OR REPLACE VIEW {table_name} AS "
+                        f"SELECT * FROM read_parquet('{local_path}')")
+                elif ext in ('.json', '.jsonl'):
+                    self.connection.execute(
+                        f"CREATE OR REPLACE VIEW {table_name} AS "
+                        f"SELECT * FROM read_json_auto('{local_path}')")
+                self.logger.info(f"Auto-registered view: {table_name} ← {rel_key}")
+            except Exception as e:
+                self.logger.warning(f"Auto-register skipped {rel_key}: {e}")
 
     def _error_response(self, error_message: str) -> Dict[str, Any]:
         """Generate error response"""
