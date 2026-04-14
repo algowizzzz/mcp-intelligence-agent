@@ -63,9 +63,13 @@ class Worker(Base):
     description:      Mapped[str | None] = mapped_column(Text,       nullable=True)
     system_prompt:    Mapped[str | None] = mapped_column(Text,       nullable=True)
     enabled_tools:    Mapped[dict]     = mapped_column(JSONB,       nullable=False, default=lambda: ['*'])
-    domain_data_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
-    verified_wf_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
-    connector_scope:  Mapped[dict]     = mapped_column(JSONB,       nullable=False, default=dict)
+    domain_data_path:   Mapped[str | None] = mapped_column(String(512), nullable=True)
+    verified_wf_path:   Mapped[str | None] = mapped_column(String(512), nullable=True)
+    my_workflows_path:  Mapped[str | None] = mapped_column(String(512), nullable=True)
+    templates_path:     Mapped[str | None] = mapped_column(String(512), nullable=True)
+    my_data_path:       Mapped[str | None] = mapped_column(String(512), nullable=True)
+    common_data_path:   Mapped[str | None] = mapped_column(String(512), nullable=True)
+    connector_scope:    Mapped[dict]       = mapped_column(JSONB,       nullable=False, default=dict)
     enabled:          Mapped[bool]     = mapped_column(Boolean,     nullable=False, default=True)
     created_at:       Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
     updated_at:       Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now)
@@ -77,9 +81,14 @@ class Worker(Base):
             'description':      self.description,
             'system_prompt':    self.system_prompt,
             'enabled_tools':    self.enabled_tools,
-            'domain_data_path': self.domain_data_path,
-            'verified_wf_path': self.verified_wf_path,
-            'connector_scope':  self.connector_scope,
+            'domain_data_path':  self.domain_data_path,
+            'verified_wf_path':  self.verified_wf_path,
+            'workflows_path':    self.verified_wf_path,   # alias for compatibility
+            'my_workflows_path': self.my_workflows_path,
+            'templates_path':    self.templates_path,
+            'my_data_path':      self.my_data_path,
+            'common_data_path':  self.common_data_path,
+            'connector_scope':   self.connector_scope,
             'enabled':          self.enabled,
         }
 

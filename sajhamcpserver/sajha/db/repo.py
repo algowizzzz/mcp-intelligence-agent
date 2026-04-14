@@ -15,6 +15,63 @@ from .engine import AsyncSessionLocal, engine
 from .models import User, Worker, Connector, ConversationThread, AuditEvent, FileMetadata
 
 
+async def ensure_all_tables() -> None:
+    """Create all SQLAlchemy-mapped tables if they don't exist.
+
+    Uses Base.metadata.create_all so every model (users, workers, connectors,
+    api_keys, audit_events, file_metadata, conversation_threads) is guaranteed
+    to exist before the first request.  Safe to call on every startup — it is
+    a no-op when tables are already present.
+
+    Also seeds the users table from users.json on first run (if empty).
+    """
+    from .engine import engine, Base
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("ensure_all_tables: create_all failed: %s", e)
+
+    # Seed users from users.json if the table is empty
+    try:
+        async with AsyncSessionLocal() as db:
+            from sqlalchemy import text as _text
+            result = await db.execute(_text("SELECT COUNT(*) FROM users"))
+            count = result.scalar_one_or_none() or 0
+        if count == 0:
+            await _seed_users_from_json()
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("ensure_all_tables: user seed failed: %s", e)
+
+
+async def _seed_users_from_json() -> None:
+    """Insert users from users.json into the users table (first-run only)."""
+    import json as _json
+    import os as _os
+    base = _os.path.dirname(_os.path.abspath(__file__))
+    json_path = _os.path.join(base, '..', '..', 'config', 'users.json')
+    try:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            data = _json.load(f)
+        users = data if isinstance(data, list) else data.get('users', [])
+    except Exception:
+        return
+    for u in users:
+        uid = u.get('user_id', '')
+        if not uid:
+            continue
+        try:
+            # users.json uses 'user_name'; SQLAlchemy User model uses 'username'
+            u_mapped = dict(u)
+            if 'user_name' in u_mapped and 'username' not in u_mapped:
+                u_mapped['username'] = u_mapped.pop('user_name')
+            await upsert_user(u_mapped)
+        except Exception:
+            pass
+
+
 async def _ensure_conversation_threads_table() -> None:
     """Create conversation_threads if missing — safe to call on every startup."""
     from sqlalchemy import text

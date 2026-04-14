@@ -566,7 +566,12 @@ async def _lifespan(app: FastAPI):
     falls back to AsyncSqliteSaver for local development. (REQ-07)"""
     _pg_url = os.getenv('DATABASE_URL')
     if _pg_url and _DB_ENABLED:
-        # Ensure auxiliary tables exist (safe to call on every startup)
+        # Create all ORM tables + seed users on first run (safe to call every startup)
+        try:
+            await _db_repo.ensure_all_tables()
+        except Exception as _all_err:
+            logging.getLogger(__name__).warning("ensure_all_tables failed: %s", _all_err)
+        # Ensure auxiliary tables that are not ORM-managed
         try:
             await _db_repo._ensure_conversation_threads_table()
         except Exception as _ct_err:
