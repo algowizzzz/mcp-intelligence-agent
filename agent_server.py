@@ -1539,14 +1539,14 @@ async def list_workspace_files(payload: dict = Depends(require_jwt)):
 @app.get('/api/workflows')
 async def list_workflows(payload: dict = Depends(require_jwt)):
     import traceback as _tb
-    user = _find_user(payload['user_id'])
-    worker = _resolve_worker_for_user(user) if user else None
-    if not worker:
-        raise HTTPException(status_code=404, detail='No worker assigned to this user')
-    meta = _read_metadata()
-    seen: set = set()
-    workflows = []
     try:
+        user = _find_user(payload['user_id'])
+        worker = _resolve_worker_for_user(user) if user else None
+        if not worker:
+            raise HTTPException(status_code=404, detail='No worker assigned to this user')
+        meta = _read_metadata()
+        seen: set = set()
+        workflows = []
         for section in ('verified_workflows', 'my_workflows'):
             wf_dir = _resolve_worker_path(worker, section)
             if _S3_MODE:
@@ -1575,7 +1575,7 @@ async def list_workflows(payload: dict = Depends(require_jwt)):
     except HTTPException:
         raise
     except Exception:
-        raise HTTPException(status_code=500, detail=f'list_workflows error: {_tb.format_exc()[-1000:]}')
+        raise HTTPException(status_code=500, detail=f'list_workflows error: {_tb.format_exc()[-2000:]}')
 
 
 @app.get('/api/workflows/{filename}')
