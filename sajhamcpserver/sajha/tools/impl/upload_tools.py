@@ -8,15 +8,7 @@ from typing import Dict, Any
 from sajha.tools.base_mcp_tool import BaseMCPTool
 from sajha.core.properties_configurator import PropertiesConfigurator
 from sajha.storage import storage
-from sajha.path_resolver import resolve as path_resolve
-
-
-def _get_worker_ctx():
-    try:
-        from flask import g as _g
-        return getattr(_g, 'worker_ctx', {}) or {}
-    except RuntimeError:
-        return {}
+from sajha.data_context import get_data_layers
 
 
 class ListUploadedFilesTool(BaseMCPTool):
@@ -53,112 +45,46 @@ class ListUploadedFilesTool(BaseMCPTool):
             }
         }
 
-    def _resolve_roots(self, section: str, worker_ctx: dict, user_id, props) -> list:
+    def _resolve_roots(self, section: str) -> list:
         """Return list of (section_name, root_path) tuples for the requested section(s)."""
-        roots = []
-
-        def _my_data_root():
-            if worker_ctx:
-                try:
-                    uid = user_id or '_shared'
-                    return path_resolve('my_data', worker_ctx, user_id=uid)
-                except Exception:
-                    pass
-            try:
-                from flask import g as _g
-                my_data_root = getattr(_g, 'worker_my_data_root', '') or ''
-            except RuntimeError:
-                my_data_root = ''
-            return my_data_root.strip() or props.get('data.uploads_dir', './data/uploads')
-
-        def _domain_data_root():
-            if worker_ctx:
-                try:
-                    return path_resolve('domain_data', worker_ctx)
-                except Exception:
-                    pass
-            # Fallback: X-Worker-Data-Root header injected by agent server (G-04)
-            try:
-                from flask import g as _g
-                wr = getattr(_g, 'worker_data_root', '') or ''
-                if wr:
-                    return wr.strip()
-            except RuntimeError:
-                pass
-            return ''
-
-        def _common_root():
-            if worker_ctx:
-                try:
-                    return path_resolve('common_data', worker_ctx)
-                except Exception:
-                    pass
-            return props.get('data.common_dir', './data/common')
-
-        if section == 'all':
-            for name, fn in [('my_data', _my_data_root), ('domain_data', _domain_data_root), ('common', _common_root)]:
-                p = fn()
-                if p:
-                    roots.append((name, p))
-        elif section == 'my_data':
-            p = _my_data_root()
-            if p:
-                roots.append(('my_data', p))
-        elif section == 'domain_data':
-            p = _domain_data_root()
-            if p:
-                roots.append(('domain_data', p))
-        elif section == 'common':
-            p = _common_root()
-            if p:
-                roots.append(('common', p))
-        return roots
+        return get_data_layers(section)
 
     def _render_markdown(self, files: list) -> dict:
         """Render file list as a compact grouped markdown tree."""
         if not files:
             return {'output': '_No files found._', 'count': 0}
 
-        # Group: section -> subfolder -> [filename]
+        # Group: section -> subfolder -> [{filename, file_path}]
         from collections import defaultdict
         tree = {}
         for f in files:
             sec = f['section']
             sub = f['subfolder'] or ''
-            tree.setdefault(sec, defaultdict(list))[sub].append(f['filename'])
+            tree.setdefault(sec, defaultdict(list))[sub].append(f)
 
         lines = [f'**{len(files)} file(s) found**\n']
         for sec, folders in sorted(tree.items()):
             sec_count = sum(len(v) for v in folders.values())
             lines.append(f'### {sec}  ({sec_count} files)')
             for sub in sorted(folders.keys()):
-                fnames = sorted(folders[sub])
+                entries = sorted(folders[sub], key=lambda x: x['filename'])
                 if sub:
                     lines.append(f'\n**{sub}/**')
-                    for fname in fnames:
-                        lines.append(f'  {sub}/{fname}')
+                    for f in entries:
+                        lines.append(f'  {f["filename"]}  →  `{f["file_path"]}`')
                 else:
-                    for fname in fnames:
-                        lines.append(f'  {fname}')
+                    for f in entries:
+                        lines.append(f'  {f["filename"]}  →  `{f["file_path"]}`')
             lines.append('')
 
         return {'output': '\n'.join(lines), 'count': len(files)}
 
     def execute(self, params: Dict[str, Any]) -> Any:
-        props = PropertiesConfigurator()
-        worker_ctx = _get_worker_ctx()
-        user_id = None
-        try:
-            from flask import g as _g
-            user_id = getattr(_g, 'user_id', None)
-        except RuntimeError:
-            pass
-
         section = params.get('section', 'all')
         file_type = params.get('file_type', 'all')
         subfolder = params.get('subfolder', '').strip().strip('/')
 
-        roots = self._resolve_roots(section, worker_ctx, user_id, props)
+        roots = self._resolve_roots(section)
 
         ALLOWED = {'pdf', 'docx', 'xlsx', 'csv', 'txt', 'parquet', 'pq', 'md', 'json', 'png', 'jpg', 'jpeg', 'py'}
         files = []

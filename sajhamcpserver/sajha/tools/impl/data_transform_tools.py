@@ -61,6 +61,25 @@ def _common_root():
     v = PropertiesConfigurator().get('data.common_data.dir', './data/common')
     return _resolve(v)
 
+def _find_file(name):
+    """Search for a bare filename across all data roots and one level of subdirs."""
+    import os as _os
+    bare = _os.path.basename(name)
+    for root in (_domain_root(), _my_data_root(), _common_root()):
+        candidate = root / bare
+        if candidate.exists():
+            return candidate
+        try:
+            for sub in root.iterdir():
+                if sub.is_dir():
+                    c = sub / bare
+                    if c.exists():
+                        return c
+        except (PermissionError, OSError):
+            pass
+    return None
+
+
 def _safe_path(path_str):
     # S3 mode: s3:// URIs are valid — download to /tmp and return local path
     if str(path_str).startswith('s3://'):
@@ -84,7 +103,8 @@ def _safe_path(path_str):
             return p
         except ValueError:
             pass
-    return None
+    # Fallback: treat as bare filename and search all roots
+    return _find_file(path_str)
 
 def _pq_to_df(path):
     """Read parquet avoiding pandas extension type conflicts."""
@@ -198,7 +218,7 @@ class ParquetReadTool(BaseMCPTool):
         return {
             'type': 'object',
             'properties': {
-                'file_path': {'type': 'string', 'description': 'Absolute path to .parquet, .pq, .csv, or .tsv file.'},
+                'file_path': {'type': 'string', 'description': 'Path or bare filename of a .parquet, .pq, .csv, or .tsv file (e.g. "data.csv"). Use the path from list_uploaded_files, or just the filename — the tool will search all data layers automatically.'},
                 'sample_rows': {'type': 'integer', 'description': 'Rows to return in sample. Default: 10. Max: 100.'},
                 'include_stats': {'type': 'boolean', 'description': 'Include per-column stats. Default: true.'},
                 'columns': {'type': 'array', 'items': {'type': 'string'}, 'description': 'Limit schema/stats/sample to these columns.'},
@@ -294,7 +314,7 @@ class DataTransformTool(BaseMCPTool):
         return {
             'type': 'object',
             'properties': {
-                'file_path': {'type': 'string', 'description': 'Absolute path to .csv, .tsv, .parquet, or .pq file.'},
+                'file_path': {'type': 'string', 'description': 'Path or bare filename of a .csv, .tsv, .parquet, or .pq file (e.g. "data.csv"). Use the path from list_uploaded_files, or just the filename — the tool will search all data layers automatically.'},
                 'filters': {'type': 'array', 'description': 'Filter conditions (ANDed). Each: {column, operator, value}.'},
                 'group_by': {'type': 'array', 'items': {'type': 'string'}, 'description': 'Columns to group by. Requires aggregations.'},
                 'aggregations': {'type': 'object', 'description': 'Map of column -> agg function (sum/mean/count/etc).'},

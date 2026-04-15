@@ -11,7 +11,7 @@
       "section": {
         "type": "string",
         "enum": ["all", "my_data", "domain_data", "common"],
-        "description": "Data layer to list. Default: all (searches my_data, domain_data, and common)."
+        "description": "Data layer to list. ALWAYS omit this parameter (or pass null) on the first call — files can exist in any layer. Only specify a section if you already know which layer the file is in."
       },
       "file_type": {
         "type": "string",

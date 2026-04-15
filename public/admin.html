@@ -804,6 +804,7 @@
             <input class="form-input" id="wc-min-similarity" type="number" value="0.75" min="0" max="1" step="0.05">
           </div>
         </div>
+
       </div>
 
       <!-- ── Tools ── -->
@@ -1294,8 +1295,6 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<!-- Hidden file input -->
-<input type="file" id="file-upload-input" multiple style="display:none" onchange="handleFileUpload(event)">
 
 <script>
 // file:// hostname is '' — always use localhost:8000 for local dev
@@ -1860,8 +1859,6 @@ function renderSheet(wb, sheetName, container) {
 function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 // ── File operations ───────────────────────────────────────────────────────────
-var _uploadSection = '';
-
 function _workerUploadUrl(section) {
   if (_user.role === 'super_admin' && _currentWorker) {
     return API + '/api/super/workers/' + _currentWorker.worker_id + '/files/' + section + '/upload';
@@ -1876,29 +1873,6 @@ function _workerFileOpUrl(section, op) {
   return API + '/api/admin/worker/files/' + section + '/' + op;
 }
 
-async function handleFileUpload(event) {
-  var files = Array.from(event.target.files);
-  var section = _uploadSection;
-  for (var f of files) {
-    var form = new FormData();
-    form.append('file', f);
-    try {
-      var r = await fetch(_workerUploadUrl(section), {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + _token },
-        body: form
-      });
-      if (!r.ok) {
-        var d = await r.json().catch(() => ({}));
-        showToast('Error uploading ' + f.name + ': ' + (d.detail || r.status), 'error');
-      } else {
-        showToast('Uploaded ' + f.name, 'success');
-      }
-    } catch(e) { showToast('Upload failed: ' + f.name, 'error'); }
-  }
-  event.target.value = '';
-  loadFileTree(section);
-}
 
 async function downloadFile(section, path, name) {
   var r = await fetch(_workerFileOpUrl(section, 'file') + '?path=' + encodeURIComponent(path), { headers: authHeaders() });

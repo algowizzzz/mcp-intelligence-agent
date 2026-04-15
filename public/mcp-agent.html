@@ -5480,13 +5480,10 @@
       document.getElementById('bpft-confirm-ok').onclick    = function() { overlay.remove(); cb(); };
     }
 
-    // Dynamic apiPrefix: routes super_admin through worker-scoped endpoint when
-    // a worker is selected via the header switcher (_activeWorkerId is set).
+    // Chat file tree always uses the user-scoped /api/fs endpoint so uploads
+    // land at my_data/{user_id}/ and are visible to agent tools.
+    // Admin file management is handled separately in admin.html.
     function _ftApiPrefix() {
-      var u = _authUser || {};
-      if (u.role === 'super_admin' && _activeWorkerId) {
-        return _agentBase + '/api/super/workers/' + _activeWorkerId + '/files';
-      }
       return _agentBase + '/api/fs';
     }
 

@@ -128,7 +128,8 @@ class FileReadTool(BaseMCPTool):
                     'description': (
                         'Data layer: "domain_data" (worker knowledge base), '
                         '"my_data" (user uploads and personal files), '
-                        '"common" (shared library accessible to all workers).'
+                        '"common" (shared library accessible to all workers). '
+                        'OMIT this parameter to auto-search all sections by filename.'
                     ),
                 },
                 'max_chars': {
@@ -148,7 +149,7 @@ class FileReadTool(BaseMCPTool):
                     ),
                 },
             },
-            'required': ['path', 'section'],
+            'required': ['path'],
         }
 
     def get_output_schema(self):
@@ -165,10 +166,33 @@ class FileReadTool(BaseMCPTool):
             'my_data':     _my_data_root,
             'common':      _common_root,
         }
-        if section not in roots:
-            return {'error': f'Unknown section "{section}". Use: domain_data, my_data, common'}
         if not path:
             return {'error': 'path is required'}
+
+        # If no section given, auto-search all roots for a bare filename
+        if not section:
+            bare = Path(path).name
+            for sec, root_fn in roots.items():
+                root = root_fn()
+                candidate = root / bare
+                if candidate.exists():
+                    section = sec
+                    break
+                try:
+                    for sub in root.iterdir():
+                        if sub.is_dir() and (sub / bare).exists():
+                            section = sec
+                            path = str((sub / bare).relative_to(root))
+                            break
+                except (PermissionError, OSError):
+                    pass
+                if section:
+                    break
+            if not section:
+                return {'error': f'File not found: {path} (searched all sections)'}
+
+        if section not in roots:
+            return {'error': f'Unknown section "{section}". Use: domain_data, my_data, common'}
 
         base = roots[section]()
 

@@ -116,6 +116,30 @@ class _S3PseudoPath:
         return self._uri
 
 
+def _find_file(name, *search_roots):
+    """Search for a bare filename across the given roots (and one level of subdirs).
+    Returns a Path if found, else None. Used so tools accept filenames without full paths.
+    """
+    import os as _os
+    bare = _os.path.basename(name)
+    for root in search_roots:
+        root = Path(root).resolve()
+        # Direct hit
+        candidate = root / bare
+        if candidate.exists():
+            return candidate
+        # One-level subdirectory search
+        try:
+            for sub in root.iterdir():
+                if sub.is_dir():
+                    c = sub / bare
+                    if c.exists():
+                        return c
+        except (PermissionError, OSError):
+            pass
+    return None
+
+
 def _safe_path(path_str, *allowed_roots):
     """Return a Path (or _S3PseudoPath) if within one of the allowed roots, else None.
     S3 mode: s3:// URIs bypass local-path validation; bucket-level IAM is the boundary.
@@ -158,7 +182,7 @@ class PdfReadTool(BaseMCPTool):
         return {
             "type": "object",
             "properties": {
-                "file_path": {"type": "string", "description": "Absolute path to a .pdf file."},
+                "file_path": {"type": "string", "description": "Path or bare filename of a .pdf file (e.g. 'report.pdf'). Use the path from list_uploaded_files, or just the filename — the tool will search all data layers automatically."},
                 "pages": {"type": "string", "description": "Page range: '1', '1-5', or 'all' (default)."},
                 "extract_tables": {"type": "boolean", "description": "Extract tables. Default: true."},
                 "max_chars": {"type": "integer", "description": "Truncate text at this char count. Default: 50000."},
@@ -186,9 +210,10 @@ class PdfReadTool(BaseMCPTool):
         heading = (arguments.get("heading") or "").strip()
 
         safe = _safe_path(file_path, _domain_root(), _my_data_root(), _common_root())
-        if not safe:
-            return {"error": f"File not found or access denied: {file_path}"}
-        if not storage.exists(str(safe)):
+        if not safe or not storage.exists(str(safe)):
+            # Fallback: treat as bare filename and search all roots
+            safe = _find_file(file_path, _domain_root(), _my_data_root(), _common_root())
+        if not safe or not storage.exists(str(safe)):
             return {"error": f"File not found or access denied: {file_path}"}
         if safe.suffix.lower() != ".pdf":
             return {"error": "pdf_read only accepts .pdf files."}
@@ -982,13 +1007,15 @@ class FillTemplateTool(BaseMCPTool):
 
         # Security: template must be within worker templates dir or common templates dir
         tmpl_dir = _templates_dir()
+        common_tmpl_dir = _common_root() / "templates"
         safe = _safe_path(template_path, tmpl_dir)
         if not safe or not storage.exists(str(safe)):
-            # Also try common/templates
-            common_tmpl_dir = _common_root() / "templates"
             safe = _safe_path(template_path, common_tmpl_dir)
         if not safe or not storage.exists(str(safe)):
-            return {"error": "Template access denied"}
+            # Fallback: bare filename search across templates dirs
+            safe = _find_file(template_path, tmpl_dir, common_tmpl_dir)
+        if not safe or not storage.exists(str(safe)):
+            return {"error": "Template not found or access denied"}
         if safe.suffix.lower() != ".md":
             return {"error": "fill_template only accepts .md template files."}
 
