@@ -1509,9 +1509,14 @@ async def upload_file(file: UploadFile = File(...), payload: dict = Depends(requ
 
         # Resolve per-user my_data directory (REQ-MD-01)
         raw_my_data = worker.get('my_data_path', './data/uploads')
-        my_data_dir = (pathlib.Path('sajhamcpserver') / raw_my_data.lstrip('./')).resolve()
-        user_dir = my_data_dir / user_id
-        if not _S3_MODE:
+        if _S3_MODE:
+            # S3 mode: use raw relative path WITHOUT the 'sajhamcpserver/' prefix so
+            # _key() produces 'data/workers/.../my_data/user_id' — matching path_resolve().
+            # pathlib.Path() / .resolve() would prepend the container cwd and corrupt the key.
+            user_dir = raw_my_data.rstrip('/') + '/' + user_id
+        else:
+            my_data_dir = (pathlib.Path('sajhamcpserver') / raw_my_data.lstrip('./')).resolve()
+            user_dir = my_data_dir / user_id
             user_dir.mkdir(parents=True, exist_ok=True)
 
         # Validate extension
@@ -1522,13 +1527,13 @@ async def upload_file(file: UploadFile = File(...), payload: dict = Depends(requ
 
         # Safe filename
         safe_name = pathlib.Path(file.filename).name
-        dest = user_dir / safe_name
+        dest = (user_dir.rstrip('/') + '/' + safe_name) if _S3_MODE else (user_dir / safe_name)
         _dest_exists = _storage.exists(str(dest)) if _S3_MODE else dest.exists()
         if _dest_exists:
             ts = datetime.now(_tz.utc).strftime('%Y%m%d_%H%M%S')
             stem, suffix = safe_name.rsplit('.', 1) if '.' in safe_name else (safe_name, '')
             safe_name = f'{stem}_{ts}.{suffix}' if suffix else f'{stem}_{ts}'
-            dest = user_dir / safe_name
+            dest = (user_dir.rstrip('/') + '/' + safe_name) if _S3_MODE else (user_dir / safe_name)
 
         size_bytes = await _stream_upload(file, dest)
         _build_and_sync(str(user_dir))   # refresh tree cache immediately
@@ -1537,10 +1542,13 @@ async def upload_file(file: UploadFile = File(...), payload: dict = Depends(requ
             stat = dest.stat()
             size_bytes = stat.st_size
             now_iso = datetime.fromtimestamp(stat.st_mtime, tz=_tz.utc).isoformat()
+        # path: in S3 mode strip leading './' so client sees 'data/workers/.../hello_test.py'
+        rel_path = (dest.lstrip('./') if _S3_MODE
+                    else str(dest.relative_to(pathlib.Path('sajhamcpserver').resolve())).replace('\\', '/'))
         return JSONResponse(content={
             'success': True,
             'filename': safe_name,
-            'path': str(dest.relative_to(pathlib.Path('sajhamcpserver').resolve())).replace('\\', '/'),
+            'path': rel_path,
             'size_bytes': size_bytes,
             'uploaded_at': now_iso,
             'file_type': ext,
@@ -1600,8 +1608,11 @@ async def list_workspace_files(payload: dict = Depends(require_jwt)):
     if not worker:
         raise HTTPException(status_code=404, detail='No worker assigned to this user')
     raw = worker.get('my_data_path', './data/uploads')
-    base = pathlib.Path('sajhamcpserver')
-    user_dir = (base / raw.lstrip('./')).resolve() / payload['user_id']
+    if _S3_MODE:
+        user_dir = raw.rstrip('/') + '/' + payload['user_id']
+    else:
+        base = pathlib.Path('sajhamcpserver')
+        user_dir = (base / raw.lstrip('./')).resolve() / payload['user_id']
     files = []
     if _S3_MODE:
         for rel in _storage.list_prefix(str(user_dir)):
@@ -1756,14 +1767,27 @@ def _fs_worker(payload: dict) -> dict:
     return worker
 
 
-def _resolve_fs_path(worker: dict, user_id: str, section: str, rel: str = '') -> pathlib.Path:
-    """Resolve an fs section path. 'uploads' maps to my_data/{user_id}/ (REQ-MD-01)."""
+def _resolve_fs_path(worker: dict, user_id: str, section: str, rel: str = ''):
+    """Resolve an fs section path. 'uploads' maps to my_data/{user_id}/ (REQ-MD-01).
+    Returns str in S3 mode (raw relative path matching path_resolve() key space),
+    pathlib.Path in local mode (backward-compatible).
+    """
     if section == 'uploads':
         raw = worker.get('my_data_path', './data/uploads')
+        if _S3_MODE:
+            # Use raw relative path without sajhamcpserver/ prefix so _key() produces
+            # 'data/workers/.../my_data/user_id' — matching path_resolve() output.
+            root_str = raw.rstrip('/') + '/' + user_id
+            if rel:
+                # Traverse-guard: normalise separators, ensure rel stays within root
+                rel_clean = rel.lstrip('/')
+                if '..' in rel_clean.split('/'):
+                    raise HTTPException(status_code=400, detail='Path traversal not allowed')
+                return root_str.rstrip('/') + '/' + rel_clean
+            return root_str
         base = pathlib.Path('sajhamcpserver')
         root = (base / raw.lstrip('./')).resolve() / user_id
-        if not _S3_MODE:
-            root.mkdir(parents=True, exist_ok=True)
+        root.mkdir(parents=True, exist_ok=True)
         if rel:
             full = (root / rel).resolve()
             if not str(full).startswith(str(root)):
@@ -1833,11 +1857,16 @@ async def fs_upload(
     folder = _resolve_fs_path(worker, uid, section, path) if path else root
     if not _S3_MODE:
         folder.mkdir(parents=True, exist_ok=True)
-    dest = folder / pathlib.Path(file.filename).name
+    safe_fname = pathlib.Path(file.filename).name
+    dest = (str(folder).rstrip('/') + '/' + safe_fname) if _S3_MODE else (folder / safe_fname)
     await _stream_upload(file, dest)
     if not batch_id:
         _build_and_sync(str(root))
-    return {'ok': True, 'path': str(dest.relative_to(root)).replace('\\', '/')}
+    if _S3_MODE:
+        rel_path = str(dest)[len(str(root).rstrip('/')) + 1:]
+    else:
+        rel_path = str(dest.relative_to(root)).replace('\\', '/')
+    return {'ok': True, 'path': rel_path}
 
 
 class FsUpdateRequest(BaseModel):
