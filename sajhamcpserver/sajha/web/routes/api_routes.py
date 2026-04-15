@@ -45,6 +45,7 @@ class ApiRoutes(BaseRoutes):
             g.worker_common_root  = headers.get('X-Worker-Common-Root', '')
             g.worker_my_data_root = headers.get('X-Worker-My-Data-Root', '')
             g.worker_id           = headers.get('X-Worker-Id', '')
+            g.user_id             = headers.get('X-User-Id', '')
             is_auth, auth_context, auth_msg = self.auth_manager.authenticate_request(headers)
             
             # Convert auth_context to session-like dict for MCP handler
@@ -123,6 +124,7 @@ class ApiRoutes(BaseRoutes):
             g.worker_common_root  = headers.get('X-Worker-Common-Root', '')
             g.worker_my_data_root = headers.get('X-Worker-My-Data-Root', '')
             g.worker_id           = headers.get('X-Worker-Id', '')
+            g.user_id             = headers.get('X-User-Id', '')
             is_auth, auth_context, auth_msg = self.auth_manager.authenticate_request(headers)
             
             if not is_auth:

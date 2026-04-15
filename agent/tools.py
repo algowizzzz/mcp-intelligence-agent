@@ -30,6 +30,8 @@ def _service_headers() -> dict:
     if ctx:
         if ctx.get('worker_id'):
             headers['X-Worker-Id'] = ctx['worker_id']
+        if ctx.get('user_id'):
+            headers['X-User-Id'] = ctx['user_id']
         if ctx.get('domain_data_path'):
             headers['X-Worker-Data-Root'] = ctx['domain_data_path']
         if ctx.get('common_data_path'):
