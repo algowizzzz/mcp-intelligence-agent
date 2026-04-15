@@ -588,10 +588,21 @@ class PythonRunScriptTool(BaseMCPTool):
         for try_section in sections_to_try:
             try:
                 if try_section == 'my_data':
-                    if not user_id:
-                        resolve_errors.append('my_data: user context not available')
-                        continue
-                    candidate_root = path_resolve('my_data', worker_ctx, user_id=user_id)
+                    if user_id:
+                        candidate_root = path_resolve('my_data', worker_ctx, user_id=user_id)
+                    else:
+                        # Fallback: agent server injects the pre-scoped my_data path as a header
+                        try:
+                            from flask import g as _g
+                            mdr = getattr(_g, 'worker_my_data_root', '') or ''
+                            if mdr:
+                                candidate_root = mdr.strip()
+                            else:
+                                resolve_errors.append('my_data: user context not available')
+                                continue
+                        except RuntimeError:
+                            resolve_errors.append('my_data: user context not available')
+                            continue
                 elif try_section == 'common':
                     candidate_root = path_resolve('common_data', worker_ctx)
                 else:
