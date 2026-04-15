@@ -149,6 +149,31 @@ jobs:
               exit 1
             fi
 
+            # ── DB schema migration (idempotent — safe to re-run on every deploy) ──
+            echo "Running DB schema migration..."
+            docker compose -f docker-compose.prod.yml exec -T postgres psql -U sajha -d sajha << 'SQLMIG'
+              -- Add columns added after initial schema (ignored if already present)
+              ALTER TABLE workers ADD COLUMN IF NOT EXISTS my_data_path      TEXT DEFAULT '';
+              ALTER TABLE workers ADD COLUMN IF NOT EXISTS my_workflows_path TEXT DEFAULT '';
+              ALTER TABLE workers ADD COLUMN IF NOT EXISTS templates_path    TEXT DEFAULT '';
+              ALTER TABLE workers ADD COLUMN IF NOT EXISTS common_data_path  TEXT DEFAULT '';
+
+              -- Backfill my_data_path for workers where it was never set.
+              -- Pattern: ./data/workers/<worker_id>/my_data  (matches path_resolve() convention)
+              UPDATE workers
+              SET my_data_path = './data/workers/' || worker_id || '/my_data'
+              WHERE my_data_path IS NULL OR my_data_path = '';
+
+              UPDATE workers
+              SET my_workflows_path = './data/workers/' || worker_id || '/workflows/my'
+              WHERE my_workflows_path IS NULL OR my_workflows_path = '';
+
+              UPDATE workers
+              SET templates_path = './data/workers/' || worker_id || '/templates'
+              WHERE templates_path IS NULL OR templates_path = '';
+SQLMIG
+            echo "DB migration complete"
+
             # ── S3 data migration (idempotent — skips files already in bucket at same size) ──
             echo "Running S3 data migration..."
             AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
