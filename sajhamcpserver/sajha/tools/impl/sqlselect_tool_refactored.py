@@ -10,6 +10,7 @@ from datetime import datetime
 from sajha.tools.base_mcp_tool import BaseMCPTool
 from sajha.core.properties_configurator import PropertiesConfigurator
 from sajha.storage import storage
+from sajha.data_context import get_data_layers
 
 
 def _ensure_local(path: str) -> str:
@@ -113,28 +114,20 @@ class SqlSelectBaseTool(BaseMCPTool):
 
         Two passes:
         1. Static sources from config (data_sources dict) — explicit, high priority.
-        2. Auto-discovery of CSV/Parquet files in domain_data root and subfolders —
-           so any file uploaded to domain_data becomes immediately queryable without
-           needing to pre-register it in the tool config.
+        2. Auto-discovery of CSV/Parquet/JSON across all 3 data layers (my_data,
+           domain_data, common) so any uploaded file becomes immediately queryable
+           without pre-registration in the tool config.
         """
         effective_dir = self._resolve_worker_data_dir()
 
-        # Also resolve domain_data root for auto-discovery
-        domain_data_dir = ''
-        try:
-            from flask import g as _g
-            r = getattr(_g, 'worker_data_root', None)
-            if r:
-                domain_data_dir = r.rstrip('/')
-        except RuntimeError:
-            pass
-
-        cache_key = f"{effective_dir}|{domain_data_dir}"
+        # Resolve all 3 layers for auto-discovery and cache key
+        layers = get_data_layers('all')
+        cache_key = f"{effective_dir}|{'|'.join(p for _, p in layers)}"
         if cache_key == getattr(self, '_loaded_data_dir', ''):
             return  # already up to date
         self._loaded_data_dir = cache_key
 
-        # Pass 1: static registered sources
+        # Pass 1: static registered sources (always from configured data_directory)
         for source_name, source_config in self.data_sources.items():
             try:
                 file_path = os.path.join(effective_dir, source_config['file'])
@@ -159,45 +152,51 @@ class SqlSelectBaseTool(BaseMCPTool):
             except Exception as e:
                 self.logger.error(f"Error re-registering {source_name}: {e}")
 
-        # Pass 2: auto-discover CSV/Parquet/JSON in domain_data (recursive)
-        # Generates table names from file path: "iris/iris_combined.csv" → "iris__iris_combined"
-        if not domain_data_dir:
+        # Pass 2: auto-discover CSV/Parquet/JSON across all 3 data layers (recursive)
+        # Generates view names: "iris/iris_combined.csv" → "iris__iris_combined"
+        # Layer prefix added on name collision: "my_data__report" vs "domain_data__report"
+        if not layers:
             return
         static_files = {cfg['file'] for cfg in self.data_sources.values()}
-        for rel_key in storage.list_prefix(domain_data_dir):
-            fname = os.path.basename(rel_key)
-            ext = os.path.splitext(fname)[1].lower()
-            if ext not in ('.csv', '.parquet', '.pq', '.json', '.jsonl'):
-                continue
-            abs_path = os.path.join(domain_data_dir, rel_key)
-            # Skip if already registered as a static source
-            if rel_key in static_files or fname in static_files:
-                continue
-            # Build safe table name from relative path
-            name_no_ext = os.path.splitext(rel_key)[0]
-            table_name = name_no_ext.replace(os.sep, '__').replace('/', '__').replace(' ', '_').replace('-', '_')
-            # Strip leading dots from hidden dirs
-            table_name = '__'.join(p.lstrip('.') for p in table_name.split('__') if p.lstrip('.'))
-            if not table_name:
-                continue
+        seen_names = set()
+        for section_name, data_dir in layers:
             try:
-                local_path = _ensure_local(abs_path).replace("'", "''")
-                # Use CREATE VIEW (lazy) not TABLE (eager) — no data loaded at registration
-                if ext == '.csv':
-                    self.connection.execute(
-                        f"CREATE OR REPLACE VIEW {table_name} AS "
-                        f"SELECT * FROM read_csv_auto('{local_path}', header=true, sample_size=100)")
-                elif ext in ('.parquet', '.pq'):
-                    self.connection.execute(
-                        f"CREATE OR REPLACE VIEW {table_name} AS "
-                        f"SELECT * FROM read_parquet('{local_path}')")
-                elif ext in ('.json', '.jsonl'):
-                    self.connection.execute(
-                        f"CREATE OR REPLACE VIEW {table_name} AS "
-                        f"SELECT * FROM read_json_auto('{local_path}')")
-                self.logger.info(f"Auto-registered view: {table_name} ← {rel_key}")
-            except Exception as e:
-                self.logger.warning(f"Auto-register skipped {rel_key}: {e}")
+                for rel_key in storage.list_prefix(data_dir):
+                    fname = os.path.basename(rel_key)
+                    ext = os.path.splitext(fname)[1].lower()
+                    if ext not in ('.csv', '.parquet', '.pq', '.json', '.jsonl'):
+                        continue
+                    abs_path = data_dir.rstrip('/') + '/' + rel_key
+                    if rel_key in static_files or fname in static_files:
+                        continue
+                    name_no_ext = os.path.splitext(rel_key)[0]
+                    table_name = name_no_ext.replace(os.sep, '__').replace('/', '__').replace(' ', '_').replace('-', '_')
+                    table_name = '__'.join(p.lstrip('.') for p in table_name.split('__') if p.lstrip('.'))
+                    if not table_name:
+                        continue
+                    # Prefix with section name on collision to avoid overwriting
+                    if table_name in seen_names:
+                        table_name = f"{section_name}__{table_name}"
+                    seen_names.add(table_name)
+                    try:
+                        local_path = _ensure_local(abs_path).replace("'", "''")
+                        if ext == '.csv':
+                            self.connection.execute(
+                                f"CREATE OR REPLACE VIEW {table_name} AS "
+                                f"SELECT * FROM read_csv_auto('{local_path}', header=true, sample_size=100)")
+                        elif ext in ('.parquet', '.pq'):
+                            self.connection.execute(
+                                f"CREATE OR REPLACE VIEW {table_name} AS "
+                                f"SELECT * FROM read_parquet('{local_path}')")
+                        elif ext in ('.json', '.jsonl'):
+                            self.connection.execute(
+                                f"CREATE OR REPLACE VIEW {table_name} AS "
+                                f"SELECT * FROM read_json_auto('{local_path}')")
+                        self.logger.info(f"Auto-registered view: {table_name} ← {section_name}/{rel_key}")
+                    except Exception as e:
+                        self.logger.warning(f"Auto-register skipped {rel_key}: {e}")
+            except Exception:
+                pass
 
     def _error_response(self, error_message: str) -> Dict[str, Any]:
         """Generate error response"""
@@ -290,7 +289,10 @@ class SqlSelectListSourcesTool(SqlSelectBaseTool):
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Execute list sources operation"""
         self._ensure_worker_sources()
+
+        # Static configured sources (from data_sources dict)
         sources = []
+        static_names = set()
         for source_name, source_config in self.data_sources.items():
             sources.append({
                 'name': source_name,
@@ -298,9 +300,26 @@ class SqlSelectListSourcesTool(SqlSelectBaseTool):
                 'type': source_config.get('type', 'csv'),
                 'description': source_config.get('description', '')
             })
-        
+            static_names.add(source_name)
+
+        # Auto-discovered tables/views registered by _ensure_worker_sources()
+        try:
+            rows = self.connection.execute(
+                "SELECT table_name FROM information_schema.tables WHERE table_schema='main'"
+            ).fetchall()
+            for (tname,) in rows:
+                if tname not in static_names:
+                    sources.append({
+                        'name': tname,
+                        'file': '',
+                        'type': 'view',
+                        'description': 'auto-discovered'
+                    })
+        except Exception as e:
+            self.logger.warning(f"Could not list auto-discovered sources: {e}")
+
         self.logger.info(f"Listed {len(sources)} data sources")
-        
+
         return {
             'success': True,
             'sources': sources,

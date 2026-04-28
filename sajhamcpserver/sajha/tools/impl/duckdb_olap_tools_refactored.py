@@ -13,6 +13,7 @@ from sajha.tools.base_mcp_tool import BaseMCPTool
 from sajha.core.properties_configurator import PropertiesConfigurator
 from sajha.storage import storage
 from sajha.path_resolver import resolve as path_resolve
+from sajha.data_context import get_data_layers
 
 
 def _get_worker_ctx():
@@ -71,59 +72,11 @@ class DuckDbBaseTool(BaseMCPTool):
         """Initialize DuckDB base tool"""
         super().__init__(config)
 
-        # Data directories for CSV, Parquet, JSON files.
-        # Searches all three data layers: domain_data, my_data, common.
-        # REQ-PREP-04: resolved per-request from worker context via path_resolver;
-        # static config used only as fallback at init time.
-        self.data_directories = []  # list of (section_name, path)
-        self.data_directory = ''    # primary dir (domain_data) for backward compat
-
-        worker_ctx = _get_worker_ctx()
-        props = PropertiesConfigurator()
-
-        # domain_data (primary)
-        dd = ''
-        if worker_ctx:
-            try:
-                dd = path_resolve('domain_data', worker_ctx)
-            except Exception:
-                pass
-        if not dd:
-            dd = self.config.get('data_directory', props.get('tool.duckdb.data_directory', './data/duckdb'))
-        self.data_directory = dd
-        self.data_directories.append(('domain_data', dd))
-
-        # my_data
-        if worker_ctx:
-            try:
-                user_id = None
-                try:
-                    from flask import g as _g
-                    user_id = getattr(_g, 'user_id', None)
-                except RuntimeError:
-                    pass
-                if user_id:
-                    md = path_resolve('my_data', worker_ctx, user_id=user_id)
-                    self.data_directories.append(('my_data', md))
-            except Exception:
-                pass
-
-        # common
-        if worker_ctx:
-            try:
-                cd = path_resolve('common_data', worker_ctx)
-                self.data_directories.append(('common', cd))
-            except Exception:
-                pass
-        else:
-            cd = props.get('data.common_dir', './data/common')
-            if cd:
-                self.data_directories.append(('common', cd))
-
-        # Ensure all data directories exist (skip for S3 paths — no local mkdir needed)
-        for _, d in self.data_directories:
-            if not str(d).startswith('s3://'):
-                os.makedirs(d, exist_ok=True)
+        # FIX 2: Do NOT resolve data layers at __init__ time — no request context exists yet.
+        # Layers are resolved fresh on every execute() call via _scan_data_files()
+        # which calls get_data_layers('all') per-request.
+        self.data_directories = []  # populated lazily in _scan_data_files()
+        self.data_directory = ''    # updated lazily in _scan_data_files()
 
         # REQ-PREP-04: in-memory DuckDB connection (no persistent db_path)
         # S3/httpfs stub: to activate S3 reads, uncomment and configure:
@@ -182,16 +135,23 @@ class DuckDbBaseTool(BaseMCPTool):
         """Scan all data layers (domain_data, my_data, common) for supported file types.
         REQ-PREP-04: data directories resolved per-request from worker context.
         """
-        # Re-resolve data directories from current worker context if available
-        worker_ctx = _get_worker_ctx()
-        if worker_ctx:
-            try:
-                self.data_directory = path_resolve('domain_data', worker_ctx)
-                # Update domain_data entry in data_directories
-                self.data_directories = [(n, p) if n != 'domain_data' else ('domain_data', self.data_directory)
-                                         for n, p in self.data_directories]
-            except Exception:
-                pass  # Keep existing data_directory
+        # FIX 2 & 5: Re-resolve all data layers from current request context on every call.
+        # If headers are missing (empty layers), fail loudly with a clear error message
+        # rather than silently falling back to a hardcoded path.
+        # Exception: if a data_directory was explicitly set in self.config (e.g. unit tests),
+        # use that as a domain_data fallback so tests pass without a live request context.
+        fresh = get_data_layers('all')
+        if not fresh:
+            config_dd = self.config.get('data_directory', '')
+            if config_dd:
+                fresh = [('domain_data', config_dd)]
+            else:
+                raise ValueError(
+                    "No data directories configured for this worker. "
+                    "Check X-Worker-Data-Root header."
+                )
+        self.data_directories = fresh
+        self.data_directory = next((p for n, p in fresh if n == 'domain_data'), fresh[0][1])
 
         supported_extensions = {
             'csv': ['.csv'],
@@ -291,19 +251,19 @@ class DuckDbBaseTool(BaseMCPTool):
         current_key = self._worker_init_key()
         if current_key and current_key == self._last_init_worker_key:
             return
-        # Re-resolve data directories from current worker context before scanning
-        worker_ctx = _get_worker_ctx()
-        if worker_ctx:
-            try:
-                new_dd = path_resolve('domain_data', worker_ctx)
-                if new_dd:
-                    self.data_directory = new_dd
-                    self.data_directories = [
-                        (n, p) if n != 'domain_data' else ('domain_data', new_dd)
-                        for n, p in self.data_directories
-                    ]
-            except Exception:
-                pass
+        # FIX 2: Re-resolve data layers per-request. If outside request context
+        # (e.g. called from __init__ at startup), use the config data_directory
+        # if provided (unit tests), otherwise defer until first request.
+        fresh = get_data_layers('all')
+        if not fresh:
+            config_dd = self.config.get('data_directory', '')
+            if config_dd:
+                fresh = [('domain_data', config_dd)]
+            else:
+                self.logger.debug("_initialize_views_from_files: no request context and no config — deferring")
+                return
+        self.data_directories = fresh
+        self.data_directory = next((p for n, p in fresh if n == 'domain_data'), fresh[0][1])
 
         try:
             conn = self._get_connection()

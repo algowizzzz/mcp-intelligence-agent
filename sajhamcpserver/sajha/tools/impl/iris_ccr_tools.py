@@ -10,7 +10,7 @@ import pandas as pd
 from sajha.tools.base_mcp_tool import BaseMCPTool
 from sajha.core.properties_configurator import PropertiesConfigurator
 from sajha.storage import storage
-from sajha.path_resolver import resolve as path_resolve
+from sajha.data_context import resolve_file as _resolve_file
 
 
 def _get_worker_ctx():
@@ -33,8 +33,9 @@ def _clean_row(row: dict) -> dict:
 
 class IrisBaseTool(BaseMCPTool):
     """Shared base for all IRIS tools. Loads CSV once at class level."""
-    _df = None
-    _df_path = None  # track which path the class-level df was loaded from
+    # FIX 6: Cache keyed by worker_id to prevent different workers sharing the same DataFrame.
+    # Key: worker_id (str) → {'df': pd.DataFrame, 'path': str}
+    _cache: dict = {}
 
     @classmethod
     def _get_config(cls, key, default=None):
@@ -46,27 +47,37 @@ class IrisBaseTool(BaseMCPTool):
             return default
 
     @classmethod
-    def _iris_csv_path(cls) -> str:
-        """Return iris CSV path, preferring per-request worker root (G-04)."""
+    def _current_worker_id(cls) -> str:
+        """Return the current request's worker_id (from Flask g), or '' if outside context."""
         try:
             from flask import g as _g
-            worker_root = getattr(_g, 'worker_data_root', None)
-            if worker_root:
-                return worker_root.rstrip('/') + '/iris/iris_combined.csv'
+            return getattr(_g, 'worker_id', '') or ''
         except RuntimeError:
+            return ''
+
+    @classmethod
+    def _iris_csv_path(cls) -> str:
+        """Return iris CSV path, searching all 3 data layers (domain_data → my_data → common)."""
+        try:
+            path, _ = _resolve_file('iris/iris_combined.csv')
+            return path
+        except FileNotFoundError:
             pass
+        # Final fallback when running outside a request context
         return cls._get_config('data.iris_combined_csv', './data/domain_data/iris/iris_combined.csv')
 
     @classmethod
     def _get_df(cls):
+        worker_id = cls._current_worker_id()
         path = cls._iris_csv_path()
-        # Reload if path changed (different worker) or not yet loaded
-        if cls._df is None or cls._df_path != path:
+        # FIX 6: Use per-worker cache key so different workers don't share a stale DataFrame
+        entry = cls._cache.get(worker_id)
+        if entry is None or entry['path'] != path:
             data = storage.read_bytes(path)
-            cls._df = pd.read_csv(io.BytesIO(data), encoding='latin1', low_memory=False)
-            cls._df['Date'] = cls._df['Date'].astype(str)
-            cls._df_path = path
-        return cls._df
+            df = pd.read_csv(io.BytesIO(data), encoding='latin1', low_memory=False)
+            df['Date'] = df['Date'].astype(str)
+            cls._cache[worker_id] = {'df': df, 'path': path}
+        return cls._cache[worker_id]['df']
 
     @classmethod
     def _latest_date(cls):

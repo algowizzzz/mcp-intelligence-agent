@@ -19,7 +19,7 @@ import logging
 from typing import Optional
 from datetime import timedelta, datetime
 
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request, g
 from flask_socketio import SocketIO
 from flask_cors import CORS
 
@@ -220,7 +220,22 @@ class SajhaMCPServerWebApp:
         
         # Enable CORS
         CORS(self.app)
-        
+
+        # G-04: Global before_request hook — inject worker path context for ALL routes.
+        # This replaces the duplicated manual header extraction in api_routes.py.
+        @self.app.before_request
+        def _inject_worker_context():
+            g.worker_data_root    = request.headers.get('X-Worker-Data-Root',    '')
+            g.worker_common_root  = request.headers.get('X-Worker-Common-Root',  '')
+            g.worker_my_data_root = request.headers.get('X-Worker-My-Data-Root', '')
+            g.worker_id           = request.headers.get('X-Worker-Id',           '')
+            g.user_id             = request.headers.get('X-User-Id',             '')
+            g.worker_ctx = {
+                'domain_data_path': g.worker_data_root,
+                'my_data_path':     g.worker_my_data_root,
+                'common_data_path': g.worker_common_root,
+            }
+
         # Initialize SocketIO
         self.socketio = SocketIO(
             self.app, 

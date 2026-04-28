@@ -9,6 +9,7 @@ from sajha.tools.base_mcp_tool import BaseMCPTool
 from sajha.core.properties_configurator import PropertiesConfigurator
 from sajha.storage import storage
 from sajha.path_resolver import resolve as path_resolve
+from sajha.data_context import get_data_layers
 
 
 def _get_worker_ctx():
@@ -30,47 +31,31 @@ def _resolve(path_str):
     return (Path.cwd() / p).resolve()
 
 def _domain_root():
-    """Return domain data root. Checks per-request worker context first (REQ-API-02)."""
-    try:
-        from flask import g as _g
-        worker_root = getattr(_g, 'worker_data_root', None)
-        if worker_root:
-            return Path(worker_root.rstrip('/')).resolve()
-    except RuntimeError:
-        pass
+    """Return domain data root via data_context (consistent with all other tools)."""
+    layers = get_data_layers('domain_data')
+    if layers:
+        return Path(layers[0][1].rstrip('/')).resolve()
     return _resolve(_props().get('data.domain_data.dir', './data/domain_data'))
 
 def _my_data_root():
-    """Return my-data root. Checks per-request worker context first (REQ-DD-02 / REQ-MD-01)."""
-    try:
-        from flask import g as _g
-        my_data_root = getattr(_g, 'worker_my_data_root', None)
-        if my_data_root:
-            return Path(my_data_root.rstrip('/')).resolve()
-    except RuntimeError:
-        pass
+    """Return my-data root via data_context (REQ-DD-02 / REQ-MD-01)."""
+    layers = get_data_layers('my_data')
+    if layers:
+        return Path(layers[0][1].rstrip('/')).resolve()
     return _resolve(_props().get('data.my_data.dir', './data/uploads'))
 
 def _common_root():
-    """Return common/shared-library root. Checks per-request worker context first."""
-    try:
-        from flask import g as _g
-        common_root = getattr(_g, 'worker_common_root', None)
-        if common_root:
-            return Path(common_root.rstrip('/')).resolve()
-    except RuntimeError:
-        pass
+    """Return common/shared-library root via data_context."""
+    layers = get_data_layers('common')
+    if layers:
+        return Path(layers[0][1].rstrip('/')).resolve()
     return _resolve(_props().get('data.common_data.dir', './data/common'))
 
 def _templates_dir():
-    """Return templates dir. Checks per-request worker context first (REQ-API-02)."""
-    try:
-        from flask import g as _g
-        worker_root = getattr(_g, 'worker_data_root', None)
-        if worker_root:
-            return Path(worker_root.rstrip('/') + '/templates').resolve()
-    except RuntimeError:
-        pass
+    """Return templates dir derived from domain_data root."""
+    layers = get_data_layers('domain_data')
+    if layers:
+        return Path(layers[0][1].rstrip('/') + '/templates').resolve()
     return _resolve(_props().get('data.templates_dir', './data/domain_data/templates'))
 
 class _S3PseudoPath:

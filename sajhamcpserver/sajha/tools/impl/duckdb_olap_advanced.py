@@ -17,6 +17,7 @@ from pathlib import Path
 from sajha.tools.base_mcp_tool import BaseMCPTool
 from sajha.storage import storage
 from sajha.olap.semantic_layer import SemanticLayer
+from sajha.data_context import get_data_layers
 
 
 def _ensure_local(path: str) -> str:
@@ -86,6 +87,7 @@ class DuckDBOLAPAdvancedTool(BaseMCPTool):
         self.semantic = SemanticLayer(self.config_path)
         self.conn = None
         self._init_connection()
+        self._register_data_layer_files()
         self.db_source = str(Path(self.config_path).parent / "data" / "olap.duckdb")
         
         # Initialize engines
@@ -114,6 +116,44 @@ class DuckDBOLAPAdvancedTool(BaseMCPTool):
         except Exception as e:
             logger.error(f"Failed to initialize DuckDB: {e}")
             self.conn = duckdb.connect(":memory:")
+
+    def _register_data_layer_files(self):
+        """Register CSV/Parquet/JSON files from all 3 data layers as DuckDB views.
+
+        Iterates my_data → domain_data → common so that user-uploaded files
+        are queryable alongside domain and shared data.
+        """
+        layers = get_data_layers('all')
+        if not layers:
+            return
+        seen = set()
+        for section_name, data_dir in layers:
+            try:
+                for rel_path in storage.list_prefix(data_dir):
+                    fname = os.path.basename(rel_path)
+                    ext = os.path.splitext(fname)[1].lower()
+                    if ext not in ('.csv', '.parquet', '.pq', '.json', '.jsonl'):
+                        continue
+                    rel_no_ext = os.path.splitext(rel_path)[0]
+                    safe_key = rel_no_ext.replace('\\', '/').replace('/', '__').replace(' ', '_').replace('-', '_')
+                    view_name = f"{section_name}__{safe_key}" if safe_key in seen else safe_key
+                    view_name = ''.join(c if c.isalnum() or c == '_' else '_' for c in view_name)
+                    seen.add(safe_key)
+                    abs_path = data_dir.rstrip('/') + '/' + rel_path
+                    try:
+                        local_path = _ensure_local(abs_path)
+                        if ext == '.csv':
+                            sql = f"CREATE OR REPLACE VIEW {view_name} AS SELECT * FROM read_csv_auto('{local_path}', header=true, sample_size=100)"
+                        elif ext in ('.parquet', '.pq'):
+                            sql = f"CREATE OR REPLACE VIEW {view_name} AS SELECT * FROM read_parquet('{local_path}')"
+                        else:
+                            sql = f"CREATE OR REPLACE VIEW {view_name} AS SELECT * FROM read_json_auto('{local_path}')"
+                        self.conn.execute(sql)
+                        logger.debug(f"OLAP view registered: {view_name} ← {section_name}/{rel_path}")
+                    except Exception as e:
+                        logger.warning(f"OLAP view skipped {rel_path}: {e}")
+            except Exception:
+                pass
     
     def get_tools(self) -> List[Dict[str, Any]]:
         """Return list of available OLAP tools."""

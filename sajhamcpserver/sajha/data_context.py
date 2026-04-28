@@ -16,7 +16,11 @@ double-append the user_id.
 """
 
 import os
+import logging
+
 from sajha.storage import storage
+
+_logger = logging.getLogger(__name__)
 
 
 def get_data_layers(section: str = 'all') -> list:
@@ -25,14 +29,34 @@ def get_data_layers(section: str = 'all') -> list:
     Priority order: my_data → domain_data → common.
     Only layers with a non-empty path are returned.
 
+    FIX 4: When called outside a Flask request context (RuntimeError), falls back
+    to reading paths from PropertiesConfigurator instead of returning an empty dict.
+    FIX 8: Logs a warning when X-Worker-Data-Root is missing from the request context.
+
     Args:
         section: 'all' | 'my_data' | 'domain_data' | 'common'
     """
+    ctx = {}
     try:
         from flask import g as _g
         ctx = getattr(_g, 'worker_ctx', {}) or {}
+        # FIX 8: warn when domain_data header is absent inside a request context
+        if not ctx.get('domain_data_path', '').strip():
+            _logger.warning(
+                "X-Worker-Data-Root header missing — tool will search no domain_data files"
+            )
     except RuntimeError:
-        ctx = {}
+        # FIX 4: Outside Flask request context — fall back to PropertiesConfigurator
+        try:
+            from sajha.core.properties_configurator import PropertiesConfigurator
+            _props = PropertiesConfigurator()
+            ctx = {
+                'domain_data_path': _props.get('data.domain_data.dir', ''),
+                'my_data_path':     _props.get('data.my_data.dir',     ''),
+                'common_data_path': _props.get('data.common_data.dir', ''),
+            }
+        except Exception:
+            ctx = {}
 
     # my_data_path is already user-scoped (user_id appended by agent_server)
     layers = [

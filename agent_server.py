@@ -434,6 +434,19 @@ def _assign_user_to_worker(user_id: str, worker_id: str | None, role: str | None
                 if user_id not in assigned:
                     assigned.append(user_id)
                 w['assigned_users'] = assigned
+                # FIX 7: Create per-user my_data subdirectory at assignment time
+                raw_my_data = w.get('my_data_path', './data/uploads')
+                try:
+                    if _S3_MODE:
+                        pass  # S3: directories are virtual; skip mkdir
+                    else:
+                        user_dir = (pathlib.Path('sajhamcpserver') / raw_my_data.lstrip('./') / user_id).resolve()
+                        user_dir.mkdir(parents=True, exist_ok=True)
+                except Exception as _e:
+                    import logging as _logging
+                    _logging.getLogger(__name__).warning(
+                        f"Could not create my_data dir for user '{user_id}' in worker '{worker_id}': {_e}"
+                    )
                 break
 
     _save_users(users)

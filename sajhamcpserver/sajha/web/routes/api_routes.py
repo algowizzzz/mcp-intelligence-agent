@@ -39,15 +39,10 @@ class ApiRoutes(BaseRoutes):
             - API Key in Authorization: Authorization: sja_xxx
             """
             # Authenticate request (supports both session tokens and API keys)
+            # G-04: worker context already populated by global before_request hook in sajhamcpserver_web.py
             headers = dict(request.headers)
-            # G-04: Inject per-worker path context for tool path resolution
-            g.worker_data_root    = headers.get('X-Worker-Data-Root', '')
-            g.worker_common_root  = headers.get('X-Worker-Common-Root', '')
-            g.worker_my_data_root = headers.get('X-Worker-My-Data-Root', '')
-            g.worker_id           = headers.get('X-Worker-Id', '')
-            g.user_id             = headers.get('X-User-Id', '')
             is_auth, auth_context, auth_msg = self.auth_manager.authenticate_request(headers)
-            
+
             # Convert auth_context to session-like dict for MCP handler
             session_data = None
             if is_auth and auth_context:
@@ -117,16 +112,10 @@ class ApiRoutes(BaseRoutes):
             - API Key in Authorization: Authorization: sja_xxx
             """
             # Authenticate request
+            # G-04: worker context already populated by global before_request hook in sajhamcpserver_web.py
             headers = dict(request.headers)
-            # G-04: Inject per-worker path context so tool implementations can
-            # resolve paths to the calling worker's scoped data directories.
-            g.worker_data_root    = headers.get('X-Worker-Data-Root', '')
-            g.worker_common_root  = headers.get('X-Worker-Common-Root', '')
-            g.worker_my_data_root = headers.get('X-Worker-My-Data-Root', '')
-            g.worker_id           = headers.get('X-Worker-Id', '')
-            g.user_id             = headers.get('X-User-Id', '')
             is_auth, auth_context, auth_msg = self.auth_manager.authenticate_request(headers)
-            
+
             if not is_auth:
                 return jsonify({'error': auth_msg or 'Unauthorized'}), 401
 
