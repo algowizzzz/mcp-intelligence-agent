@@ -1,48 +1,59 @@
-import os, json
+import os, json, logging
 from sajha.tools.base_mcp_tool import BaseMCPTool
 from sajha.storage import storage
-from sajha.path_resolver import resolve as path_resolve
+
+_logger = logging.getLogger(__name__)
 
 
-def _get_worker_ctx():
+def _workflow_paths() -> tuple:
+    """Return (verified_dir, my_dir) for the current worker request.
+
+    Resolution order (per path):
+      1. Dedicated headers X-Worker-Verified-Workflows / X-Worker-My-Workflows
+         (set by agent/tools.py from worker record's workflows_path field)
+      2. Derive from X-Worker-Data-Root: parent(domain_data) + /workflows/{verified|my}
+      3. PropertiesConfigurator fallback (outside Flask context)
+      4. Hardcoded default ./data/workflows/{verified|my}
+    """
     try:
         from flask import g as _g
-        return getattr(_g, 'worker_ctx', {}) or {}
-    except RuntimeError:
-        return {}
 
+        verified = getattr(_g, 'worker_verified_workflows', '') or ''
+        my       = getattr(_g, 'worker_my_workflows',       '') or ''
 
-def _workflows_dir():
-    """Return workflows dir. Checks per-request worker context first (G-04), then properties file."""
-    try:
-        from flask import g as _g
-        worker_root = getattr(_g, 'worker_data_root', None)
-        if worker_root:
-            # worker_data_root = domain_data path; workflows live one level up at worker root
-            worker_base = os.path.dirname(worker_root.rstrip('/'))
-            return worker_base + '/workflows'
+        if verified and my:
+            return verified.rstrip('/'), my.rstrip('/')
+
+        # Fallback: derive from domain_data path (same worker directory structure)
+        domain_root = getattr(_g, 'worker_data_root', '') or ''
+        if domain_root:
+            wf_base = os.path.dirname(domain_root.rstrip('/')) + '/workflows'
+            return wf_base + '/verified', wf_base + '/my'
+
+        _logger.warning(
+            "workflow_tools: X-Worker-Verified-Workflows and X-Worker-Data-Root headers "
+            "both missing — falling back to properties/default paths"
+        )
+
     except RuntimeError:
-        pass
-    props_path = os.path.join(os.path.dirname(__file__), "../../..", "config", "application.properties")
+        pass  # outside Flask context
+
+    # Outside Flask context or no headers: use PropertiesConfigurator
     try:
-        with open(os.path.abspath(props_path)) as f:
-            for line in f:
-                if line.strip().startswith("data.workflows_dir"):
-                    return line.split("=", 1)[1].strip()
+        from sajha.core.properties_configurator import PropertiesConfigurator
+        _props = PropertiesConfigurator()
+        wf_dir = _props.get('data.workflows_dir', './data/workflows')
+        return wf_dir.rstrip('/') + '/verified', wf_dir.rstrip('/') + '/my'
     except Exception:
         pass
-    return "./data/workflows"
 
-
-def _workflows_base():
-    """Return the base workflows directory (parent of verified/ and my/)."""
-    return _workflows_dir()
+    return './data/workflows/verified', './data/workflows/my'
 
 
 def _metadata():
-    """Load .metadata.json sidecar if present."""
-    d = _workflows_dir()
-    meta_path = d.rstrip('/') + '/.metadata.json'
+    """Load .metadata.json sidecar from the verified workflows dir if present."""
+    verified_dir, _ = _workflow_paths()
+    meta_path = verified_dir.rstrip('/') + '/.metadata.json'
     try:
         return json.loads(storage.read_text(meta_path))
     except Exception:
@@ -106,10 +117,10 @@ class WorkflowListTool(BaseMCPTool):
         return {"type": "object"}
 
     def execute(self, arguments):
-        base = _workflows_base()
+        verified_dir, my_dir = _workflow_paths()
         roots = {
-            "verified": os.path.join(base, "verified"),
-            "my": os.path.join(base, "my"),
+            "verified": verified_dir,
+            "my":       my_dir,
         }
         workflows = []
         for source, root in roots.items():
@@ -117,11 +128,8 @@ class WorkflowListTool(BaseMCPTool):
                 fname = os.path.basename(rel_key)
                 if not fname.endswith(".md") or fname.startswith("."):
                     continue
-                full_path = os.path.join(root, rel_key)
-                # Build rel_path relative to base (e.g. "verified/subdir/file.md")
-                rel_path = os.path.join(
-                    os.path.relpath(root, base), rel_key
-                ).replace("\\", "/")
+                full_path = root.rstrip('/') + '/' + rel_key
+                rel_path  = source + '/' + rel_key.replace("\\", "/")
                 try:
                     content = storage.read_text(full_path)
                     name, description, inputs = _parse_workflow_meta(fname, content)
@@ -175,26 +183,34 @@ class WorkflowGetTool(BaseMCPTool):
 
     def execute(self, arguments):
         filename = arguments.get("filename", "")
-        base = _workflows_base()
-        # Normalise
+        verified_dir, my_dir = _workflow_paths()
+        # Normalise input
         filename = filename.lstrip("/").lstrip("./")
         if not filename.endswith(".md"):
             filename += ".md"
-        # Safety: confirm path stays within base (S3-safe — no os.path.realpath)
-        full_path = base.rstrip('/') + '/' + filename
-        if not full_path.startswith(base.rstrip('/')):
-            return {"error": "Access denied"}
-        if not storage.exists(full_path):
-            # Fallback: try searching verified/ and my/ by basename
-            basename = os.path.basename(filename)
-            for sub in ["verified", "my"]:
-                candidate = base.rstrip('/') + '/' + sub + '/' + basename
-                if storage.exists(candidate):
-                    full_path = candidate
-                    filename = sub + '/' + basename
+
+        # Try verified/ then my/ in resolution order
+        full_path = None
+        for candidate_dir, source in ((verified_dir, "verified"), (my_dir, "my")):
+            # Build candidate: handles bare name, "verified/name.md", or full path
+            bare = os.path.basename(filename)
+            candidates = [
+                candidate_dir.rstrip('/') + '/' + filename,
+                candidate_dir.rstrip('/') + '/' + bare,
+            ]
+            for cp in candidates:
+                # Path-traversal guard: must stay within the candidate dir
+                if not cp.startswith(candidate_dir.rstrip('/')):
+                    continue
+                if storage.exists(cp):
+                    full_path = cp
+                    filename  = source + '/' + bare
                     break
-            else:
-                return {"error": f"Workflow not found: {filename}"}
+            if full_path:
+                break
+
+        if not full_path:
+            return {"error": f"Workflow not found: {filename}"}
         content = storage.read_text(full_path)
         fname = os.path.basename(full_path)
         name, description, inputs = _parse_workflow_meta(fname, content)

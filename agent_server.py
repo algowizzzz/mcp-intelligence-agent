@@ -22,7 +22,16 @@ from agent.summariser import count_tokens_accurate
 
 _WORKFLOWS_DIR = pathlib.Path('sajhamcpserver/data/workflows')
 _UPLOADS_DIR   = pathlib.Path('sajhamcpserver/data/uploads')
+# _METADATA_FILE is now per-worker — resolved in _read/_write_metadata via worker_id.
+# This sentinel is kept for local single-worker dev fallback only.
 _METADATA_FILE = _WORKFLOWS_DIR / '.metadata.json'
+
+
+def _worker_metadata_file(worker_id: str) -> pathlib.Path:
+    """Return per-worker metadata file path (local dev fallback only)."""
+    if worker_id:
+        return pathlib.Path(f'sajhamcpserver/data/workers/{worker_id}/workflows/.metadata.json')
+    return _METADATA_FILE
 
 # SSE writer ContextVar — set per-request so sub_agent_tool can forward events
 # into the active SSE stream without needing a reference to the stream generator.
@@ -1586,7 +1595,8 @@ def _read_metadata(worker_id: str = '') -> dict:
         except Exception:
             pass
     try:
-        raw = json.loads(_METADATA_FILE.read_text()) if _METADATA_FILE.exists() else {}
+        meta_file = _worker_metadata_file(worker_id)
+        raw = json.loads(meta_file.read_text()) if meta_file.exists() else {}
         # Normalise: values may be ISO strings or {"last_used": "..."} dicts
         return {
             k: (v.get('last_used') if isinstance(v, dict) else v)
@@ -1598,10 +1608,11 @@ def _read_metadata(worker_id: str = '') -> dict:
 
 def _write_metadata(data: dict, worker_id: str = ''):
     """Persist metadata — Postgres primary, JSON file kept in sync (local dev)."""
-    # JSON backup (local dev / fallback)
+    # JSON backup (local dev / fallback) — per-worker file
     try:
-        _METADATA_FILE.parent.mkdir(parents=True, exist_ok=True)
-        _METADATA_FILE.write_text(json.dumps(data, indent=2))
+        meta_file = _worker_metadata_file(worker_id)
+        meta_file.parent.mkdir(parents=True, exist_ok=True)
+        meta_file.write_text(json.dumps(data, indent=2))
     except Exception:
         pass
 

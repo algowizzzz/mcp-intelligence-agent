@@ -225,11 +225,13 @@ class SajhaMCPServerWebApp:
         # This replaces the duplicated manual header extraction in api_routes.py.
         @self.app.before_request
         def _inject_worker_context():
-            g.worker_data_root    = request.headers.get('X-Worker-Data-Root',    '')
-            g.worker_common_root  = request.headers.get('X-Worker-Common-Root',  '')
-            g.worker_my_data_root = request.headers.get('X-Worker-My-Data-Root', '')
-            g.worker_id           = request.headers.get('X-Worker-Id',           '')
-            g.user_id             = request.headers.get('X-User-Id',             '')
+            g.worker_data_root          = request.headers.get('X-Worker-Data-Root',          '')
+            g.worker_common_root        = request.headers.get('X-Worker-Common-Root',         '')
+            g.worker_my_data_root       = request.headers.get('X-Worker-My-Data-Root',        '')
+            g.worker_id                 = request.headers.get('X-Worker-Id',                  '')
+            g.user_id                   = request.headers.get('X-User-Id',                    '')
+            g.worker_verified_workflows = request.headers.get('X-Worker-Verified-Workflows',  '')
+            g.worker_my_workflows       = request.headers.get('X-Worker-My-Workflows',        '')
             g.worker_ctx = {
                 'domain_data_path': g.worker_data_root,
                 'my_data_path':     g.worker_my_data_root,

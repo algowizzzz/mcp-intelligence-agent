@@ -43,6 +43,11 @@ def _service_headers() -> dict:
                 headers['X-Worker-My-Data-Root'] = ctx['my_data_path'].rstrip('/') + '/' + uid
             else:
                 headers['X-Worker-My-Data-Root'] = ctx['my_data_path']
+        # Workflow paths — forwarded directly so workflow_tools don't need to derive them
+        if ctx.get('workflows_path'):
+            headers['X-Worker-Verified-Workflows'] = ctx['workflows_path']
+        if ctx.get('my_workflows_path'):
+            headers['X-Worker-My-Workflows'] = ctx['my_workflows_path']
     return headers
 
 
