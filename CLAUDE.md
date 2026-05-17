@@ -1,5 +1,7 @@
 # MCP Intelligence Agent — Developer Reference
 
+> For first-time local setup (venv, env vars, LLM provider config, known Postgres gotcha), see [LOCAL_DEV_SETUP.md](LOCAL_DEV_SETUP.md). For a per-file index of every active doc, see [DOCS_INDEX.md](DOCS_INDEX.md). For older UAT scripts, ad-hoc tests, data-ingestion scripts, and legacy Word docs, see [archive/INDEX.md](archive/INDEX.md).
+
 ## Architecture
 Three-layer system:
 - **Frontend** (`public/login.html`, `index.html`, `mcp-agent.html`, `admin.html`) — HTML/JS chat UI, admin panel, login/onboarding
