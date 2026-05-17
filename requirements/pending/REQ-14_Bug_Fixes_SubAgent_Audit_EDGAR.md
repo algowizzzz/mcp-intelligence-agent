@@ -1,9 +1,15 @@
 # REQ-14 — Bug Fixes: Sub-Agent Reliability, Audit Integrity, EDGAR Canadian Coverage
-**Status:** Pending
+**Status:** Partial — bugs identified, fixes incomplete (verified 2026-05-17)
 **Version:** 1.0 (2026-04-11)
 **Branch:** `feature/req-07-08a-postgres-s3` (add to same branch, no new branch needed)
 **Discovered:** Live run — "Get me the full picture on Royal Bank of Canada" query, 2026-04-11
 **Priority:** High (Issues 1 and 3 affect every multi-agent query; Issue 2 corrupts the audit log)
+
+> **Verification (2026-05-17):**
+> - Bug 1 (sub-agent timeout not configurable): still hardcoded 120s in `agent/sub_agent_tool.py:110`. Not fixed.
+> - Bug 2 (dropped sub-agent not surfaced via SSE): subagent limit middleware logs the drop but no `task_dropped` SSE event is emitted to the user. Not fixed.
+> - Bug 3 (audit `success=None`): AuditMiddleware is present in `agent/middlewares/` but is **not wired into the default stack** (`create_agent_for_worker` in `agent/agent.py:114-124` does not add it). This is the deeper reason the audit field is blank.
+> - EDGAR Canadian coverage: still 10-K/10-Q only; 6-K filings (used by Canadian banks) not handled in `edgar_*` tools.
 
 ---
 

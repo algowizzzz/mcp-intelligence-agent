@@ -1,10 +1,16 @@
 # REQ-15 — Supabase Persistent Storage
 
-**Status:** Pending Implementation
+**Status:** Stubbed — foundation present, wiring incomplete (verified 2026-05-17)
 **Version:** 1.0 (2026-04-12)
 **Author:** Saad Ahmed
 **Priority:** P0 — Blocker for production use on Railway
 **Scope:** Wire Supabase Storage (S3-compatible) and Supabase Postgres across all file I/O and checkpoint paths so that uploaded files and conversation history survive Railway redeploys.
+
+> **Verification (2026-05-17):**
+> - Storage abstraction layer exists (`sajhamcpserver/sajha/storage.py`) with both `LocalStorageBackend` and `S3StorageBackend`. Switch via `STORAGE_BACKEND` env var.
+> - **However**, `agent_server.py` file routes (`/api/fs/{section}/upload`, `tree`, `move`, etc.) still call `pathlib.Path` directly rather than going through the storage abstraction. So even when `STORAGE_BACKEND=s3` is set, agent-level file ops won't use it.
+> - Checkpointer: the agent uses `AsyncSqliteSaver` by default (`agent/agent.py:15`); `AsyncPostgresSaver` is wired but only when `DATABASE_URL` is set (REQ-07 complete).
+> - Net: REQ-07 (Postgres) is done. REQ-08a (S3 backend code) is done. **What's still needed for REQ-15 specifically** is rewiring `agent_server.py` file routes to call `storage.read_bytes/write_bytes/list_prefix` instead of `pathlib`, and choosing Supabase vs RDS for the Postgres target.
 
 ---
 

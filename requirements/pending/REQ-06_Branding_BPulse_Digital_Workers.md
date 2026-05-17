@@ -1,8 +1,10 @@
 # REQ-06 — Branding: B-Pulse Digital Workers
-**Status:** Pending Implementation
+**Status:** Pending — Not Started (verified 2026-05-17)
 **Version:** 1.0
 **Date:** 2026-04-04
 **Scope:** Rebrand all user-facing interfaces and system messages from "RiskGPT" / "SAJHA MCP Server" / "Market Risk Digital Worker" to the unified brand **B-Pulse Digital Workers**.
+
+> **Verification (2026-05-17):** `grep -c "RiskGPT" public/{login,admin,mcp-agent,index}.html` → login=3, admin=1, mcp-agent=2, index=0. Zero instances of "B-Pulse" in any HTML. Work has not begun. The brand decision and final assets need to be confirmed before rebranding can start.
 
 ---
 

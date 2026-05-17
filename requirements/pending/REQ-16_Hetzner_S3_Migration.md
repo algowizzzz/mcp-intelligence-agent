@@ -1,9 +1,15 @@
 # REQ-16 — Hetzner Object Storage Migration (S3-Compatible)
 
-**Status:** In Progress  
-**Version:** 2.0 (2026-04-14)  
-**Author:** Saad Ahmed  
+**Status:** Partial — foundation complete, ~11 tools still bypass it (verified 2026-05-17)
+**Version:** 2.0 (2026-04-14)
+**Author:** Saad Ahmed
 **Prerequisite:** REQ-07 (PostgreSQL — code complete), REQ-08a (S3 storage layer — code complete)
+
+> **Verification (2026-05-17):**
+> - Foundation done: `storage.py` `S3StorageBackend` + `path_resolver.py` + `STORAGE_BACKEND=s3` switch all functional.
+> - **Remaining work:** ~11 tool implementation files in `sajhamcpserver/sajha/tools/impl/` still call `pathlib.Path`, `open()`, `os.walk`, or `shutil` directly. Confirmed via repo-wide grep. Examples: `msdoc_tools_tool_refactored.py`, `duckdb_olap_advanced.py`, `workflow_tools.py`, `iris_ccr_tools.py`.
+> - Earlier doc (`Infra_Agnostic_Strategy.md`) said "15 files" — actual count is closer to 11. Either count motivates the same migration plan.
+> - Net: change is mechanical (per-tool refactor to call `storage.*`). No blockers besides reviewer time.
 
 ---
 

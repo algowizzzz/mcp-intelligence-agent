@@ -1,9 +1,14 @@
 # Requirements Gap Analysis — RiskGPT / B-Pulse Digital Workers
 
-**Date:** 2026-04-05  
-**Scope:** All documents in `requirements/completed/` cross-referenced against the live codebase.  
-**Analyst:** Claude Code (automated review + manual verification)  
+**Date:** 2026-04-05 (historical snapshot — superseded by handover/00_START_HERE.md backlog table updated 2026-05-17)
+**Scope:** All documents in `requirements/completed/` cross-referenced against the live codebase.
+**Analyst:** Claude Code (automated review + manual verification)
 **Overall Status:** REQ-01 through REQ-04 ✅ fully implemented. Six architectural prep requirements partially implemented. Five requirements pending (REQ-05 to REQ-08 + REQ-03 Listener Workflows).
+
+> **Note (2026-05-17):** This gap analysis is a snapshot from April 2026. Several requirements have advanced since:
+> - REQ-05 (Summarisation), REQ-07 (PostgreSQL), REQ-08a (S3 backend code), REQ-02a/02b (connectors) are now **complete**.
+> - In-flight as of today: REQ-06, REQ-08b, REQ-14, REQ-15, REQ-16.
+> - For the current state, see [handover/00_START_HERE.md](../00_START_HERE.md) "What's Pending" + "What's Completed" tables, which are verified against code.
 
 ---
 

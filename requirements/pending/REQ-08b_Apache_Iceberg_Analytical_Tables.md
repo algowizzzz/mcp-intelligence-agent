@@ -1,8 +1,10 @@
 # REQ-08b — Apache Iceberg Analytical Tables
-**Status:** Pending Implementation
+**Status:** Pending — Architectural planning only (verified 2026-05-17)
 **Version:** 1.1 (Updated 2026-04-11 — scoped to structured data migration only; local dev stack moved to REQ-08a)
 **Prerequisite:** REQ-08a complete — S3 bucket exists, `S3StorageBackend` implemented, local MinIO dev stack running
 **Scope:** Migrate structured analytical datasets (trades, exposure, VaR, IRIS CCR) from local JSON/CSV files to Apache Iceberg tables on S3. Update all DuckDB tools to query Iceberg. REQ-08a already handles documents, uploads, and unstructured files.
+
+> **Verification (2026-05-17):** No Iceberg catalog, no DuckDB `httpfs`/`iceberg` integration, and no schema definitions found in code. REQ-08a (S3 storage backend) and REQ-07 (Postgres) are now complete and unblock this work. Next concrete step is the catalog choice (Glue vs Nessie vs Polaris) before any code lands.
 
 ---
 
