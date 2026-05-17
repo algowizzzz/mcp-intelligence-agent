@@ -16,7 +16,9 @@ archive/
 ├── data-ingestion-scripts/        ← one-off data-download scripts
 ├── uat-results/                   ← raw test output artifacts (was UAT_RESULTS/)
 ├── uat-plans/                     ← test plans for completed UAT phases (was uat_plans/)
-└── legacy-docs/                   ← Word docs + duplicate markdown (was Documentation/)
+├── legacy-docs/                   ← Word docs + duplicate markdown (was Documentation/)
+├── completed-requirements/        ← shipped REQ specs + duplicate ERDs (was requirements/completed/)
+└── handover-stale-snapshot/       ← stale April 2026 snapshot of handover/03_requirements/pending/
 ```
 
 ---
@@ -113,6 +115,45 @@ Mix of `.docx` reference manuals and freestanding markdown decks. Topically over
 | `screenshots/` | UI screenshots referenced by some of the above |
 
 **Use `handover/` for current docs.** If a topic above has no equivalent in `handover/`, promote it back into `handover/` rather than editing here.
+
+---
+
+## `completed-requirements/` (42 files, was `requirements/completed/` + 5 stragglers from `requirements/pending/`)
+
+Specs for requirements that have been verified implemented in code as of 2026-05-17. Moved here so `requirements/` only contains genuinely in-flight work.
+
+Includes the 7 ERD / TRD `.docx` files that previously duplicated copies under `handover/02_architecture/` — the handover copies remain canonical.
+
+| File pattern | Topic |
+|---|---|
+| `REQ-01a_Shared_FileTree_Library_Build_and_Swap.md` | Shared file-tree library — build and swap-in |
+| `REQ-01b_FileTree_Phase2_Backend_and_Features.md` | File-tree Phase 2: size, search, quota, copy, bulk delete |
+| `REQ-02a_Connector_External_Setup_Guide.md` | Microsoft / Atlassian connector setup walkthrough |
+| `REQ-02b_Connector_MR_Worker_Integration_Testing.md` | Market-risk worker connector integration UAT plan |
+| `REQ-03_Visualization_Tool_Debug_and_Rendering.md` | Visualisation tool fixes and chart rendering |
+| `REQ-04a_Python_Execution_Tool_Basic.md` | Sandboxed Python execution — base implementation |
+| `REQ-04b_Python_Execution_Tool_Heavy_Quant_Libraries.md` | Python sandbox with arch / riskfolio / sklearn etc. |
+| `REQ-05_Summarization_Engine.md` | Context summarisation middleware |
+| `REQ-07_PostgreSQL_Database_Migration.md` | Postgres-backed workers / users / checkpoints |
+| `REQ-08_DevOps_Cloud_Deployment_Guide.md` | Docker / supervisord / nginx / GH Actions deployment |
+| `REQ-08a_S3_Object_Storage_Integration.md` | `S3StorageBackend` + `STORAGE_BACKEND=s3` switch |
+| `REQ-10_Common_Data_Path.md` | Read-only `common/` data layer across workers |
+| `REQ-11_Multi_File_Parallel_Upload.md` | Batched parallel uploads + SSE completion events |
+| `RiskGPT_*_ERD.docx` (5 files) | Platform / Connector / MultiWorker / Admin Panel / Data-Workflows ERDs (handover/02_architecture/ has the canonical copies) |
+| `mcp-agent-trd-final.docx` | Technical Requirements Document (handover/02_architecture/ has the canonical copy) |
+| `*.docx` etc. | Additional Word/PRD/Test-plan artifacts associated with the above |
+
+**To revive a completed REQ for re-work**, copy the spec back to `requirements/pending/` (or `requirements/drafts/`) and link it from `handover/00_START_HERE.md`.
+
+---
+
+## `handover-stale-snapshot/2026-04_pending/` (13 files)
+
+A frozen April-2026 copy of what was then `handover/03_requirements/pending/`. Most of the requirements in it are now actually completed (Phase 0 code reconnaissance verified). The directory was relocated wholesale because (a) it contradicted the live state in `requirements/pending/`, and (b) handover should reflect current reality, not a moment in time.
+
+Useful only for: "what did the team think was pending on April 5, 2026."
+
+The live in-flight backlog now lives in `requirements/pending/` (5 files: REQ-06, 08b, 14, 15, 16) and is summarised in `handover/00_START_HERE.md`.
 
 ---
 

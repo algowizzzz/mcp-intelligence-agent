@@ -1,8 +1,8 @@
-## Documentation Index
+# Documentation Index
 
-This is the canonical index for active documentation in the repo. Every `.md` and `.docx` file under `/`, `handover/`, and `requirements/` is listed below with a one-line summary derived from its actual contents. For archived/legacy docs (POC code, root-level UAT scripts, ingestion scripts, legacy Word docs), see [archive/INDEX.md](archive/INDEX.md).
+This is the canonical index for active documentation in the repo. Every `.md` and `.docx` file under `/`, `handover/`, and `requirements/` is listed below with a one-line summary derived from its actual contents. For archived/legacy docs, see [archive/INDEX.md](archive/INDEX.md).
 
-Last updated: 2026-05-17.
+Last updated: 2026-05-17 (post-cleanup pass).
 
 ---
 
@@ -10,8 +10,9 @@ Last updated: 2026-05-17.
 
 | File | Summary |
 |---|---|
-| [CLAUDE.md](CLAUDE.md) | Developer reference for the three-layer system: frontend HTML/JS, FastAPI agent server, SAJHA MCP server; run commands, key directories, middleware stack. |
-| [LOCAL_DEV_SETUP.md](LOCAL_DEV_SETUP.md) | Local Mac setup session notes: venv install, switch to xAI Grok, disable polluted Postgres, migrate orphaned worker files. |
+| [CLAUDE.md](CLAUDE.md) | Developer reference for the three-layer system: HTML frontend, FastAPI agent server, SAJHA MCP server — run commands, key dirs, middleware stack, env vars. |
+| [LOCAL_DEV_SETUP.md](LOCAL_DEV_SETUP.md) | Local macOS setup notes (2026-05-15): venv install, switch to xAI Grok, disable polluted Postgres, migrate orphaned worker files. |
+| [DOCS_INDEX.md](DOCS_INDEX.md) | This file — canonical index for every active `.md` and `.docx` under root, `handover/`, and `requirements/`. |
 
 ---
 
@@ -19,20 +20,20 @@ Last updated: 2026-05-17.
 
 ### handover/00_START_HERE.md
 
-Handover package entry point: platform purpose, run commands, folder map (01–06), current build/pending status, and test coverage summary as of April 2026.
+Handover entry point: platform purpose, run commands, folder map (01–06). Includes a "What's Completed" table (REQ-01a/01b/02a/02b/03/04a/04b/05/07/08/08a/10/11 verified against code) and an active backlog table (REQ-06 Pending, REQ-08b Pending, REQ-14 Partial, REQ-15 Stubbed, REQ-16 Partial — verified 2026-05-17).
 
 ### handover/01_project_overview/
 
 | File | Summary |
 |---|---|
 | [CREDENTIALS.md](handover/01_project_overview/CREDENTIALS.md) | Master credentials reference: Azure/M365, Atlassian, Teams/Outlook/Jira/Confluence IDs, B-Pulse platform accounts (kept private, not committed). |
-| [NEXT_STEPS.md](handover/01_project_overview/NEXT_STEPS.md) | Market Risk connector handoff: Teams RSC v1.0.1 install confirmed, Outlook ready to test, Confluence pending; next-step terminal commands. |
+| [NEXT_STEPS.md](handover/01_project_overview/NEXT_STEPS.md) | Market Risk connector handoff (through 2026-04-05): Teams RSC v1.0.1 installed, Outlook licensed, Confluence pending; next-step terminal commands. |
 
 ### handover/02_architecture/
 
 | File | Summary |
 |---|---|
-| [Glossary.md](handover/02_architecture/Glossary.md) | Alphabetical glossary of SAJHA MCP Server terms, acronyms, and concepts (ABC, AJAX, API, AST, etc.) — reference document v2.9.0. |
+| [Glossary.md](handover/02_architecture/Glossary.md) | Alphabetical glossary of SAJHA MCP Server v2.9.0 terms, acronyms, and concepts — reference document. |
 | [SAJHA_MCP_Server_Architecture.md](handover/02_architecture/SAJHA_MCP_Server_Architecture.md) | SAJHA v2.9.0 system architecture: package structure, tools framework, MCP Studio, OLAP, IR module, config, security, hot-reload, deployment. |
 | [RiskGPT_Connector_ERD.docx](handover/02_architecture/RiskGPT_Connector_ERD.docx) | Connector ERD for five enterprise integrations (Teams, Power BI, SharePoint, Outlook, Jira) — architecture, credentials, tool ops, request flow. |
 | [RiskGPT_Digital_Worker_Platform_ERD.docx](handover/02_architecture/RiskGPT_Digital_Worker_Platform_ERD.docx) | Conversion of single-tenant RiskGPT to multi-tenant Digital Worker platform: per-worker prompts, data, tools, users, role hierarchy. |
@@ -46,25 +47,7 @@ Handover package entry point: platform purpose, run commands, folder map (01–0
 
 | File | Summary |
 |---|---|
-| [Requirements_Gap_Analysis.md](handover/03_requirements/Requirements_Gap_Analysis.md) | Cross-reference of `requirements/completed/` against live code: REQ-01–04 complete; REQ-PREP-01–07, REQ-WF, REQ-DD, REQ-MD, REQ-CD all closed or noted. |
-
-### handover/03_requirements/pending/
-
-| File | Summary |
-|---|---|
-| [REQ-01a_Shared_FileTree_Library_Build_and_Swap.md](handover/03_requirements/pending/REQ-01a_Shared_FileTree_Library_Build_and_Swap.md) | Build `public/js/file-tree.js` (`BPulseFileTree`) and swap the three inline file-tree implementations in `admin.html` and `mcp-agent.html` — build-swap-verify-clean. |
-| [REQ-01b_FileTree_Phase2_Backend_and_Features.md](handover/03_requirements/pending/REQ-01b_FileTree_Phase2_Backend_and_Features.md) | Phase 2 file-tree backend: add `size_bytes`/`modified_at` in tree response, copy/batch-delete endpoints, quota endpoint, plus FE size/search/quota. |
-| [REQ-02a_Connector_External_Setup_Guide.md](handover/03_requirements/pending/REQ-02a_Connector_External_Setup_Guide.md) | External setup steps for Teams/Outlook/Confluence/Jira — install apps, log into browser, defer API tokens until basic interaction is confirmed. |
-| [REQ-02b_Connector_MR_Worker_Integration_Testing.md](handover/03_requirements/pending/REQ-02b_Connector_MR_Worker_Integration_Testing.md) | Configure Market Risk worker connector_scope with live credentials and run end-to-end integration tests against Teams, Outlook, Jira, Confluence. |
-| [REQ-03_Visualization_Tool_Debug_and_Rendering.md](handover/03_requirements/pending/REQ-03_Visualization_Tool_Debug_and_Rendering.md) | Fix chart pipeline so `generate_chart` Plotly HTML renders in chat and canvas — six fixes covering tool result truncation, serve endpoint, SSE, iframe, badge, PNG fallback. |
-| [REQ-04a_Python_Execution_Tool_Basic.md](handover/03_requirements/pending/REQ-04a_Python_Execution_Tool_Basic.md) | Sandboxed Python execution with core data science libs: `python_execute`, `python_run_script`, AST security scan, figure capture into canvas. |
-| [REQ-04b_Python_Execution_Tool_Heavy_Quant_Libraries.md](handover/03_requirements/pending/REQ-04b_Python_Execution_Tool_Heavy_Quant_Libraries.md) | Extend the Python sandbox with scikit-learn, statsmodels, arch (GARCH), QuantLib, riskfolio-lib, cvxpy, xarray, networkx. |
-| [REQ-05_Summarization_Engine.md](handover/03_requirements/pending/REQ-05_Summarization_Engine.md) | Claude Code-style rolling context compression: 180k trigger, sub-20% post-compression utilisation, SQLite persistence, fullness gauge in both UIs. |
-| [REQ-06_Branding_BPulse_Digital_Workers.md](handover/03_requirements/pending/REQ-06_Branding_BPulse_Digital_Workers.md) | Rebrand audit and migration plan from RiskGPT / SAJHA / Market Risk Worker to the unified "B-Pulse Digital Workers" brand across HTML and config. |
-| [REQ-07_PostgreSQL_Database_Migration.md](handover/03_requirements/pending/REQ-07_PostgreSQL_Database_Migration.md) | Migrate users, apikeys, workers, threads, audit logs, file metadata, Flask sessions from JSON/JSONL flat files to PostgreSQL (domain data stays on FS/S3). |
-| [REQ-08_Apache_Iceberg_S3_Data_Strategy.md](handover/03_requirements/pending/REQ-08_Apache_Iceberg_S3_Data_Strategy.md) | Data-architecture review: where Iceberg (analytical), S3 (object), and Postgres (operational) fit relative to current filesystem storage. |
-| [REQ-10_Common_Data_Path.md](handover/03_requirements/pending/REQ-10_Common_Data_Path.md) | Activate `common_data_path` as a real shared layer — admin/super-admin uploads, user read-only browse, BM25 search inclusion, sidebar UI. |
-| [REQ-11_Multi_File_Parallel_Upload.md](handover/03_requirements/pending/REQ-11_Multi_File_Parallel_Upload.md) | Concurrent streaming upload engine replacing the serial XHR + per-file reindex pipeline; cancel/retry/progress, batch_id deferred reindex. |
+| [Requirements_Gap_Analysis.md](handover/03_requirements/Requirements_Gap_Analysis.md) | Historical snapshot (2026-04-05) of `requirements/completed/` vs live code; superseded by the backlog table in `handover/00_START_HERE.md` updated 2026-05-17. |
 
 ### handover/04_uat_and_testing/
 
@@ -111,13 +94,13 @@ Handover package entry point: platform purpose, run commands, folder map (01–0
 
 | File | Summary |
 |---|---|
-| [Bank_of_Canada_MCP_Tool_Reference_Guide.md](handover/06_tools_reference/Bank_of_Canada_MCP_Tool_Reference_Guide.md) | Bank of Canada MCP tools reference: architecture, API auth, tool catalog, install, code samples, error handling, best practices (v1.0.0). |
+| [Bank_of_Canada_MCP_Tool_Reference_Guide.md](handover/06_tools_reference/Bank_of_Canada_MCP_Tool_Reference_Guide.md) | Bank of Canada MCP tools reference v1.0.0: architecture, API auth, tool catalog, install, code samples, error handling, best practices. |
 | [DuckDB_MCP_Tool_Reference_Guide.md](handover/06_tools_reference/DuckDB_MCP_Tool_Reference_Guide.md) | DuckDB MCP tools reference: architecture, system requirements, install, tool details, schema definitions, troubleshooting. |
-| [Enhanced EDGAR MCP Tools - Reference Guide.md](handover/06_tools_reference/Enhanced%20EDGAR%20MCP%20Tools%20-%20Reference%20Guide.md) | Enhanced EDGAR MCP tools complete docs: 20 tools across SEC filings retrieval, API keys, rate limits, detailed schemas (v1.0.0, Nov 2025). |
+| [Enhanced EDGAR MCP Tools - Reference Guide.md](handover/06_tools_reference/Enhanced%20EDGAR%20MCP%20Tools%20-%20Reference%20Guide.md) | Enhanced EDGAR MCP tools v1.0.0 (Nov 2025): 20 tools across SEC filings retrieval, API keys, rate limits, detailed schemas. |
 | [Federal_Reserve_MCP_Tool_Reference_Guide.md](handover/06_tools_reference/Federal_Reserve_MCP_Tool_Reference_Guide.md) | Federal Reserve MCP tools: FRED-backed indicators, API auth, common economic series, usage examples, schema reference, error handling. |
 | [Investor_Relations_MCP_Tool_Reference_Guide.md](handover/06_tools_reference/Investor_Relations_MCP_Tool_Reference_Guide.md) | Investor Relations MCP tools reference: supported companies, document types (10-K/Q, presentations), schemas, usage examples, limitations. |
-| [MCP_Studio_Python_Code_Tool_Creator_Guide.md](handover/06_tools_reference/MCP_Studio_Python_Code_Tool_Creator_Guide.md) | MCP Studio Python Tool Creator: build MCP tools that run Python code — dependencies, I/O, security config, testing, examples (v2.9.8). |
-| [MCP_Studio_REST_Tool_Creator_Guide.md](handover/06_tools_reference/MCP_Studio_REST_Tool_Creator_Guide.md) | MCP Studio REST Tool Creator: wrap any REST endpoint as an MCP tool — auth methods, request/response handling, validation, examples (v2.9.8). |
+| [MCP_Studio_Python_Code_Tool_Creator_Guide.md](handover/06_tools_reference/MCP_Studio_Python_Code_Tool_Creator_Guide.md) | MCP Studio Python Tool Creator v2.9.8: build MCP tools that run Python code — dependencies, I/O, security config, testing, examples. |
+| [MCP_Studio_REST_Tool_Creator_Guide.md](handover/06_tools_reference/MCP_Studio_REST_Tool_Creator_Guide.md) | MCP Studio REST Tool Creator v2.9.8: wrap any REST endpoint as an MCP tool — auth methods, request/response handling, validation, examples. |
 | [MCP_Studio_User_Guide.md](handover/06_tools_reference/MCP_Studio_User_Guide.md) | MCP Studio v2.9.0 user guide covering all eight tool-creation methods (Python, REST, DB, Script, PowerBI report/DAX, LiveLink, OLAP). |
 | [SEC_Edgar_Search_MCP_Tool_Reference_Guide.md](handover/06_tools_reference/SEC_Edgar_Search_MCP_Tool_Reference_Guide.md) | SEC EDGAR Search MCP tool reference: architecture, tool inventory, detailed specs, schemas, working mechanism, auth, code samples. |
 | [SQL_Select_Search_MCP_Tool_Reference_Guide.md](handover/06_tools_reference/SQL_Select_Search_MCP_Tool_Reference_Guide.md) | SQL Select Search MCP tool reference v2.3.0: data sources configuration, tool details, API reference, schema specs, examples. |
@@ -133,56 +116,11 @@ Handover package entry point: platform purpose, run commands, folder map (01–0
 | File | Summary |
 |---|---|
 | [INSTRUCTIONS.md](requirements/INSTRUCTIONS.md) | Build instructions and progress tracker for the three-layer MCP Intelligence Agent (HTML frontend, LangGraph FastAPI backend, SAJHA MCP). |
-| [NEXT_STEPS.md](requirements/NEXT_STEPS.md) | Market Risk connector status duplicate of `handover/01_project_overview/NEXT_STEPS.md` — Teams RSC complete, Outlook ready, Confluence pending. |
 | [PLAN.md](requirements/PLAN.md) | Engineering plan with four work streams: summarisation middleware, property-file governance, source-attribution redesign, Tavily coverage. |
-| [PRIORITY.md](requirements/PRIORITY.md) | Requirements priority list (2026-04-14): REQ-07/08a/13/14/16 complete; REQ-14 bug fixes and REQ-06 branding queued next. |
+| [PRIORITY.md](requirements/PRIORITY.md) | Priority list (2026-04-14): REQ-07/08a/13/14-middleware/16 complete; REQ-14 bugs and REQ-06 branding queued next; REQ-08/REQ-15 killed. |
 | [PROMPTS.md](requirements/PROMPTS.md) | Catalog of every prompt used in the system — agent system prompt, Python and multi-agent addenda, sub-agent instructions. |
-| [Requirements_Gap_Analysis.md](requirements/Requirements_Gap_Analysis.md) | Dated 2026-04-06 gap analysis: REQ-01–04, 09, 10, 11 complete; five requirements (REQ-05–08 + REQ-03 Listener) pending. |
 | [REQ-13_Multi_Agent_Framework.docx](requirements/REQ-13_Multi_Agent_Framework.docx) | Multi-agent framework v2.0 inspired by DeerFlow 2.0: sub-agent orchestration via `task()`, middleware hardening, default-single agent_mode. |
 | [REQ-14_Middleware_Phase2_Persistent_Memory.docx](requirements/REQ-14_Middleware_Phase2_Persistent_Memory.docx) | Five middlewares deferred from REQ-13 (Phase 2) plus persistent memory via PostgreSQL; depends on REQ-13 and REQ-07. |
-| [SAJHA_Regression_Test_Report_v2_2026-04-06.docx](requirements/SAJHA_Regression_Test_Report_v2_2026-04-06.docx) | Regression v2 report: 132 tests in 18 functional groups, all roles, 6 bugs found and resolved (duplicate of handover copy). |
-| [SAJHA_Regression_Test_Results_2026-04-05.docx](requirements/SAJHA_Regression_Test_Results_2026-04-05.docx) | First regression pass: 76 tests across 15 areas, 67 PASS / 9 FAIL by category (duplicate of handover copy). |
-
-### requirements/completed/
-
-| File | Summary |
-|---|---|
-| [BMO_Market_Credit_Risk_Intelligence_Brief_Workflow.md](requirements/completed/BMO_Market_Credit_Risk_Intelligence_Brief_Workflow.md) | BMO counterparty workflow spec: `tavily_domain_search` + optional IRIS lookup, per-CP brief + portfolio-level dashboard, canvas markdown output. |
-| [BMO_Market_Credit_Risk_Intelligence_Brief_Workflow.docx](requirements/completed/BMO_Market_Credit_Risk_Intelligence_Brief_Workflow.docx) | Word version of the BMO CCR intelligence-brief workflow spec: step 1 input, parallel domain searches, brief assembly. |
-| [IRIS_CCR_Claude_Code_Requirements.docx](requirements/completed/IRIS_CCR_Claude_Code_Requirements.docx) | IRIS CCR build requirements: 9 tools, test CSV, literature file, BaseMCPTool registration via JSON config and hot-reload. |
-| [REQ-01a_Shared_FileTree_Library_Build_and_Swap.md](requirements/completed/REQ-01a_Shared_FileTree_Library_Build_and_Swap.md) | Completed version of REQ-01a: build `BPulseFileTree` and swap the three inline file-tree implementations one at a time. |
-| [REQ-01b_FileTree_Phase2_Backend_and_Features.md](requirements/completed/REQ-01b_FileTree_Phase2_Backend_and_Features.md) | Completed Phase 2 file-tree backend: size/modified, copy, batch-delete, quota, plus FE size/search/quota. |
-| [REQ-03_Listener_Workflows.docx](requirements/completed/REQ-03_Listener_Workflows.docx) | Listener Workflows & Event-Driven Agent System: folder-watch, Outlook inbox, Teams channel, cron triggers via Super Admin Automation screen. |
-| [REQ-03_Visualization_Tool_Debug_and_Rendering.md](requirements/completed/REQ-03_Visualization_Tool_Debug_and_Rendering.md) | Completed version of REQ-03 chart pipeline fix (six fixes: strip-html, serve endpoint, SSE, iframe, badge, PNG fallback). |
-| [REQ-04a_Python_Execution_Tool_Basic.md](requirements/completed/REQ-04a_Python_Execution_Tool_Basic.md) | Completed REQ-04a Python sandbox: `python_execute`, `python_run_script`, AST scan, figure capture, basic libs. |
-| [REQ-04b_Python_Execution_Tool_Heavy_Quant_Libraries.md](requirements/completed/REQ-04b_Python_Execution_Tool_Heavy_Quant_Libraries.md) | Completed REQ-04b sandbox extension with heavy quant libs (scikit-learn, arch, riskfolio-lib, QuantLib, xarray, networkx). |
-| [REQ-05_Summarization_Engine.md](requirements/completed/REQ-05_Summarization_Engine.md) | Completed REQ-05 Claude Code-style summarization engine: 180k trigger, SQLite persistence, dual-UI fullness gauge. |
-| [REQ-10_Common_Data_Path.md](requirements/completed/REQ-10_Common_Data_Path.md) | Completed REQ-10 common_data shared layer: admin uploads, user read-only browse, BM25 inclusion, sidebar UI. |
-| [REQ-11_Multi_File_Parallel_Upload.md](requirements/completed/REQ-11_Multi_File_Parallel_Upload.md) | Completed REQ-11 parallel upload engine: streaming, batch_id deferred reindex, concurrent FE, cancel/retry/progress. |
-| [RiskGPT_Admin_Panel_Feature_Parity_Update.docx](requirements/completed/RiskGPT_Admin_Panel_Feature_Parity_Update.docx) | Admin Panel feature-parity additions: preview pane, folder rename, bulk operations, folder move, context menu parity with chat UI. |
-| [RiskGPT_Bank_Filings_Download_Plan.md](requirements/completed/RiskGPT_Bank_Filings_Download_Plan.md) | Plan to download 5 years of 10-K/10-Q (US banks) and 40-F/6-K/annual reports (Canadian banks) into domain data. |
-| [RiskGPT_Connector_ERD.docx](requirements/completed/RiskGPT_Connector_ERD.docx) | Connector ERD (duplicate of handover copy): Teams/Power BI/SharePoint/Outlook/Jira architecture, credentials, request flow. |
-| [RiskGPT_Connector_Setup_Guide.docx](requirements/completed/RiskGPT_Connector_Setup_Guide.docx) | Enterprise connector setup guide v1 (April 2026): six connectors share one Azure AD app via OAuth2 client-credentials flow. |
-| [RiskGPT_Digital_Worker_Platform_ERD.docx](requirements/completed/RiskGPT_Digital_Worker_Platform_ERD.docx) | Digital Worker Platform ERD (duplicate of handover copy): convert single-tenant agent into multi-tenant configurable workers. |
-| [RiskGPT_Enterprise_Migration_Prep_Requirements.md](requirements/completed/RiskGPT_Enterprise_Migration_Prep_Requirements.md) | Local refactor prep for S3 migration: storage seam, path-resolver, config-driven backend, behaviour-preserving. |
-| [RiskGPT_MultiWorker_Platform_Scope_ERD.docx](requirements/completed/RiskGPT_MultiWorker_Platform_Scope_ERD.docx) | Multi-worker isolation requirements (duplicate of handover copy): three-zone layout, clone behaviour, runtime enforcement. |
-| [RiskGPT_Platform_Infrastructure_ERD.docx](requirements/completed/RiskGPT_Platform_Infrastructure_ERD.docx) | Platform infrastructure ERD (duplicate of handover copy): Docker consolidation and unified authentication. |
-| [RiskGPT_Regulatory_Data_Requirements.docx](requirements/completed/RiskGPT_Regulatory_Data_Requirements.docx) | Regulatory data acquisition plan: OSFI CAR/LAR PDFs and B/E-series guidelines mapped to worker domain folders. |
-| [RiskGPT_Visualisation_Toolkit_ERD.docx](requirements/completed/RiskGPT_Visualisation_Toolkit_ERD.docx) | `generate_chart` MCP tool ERD: Plotly interactive output, PNG export, chart-type enum, input schema for axes/grouping/themes. |
-| [RiskGPT_Worker_Path_Architecture_Requirements.md](requirements/completed/RiskGPT_Worker_Path_Architecture_Requirements.md) | Worker path architecture consolidation: three-category data model, workflow retirement, section-key unification, per-user my_data scoping. |
-| [SAJHA_File_Upload_Requirements.docx](requirements/completed/SAJHA_File_Upload_Requirements.docx) | File upload feature spec: upload endpoint, `list_uploaded_files` tool, HTML upload button, config-driven directory roots. |
-| [SAJHA_OSFI_Tool_Suite_Requirements.docx](requirements/completed/SAJHA_OSFI_Tool_Suite_Requirements.docx) | OSFI tool suite spec: `osfi_list_docs`, `osfi_read_document`, `osfi_fetch_announcements`, `osfi_search_guidance` — handling large PDFs. |
-| [SAJHA_Workflow_Tool_Suite_Requirements.docx](requirements/completed/SAJHA_Workflow_Tool_Suite_Requirements.docx) | Workflow tool suite spec: `op_risk_controls_workflow` and `counterparty_intelligence_workflow` MCP tools. |
-| [Sajha_Admin_Panel_ERD.docx](requirements/completed/Sajha_Admin_Panel_ERD.docx) | Admin Panel ERD (duplicate of handover copy): new top-tab governance for shared data, `is_admin` JWT, RBAC. |
-| [Sajha_Canvas_PRD.docx](requirements/completed/Sajha_Canvas_PRD.docx) | Canvas Panel PRD: split-screen output rendering inspired by ChatGPT Canvas for long-form structured documents/reports. |
-| [Sajha_Data_Toolkit_Test_Plan.docx](requirements/completed/Sajha_Data_Toolkit_Test_Plan.docx) | Data-Agnostic Toolkit test plan: pytest fixtures (domain_data + my_data demo files) and per-tool `execute()` test cases. |
-| [Sajha_Data_Transform_Parquet_Tools_ERD.docx](requirements/completed/Sajha_Data_Transform_Parquet_Tools_ERD.docx) | ERD for three new tools: `parquet_read`, `data_transform`, `data_export` — pandas/pyarrow, path-parameterised, single impl file. |
-| [Sajha_Data_Workflows_FileTree_ERD.docx](requirements/completed/Sajha_Data_Workflows_FileTree_ERD.docx) | File-tree panel ERD (duplicate of handover copy): four sections, preview, indexing, MD-only editing in My Workflows. |
-| [Sajha_EDGAR_Architecture_Plan.docx](requirements/completed/Sajha_EDGAR_Architecture_Plan.docx) | EDGAR intelligence redesign v2.0: Tavily-first analyst-driven retrieval given the no-direct-SEC-HTTP deployment constraint. |
-| [Sajha_Operational_Tools_Suite_ERD.docx](requirements/completed/Sajha_Operational_Tools_Suite_ERD.docx) | Operational tools ERD: PDF reader, MD save, MD-to-DOCX, file search, template engine, versioning — six tools in one impl file. |
-| [Sajha_Workflow_MD_Migration_Implementation.docx](requirements/completed/Sajha_Workflow_MD_Migration_Implementation.docx) | Migrate JSON workflow tools to MD files with YAML frontmatter; introduce `workflow_list`/`workflow_get` and retire the old WorkflowTool. |
-| [Tavily_SEC_MDA_Direct_Fetch_Note.docx](requirements/completed/Tavily_SEC_MDA_Direct_Fetch_Note.docx) | Technical note explaining why Tavily extract/search cannot retrieve large SEC MD&A sections and why direct streaming is the only reliable path. |
-| [mcp-agent-trd-final.docx](requirements/completed/mcp-agent-trd-final.docx) | Final MCP Intelligence Agent TRD (duplicate of handover copy): three-layer architecture, LangGraph ReAct backend, SAJHA, SSE contract. |
 
 ### requirements/drafts/
 
@@ -195,19 +133,14 @@ Handover package entry point: platform purpose, run commands, folder map (01–0
 
 | File | Summary |
 |---|---|
-| [REQ-02a_Connector_External_Setup_Guide.md](requirements/pending/REQ-02a_Connector_External_Setup_Guide.md) | Pending REQ-02a (duplicate of handover copy): app/browser setup for Teams/Outlook/Confluence/Jira before tool credentials. |
-| [REQ-02b_Connector_MR_Worker_Integration_Testing.md](requirements/pending/REQ-02b_Connector_MR_Worker_Integration_Testing.md) | Pending REQ-02b (duplicate of handover copy): MR worker connector_scope wiring plus end-to-end integration tests. |
-| [REQ-06_Branding_BPulse_Digital_Workers.md](requirements/pending/REQ-06_Branding_BPulse_Digital_Workers.md) | Pending REQ-06 (duplicate of handover copy): rebrand RiskGPT / SAJHA / Market Risk Worker to B-Pulse Digital Workers. |
-| [REQ-07_PostgreSQL_Database_Migration.md](requirements/pending/REQ-07_PostgreSQL_Database_Migration.md) | REQ-07 v1.3 status: Postgres migration partially complete, 4 production-audit gaps remaining as of 2026-04-14. |
-| [REQ-08_DevOps_Cloud_Deployment_Guide.md](requirements/pending/REQ-08_DevOps_Cloud_Deployment_Guide.md) | DevOps cloud-deployment one-pager: RDS Postgres, S3 bucket, AWS Glue catalog (single Docker container); env vars summary. |
-| [REQ-08a_S3_Object_Storage_Integration.md](requirements/pending/REQ-08a_S3_Object_Storage_Integration.md) | S3 storage integration: replace local FS for binaries, refactor 28 `build_index()` call sites to write to Postgres `file_metadata`. |
-| [REQ-08b_Apache_Iceberg_Analytical_Tables.md](requirements/pending/REQ-08b_Apache_Iceberg_Analytical_Tables.md) | Migrate trades/exposure/VaR/IRIS to Apache Iceberg tables on S3 with ACID, time travel, schema/partition evolution; DuckDB queries Iceberg. |
-| [REQ-14_Bug_Fixes_SubAgent_Audit_EDGAR.md](requirements/pending/REQ-14_Bug_Fixes_SubAgent_Audit_EDGAR.md) | Four live-run bug fixes: sub-agent timeout config, silent sub-agent drop, `success: None` audit corruption, EDGAR Canadian coverage. |
-| [REQ-15_Supabase_Persistent_Storage.md](requirements/pending/REQ-15_Supabase_Persistent_Storage.md) | Supabase Storage + Postgres wiring so uploads and conversation history survive Railway ephemeral container redeploys (status: killed). |
-| [REQ-16_Hetzner_S3_Migration.md](requirements/pending/REQ-16_Hetzner_S3_Migration.md) | Activate the existing storage abstraction against Hetzner S3-compatible object storage; fix 9 bypass tool files, then env-flip and migrate data. |
+| [REQ-06_Branding_BPulse_Digital_Workers.md](requirements/pending/REQ-06_Branding_BPulse_Digital_Workers.md) | **Pending — Not Started** (verified 2026-05-17). Rebrand audit and migration plan from RiskGPT / SAJHA / Market Risk Worker to "B-Pulse Digital Workers" across HTML, config, system prompt, favicon. |
+| [REQ-08b_Apache_Iceberg_Analytical_Tables.md](requirements/pending/REQ-08b_Apache_Iceberg_Analytical_Tables.md) | **Pending — Architectural planning only** (verified 2026-05-17). Migrate trades/exposure/VaR/IRIS to Apache Iceberg on S3 with DuckDB queries; catalog choice (Glue vs Nessie vs Polaris) still open. |
+| [REQ-14_Bug_Fixes_SubAgent_Audit_EDGAR.md](requirements/pending/REQ-14_Bug_Fixes_SubAgent_Audit_EDGAR.md) | **Partial** (verified 2026-05-17). Four live-run bug fixes: sub-agent timeout still hardcoded 120s, dropped sub-agents not surfaced via SSE, audit `success: None` (AuditMiddleware not wired), EDGAR 6-K coverage for Canadian banks missing. |
+| [REQ-15_Supabase_Persistent_Storage.md](requirements/pending/REQ-15_Supabase_Persistent_Storage.md) | **Stubbed** (verified 2026-05-17). Supabase Storage + Postgres wiring so uploads and conversation history survive Railway redeploys; storage abstraction exists but `agent_server.py` file routes still use raw `pathlib`. |
+| [REQ-16_Hetzner_S3_Migration.md](requirements/pending/REQ-16_Hetzner_S3_Migration.md) | **Partial** (verified 2026-05-17). Storage backend, path resolver, and `STORAGE_BACKEND=s3` switch all done; ~11 tool modules in `sajha/tools/impl/` still call `pathlib`/`open()`/`os.walk` directly. |
 
 ---
 
 ## See also
 
-- [archive/INDEX.md](archive/INDEX.md) — Index of archived/legacy docs (POC EDGAR code, root-level UAT scripts, ingestion scripts, legacy Word docs).
+- [archive/INDEX.md](archive/INDEX.md) — Index of archived/legacy docs (POC EDGAR code, root-level UAT scripts, ingestion scripts, legacy Word docs, completed requirements, completed pending specs).
