@@ -5,8 +5,8 @@
 ## Architecture
 Three-layer system:
 - **Frontend** (`public/login.html`, `index.html`, `mcp-agent.html`, `admin.html`) — HTML/JS chat UI, admin panel, login/onboarding
-- **Agent Server** (`agent_server.py`, ~2,876 lines) — FastAPI on port 8000, LangGraph agent with 9-middleware stack, SSE streaming, RBAC
-- **SAJHA MCP Server** (`sajhamcpserver/`) — Flask MCP server on port 3002, 121+ tools, hot-reload every 5s
+- **Agent Server** (`agent_server.py`, ~2,876 lines) — FastAPI on port 8000 with ~98 endpoints, LangGraph agent (6 active middlewares; 3 more present but unwired), SSE streaming, RBAC
+- **SAJHA MCP Server** (`sajhamcpserver/`) — Flask MCP server on port 3002, 122 tools across 39 implementation modules, hot-reload (default 300s, configurable)
 
 ## Running Locally
 ```bash
@@ -38,8 +38,8 @@ agent/                    # LangGraph agent, prompt, tools client
   sub_agent_executor.py   # Sub-agent lifecycle (2-pool threading: 4 sched + 8 exec)
   workflow_parser.py      # YAML frontmatter parser for multi-agent workflows
   summariser.py           # Context compression middleware (180k token trigger)
-  middlewares/            # 9 middleware classes (see Middleware Stack below)
-agent_server.py           # FastAPI entrypoint (~85 endpoints), SSE, RBAC, file mgmt
+  middlewares/            # 9 classes present; 6 wired into default stack (see Middleware Stack below). Retry/TokenBudget/Audit are present but not added by create_agent_for_worker.
+agent_server.py           # FastAPI entrypoint (~98 endpoints), SSE, RBAC, file mgmt
 sajhamcpserver/
   run_server.py           # Flask MCP server entry (411 lines)
   config/
@@ -100,7 +100,7 @@ Tool JSON config structure:
 }
 ```
 
-## Key Tool Modules (121+ tools across 41 files)
+## Key Tool Modules (122 tools across 39 implementation modules)
 - `edgar_tavily_tools.py` — SEC EDGAR qualitative extraction (MD&A, earnings, segments, risk) — 6 tools
 - `edgar_metric_tools.py` — XBRL financial metrics, ratios, peer comparison — 4 tools
 - `tavily_ir_tool.py` — Universal IR tools (any public company, Tavily-native) — 9 tools

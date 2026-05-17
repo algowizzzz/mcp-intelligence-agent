@@ -1,7 +1,9 @@
 # UAT Master Index — RiskGPT MCP Intelligence Agent
 
-**Last updated:** 2026-04-05  
+**Last updated:** 2026-04-05 (historical snapshot — see note below)
 **Overall status: ✅ REQ-09 and prior verified. REQ-10/REQ-11 CI fully PASS — BT pending.**
+
+> **Note (2026-05-17):** The Playwright test runner scripts referenced below (e.g. `run_ui_audit_tests.mjs`, `run_regression_v2_tests.mjs`) and their raw JSON/MD result files were moved out of the active tree on 2026-05-17. They are no longer runnable from this directory layout. This index is kept as a historical record of test coverage at handover time; it should not be relied on to re-run tests.
 
 ---
 

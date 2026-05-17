@@ -602,7 +602,7 @@ A limit on operation duration. SAJHA implements timeouts for HTTP requests and t
 A unit of authentication or a lexical unit. SAJHA uses session tokens for authentication.
 
 ### Tool (MCP)
-A function exposed via MCP that AI systems can call. SAJHA provides 121+ tools.
+A function exposed via MCP that AI systems can call. SAJHA provides 122 tools across 39 implementation modules.
 
 ### Traceback
 A report of function calls leading to an error. SAJHA logs tracebacks for debugging.

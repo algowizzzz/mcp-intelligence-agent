@@ -38,7 +38,7 @@ http://localhost:8000
 |--------|----------|
 | `01_project_overview/` | Credentials, next steps, high-level roadmap |
 | `02_architecture/` | ERDs, TRD, platform architecture docs |
-| `03_requirements/` | Gap analysis + active backlog (REQ-01 through REQ-11) |
+| `03_requirements/` | Gap analysis. Live in-flight requirements (REQ-06, 08b, 14, 15, 16) live in `requirements/pending/`. Completed REQs are in `archive/completed-requirements/`. |
 | `04_uat_and_testing/` | Regression reports, UAT master index, per-requirement test plans & results |
 | `05_user_guides/` | Admin, Super-Admin, End-User, Connectors, Deployment guides |
 | `06_tools_reference/` | Per-tool MCP reference guides (121+ tools) |
@@ -57,20 +57,33 @@ http://localhost:8000
 - Chat interface with canvas support
 
 ### What's Pending (Active Backlog) 🔧
-See `03_requirements/pending/` for detailed specs on:
 
-| REQ | Feature | Priority |
+Status verified against code as of 2026-05-17. Specs for in-flight items live in `requirements/pending/`.
+
+| REQ | Feature | Status | Notes |
+|-----|---------|--------|-------|
+| REQ-06 | Branding — B-Pulse Digital Workers | Pending | `public/login.html` still says "RiskGPT"; no B-Pulse strings in HTML. Not started. |
+| REQ-08b | Apache Iceberg analytical tables | Pending | Architecture-only doc; no DuckDB Iceberg / Glue catalog code yet. |
+| REQ-14 | Bug fixes: sub-agent audit, EDGAR Canadian coverage | Partial | Sub-agent timeout still hardcoded 120s; audit success=None not fully handled; EDGAR CA coverage gap open. |
+| REQ-15 | Supabase persistent storage | Stubbed | Storage abstraction in `sajha/storage.py` exists but `agent_server.py` file ops still use raw `pathlib.Path`. |
+| REQ-16 | Hetzner S3 migration (tool layer) | Partial | S3 backend complete; ~11 tool modules (DuckDB OLAP advanced, msdoc tools, workflow tools, IRIS, etc.) still use direct `pathlib`/`open()` calls. |
+
+### What's Completed (previously listed as pending) ✅
+
+Confirmed implemented and verified against code; specs moved to `archive/completed-requirements/`.
+
+| REQ | Feature | Evidence |
 |-----|---------|----------|
-| REQ-01a/b | Shared FileTree Library — build & backend features | High |
-| REQ-02a/b | Connector external setup & MR worker integration | High |
-| REQ-03 | Visualization tool debug & rendering fixes | High |
-| REQ-04a/b | Python execution tool (basic + heavy quant libraries) | Medium |
-| REQ-05 | Summarization engine | Medium |
-| REQ-06 | Branding — BPulse Digital Workers | Medium |
-| REQ-07 | PostgreSQL database migration | Medium |
-| REQ-08 | Apache Iceberg / S3 data strategy | Low |
-| REQ-10 | Common Data Path refinement | Completed |
-| REQ-11 | Multi-file parallel upload | Completed |
+| REQ-01a / 01b | Shared FileTree Library + Phase 2 | `public/js/file-tree.js` ≈1,200 lines, fully wired |
+| REQ-02a / 02b | Connectors + MR worker integration | All connector modules in `sajhamcpserver/sajha/tools/impl/{outlook,teams,jira,confluence,sharepoint,powerbi}_tools.py` |
+| REQ-03 | Visualization tool | `sajha/tools/impl/visualisation_tools.py` |
+| REQ-04a / 04b | Python execution tool (basic + heavy quant) | `python_executor.py` with sandbox venv (pandas, numpy, scipy, arch, riskfolio, etc.) |
+| REQ-05 | Summarisation engine | `agent/summariser.py` + `SummarisationMiddleware` |
+| REQ-07 | PostgreSQL migration | `worker_repository.py` PostgresWorkerRepository, `AsyncPostgresSaver` checkpointing |
+| REQ-08 | DevOps deployment guide | Docker + supervisord + nginx + GitHub Actions all in repo |
+| REQ-08a | S3 object storage integration | `sajha/storage.py` `S3StorageBackend` complete |
+| REQ-10 | Common Data Path | `path_resolver.py` common_data category |
+| REQ-11 | Multi-file parallel upload | `file-tree.js` `_checkBatchComplete()` + agent SSE batch events |
 
 ---
 
