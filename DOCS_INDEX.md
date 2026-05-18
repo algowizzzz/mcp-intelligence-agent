@@ -1,8 +1,8 @@
 # Documentation Index
 
-This is the canonical index for active documentation in the repo. Every `.md` and `.docx` file under `/`, `handover/`, and `requirements/` is listed below with a one-line summary derived from its actual contents. For archived/legacy docs, see [archive/INDEX.md](archive/INDEX.md).
+This is the canonical index for active documentation in the repo. Every Markdown file under `/`, `handover/`, and `requirements/` is listed below with a one-line summary derived from its actual contents. For archived/legacy docs (including original Word `.docx` sources, which were converted to Markdown on 2026-05-17), see [archive/INDEX.md](archive/INDEX.md).
 
-Last updated: 2026-05-17 (post-cleanup pass).
+Last updated: 2026-05-17 (post-cleanup pass; .docx files converted to .md and removed from active tree).
 
 ---
 
@@ -12,7 +12,7 @@ Last updated: 2026-05-17 (post-cleanup pass).
 |---|---|
 | [CLAUDE.md](CLAUDE.md) | Developer reference for the three-layer system: HTML frontend, FastAPI agent server, SAJHA MCP server — run commands, key dirs, middleware stack, env vars. |
 | [LOCAL_DEV_SETUP.md](LOCAL_DEV_SETUP.md) | Local macOS setup notes (2026-05-15): venv install, switch to xAI Grok, disable polluted Postgres, migrate orphaned worker files. |
-| [DOCS_INDEX.md](DOCS_INDEX.md) | This file — canonical index for every active `.md` and `.docx` under root, `handover/`, and `requirements/`. |
+| [DOCS_INDEX.md](DOCS_INDEX.md) | This file — canonical index for every active Markdown doc under root, `handover/`, and `requirements/`. |
 
 ---
 
@@ -35,13 +35,13 @@ Handover entry point: platform purpose, run commands, folder map (01–06). Incl
 |---|---|
 | [Glossary.md](handover/02_architecture/Glossary.md) | Alphabetical glossary of SAJHA MCP Server v2.9.0 terms, acronyms, and concepts — reference document. |
 | [SAJHA_MCP_Server_Architecture.md](handover/02_architecture/SAJHA_MCP_Server_Architecture.md) | SAJHA v2.9.0 system architecture: package structure, tools framework, MCP Studio, OLAP, IR module, config, security, hot-reload, deployment. |
-| [RiskGPT_Connector_ERD.docx](handover/02_architecture/RiskGPT_Connector_ERD.docx) | Connector ERD for five enterprise integrations (Teams, Power BI, SharePoint, Outlook, Jira) — architecture, credentials, tool ops, request flow. |
-| [RiskGPT_Digital_Worker_Platform_ERD.docx](handover/02_architecture/RiskGPT_Digital_Worker_Platform_ERD.docx) | Conversion of single-tenant RiskGPT to multi-tenant Digital Worker platform: per-worker prompts, data, tools, users, role hierarchy. |
-| [RiskGPT_MultiWorker_Platform_Scope_ERD.docx](handover/02_architecture/RiskGPT_MultiWorker_Platform_Scope_ERD.docx) | Multi-worker isolation requirements: target three-zone file layout, worker clone behaviour, runtime enforcement, gap remediation. |
-| [RiskGPT_Platform_Infrastructure_ERD.docx](handover/02_architecture/RiskGPT_Platform_Infrastructure_ERD.docx) | Infrastructure ERD: Docker consolidation across three processes and unified authentication replacing the dual JWT path. |
-| [Sajha_Admin_Panel_ERD.docx](handover/02_architecture/Sajha_Admin_Panel_ERD.docx) | Admin Panel ERD: new top-level tab in `mcp-agent.html` for shared data governance, `is_admin` JWT claim, RBAC layout. |
-| [Sajha_Data_Workflows_FileTree_ERD.docx](handover/02_architecture/Sajha_Data_Workflows_FileTree_ERD.docx) | File-tree panel ERD: VS Code-style tree replacing the flat list, four sections (domain/my data, verified/my workflows), preview, indexing. |
-| [mcp-agent-trd-final.docx](handover/02_architecture/mcp-agent-trd-final.docx) | Final TRD for the MCP Intelligence Agent: three-layer architecture, tool wrappers, SSE contract, FastAPI backend, env vars. |
+| [RiskGPT_Connector_ERD.md](handover/02_architecture/RiskGPT_Connector_ERD.md) | Connector ERD for five enterprise integrations (Teams, Power BI, SharePoint, Outlook, Jira) — architecture, credentials, tool ops, request flow. |
+| [RiskGPT_Digital_Worker_Platform_ERD.md](handover/02_architecture/RiskGPT_Digital_Worker_Platform_ERD.md) | Conversion of single-tenant RiskGPT to multi-tenant Digital Worker platform: per-worker prompts, data, tools, users, role hierarchy. |
+| [RiskGPT_MultiWorker_Platform_Scope_ERD.md](handover/02_architecture/RiskGPT_MultiWorker_Platform_Scope_ERD.md) | Multi-worker isolation requirements: target three-zone file layout, worker clone behaviour, runtime enforcement, gap remediation. |
+| [RiskGPT_Platform_Infrastructure_ERD.md](handover/02_architecture/RiskGPT_Platform_Infrastructure_ERD.md) | Infrastructure ERD: Docker consolidation across three processes and unified authentication replacing the dual JWT path. |
+| [Sajha_Admin_Panel_ERD.md](handover/02_architecture/Sajha_Admin_Panel_ERD.md) | Admin Panel ERD: new top-level tab in `mcp-agent.html` for shared data governance, `is_admin` JWT claim, RBAC layout. |
+| [Sajha_Data_Workflows_FileTree_ERD.md](handover/02_architecture/Sajha_Data_Workflows_FileTree_ERD.md) | File-tree panel ERD: VS Code-style tree replacing the flat list, four sections (domain/my data, verified/my workflows), preview, indexing. |
+| [mcp-agent-trd-final.md](handover/02_architecture/mcp-agent-trd-final.md) | Final TRD for the MCP Intelligence Agent: three-layer architecture, tool wrappers, SSE contract, FastAPI backend, env vars. |
 
 ### handover/03_requirements/
 
@@ -56,8 +56,8 @@ Handover entry point: platform purpose, run commands, folder map (01–06). Incl
 | [Functional_Test_Results.md](handover/04_uat_and_testing/Functional_Test_Results.md) | Full admin + agent regression: 113/113 PASS across 52 admin and 61 agent tests, all 21 bugs closed by 2026-04-05. |
 | [GAP_Fixes_UAT_Results.md](handover/04_uat_and_testing/GAP_Fixes_UAT_Results.md) | 19/19 PASS architectural gap-fix verifications: msdoc storage migration, WorkerRepository wiring, serve_file consolidation, workflow/domain dir retirement. |
 | [UAT_Master_Index.md](handover/04_uat_and_testing/UAT_Master_Index.md) | Master UAT index: 236 total tests across functional regression, UI audit, regression v2, gap fixes, BM25, common data, parallel upload. |
-| [SAJHA_Regression_Test_Report_v2_2026-04-06.docx](handover/04_uat_and_testing/SAJHA_Regression_Test_Report_v2_2026-04-06.docx) | Regression suite v2 report: 132 tests in 18 groups across all roles, 6 bugs (5 test-contract, 1 production) found and fixed. |
-| [SAJHA_Regression_Test_Results_2026-04-05.docx](handover/04_uat_and_testing/SAJHA_Regression_Test_Results_2026-04-05.docx) | First-pass automated regression: 76 tests across 15 areas, 67 PASS / 9 FAIL (missing tool API routes, contract mismatches, worker-delete guard). |
+| [SAJHA_Regression_Test_Report_v2_2026-04-06.md](handover/04_uat_and_testing/SAJHA_Regression_Test_Report_v2_2026-04-06.md) | Regression suite v2 report: 132 tests in 18 groups across all roles, 6 bugs (5 test-contract, 1 production) found and fixed. |
+| [SAJHA_Regression_Test_Results_2026-04-05.md](handover/04_uat_and_testing/SAJHA_Regression_Test_Results_2026-04-05.md) | First-pass automated regression: 76 tests across 15 areas, 67 PASS / 9 FAIL (missing tool API routes, contract mismatches, worker-delete guard). |
 
 ### handover/04_uat_and_testing/uat_plans/
 
@@ -82,13 +82,13 @@ Handover entry point: platform purpose, run commands, folder map (01–06). Incl
 
 | File | Summary |
 |---|---|
-| [Admin_User_Guide.docx](handover/05_user_guides/Admin_User_Guide.docx) | Team-admin guide for the B-Pulse Admin Console: dashboard, worker config, data freshness, workflow and user management. |
-| [Connectors_Guide.docx](handover/05_user_guides/Connectors_Guide.docx) | Per-worker connector configuration: Microsoft 365 (Teams, Outlook) and Atlassian (Confluence, Jira) credentials and Azure AD app permissions. |
-| [Deployment_Guide.docx](handover/05_user_guides/Deployment_Guide.docx) | Enterprise cloud deployment on AWS ECS/EKS, Azure AKS, or Kubernetes: Docker builds, secret management, AWS ECS reference config. |
-| [End_User_Guide_Market_Risk.docx](handover/05_user_guides/End_User_Guide_Market_Risk.docx) | Market Risk analyst end-user guide: how to chat with your Digital Worker, no technical knowledge required, login through everyday usage. |
-| [RiskGPT_Connector_Setup_Guide.docx](handover/05_user_guides/RiskGPT_Connector_Setup_Guide.docx) | Step-by-step Azure AD App Registration walkthrough for Teams/Power BI/SharePoint connectors, plus glossary of M365 terms. |
-| [Super_Admin_Guide.docx](handover/05_user_guides/Super_Admin_Guide.docx) | Super-admin guide for full platform administration: creating workers, adding users, uploading data, managing tools and connectors. |
-| [Technical_Documentation.docx](handover/05_user_guides/Technical_Documentation.docx) | Internal developer documentation v2.9.8: three-layer architecture, LangGraph reasoning, 74+ MCP tools across risk/regulatory domains. |
+| [Admin_User_Guide.md](handover/05_user_guides/Admin_User_Guide.md) | Team-admin guide for the B-Pulse Admin Console: dashboard, worker config, data freshness, workflow and user management. |
+| [Connectors_Guide.md](handover/05_user_guides/Connectors_Guide.md) | Per-worker connector configuration: Microsoft 365 (Teams, Outlook) and Atlassian (Confluence, Jira) credentials and Azure AD app permissions. |
+| [Deployment_Guide.md](handover/05_user_guides/Deployment_Guide.md) | Enterprise cloud deployment on AWS ECS/EKS, Azure AKS, or Kubernetes: Docker builds, secret management, AWS ECS reference config. |
+| [End_User_Guide_Market_Risk.md](handover/05_user_guides/End_User_Guide_Market_Risk.md) | Market Risk analyst end-user guide: how to chat with your Digital Worker, no technical knowledge required, login through everyday usage. |
+| [RiskGPT_Connector_Setup_Guide.md](handover/05_user_guides/RiskGPT_Connector_Setup_Guide.md) | Step-by-step Azure AD App Registration walkthrough for Teams/Power BI/SharePoint connectors, plus glossary of M365 terms. |
+| [Super_Admin_Guide.md](handover/05_user_guides/Super_Admin_Guide.md) | Super-admin guide for full platform administration: creating workers, adding users, uploading data, managing tools and connectors. |
+| [Technical_Documentation.md](handover/05_user_guides/Technical_Documentation.md) | Internal developer documentation v2.9.8: three-layer architecture, LangGraph reasoning, 74+ MCP tools across risk/regulatory domains. |
 
 ### handover/06_tools_reference/
 
@@ -119,15 +119,15 @@ Handover entry point: platform purpose, run commands, folder map (01–06). Incl
 | [PLAN.md](requirements/PLAN.md) | Engineering plan with four work streams: summarisation middleware, property-file governance, source-attribution redesign, Tavily coverage. |
 | [PRIORITY.md](requirements/PRIORITY.md) | Priority list (2026-04-14): REQ-07/08a/13/14-middleware/16 complete; REQ-14 bugs and REQ-06 branding queued next; REQ-08/REQ-15 killed. |
 | [PROMPTS.md](requirements/PROMPTS.md) | Catalog of every prompt used in the system — agent system prompt, Python and multi-agent addenda, sub-agent instructions. |
-| [REQ-13_Multi_Agent_Framework.docx](requirements/REQ-13_Multi_Agent_Framework.docx) | Multi-agent framework v2.0 inspired by DeerFlow 2.0: sub-agent orchestration via `task()`, middleware hardening, default-single agent_mode. |
-| [REQ-14_Middleware_Phase2_Persistent_Memory.docx](requirements/REQ-14_Middleware_Phase2_Persistent_Memory.docx) | Five middlewares deferred from REQ-13 (Phase 2) plus persistent memory via PostgreSQL; depends on REQ-13 and REQ-07. |
+| [REQ-13_Multi_Agent_Framework.md](requirements/REQ-13_Multi_Agent_Framework.md) | Multi-agent framework v2.0 inspired by DeerFlow 2.0: sub-agent orchestration via `task()`, middleware hardening, default-single agent_mode. |
+| [REQ-14_Middleware_Phase2_Persistent_Memory.md](requirements/REQ-14_Middleware_Phase2_Persistent_Memory.md) | Five middlewares deferred from REQ-13 (Phase 2) plus persistent memory via PostgreSQL; depends on REQ-13 and REQ-07. |
 
 ### requirements/drafts/
 
 | File | Summary |
 |---|---|
 | [LEFT_PANEL_UX.md](requirements/drafts/LEFT_PANEL_UX.md) | Left-sidebar UX spec: two-tab layout (Chats / Data & Workflows) with persistent admin/theme bottom bar; tabs, rename, delete implemented. |
-| [Sajha_MCP_QA_Test_Plan.docx](requirements/drafts/Sajha_MCP_QA_Test_Plan.docx) | QA test plan and acceptance criteria for every active SAJHA tool — happy path, edge cases, universal response/timing/JSON contract rules. |
+| [Sajha_MCP_QA_Test_Plan.md](requirements/drafts/Sajha_MCP_QA_Test_Plan.md) | QA test plan and acceptance criteria for every active SAJHA tool — happy path, edge cases, universal response/timing/JSON contract rules. |
 
 ### requirements/pending/
 

@@ -95,7 +95,7 @@ The platform has been fully regression tested. Latest results:
 - **Roles tested:** super_admin, admin, user
 - **Coverage:** All UI screens, API endpoints, file upload isolation, RBAC
 
-Full report: `04_uat_and_testing/SAJHA_Regression_Test_Report_v2_2026-04-06.docx`
+Full report: [`04_uat_and_testing/SAJHA_Regression_Test_Report_v2_2026-04-06.md`](04_uat_and_testing/SAJHA_Regression_Test_Report_v2_2026-04-06.md)
 
 ---
 
