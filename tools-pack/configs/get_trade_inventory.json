@@ -1,0 +1,32 @@
+{
+  "name": "get_trade_inventory",
+  "implementation": "tools_pack_impl.trade_inventory.TradeInventoryTool",
+  "description": "Retrieve trade inventory data including asset class, notional, MTM and instrument details",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "counterparty": {
+        "type": "string",
+        "description": "Filter by counterparty name (optional). Returns all trades if omitted."
+      },
+      "_worker_context": {
+        "type": "object",
+        "description": "Injected by agent — worker scope dict"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "trades": {"type": "array"},
+      "_source": {"type": "string"}
+    }
+  },
+  "metadata": {
+    "author": "B-Pulse",
+    "category": "Risk Data",
+    "tags": ["trades", "inventory", "counterparty"]
+  }
+}

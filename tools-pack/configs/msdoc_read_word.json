@@ -1,0 +1,97 @@
+{
+  "name": "msdoc_read_word",
+  "implementation": "tools_pack_impl.msdoc_read_word.MsdocReadWord",
+  "description": "Read and extract content from Word documents including paragraphs and tables",
+  "version": "2.9.8",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "filename": {
+        "type": "string",
+        "description": "Name of the Word file to read (.docx)"
+      },
+      "heading": {
+        "type": "string",
+        "description": "For large Word documents: extract only the section under this heading (case-insensitive partial match against Heading styles). Returns available_headings[] if not found."
+      },
+      "section": {
+        "type": "string",
+        "enum": [
+          "domain_data",
+          "my_data",
+          "common"
+        ],
+        "description": "Data layer: 'domain_data' (worker knowledge base, default), 'my_data' (user uploads), 'common' (shared library)."
+      },
+      "_worker_context": {
+        "type": "object",
+        "description": "Injected by agent"
+      }
+    },
+    "required": [
+      "filename"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "filename": {
+        "type": "string"
+      },
+      "paragraphs": {
+        "type": "array",
+        "description": "Text paragraphs from the document",
+        "items": {
+          "type": "string"
+        }
+      },
+      "paragraph_count": {
+        "type": "integer"
+      },
+      "tables": {
+        "type": "array",
+        "description": "Tables extracted from the document",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "table_count": {
+        "type": "integer"
+      }
+    }
+  },
+  "metadata": {
+    "author": "Ashutosh Sinha",
+    "category": "Document Processing",
+    "tags": [
+      "word",
+      "docx",
+      "read",
+      "extract",
+      "text"
+    ],
+    "rateLimit": 60,
+    "cacheTTL": 300,
+    "note": "Requires python-docx library",
+    "examples": [
+      {
+        "description": "Read a Word document",
+        "input": {
+          "filename": "report.docx"
+        }
+      }
+    ],
+    "useCases": [
+      "Extract text from Word documents",
+      "Parse document structure",
+      "Read tables from Word files"
+    ]
+  }
+}

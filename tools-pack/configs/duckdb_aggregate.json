@@ -1,0 +1,52 @@
+{
+  "name": "duckdb_aggregate",
+  "implementation": "tools_pack_impl.duckdb_aggregate.DuckdbAggregate",
+  "description": "Perform aggregation operations (SUM/AVG/COUNT/MIN/MAX/COUNT_DISTINCT) on a worker-scoped table or view, with optional GROUP BY, HAVING, and ORDER BY clauses.",
+  "category": "Data Analytics",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "table_name": {"type": "string", "minLength": 1, "description": "Source table/view name"},
+      "aggregations": {
+        "type": "object",
+        "description": "{column: function}; function in [sum, avg, count, min, max, count_distinct]",
+        "additionalProperties": {"type": "string", "enum": ["sum", "avg", "count", "min", "max", "count_distinct"]},
+        "minProperties": 1
+      },
+      "group_by": {"type": "array", "items": {"type": "string"}, "description": "Columns to GROUP BY"},
+      "having": {"type": "string", "description": "Optional HAVING clause (without HAVING keyword)"},
+      "order_by": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "column":    {"type": "string"},
+            "direction": {"type": "string", "enum": ["asc", "desc"], "default": "asc"}
+          }
+        }
+      },
+      "limit": {"type": "integer", "minimum": 1, "maximum": 10000, "default": 100},
+      "_worker_context": {"type": "object"}
+    },
+    "required": ["table_name", "aggregations"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "table_name":           {"type": "string"},
+      "aggregations_applied": {"type": "object"},
+      "grouped_by":           {"type": "array"},
+      "results":              {"type": "array"},
+      "row_count":            {"type": "integer"},
+      "execution_time_ms":    {"type": "number"}
+    },
+    "required": ["table_name", "results", "row_count"]
+  },
+  "metadata": {
+    "author": "B-Pulse",
+    "category": "Data Analytics",
+    "tags": ["duckdb", "aggregation", "group by", "analytics"]
+  }
+}

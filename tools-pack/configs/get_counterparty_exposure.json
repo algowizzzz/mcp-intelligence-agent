@@ -1,0 +1,32 @@
+{
+  "name": "get_counterparty_exposure",
+  "implementation": "tools_pack_impl.counterparty_exposure.CounterpartyExposureTool",
+  "description": "Retrieve counterparty credit exposure data including notional, MTM, PFE and net exposure",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "counterparty": {
+        "type": "string",
+        "description": "Filter by counterparty name (optional). Returns all counterparties if omitted."
+      },
+      "_worker_context": {
+        "type": "object",
+        "description": "Injected by agent — worker scope dict"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "counterparties": {"type": "array"},
+      "_source": {"type": "string"}
+    }
+  },
+  "metadata": {
+    "author": "B-Pulse",
+    "category": "Risk Data",
+    "tags": ["counterparty", "exposure", "credit risk"]
+  }
+}

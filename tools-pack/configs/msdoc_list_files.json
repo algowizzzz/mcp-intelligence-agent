@@ -1,0 +1,111 @@
+{
+  "name": "msdoc_list_files",
+  "implementation": "tools_pack_impl.msdoc_list_files.MsdocListFiles",
+  "description": "List all Word and Excel documents in the configured docs directory",
+  "version": "2.9.8",
+  "enabled": true,
+  "docs_directory": "./data/uploads",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "file_type": {
+        "type": "string",
+        "description": "Type of files to list",
+        "enum": [
+          "all",
+          "word",
+          "excel"
+        ],
+        "default": "all"
+      },
+      "section": {
+        "type": "string",
+        "enum": [
+          "domain_data",
+          "my_data",
+          "common"
+        ],
+        "description": "Data layer: 'domain_data' (worker knowledge base, default), 'my_data' (user uploads), 'common' (shared library)."
+      },
+      "_worker_context": {
+        "type": "object",
+        "description": "Injected by agent"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "directory": {
+        "type": "string"
+      },
+      "file_type": {
+        "type": "string"
+      },
+      "count": {
+        "type": "integer"
+      },
+      "files": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "filename": {
+              "type": "string"
+            },
+            "path": {
+              "type": "string"
+            },
+            "extension": {
+              "type": "string"
+            },
+            "size": {
+              "type": "integer"
+            },
+            "modified": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    }
+  },
+  "metadata": {
+    "author": "Ashutosh Sinha",
+    "category": "Document Processing",
+    "tags": [
+      "microsoft",
+      "word",
+      "excel",
+      "files",
+      "list"
+    ],
+    "rateLimit": 60,
+    "cacheTTL": 60,
+    "examples": [
+      {
+        "description": "List all documents",
+        "input": {
+          "file_type": "all"
+        }
+      },
+      {
+        "description": "List only Word documents",
+        "input": {
+          "file_type": "word"
+        }
+      },
+      {
+        "description": "List only Excel spreadsheets",
+        "input": {
+          "file_type": "excel"
+        }
+      }
+    ],
+    "useCases": [
+      "Discover available documents",
+      "File inventory management",
+      "Document type filtering"
+    ]
+  }
+}

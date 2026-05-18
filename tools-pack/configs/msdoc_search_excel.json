@@ -1,0 +1,110 @@
+{
+  "name": "msdoc_search_excel",
+  "implementation": "tools_pack_impl.msdoc_search_excel.MsdocSearchExcel",
+  "description": "Search for specific text or values within Excel spreadsheets",
+  "version": "2.9.8",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "filename": {
+        "type": "string",
+        "description": "Name of the Excel file to search"
+      },
+      "search_term": {
+        "type": "string",
+        "description": "Text or value to search for (case-insensitive)"
+      },
+      "sheet_name": {
+        "type": "string",
+        "description": "Name of the sheet to search (optional, searches active sheet if not specified)"
+      },
+      "section": {
+        "type": "string",
+        "enum": [
+          "domain_data",
+          "my_data",
+          "common"
+        ],
+        "description": "Data layer: 'domain_data' (worker knowledge base, default), 'my_data' (user uploads), 'common' (shared library)."
+      },
+      "_worker_context": {
+        "type": "object",
+        "description": "Injected by agent"
+      }
+    },
+    "required": [
+      "filename",
+      "search_term"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "filename": {
+        "type": "string"
+      },
+      "sheet_name": {
+        "type": "string"
+      },
+      "search_term": {
+        "type": "string"
+      },
+      "matches": {
+        "type": "array",
+        "description": "Cells containing the search term",
+        "items": {
+          "type": "object",
+          "properties": {
+            "row_index": {
+              "type": "integer"
+            },
+            "column_index": {
+              "type": "integer"
+            },
+            "value": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "match_count": {
+        "type": "integer"
+      }
+    }
+  },
+  "metadata": {
+    "author": "Ashutosh Sinha",
+    "category": "Document Processing",
+    "tags": [
+      "excel",
+      "search",
+      "find",
+      "data"
+    ],
+    "rateLimit": 60,
+    "cacheTTL": 300,
+    "examples": [
+      {
+        "description": "Search for product name in spreadsheet",
+        "input": {
+          "filename": "inventory.xlsx",
+          "search_term": "Widget"
+        }
+      },
+      {
+        "description": "Search in specific sheet",
+        "input": {
+          "filename": "sales.xlsx",
+          "search_term": "Q4",
+          "sheet_name": "2024"
+        }
+      }
+    ],
+    "useCases": [
+      "Find data in spreadsheets",
+      "Locate specific values",
+      "Cell content discovery"
+    ]
+  }
+}

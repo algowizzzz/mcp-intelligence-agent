@@ -1,0 +1,32 @@
+{
+  "name": "duckdb_get_stats",
+  "implementation": "tools_pack_impl.duckdb_get_stats.DuckdbGetStats",
+  "description": "Get a statistical summary for table/view columns (count, mean, std, min, max, percentiles). Works on worker-scoped views (my_data, domain_data, common).",
+  "category": "Data Analytics",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "table_name": {"type": "string", "minLength": 1},
+      "columns":    {"type": "array", "items": {"type": "string"}, "description": "Specific columns; defaults to all"},
+      "include_percentiles": {"type": "boolean", "default": true},
+      "_worker_context": {"type": "object"}
+    },
+    "required": ["table_name"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "table_name":        {"type": "string"},
+      "total_rows":        {"type": "integer"},
+      "column_statistics": {"type": "object"}
+    },
+    "required": ["table_name", "total_rows", "column_statistics"]
+  },
+  "metadata": {
+    "author": "B-Pulse",
+    "category": "Data Analytics",
+    "tags": ["duckdb", "statistics", "summary"]
+  }
+}

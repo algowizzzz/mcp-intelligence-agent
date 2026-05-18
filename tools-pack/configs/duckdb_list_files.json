@@ -1,0 +1,39 @@
+{
+  "name": "duckdb_list_files",
+  "implementation": "tools_pack_impl.duckdb_list_files.DuckdbListFiles",
+  "description": "List all queryable data files (CSV, Parquet, JSON, TSV) across worker data layers (my_data, domain_data, common). Each file has a view_name — use it in duckdb_query SQL: SELECT COUNT(*) FROM <view_name>. Do NOT use read_csv_auto() with file paths.",
+  "category": "Data Analytics",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "file_type": {
+        "type": "string",
+        "description": "Optional: filter by file type",
+        "enum": ["all", "csv", "parquet", "json", "tsv"]
+      },
+      "include_metadata": {
+        "type": "boolean",
+        "description": "Include file size and modification date",
+        "default": true
+      },
+      "_worker_context": {"type": "object", "description": "Injected by agent — worker scope dict"}
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "data_directory": {"type": "string"},
+      "files":          {"type": "array"},
+      "total_files":    {"type": "integer"},
+      "summary":        {"type": "object"}
+    },
+    "required": ["files", "total_files"]
+  },
+  "metadata": {
+    "author": "B-Pulse",
+    "category": "Data Analytics",
+    "tags": ["duckdb", "files", "data", "directory"]
+  }
+}

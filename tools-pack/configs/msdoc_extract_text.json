@@ -1,0 +1,78 @@
+{
+  "name": "msdoc_extract_text",
+  "implementation": "tools_pack_impl.msdoc_extract_text.MsdocExtractText",
+  "description": "Extract all plain text content from Word or Excel documents",
+  "version": "2.9.8",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "filename": {
+        "type": "string",
+        "description": "Name of the file to extract text from (Word or Excel)"
+      },
+      "section": {
+        "type": "string",
+        "enum": [
+          "domain_data",
+          "my_data",
+          "common"
+        ],
+        "description": "Data layer: 'domain_data' (worker knowledge base, default), 'my_data' (user uploads), 'common' (shared library)."
+      },
+      "_worker_context": {
+        "type": "object",
+        "description": "Injected by agent"
+      }
+    },
+    "required": [
+      "filename"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "filename": {
+        "type": "string"
+      },
+      "text": {
+        "type": "string",
+        "description": "Extracted plain text content"
+      },
+      "character_count": {
+        "type": "integer"
+      }
+    }
+  },
+  "metadata": {
+    "author": "Ashutosh Sinha",
+    "category": "Document Processing",
+    "tags": [
+      "text extraction",
+      "word",
+      "excel",
+      "plain text"
+    ],
+    "rateLimit": 60,
+    "cacheTTL": 300,
+    "examples": [
+      {
+        "description": "Extract text from Word document",
+        "input": {
+          "filename": "memo.docx"
+        }
+      },
+      {
+        "description": "Extract text from Excel spreadsheet",
+        "input": {
+          "filename": "data.xlsx"
+        }
+      }
+    ],
+    "useCases": [
+      "Full text extraction",
+      "Document to plain text conversion",
+      "Content analysis preparation"
+    ]
+  }
+}

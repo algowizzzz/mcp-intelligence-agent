@@ -1,0 +1,43 @@
+{
+  "name": "duckdb_sql",
+  "implementation": "tools_pack_impl.duckdb_sql.DuckdbSql",
+  "description": "Execute SELECT-only SQL against worker-scoped CSV files. Built-in tables: customers, orders, products. Other CSV/Parquet/JSON files across worker layers are auto-registered as views.",
+  "category": "Data Analytics",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "sql": {
+        "type": "string",
+        "description": "SQL SELECT query. Built-in tables: customers, orders, products.",
+        "minLength": 1
+      },
+      "limit": {
+        "type": "integer",
+        "description": "Maximum rows to return",
+        "minimum": 1,
+        "maximum": 1000,
+        "default": 100
+      },
+      "_worker_context": {"type": "object"}
+    },
+    "required": ["sql"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success":           {"type": "boolean"},
+      "columns":           {"type": "array"},
+      "data":              {"type": "array"},
+      "row_count":         {"type": "integer"},
+      "sql":               {"type": "string"},
+      "execution_time_ms": {"type": "number"}
+    }
+  },
+  "metadata": {
+    "author": "B-Pulse",
+    "category": "Data Analytics",
+    "tags": ["duckdb", "sql", "query", "analytics"]
+  }
+}

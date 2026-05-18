@@ -1,0 +1,51 @@
+{
+  "name": "duckdb_query",
+  "implementation": "tools_pack_impl.duckdb_query.DuckdbQuery",
+  "description": "Execute SELECT-only SQL queries against worker-scoped CSV/Parquet/JSON files via DuckDB. Always call duckdb_list_files first to discover view names; do NOT use read_csv_auto() with raw paths.",
+  "category": "Data Analytics",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "sql_query": {
+        "type": "string",
+        "description": "SQL query. Use view_name from duckdb_list_files; subfolder files use double-underscore prefix (e.g. iris/iris_combined.csv → iris__iris_combined).",
+        "minLength": 1
+      },
+      "limit": {
+        "type": "integer",
+        "description": "Maximum rows to return",
+        "minimum": 1,
+        "maximum": 10000,
+        "default": 100
+      },
+      "output_format": {
+        "type": "string",
+        "description": "Result format",
+        "enum": ["json", "csv", "table"],
+        "default": "json"
+      },
+      "_worker_context": {"type": "object"}
+    },
+    "required": ["sql_query"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "query":             {"type": "string"},
+      "columns":           {"type": "array"},
+      "rows":              {"type": "array"},
+      "row_count":         {"type": "integer"},
+      "execution_time_ms": {"type": "number"},
+      "limited":           {"type": "boolean"},
+      "success":           {"type": "boolean"}
+    },
+    "required": ["query", "columns", "rows", "row_count"]
+  },
+  "metadata": {
+    "author": "B-Pulse",
+    "category": "Data Analytics",
+    "tags": ["duckdb", "sql", "query", "analytics"]
+  }
+}

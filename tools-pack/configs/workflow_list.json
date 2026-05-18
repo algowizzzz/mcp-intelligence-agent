@@ -1,0 +1,25 @@
+{
+  "name": "workflow_list",
+  "implementation": "tools_pack_impl.workflow_list.WorkflowList",
+  "version": "1.0.0",
+  "enabled": true,
+  "category": "Workflow",
+  "description": "List all available agent workflows with names, descriptions, and required inputs.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "_worker_context": {
+        "type": "object",
+        "description": "Injected by agent"
+      }
+    }
+  },
+  "metadata": {
+    "category": "Workflow",
+    "tags": [
+      "workflow",
+      "list",
+      "discovery"
+    ]
+  }
+}

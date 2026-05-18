@@ -1,0 +1,86 @@
+{
+  "name": "msdoc_get_excel_sheets",
+  "implementation": "tools_pack_impl.msdoc_get_excel_sheets.MsdocGetExcelSheets",
+  "description": "List all worksheets in an Excel workbook",
+  "version": "2.9.8",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "filename": {
+        "type": "string",
+        "description": "Name of the Excel file"
+      },
+      "section": {
+        "type": "string",
+        "enum": [
+          "domain_data",
+          "my_data",
+          "common"
+        ],
+        "description": "Data layer: 'domain_data' (worker knowledge base, default), 'my_data' (user uploads), 'common' (shared library)."
+      },
+      "_worker_context": {
+        "type": "object",
+        "description": "Injected by agent"
+      }
+    },
+    "required": [
+      "filename"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "filename": {
+        "type": "string"
+      },
+      "sheets": {
+        "type": "array",
+        "description": "List of worksheets",
+        "items": {
+          "type": "object",
+          "properties": {
+            "index": {
+              "type": "integer",
+              "description": "0-based sheet index"
+            },
+            "name": {
+              "type": "string",
+              "description": "Sheet name"
+            }
+          }
+        }
+      },
+      "count": {
+        "type": "integer",
+        "description": "Total number of sheets"
+      }
+    }
+  },
+  "metadata": {
+    "author": "Ashutosh Sinha",
+    "category": "Document Processing",
+    "tags": [
+      "excel",
+      "worksheets",
+      "sheets",
+      "list"
+    ],
+    "rateLimit": 60,
+    "cacheTTL": 3600,
+    "examples": [
+      {
+        "description": "List all sheets in workbook",
+        "input": {
+          "filename": "quarterly_report.xlsx"
+        }
+      }
+    ],
+    "useCases": [
+      "Discover workbook structure",
+      "Sheet inventory",
+      "Workbook navigation"
+    ]
+  }
+}

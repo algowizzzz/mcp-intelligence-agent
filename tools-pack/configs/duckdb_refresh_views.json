@@ -1,0 +1,30 @@
+{
+  "name": "duckdb_refresh_views",
+  "implementation": "tools_pack_impl.duckdb_refresh_views.DuckdbRefreshViews",
+  "description": "Rescan worker data layers and verify each view is queryable. In the compliant overlay each query uses a fresh connection so this acts as a validation/discovery sweep.",
+  "category": "Data Analytics",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "view_name": {"type": "string", "description": "Optional: specific view to refresh"},
+      "reload_external_files": {"type": "boolean", "default": false},
+      "_worker_context": {"type": "object"}
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "refreshed_views":         {"type": "array"},
+      "total_refreshed":         {"type": "integer"},
+      "external_files_reloaded": {"type": "boolean"}
+    },
+    "required": ["refreshed_views", "total_refreshed"]
+  },
+  "metadata": {
+    "author": "B-Pulse",
+    "category": "Data Analytics",
+    "tags": ["duckdb", "views", "refresh"]
+  }
+}

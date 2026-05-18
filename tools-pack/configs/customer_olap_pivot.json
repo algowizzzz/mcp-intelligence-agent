@@ -1,0 +1,60 @@
+{
+  "name": "customer_olap_pivot",
+  "implementation": "tools_pack_impl.customer_olap_pivot.CustomerOlapPivot",
+  "description": "Customer-OLAP pivot table over customers/orders/products CSV files. Multi-dimensional grouping with pre-defined dimensions (customer_segment, region, etc.) and measures (total_revenue, order_count, etc.). Data sourced from worker domain_data/duckdb.",
+  "category": "OLAP Analytics",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "rows": {
+        "type": "array",
+        "items": {"type": "string"},
+        "description": "Row dimensions. Available: customer_segment, customer_tier, region, country, acquisition_channel, age_group, product_category, product_name, payment_method, sales_rep, order_date, signup_date, order_year, order_month, order_quarter"
+      },
+      "columns": {
+        "type": "array",
+        "items": {"type": "string"},
+        "description": "Column dimensions for pivoting (optional)"
+      },
+      "measures": {
+        "type": "array",
+        "items": {"type": "string"},
+        "description": "Measures to aggregate. Available: order_count, customer_count, total_revenue, total_quantity, avg_order_value, total_discount, total_shipping, avg_discount_pct, gross_profit, profit_margin"
+      },
+      "filters": {
+        "type": "object",
+        "description": "Filter conditions as key-value pairs (lists allowed for IN-style filters)"
+      },
+      "order_by": {
+        "type": "string",
+        "description": "Column to sort by (prefix with - for DESC)"
+      },
+      "limit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000,
+        "default": 100
+      },
+      "_worker_context": {"type": "object"}
+    },
+    "required": ["rows", "measures"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success":           {"type": "boolean"},
+      "columns":           {"type": "array"},
+      "data":              {"type": "array"},
+      "row_count":         {"type": "integer"},
+      "query":             {"type": "string"},
+      "execution_time_ms": {"type": "number"}
+    }
+  },
+  "metadata": {
+    "author": "B-Pulse",
+    "category": "OLAP Analytics",
+    "tags": ["olap", "pivot", "customer", "analytics"]
+  }
+}

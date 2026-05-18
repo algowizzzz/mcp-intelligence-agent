@@ -1,0 +1,85 @@
+{
+  "name": "msdoc_get_word_metadata",
+  "implementation": "tools_pack_impl.msdoc_get_word_metadata.MsdocGetWordMetadata",
+  "description": "Extract metadata and document properties from Word files",
+  "version": "2.9.8",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "filename": {
+        "type": "string",
+        "description": "Name of the Word file"
+      },
+      "section": {
+        "type": "string",
+        "enum": [
+          "domain_data",
+          "my_data",
+          "common"
+        ],
+        "description": "Data layer: 'domain_data' (worker knowledge base, default), 'my_data' (user uploads), 'common' (shared library)."
+      },
+      "_worker_context": {
+        "type": "object",
+        "description": "Injected by agent"
+      }
+    },
+    "required": [
+      "filename"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "filename": {
+        "type": "string"
+      },
+      "metadata": {
+        "type": "object",
+        "description": "Document metadata",
+        "properties": {
+          "author": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "created": {
+            "type": "string"
+          },
+          "modified": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "metadata": {
+    "author": "Ashutosh Sinha",
+    "category": "Document Processing",
+    "tags": [
+      "word",
+      "metadata",
+      "properties"
+    ],
+    "rateLimit": 60,
+    "cacheTTL": 3600,
+    "examples": [
+      {
+        "description": "Get Word document metadata",
+        "input": {
+          "filename": "contract.docx"
+        }
+      }
+    ],
+    "useCases": [
+      "Document provenance tracking",
+      "Metadata extraction",
+      "Document property analysis"
+    ]
+  }
+}

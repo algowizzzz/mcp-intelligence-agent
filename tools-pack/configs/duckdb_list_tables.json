@@ -1,0 +1,32 @@
+{
+  "name": "duckdb_list_tables",
+  "implementation": "tools_pack_impl.duckdb_list_tables.DuckdbListTables",
+  "description": "List all available DuckDB tables and views. Views are auto-created from data files across all worker layers (my_data, domain_data, common).",
+  "category": "Data Analytics",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "include_system_tables": {
+        "type": "boolean",
+        "description": "Include system/internal tables in the listing",
+        "default": false
+      },
+      "_worker_context": {"type": "object"}
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "tables":      {"type": "array"},
+      "total_count": {"type": "integer"}
+    },
+    "required": ["tables", "total_count"]
+  },
+  "metadata": {
+    "author": "B-Pulse",
+    "category": "Data Analytics",
+    "tags": ["duckdb", "tables", "schema"]
+  }
+}

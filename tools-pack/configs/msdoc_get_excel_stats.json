@@ -1,0 +1,99 @@
+{
+  "name": "msdoc_get_excel_stats",
+  "implementation": "tools_pack_impl.msdoc_get_excel_stats.MsdocGetExcelStats",
+  "description": "Get per-sheet statistics for an Excel workbook: row/column counts, column names, data types, and numeric summary (min/max/mean) for each sheet. Use this before msdoc_read_excel to understand the workbook structure.",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "filename": {
+        "type": "string",
+        "description": "Name of the Excel file"
+      },
+      "section": {
+        "type": "string",
+        "enum": [
+          "domain_data",
+          "my_data",
+          "common"
+        ],
+        "description": "Data layer: 'domain_data' (worker knowledge base, default), 'my_data' (user uploads), 'common' (shared library)."
+      },
+      "_worker_context": {
+        "type": "object",
+        "description": "Injected by agent"
+      }
+    },
+    "required": [
+      "filename"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "filename": {
+        "type": "string"
+      },
+      "sheet_count": {
+        "type": "integer"
+      },
+      "sheets": {
+        "type": "array",
+        "description": "Per-sheet statistics",
+        "items": {
+          "type": "object",
+          "properties": {
+            "sheet": {
+              "type": "string"
+            },
+            "row_count": {
+              "type": "integer"
+            },
+            "column_count": {
+              "type": "integer"
+            },
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "column_stats": {
+              "type": "object",
+              "description": "Per-column type and numeric summary"
+            }
+          }
+        }
+      }
+    }
+  },
+  "metadata": {
+    "author": "Ashutosh Sinha",
+    "category": "Document Processing",
+    "tags": [
+      "excel",
+      "stats",
+      "summary",
+      "columns",
+      "data types"
+    ],
+    "rateLimit": 60,
+    "cacheTTL": 300,
+    "note": "Requires openpyxl library",
+    "examples": [
+      {
+        "description": "Get stats for uploaded Excel file",
+        "input": {
+          "filename": "Suppq425.xlsx",
+          "section": "my_data"
+        }
+      }
+    ],
+    "useCases": [
+      "Understand workbook structure before reading",
+      "Identify numeric columns for analysis",
+      "Summarize large spreadsheets efficiently"
+    ]
+  }
+}

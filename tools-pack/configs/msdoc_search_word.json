@@ -1,0 +1,92 @@
+{
+  "name": "msdoc_search_word",
+  "implementation": "tools_pack_impl.msdoc_search_word.MsdocSearchWord",
+  "description": "Search for specific text within Word documents and return matching paragraphs",
+  "version": "2.9.8",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "filename": {
+        "type": "string",
+        "description": "Name of the Word file to search"
+      },
+      "search_term": {
+        "type": "string",
+        "description": "Text to search for (case-insensitive)"
+      },
+      "section": {
+        "type": "string",
+        "enum": [
+          "domain_data",
+          "my_data",
+          "common"
+        ],
+        "description": "Data layer: 'domain_data' (worker knowledge base, default), 'my_data' (user uploads), 'common' (shared library)."
+      },
+      "_worker_context": {
+        "type": "object",
+        "description": "Injected by agent"
+      }
+    },
+    "required": [
+      "filename",
+      "search_term"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "filename": {
+        "type": "string"
+      },
+      "search_term": {
+        "type": "string"
+      },
+      "matches": {
+        "type": "array",
+        "description": "Paragraphs containing the search term",
+        "items": {
+          "type": "object",
+          "properties": {
+            "paragraph_index": {
+              "type": "integer"
+            },
+            "text": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "match_count": {
+        "type": "integer"
+      }
+    }
+  },
+  "metadata": {
+    "author": "Ashutosh Sinha",
+    "category": "Document Processing",
+    "tags": [
+      "word",
+      "search",
+      "find",
+      "text"
+    ],
+    "rateLimit": 60,
+    "cacheTTL": 300,
+    "examples": [
+      {
+        "description": "Search for 'revenue' in annual report",
+        "input": {
+          "filename": "annual_report.docx",
+          "search_term": "revenue"
+        }
+      }
+    ],
+    "useCases": [
+      "Find specific content in documents",
+      "Keyword search in Word files",
+      "Document content analysis"
+    ]
+  }
+}

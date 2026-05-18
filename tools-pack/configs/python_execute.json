@@ -1,0 +1,17 @@
+{
+  "name": "python_execute",
+  "description": "Execute Python code in a sandboxed environment. KEY RULES: (1) DATA FILES \u2014 use the pre-defined variable DATA_DIR (already set, do not import os): df = pd.read_csv(f\"{DATA_DIR}/iris/iris_combined.csv\"). (2) NO DB CONNECTORS \u2014 duckdb, sqlalchemy, psycopg2 are NOT installed; use duckdb_query tool first, then rebuild: df = pd.DataFrame(result['rows'], columns=result['columns']). (3) PLOTLY \u2014 always set template='plotly_white' to avoid template errors: fig = px.bar(df, ..., template='plotly_white'); call fig.show() to render in canvas. (4) os module is blocked \u2014 use DATA_DIR instead of os.environ or os.path. Available libraries: pandas, numpy, scipy, matplotlib, plotly, openpyxl, pyarrow, statsmodels, scikit-learn, arch, riskfolio, networkx, xarray. Timeout: 60s.",
+  "version": "1.0.0",
+  "enabled": true,
+  "implementation": "tools_pack_impl.python_execute.PythonExecute",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "_worker_context": {
+        "type": "object",
+        "description": "Injected by agent"
+      }
+    },
+    "required": []
+  }
+}

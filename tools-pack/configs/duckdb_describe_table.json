@@ -1,0 +1,48 @@
+{
+  "name": "duckdb_describe_table",
+  "implementation": "tools_pack_impl.duckdb_describe_table.DuckdbDescribeTable",
+  "description": "Get detailed schema information for a DuckDB table or view (column types, row count, optional sample rows). Tables/views are sourced from all worker data layers.",
+  "category": "Data Analytics",
+  "version": "1.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "table_name": {
+        "type": "string",
+        "description": "Name of the table/view to describe",
+        "minLength": 1
+      },
+      "include_sample_data": {
+        "type": "boolean",
+        "description": "Include sample rows from the table",
+        "default": false
+      },
+      "sample_size": {
+        "type": "integer",
+        "description": "Number of sample rows when include_sample_data is true",
+        "minimum": 1,
+        "maximum": 100,
+        "default": 5
+      },
+      "_worker_context": {"type": "object"}
+    },
+    "required": ["table_name"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "table_name":  {"type": "string"},
+      "table_type":  {"type": "string"},
+      "columns":     {"type": "array"},
+      "row_count":   {"type": "integer"},
+      "sample_data": {"type": "array"}
+    },
+    "required": ["table_name", "table_type", "columns", "row_count"]
+  },
+  "metadata": {
+    "author": "B-Pulse",
+    "category": "Data Analytics",
+    "tags": ["duckdb", "schema", "describe", "metadata"]
+  }
+}
