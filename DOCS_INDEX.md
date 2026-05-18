@@ -138,6 +138,9 @@ Handover entry point: platform purpose, run commands, folder map (01–06). Incl
 | [REQ-14_Bug_Fixes_SubAgent_Audit_EDGAR.md](requirements/pending/REQ-14_Bug_Fixes_SubAgent_Audit_EDGAR.md) | **Partial** (verified 2026-05-17). Four live-run bug fixes: sub-agent timeout still hardcoded 120s, dropped sub-agents not surfaced via SSE, audit `success: None` (AuditMiddleware not wired), EDGAR 6-K coverage for Canadian banks missing. |
 | [REQ-15_Supabase_Persistent_Storage.md](requirements/pending/REQ-15_Supabase_Persistent_Storage.md) | **Stubbed** (verified 2026-05-17). Supabase Storage + Postgres wiring so uploads and conversation history survive Railway redeploys; storage abstraction exists but `agent_server.py` file routes still use raw `pathlib`. |
 | [REQ-16_Hetzner_S3_Migration.md](requirements/pending/REQ-16_Hetzner_S3_Migration.md) | **Partial** (verified 2026-05-17). Storage backend, path resolver, and `STORAGE_BACKEND=s3` switch all done; ~11 tool modules in `sajha/tools/impl/` still call `pathlib`/`open()`/`os.walk` directly. |
+| [REQ-17_SAJHA_Upstream_Sync.md](requirements/pending/REQ-17_SAJHA_Upstream_Sync.md) | **Pending — Analysis & Planning** (2026-05-17). Adopt upstream `ajsinha/sajhamcpserver` v5.0.0 as-is; retire embedded fork; custom tools and worker-isolation move into a tools-pack drop-in. Recommends Option A (strict adoption). ~2 weeks effort. |
+| [REQ-17_PM_Brief.md](requirements/pending/REQ-17_PM_Brief.md) | PM-facing brief for REQ-17: business case, time/risk estimate, decision points, what changes for users. |
+| [REQ-17_Jr_Dev_Stories.md](requirements/pending/REQ-17_Jr_Dev_Stories.md) | 11 sequenced stories (0–10) implementing REQ-17, starting with a 1-day plugin-system spike. Story 7 (worker-isolation e2e test) is the merge gate. |
 
 ---
 
