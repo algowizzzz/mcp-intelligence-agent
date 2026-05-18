@@ -24,9 +24,16 @@ _AUDIT_FILE = pathlib.Path('sajhamcpserver/data/audit/tool_calls.jsonl')
 
 
 def _service_headers() -> dict:
-    """Build SAJHA request headers, injecting worker context for path scoping and audit."""
+    """Build SAJHA request headers, injecting worker context for path scoping and audit.
+
+    REQ-17: Upstream SAJHA v5.0.0 expects `X-API-Key` (not bare `Authorization`).
+    We send both so the call works against either our legacy fork or upstream.
+    """
     ctx = _worker_ctx.get()
-    headers = {'Authorization': _SAJHA_API_KEY}
+    headers = {
+        'Authorization': _SAJHA_API_KEY,   # legacy fork compatibility
+        'X-API-Key': _SAJHA_API_KEY,        # upstream v5.0.0 expects this
+    }
     if ctx:
         if ctx.get('worker_id'):
             headers['X-Worker-Id'] = ctx['worker_id']
@@ -49,6 +56,29 @@ def _service_headers() -> dict:
         if ctx.get('my_workflows_path'):
             headers['X-Worker-My-Workflows'] = ctx['my_workflows_path']
     return headers
+
+
+def _worker_context_for_args() -> dict:
+    """REQ-17: Build the `_worker_context` dict that gets embedded in tool arguments.
+
+    Upstream's tool.execute() only receives `arguments` — it has no access to HTTP
+    headers. So we embed worker scope inside arguments under a `_worker_context` key.
+    Our tools-pack tools read from this dict via tools_pack_lib.worker_ctx.get_data_layers().
+    """
+    ctx = _worker_ctx.get() or {}
+    uid = ctx.get('user_id', '')
+    my_data = ctx.get('my_data_path', '')
+    if my_data and uid:
+        my_data = my_data.rstrip('/') + '/' + uid
+    return {
+        'worker_id':         ctx.get('worker_id', ''),
+        'user_id':           uid,
+        'domain_data_path':  ctx.get('domain_data_path', ''),
+        'common_data_path':  ctx.get('common_data_path', ''),
+        'my_data_path':      my_data,
+        'workflows_path':    ctx.get('workflows_path', ''),
+        'my_workflows_path': ctx.get('my_workflows_path', ''),
+    }
 
 
 # Keep _get_token for any legacy callers — delegates to API key path
@@ -198,13 +228,26 @@ async def _call_sajha(tool_name: str, args: dict) -> dict:
     status = 'success'
     result: dict = {}
     timeout = _TOOL_TIMEOUTS.get(tool_name, 30.0)
+    # REQ-17: inject worker context inside arguments so upstream tools can read it
+    # (upstream's execute() only receives `arguments`, no request access).
+    enriched_args = dict(args) if args else {}
+    enriched_args['_worker_context'] = _worker_context_for_args()
     try:
         async with httpx.AsyncClient(timeout=timeout, trust_env=False) as c:
             r = await c.post(f'{SAJHA_BASE}/api/tools/execute',
                 headers=_service_headers(),
-                json={'tool': tool_name, 'arguments': args})
+                json={'tool': tool_name, 'arguments': enriched_args})
             r.raise_for_status()
-            result = r.json()['result']
+            payload = r.json()
+            # Legacy fork shape:    {"result": {...}}
+            # Upstream v5.0.0 shape: {"success": true, "result": {...}} or {"value": {...}, "error": null}
+            result = payload.get('result') if 'result' in payload else payload
+            # Upstream StepResult envelope: {value, error, trace, duration, confidence, _composition}
+            if isinstance(result, dict) and 'value' in result and ('error' in result or '_composition' in result):
+                if result.get('error'):
+                    result = {'error': result['error']}
+                else:
+                    result = result.get('value') or {}
             return _truncate_result(result, tool_name)
     except httpx.TimeoutException:
         status = 'timeout'

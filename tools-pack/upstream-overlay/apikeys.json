@@ -1,0 +1,22 @@
+{
+  "apikeys": [
+    {
+      "key": "sja_full_access_admin",
+      "name": "B-Pulse Agent (full access)",
+      "description": "API key used by the LangGraph agent server to call SAJHA. Tool allowlist = *.",
+      "created_by": "saad",
+      "created_at": "2026-05-17T00:00:00Z",
+      "expires_at": null,
+      "enabled": true,
+      "tool_access": {
+        "mode": "allowlist",
+        "tools": ["*"],
+        "regex_patterns": []
+      },
+      "rate_limit": {
+        "requests_per_minute": 600,
+        "requests_per_hour": 10000
+      }
+    }
+  ]
+}
