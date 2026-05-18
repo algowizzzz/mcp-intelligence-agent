@@ -1,0 +1,36 @@
+{
+  "name": "sqlselect_count_rows",
+  "implementation": "tools_pack_impl.sqlselect_count_rows.SqlselectCountRows",
+  "description": "Count rows in a data source with optional WHERE clause filtering",
+  "version": "2.9.8",
+  "enabled": true,
+  "data_sources": {
+    "customers": {"file": "customers.csv", "type": "csv", "description": "Customer master data"},
+    "orders":    {"file": "orders.csv",    "type": "csv", "description": "Order transactions"},
+    "products":  {"file": "products.csv",  "type": "csv", "description": "Product catalog"},
+    "sales":     {"file": "sales.csv",     "type": "csv", "description": "Sales data with customer and product details"}
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "source_name":  {"type": "string"},
+      "where_clause": {"type": "string"}
+    },
+    "required": ["source_name"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success":      {"type": "boolean"},
+      "source_name":  {"type": "string"},
+      "row_count":    {"type": "integer"},
+      "where_clause": {"type": ["string", "null"]},
+      "timestamp":    {"type": "string"}
+    },
+    "required": ["success", "source_name", "row_count"]
+  },
+  "metadata": {
+    "category": "Data Query",
+    "tags": ["sql", "count", "rows", "duckdb"]
+  }
+}

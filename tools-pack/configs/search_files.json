@@ -1,0 +1,25 @@
+{
+  "name": "search_files",
+  "implementation": "tools_pack_impl.search_files.SearchFiles",
+  "description": "Full-text keyword search across domain_data/, my_data/, and common/ (Shared Library) files (pdf, docx, xlsx, csv, md, txt, json). Returns file path and excerpts with highlighted matches per hit. Use to find documents containing a keyword or exact phrase before processing.",
+  "version": "1.0.0",
+  "enabled": true,
+  "metadata": {
+    "category": "File Management",
+    "tags": [
+      "search",
+      "full-text",
+      "documents",
+      "find"
+    ]
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "_worker_context": {
+        "type": "object",
+        "description": "Injected by agent"
+      }
+    }
+  }
+}

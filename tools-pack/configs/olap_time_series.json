@@ -1,0 +1,41 @@
+{
+  "name": "olap_time_series",
+  "implementation": "tools_pack_impl.olap_time_series.OlapTimeSeries",
+  "description": "Analyze time series data with flexible time grains, gap filling, and period-over-period comparisons (YoY/QoQ/MoM/WoW/DoD). Dataset is the table/view name from duckdb_list_files.",
+  "category": "OLAP Analytics",
+  "version": "2.9.8",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "dataset":        {"type": "string"},
+      "time_dimension": {"type": "string"},
+      "time_grain":     {"type": "string", "enum": ["year", "quarter", "month", "week", "day", "hour"]},
+      "measures":       {"type": "array",  "items": {"type": "string"}},
+      "dimensions":     {"type": "array",  "items": {"type": "string"}},
+      "comparison": {
+        "type": "object",
+        "properties": {
+          "type": {"type": "string", "enum": ["yoy", "qoq", "mom", "wow", "dod"]}
+        }
+      },
+      "fill_gaps":      {"type": "boolean", "default": true},
+      "date_range":     {"type": "object"},
+      "filters":        {"type": "array"}
+    },
+    "required": ["dataset", "time_dimension", "time_grain", "measures"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success": {"type": "boolean"},
+      "data":    {"type": "array"},
+      "columns": {"type": "array"},
+      "sql":     {"type": "string"}
+    }
+  },
+  "metadata": {
+    "category": "OLAP Analytics",
+    "tags": ["olap", "timeseries", "trend", "comparison", "yoy", "temporal"]
+  }
+}

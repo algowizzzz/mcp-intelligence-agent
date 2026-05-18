@@ -1,0 +1,35 @@
+{
+  "name": "sqlselect_get_schema",
+  "implementation": "tools_pack_impl.sqlselect_get_schema.SqlselectGetSchema",
+  "description": "Get detailed schema information including column types and constraints",
+  "version": "2.9.8",
+  "enabled": true,
+  "data_sources": {
+    "customers": {"file": "customers.csv", "type": "csv", "description": "Customer master data"},
+    "orders":    {"file": "orders.csv",    "type": "csv", "description": "Order transactions"},
+    "products":  {"file": "products.csv",  "type": "csv", "description": "Product catalog"},
+    "sales":     {"file": "sales.csv",     "type": "csv", "description": "Sales data with customer and product details"}
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "source_name": {"type": "string", "description": "Name of the data source"}
+    },
+    "required": ["source_name"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success":      {"type": "boolean"},
+      "source_name":  {"type": "string"},
+      "schema":       {"type": "array"},
+      "column_count": {"type": "integer"},
+      "timestamp":    {"type": "string"}
+    },
+    "required": ["success", "source_name", "schema", "column_count"]
+  },
+  "metadata": {
+    "category": "Data Query",
+    "tags": ["sql", "schema", "columns", "duckdb"]
+  }
+}

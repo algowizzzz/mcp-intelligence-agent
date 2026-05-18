@@ -1,0 +1,45 @@
+{
+  "name": "olap_pivot_table",
+  "implementation": "tools_pack_impl.olap_pivot_table.OlapPivotTable",
+  "description": "Create pivot tables with rows, columns, and aggregated values over worker data layer views. Dataset is the table/view name from duckdb_list_files.",
+  "category": "OLAP Analytics",
+  "version": "2.9.8",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "dataset": {"type": "string", "description": "Table/view name (use duckdb_list_files to discover)"},
+      "rows":    {"type": "array",  "items": {"type": "string"}, "description": "Row dimensions"},
+      "columns": {"type": "array",  "items": {"type": "string"}, "description": "Column dimensions"},
+      "values": {
+        "type": "array",
+        "description": "List of {measure, aggregation}",
+        "items": {
+          "type": "object",
+          "properties": {
+            "measure":     {"type": "string"},
+            "aggregation": {"type": "string", "enum": ["SUM", "AVG", "COUNT", "MIN", "MAX", "MEDIAN"]}
+          }
+        }
+      },
+      "filters": {"type": "array", "description": "List of {dimension/column, operator, value}"},
+      "include_totals":    {"type": "boolean", "default": true},
+      "include_subtotals": {"type": "boolean", "default": false},
+      "limit":             {"type": "integer"}
+    },
+    "required": ["dataset", "rows", "values"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success": {"type": "boolean"},
+      "data":    {"type": "array"},
+      "columns": {"type": "array"},
+      "sql":     {"type": "string"}
+    }
+  },
+  "metadata": {
+    "category": "OLAP Analytics",
+    "tags": ["olap", "pivot", "analysis", "aggregation", "multidimensional"]
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "file_read",
+  "description": "Read the full content of a text-based file (markdown, txt, csv, json, xml, yaml, html, etc.) from domain_data, my_data, or common (shared library). Returns the file content as a string. Use section='domain_data' for domain knowledge files, section='my_data' for user-uploaded files, section='common' for shared library files.",
+  "implementation": "tools_pack_impl.file_read.FileRead",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "_worker_context": {
+        "type": "object",
+        "description": "Injected by agent"
+      }
+    }
+  }
+}

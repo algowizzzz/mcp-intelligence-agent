@@ -1,0 +1,32 @@
+{
+  "name": "sqlselect_list_sources",
+  "implementation": "tools_pack_impl.sqlselect_list_sources.SqlselectListSources",
+  "description": "List all available data sources with their metadata and file information",
+  "version": "2.9.8",
+  "enabled": true,
+  "data_sources": {
+    "customers": {"file": "customers.csv", "type": "csv", "description": "Customer master data"},
+    "orders":    {"file": "orders.csv",    "type": "csv", "description": "Order transactions"},
+    "products":  {"file": "products.csv",  "type": "csv", "description": "Product catalog"},
+    "sales":     {"file": "sales.csv",     "type": "csv", "description": "Sales data with customer and product details"}
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success":   {"type": "boolean"},
+      "sources":   {"type": "array"},
+      "count":     {"type": "integer"},
+      "timestamp": {"type": "string"}
+    },
+    "required": ["success", "sources", "count", "timestamp"]
+  },
+  "metadata": {
+    "category": "Data Query",
+    "tags": ["sql", "data sources", "catalog", "metadata", "duckdb"]
+  }
+}

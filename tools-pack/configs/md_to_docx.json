@@ -1,0 +1,25 @@
+{
+  "name": "md_to_docx",
+  "implementation": "tools_pack_impl.md_to_docx.MdToDocx",
+  "description": "Convert a .md file to a formatted .docx Word document. Handles headings, tables, bullets, bold/italic, code blocks. YAML frontmatter is omitted.",
+  "version": "1.0.0",
+  "enabled": true,
+  "metadata": {
+    "category": "Document Processing",
+    "tags": [
+      "docx",
+      "word",
+      "convert",
+      "markdown"
+    ]
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "_worker_context": {
+        "type": "object",
+        "description": "Injected by agent"
+      }
+    }
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "name": "list_uploaded_files",
+  "implementation": "tools_pack_impl.list_uploaded_files.ListUploadedFiles",
+  "description": "Lists files across all data layers (my_data, domain_data, common) by default. Returns filename, full path, section, file type, size, and upload time. Call this before any read_pdf / read_docx / read_excel / python_run_script call to discover available files. By default searches ALL three layers \u2014 use the 'section' parameter to drill down into a specific layer if needed.",
+  "version": "1.1.0",
+  "enabled": true,
+  "data_path": "${data.uploads_dir}",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "section": {
+        "type": "string",
+        "enum": [
+          "all",
+          "my_data",
+          "domain_data",
+          "common"
+        ],
+        "description": "Data layer to list. ALWAYS omit this parameter (or pass null) on the first call \u2014 files can exist in any layer. Only specify a section if you already know which layer the file is in."
+      },
+      "file_type": {
+        "type": "string",
+        "enum": [
+          "pdf",
+          "docx",
+          "xlsx",
+          "csv",
+          "txt",
+          "parquet",
+          "md",
+          "json",
+          "py",
+          "all"
+        ],
+        "description": "Filter by file type. Default: all."
+      },
+      "sort_by": {
+        "type": "string",
+        "enum": [
+          "uploaded_at",
+          "filename",
+          "size"
+        ],
+        "description": "Sort order. Default: uploaded_at descending (newest first)."
+      },
+      "subfolder": {
+        "type": "string",
+        "description": "Optional subfolder path within a section to list (e.g. 'exports'). Default: list all subfolders recursively."
+      },
+      "_worker_context": {
+        "type": "object",
+        "description": "Injected by agent"
+      }
+    },
+    "required": []
+  },
+  "metadata": {
+    "author": "Ashutosh Sinha",
+    "email": "ajsinha@gmail.com",
+    "category": "File Management",
+    "tags": [
+      "upload",
+      "files",
+      "documents",
+      "pdf",
+      "docx",
+      "excel",
+      "python",
+      "data-layers"
+    ],
+    "rateLimit": 60,
+    "cacheTTL": 0,
+    "copyright": "Copyright All Rights Reserved 2025-2030"
+  }
+}

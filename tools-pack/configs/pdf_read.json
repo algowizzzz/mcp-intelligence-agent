@@ -1,0 +1,50 @@
+{
+  "name": "pdf_read",
+  "implementation": "tools_pack_impl.pdf_read.PdfRead",
+  "description": "Extract text and tables from a local PDF file. For large PDFs use pages='1-5' to limit output, or heading='Market Risk' to extract a named section directly (detected by font-size analysis). Returns available_headings[] when heading is not found.",
+  "version": "1.1.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "file_path": {
+        "type": "string",
+        "description": "Absolute path to a .pdf file."
+      },
+      "pages": {
+        "type": "string",
+        "description": "Page range: '1', '1-5', or 'all' (default). Use this to page through large documents."
+      },
+      "heading": {
+        "type": "string",
+        "description": "Extract only the section under this heading (case-insensitive partial match, font-size detected). E.g. 'Item 7', 'Market Risk', 'Executive Summary'. Returns available_headings[] if not found."
+      },
+      "extract_tables": {
+        "type": "boolean",
+        "description": "Extract tables alongside text. Default: true."
+      },
+      "max_chars": {
+        "type": "integer",
+        "description": "Truncate full text at this char count. Default: 50000. Max: 200000."
+      },
+      "_worker_context": {
+        "type": "object",
+        "description": "Injected by agent"
+      }
+    },
+    "required": [
+      "file_path"
+    ]
+  },
+  "metadata": {
+    "category": "Document Processing",
+    "tags": [
+      "pdf",
+      "extract",
+      "text",
+      "tables",
+      "heading",
+      "section"
+    ]
+  }
+}

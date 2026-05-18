@@ -1,0 +1,26 @@
+{
+  "name": "data_export",
+  "implementation": "tools_pack_impl.data_export.DataExport",
+  "description": "Save a data_transform result as CSV or Parquet in my_data/. Supports versioning. Exported files are immediately discoverable by list_data_files and queryable by data_transform or duckdb_sql.",
+  "version": "1.0.0",
+  "enabled": true,
+  "metadata": {
+    "category": "Data Processing",
+    "tags": [
+      "export",
+      "parquet",
+      "csv",
+      "save",
+      "persist"
+    ]
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "_worker_context": {
+        "type": "object",
+        "description": "Injected by agent"
+      }
+    }
+  }
+}

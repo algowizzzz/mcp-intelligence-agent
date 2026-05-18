@@ -1,0 +1,26 @@
+{
+  "name": "parquet_read",
+  "implementation": "tools_pack_impl.parquet_read.ParquetRead",
+  "description": "Inspect and preview a Parquet or CSV file: schema, row count, sample rows, and per-column statistics. Call before data_transform to confirm column names. Pass file_path from list_data_files.",
+  "version": "1.0.0",
+  "enabled": true,
+  "metadata": {
+    "category": "Data Processing",
+    "tags": [
+      "parquet",
+      "csv",
+      "schema",
+      "preview",
+      "stats"
+    ]
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "_worker_context": {
+        "type": "object",
+        "description": "Injected by agent"
+      }
+    }
+  }
+}
