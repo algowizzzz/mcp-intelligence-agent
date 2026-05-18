@@ -1,57 +1,107 @@
-"""list_versions — List versioned files in my_data. REQ-17 compliant version (upstream BaseMCPTool)."""
-import io
+"""
+list_versions — compliant with upstream SAJHA.
+
+Ported from sajhamcpserver/sajha/tools/impl/operational_tools.py (ListVersionsTool).
+Worker scope from arguments['_worker_context'].
+"""
+
+import logging
 import os
+import re
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List
 
 from sajha.tools.base_mcp_tool import BaseMCPTool
-from tools_pack_lib.worker_ctx import get_data_layers
 
+from tools_pack_impl._operational_base import get_roots
 
-def _layer_roots(arguments: Dict[str, Any]) -> List[tuple]:
-    return get_data_layers(arguments.get('_worker_context') or {}, 'all')
-
-
-def _resolve(arguments: Dict[str, Any], rel: str) -> Optional[str]:
-    """Find a file across layers by relative path; return first absolute match or None."""
-    rel = (rel or '').lstrip('/')
-    for _, root in _layer_roots(arguments):
-        full = os.path.join(root, rel)
-        if os.path.exists(full):
-            return full
-    return None
+logger = logging.getLogger(__name__)
 
 
 class ListVersions(BaseMCPTool):
-    """List versioned files in my_data."""
+    """List canonical + archived versions of a filename stem under my_data/."""
 
-    def get_input_schema(self) -> Dict[str, Any]:
+    def get_input_schema(self) -> Dict:
         return self.config.get('inputSchema', {
             'type': 'object',
             'properties': {
-                'path': {'type': 'string', 'description': 'Relative path to file'},
-                '_worker_context': {'type': 'object'},
+                'filename':  {'type': 'string'},
+                'subfolder': {'type': 'string'},
             },
-            'required': [],
+            'required': ['filename'],
         })
 
-    def get_output_schema(self) -> Dict[str, Any]:
+    def get_output_schema(self) -> Dict:
         return {'type': 'object'}
 
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
-        return _do_execute_list_versions(arguments)
+        filename = (arguments.get('filename') or '').strip()
+        subfolder = (arguments.get('subfolder') or '').strip()
+        if not filename:
+            return {'error': 'filename is required'}
 
+        _, my_data, _ = get_roots(arguments)
+        if not my_data:
+            return {'error': 'my_data layer not available'}
 
-# Tool-specific implementation below the class so each is small and isolated.
+        search_root = my_data / subfolder if subfolder else my_data
+        if not search_root.exists():
+            return {
+                'canonical':     None,
+                'versions':      [],
+                'version_count': 0,
+                '_source':       str(search_root),
+            }
 
-def _do_execute_list_versions(arguments):
-    name = str(arguments.get('name', '')).strip()
-    versions = []
-    for layer, root in _layer_roots(arguments):
-        if not root or not os.path.isdir(root):
-            continue
-        for r, _, files in os.walk(root):
-            for fn in files:
-                if not name or name in fn:
-                    versions.append({'layer': layer, 'name': fn, 'path': os.path.join(r, fn)})
-    return {'filter': name, 'versions': versions[:200], 'count': len(versions)}
+        stem = Path(filename).stem
+        ext = Path(filename).suffix
+        version_pattern = re.compile(
+            r'^' + re.escape(stem) + r'_(\d{4}-\d{2}-\d{2}_\d{6})' + re.escape(ext) + r'$',
+            re.IGNORECASE,
+        )
+
+        canonical = None
+        versions: List[Dict[str, Any]] = []
+        for dirpath, _, filenames in os.walk(str(search_root)):
+            for fname in filenames:
+                fp = os.path.join(dirpath, fname)
+                try:
+                    size = os.path.getsize(fp)
+                    mtime = datetime.fromtimestamp(os.path.getmtime(fp), tz=timezone.utc)
+                except OSError:
+                    size = 0
+                    mtime = datetime.now(tz=timezone.utc)
+
+                if fname.lower() == filename.lower():
+                    canonical = {
+                        'filename':    fname,
+                        'path':        fp,
+                        'modified_at': mtime.isoformat(),
+                        'size_bytes':  size,
+                    }
+                else:
+                    m = version_pattern.match(fname)
+                    if m:
+                        versions.append({
+                            'filename':    fname,
+                            'path':        fp,
+                            'archived_at': m.group(1),
+                            'size_bytes':  size,
+                            '_ts':         m.group(1),
+                        })
+
+        versions.sort(key=lambda v: v['_ts'], reverse=True)
+        for v in versions:
+            del v['_ts']
+
+        if not canonical and versions:
+            canonical = dict(versions[0])
+            canonical['note'] = 'No canonical file found; showing most recent version.'
+
+        return {
+            'canonical':     canonical,
+            'versions':      versions,
+            'version_count': len(versions),
+            '_source':       str(search_root),
+        }

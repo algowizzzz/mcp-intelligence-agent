@@ -1,64 +1,156 @@
-"""search_files — Search filenames across worker data layers. REQ-17 compliant version (upstream BaseMCPTool)."""
+"""
+search_files — compliant with upstream SAJHA.
+
+Ported from sajhamcpserver/sajha/tools/impl/operational_tools.py
+(SearchFilesTool). Worker scope from arguments['_worker_context'].
+"""
+
 import io
+import logging
 import os
-from pathlib import Path
-from typing import Dict, Any, List, Optional
+import re
+from typing import Any, Dict, List
 
 from sajha.tools.base_mcp_tool import BaseMCPTool
-from tools_pack_lib.worker_ctx import get_data_layers
+
+from tools_pack_impl._operational_base import get_roots
+
+logger = logging.getLogger(__name__)
 
 
-def _layer_roots(arguments: Dict[str, Any]) -> List[tuple]:
-    return get_data_layers(arguments.get('_worker_context') or {}, 'all')
-
-
-def _resolve(arguments: Dict[str, Any], rel: str) -> Optional[str]:
-    """Find a file across layers by relative path; return first absolute match or None."""
-    rel = (rel or '').lstrip('/')
-    for _, root in _layer_roots(arguments):
-        full = os.path.join(root, rel)
-        if os.path.exists(full):
-            return full
-    return None
+def _extract_text(path: str, ext: str) -> str:
+    try:
+        if ext in ('md', 'txt', 'csv', 'tsv', 'json'):
+            with open(path, 'r', encoding='utf-8', errors='replace') as fh:
+                return fh.read()
+        if ext == 'docx':
+            from docx import Document
+            with open(path, 'rb') as fh:
+                doc = Document(io.BytesIO(fh.read()))
+            parts = [p.text for p in doc.paragraphs]
+            for table in doc.tables:
+                for row in table.rows:
+                    for cell in row.cells:
+                        parts.append(cell.text)
+            return '\n'.join(parts)
+        if ext in ('xlsx', 'xls'):
+            import openpyxl
+            with open(path, 'rb') as fh:
+                wb = openpyxl.load_workbook(io.BytesIO(fh.read()), read_only=True, data_only=True)
+            parts = []
+            for ws in wb.worksheets:
+                for row in ws.iter_rows(values_only=True):
+                    parts.append(' '.join(str(c) for c in row if c is not None))
+            return '\n'.join(parts)
+        if ext == 'pdf':
+            try:
+                import fitz
+                with open(path, 'rb') as fh:
+                    doc = fitz.open(stream=io.BytesIO(fh.read()), filetype='pdf')
+                return '\n'.join(doc[i].get_text() for i in range(len(doc)))
+            except Exception:
+                return ''
+    except Exception:
+        return ''
+    return ''
 
 
 class SearchFiles(BaseMCPTool):
-    """Search filenames across worker data layers."""
+    """Full-text keyword search across worker data layers."""
 
-    def get_input_schema(self) -> Dict[str, Any]:
+    def get_input_schema(self) -> Dict:
         return self.config.get('inputSchema', {
             'type': 'object',
             'properties': {
-                'path': {'type': 'string', 'description': 'Relative path to file'},
-                '_worker_context': {'type': 'object'},
+                'query':         {'type': 'string'},
+                'section':       {'type': 'string', 'enum': ['domain_data', 'my_data', 'common', 'all']},
+                'file_type':     {'type': 'string'},
+                'folder':        {'type': 'string'},
+                'max_results':   {'type': 'integer'},
+                'excerpt_chars': {'type': 'integer'},
             },
-            'required': [],
+            'required': ['query'],
         })
 
-    def get_output_schema(self) -> Dict[str, Any]:
+    def get_output_schema(self) -> Dict:
         return {'type': 'object'}
 
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
-        return _do_execute_search_files(arguments)
+        query = arguments.get('query', '')
+        section = arguments.get('section', 'all')
+        file_type = arguments.get('file_type', 'all')
+        folder_filter = (arguments.get('folder') or '').strip()
+        max_results = int(arguments.get('max_results', 20))
+        excerpt_chars = int(arguments.get('excerpt_chars', 200))
 
+        if not query:
+            return {'error': 'query is required', 'results': []}
 
-# Tool-specific implementation below the class so each is small and isolated.
+        exact = re.match(r'^"(.+)"$', query)
+        if exact:
+            pattern = re.compile(re.escape(exact.group(1)), re.IGNORECASE)
+        else:
+            pattern = re.compile(re.escape(query), re.IGNORECASE)
 
-def _do_execute_search_files(arguments):
-    query = str(arguments.get('query', '')).strip().lower()
-    file_type = str(arguments.get('file_type', '')).lower().lstrip('.')
-    if not query:
-        return {'error': 'query is required'}
-    matches = []
-    for layer, root in _layer_roots(arguments):
-        if not root or not os.path.isdir(root):
-            continue
-        for r, _, files in os.walk(root):
-            for fn in files:
-                if fn.startswith('.') or fn.startswith('_'):
-                    continue
-                if file_type and not fn.lower().endswith('.' + file_type):
-                    continue
-                if query in fn.lower():
-                    matches.append({'layer': layer, 'name': fn, 'path': os.path.join(r, fn)})
-    return {'query': query, 'matches': matches[:200], 'count': len(matches)}
+        domain, my_data, common = get_roots(arguments)
+        layer_map = {'domain_data': domain, 'my_data': my_data, 'common': common}
+
+        roots: List = []
+        if section == 'all':
+            for n, r in layer_map.items():
+                if r:
+                    roots.append((n, str(r)))
+        elif section in layer_map and layer_map[section]:
+            roots.append((section, str(layer_map[section])))
+
+        candidates: List = []
+        for sec_name, root_str in roots:
+            if not os.path.isdir(root_str):
+                continue
+            for dirpath, _, filenames in os.walk(root_str):
+                for fname in filenames:
+                    if fname.startswith('.'):
+                        continue
+                    rel_path = os.path.relpath(os.path.join(dirpath, fname), root_str)
+                    if folder_filter and folder_filter.lower() not in rel_path.lower():
+                        continue
+                    ext = os.path.splitext(fname)[1].lower().lstrip('.')
+                    if file_type != 'all' and ext != file_type:
+                        continue
+                    if ext in ('parquet', 'pq', 'db', 'wal', 'pyc'):
+                        continue
+                    f_path = os.path.join(root_str, rel_path)
+                    candidates.append((sec_name, f_path, fname, ext))
+
+        results: List[Dict[str, Any]] = []
+        for sec_name, f_path, fname, ext in candidates:
+            if len(results) >= max_results:
+                break
+            text = _extract_text(f_path, ext)
+            if not text:
+                continue
+            matches = list(pattern.finditer(text))
+            if not matches:
+                continue
+            excerpts = []
+            for m in matches[:5]:
+                start = max(0, m.start() - excerpt_chars // 2)
+                end = min(len(text), m.end() + excerpt_chars // 2)
+                snippet = text[start:end].replace('\n', ' ').strip()
+                snippet = pattern.sub(lambda x: f"[{x.group()}]", snippet)
+                excerpts.append(snippet)
+            results.append({
+                'filename':    fname,
+                'path':        f_path,
+                'file_type':   ext,
+                'section':     sec_name,
+                'match_count': len(matches),
+                'excerpts':    excerpts,
+                '_source':     f_path,
+            })
+
+        return {
+            'query':         query,
+            'total_matches': len(results),
+            'results':       results,
+        }

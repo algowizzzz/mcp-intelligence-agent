@@ -1,65 +1,81 @@
-"""md_save — Save markdown content to my_data. REQ-17 compliant version (upstream BaseMCPTool)."""
-import io
+"""
+md_save — compliant with upstream SAJHA.
+
+Ported from sajhamcpserver/sajha/tools/impl/operational_tools.py (MdSaveTool).
+Worker scope from arguments['_worker_context'].
+"""
+
+import logging
 import os
+import shutil
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict
 
 from sajha.tools.base_mcp_tool import BaseMCPTool
-from tools_pack_lib.worker_ctx import get_data_layers
 
+from tools_pack_impl._operational_base import get_roots
 
-def _layer_roots(arguments: Dict[str, Any]) -> List[tuple]:
-    return get_data_layers(arguments.get('_worker_context') or {}, 'all')
-
-
-def _resolve(arguments: Dict[str, Any], rel: str) -> Optional[str]:
-    """Find a file across layers by relative path; return first absolute match or None."""
-    rel = (rel or '').lstrip('/')
-    for _, root in _layer_roots(arguments):
-        full = os.path.join(root, rel)
-        if os.path.exists(full):
-            return full
-    return None
+logger = logging.getLogger(__name__)
 
 
 class MdSave(BaseMCPTool):
-    """Save markdown content to my_data."""
+    """Save Markdown content to my_data/ with automatic versioning."""
 
-    def get_input_schema(self) -> Dict[str, Any]:
+    def get_input_schema(self) -> Dict:
         return self.config.get('inputSchema', {
             'type': 'object',
             'properties': {
-                'path': {'type': 'string', 'description': 'Relative path to file'},
-                '_worker_context': {'type': 'object'},
+                'content':    {'type': 'string'},
+                'filename':   {'type': 'string'},
+                'subfolder':  {'type': 'string'},
+                'versioning': {'type': 'boolean'},
+                'overwrite':  {'type': 'boolean'},
             },
-            'required': [],
+            'required': ['content', 'filename'],
         })
 
-    def get_output_schema(self) -> Dict[str, Any]:
+    def get_output_schema(self) -> Dict:
         return {'type': 'object'}
 
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
-        return _do_execute_md_save(arguments)
+        content = arguments.get('content', '')
+        filename = Path(arguments.get('filename', 'output.md')).name
+        if not filename.endswith('.md'):
+            filename += '.md'
+        subfolder = arguments.get('subfolder', '')
+        versioning = arguments.get('versioning', True)
+        overwrite = arguments.get('overwrite', False)
 
+        _, my_data, _ = get_roots(arguments)
+        if not my_data:
+            return {'error': 'my_data layer not available on worker context'}
 
-# Tool-specific implementation below the class so each is small and isolated.
+        folder = my_data / subfolder if subfolder else my_data
+        folder.mkdir(parents=True, exist_ok=True)
+        dest = folder / filename
+        archived_as = None
 
-def _do_execute_md_save(arguments):
-    name = str(arguments.get('filename', arguments.get('name',''))).strip()
-    content = str(arguments.get('content', ''))
-    if not name or not content:
-        return {'error': 'filename and content are required'}
-    if not name.endswith('.md'):
-        name += '.md'
-    layers = _layer_roots(arguments)
-    my = next((r for n,r in layers if n == 'my_data'), None)
-    if not my:
-        return {'error': 'my_data layer not available'}
-    os.makedirs(my, exist_ok=True)
-    full = os.path.join(my, name)
-    try:
-        with open(full, 'w', encoding='utf-8') as f:
-            f.write(content)
-        return {'path': full, 'size_bytes': len(content)}
-    except Exception as e:
-        return {'error': str(e), 'path': full}
+        if dest.exists() and not overwrite:
+            if versioning:
+                ts = datetime.now(tz=timezone.utc).strftime('%Y-%m-%d_%H%M%S')
+                archive_name = f"{dest.stem}_{ts}.md"
+                archive_path = folder / archive_name
+                shutil.copy2(str(dest), str(archive_path))
+                dest.unlink()
+                archived_as = archive_name
+
+        with open(dest, 'w', encoding='utf-8') as fh:
+            fh.write(content)
+        size_bytes = dest.stat().st_size if dest.exists() else len(content.encode('utf-8'))
+
+        return {
+            'path':        str(dest),
+            'filename':    filename,
+            'subfolder':   subfolder,
+            'size_bytes':  size_bytes,
+            'versioned':   archived_as is not None,
+            'archived_as': archived_as,
+            'written_at':  datetime.now(tz=timezone.utc).isoformat(),
+            '_source':     str(dest),
+        }

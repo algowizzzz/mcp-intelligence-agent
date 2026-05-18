@@ -1,70 +1,125 @@
-"""data_export — Export structured data to CSV/Parquet. REQ-17 compliant version (upstream BaseMCPTool)."""
+"""
+data_export — compliant with upstream SAJHA.
+
+Ported from sajhamcpserver/sajha/tools/impl/data_transform_tools.py
+(DataExportTool). Worker scope from arguments['_worker_context'].
+"""
+
 import io
-import os
+import logging
+import shutil
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict
 
 from sajha.tools.base_mcp_tool import BaseMCPTool
-from tools_pack_lib.worker_ctx import get_data_layers
+
+from tools_pack_impl._operational_base import get_roots
+
+logger = logging.getLogger(__name__)
 
 
-def _layer_roots(arguments: Dict[str, Any]) -> List[tuple]:
-    return get_data_layers(arguments.get('_worker_context') or {}, 'all')
-
-
-def _resolve(arguments: Dict[str, Any], rel: str) -> Optional[str]:
-    """Find a file across layers by relative path; return first absolute match or None."""
-    rel = (rel or '').lstrip('/')
-    for _, root in _layer_roots(arguments):
-        full = os.path.join(root, rel)
-        if os.path.exists(full):
-            return full
-    return None
+def _df_to_pq(df, dest, compression: str = 'snappy'):
+    import pyarrow as pa, pyarrow.parquet as pq_mod
+    arrays, fields = [], []
+    for col in df.columns:
+        vals = df[col].tolist()
+        try:
+            arr = pa.array(vals)
+        except Exception:
+            arr = pa.array([str(v) if v is not None else None for v in vals], type=pa.string())
+        arrays.append(arr)
+        fields.append(pa.field(str(col), arr.type))
+    table = pa.table(arrays, schema=pa.schema(fields))
+    pq_mod.write_table(table, dest, compression=compression)
 
 
 class DataExport(BaseMCPTool):
-    """Export structured data to CSV/Parquet."""
+    """Save a data_transform result as CSV or Parquet in my_data/."""
 
-    def get_input_schema(self) -> Dict[str, Any]:
+    def get_input_schema(self) -> Dict:
         return self.config.get('inputSchema', {
             'type': 'object',
             'properties': {
-                'path': {'type': 'string', 'description': 'Relative path to file'},
-                '_worker_context': {'type': 'object'},
+                'data':          {'type': 'object'},
+                'filename':      {'type': 'string'},
+                'subfolder':     {'type': 'string'},
+                'format':        {'type': 'string', 'enum': ['csv', 'parquet']},
+                'versioning':    {'type': 'boolean'},
+                'include_index': {'type': 'boolean'},
             },
-            'required': [],
+            'required': ['data', 'filename'],
         })
 
-    def get_output_schema(self) -> Dict[str, Any]:
+    def get_output_schema(self) -> Dict:
         return {'type': 'object'}
 
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
-        return _do_execute_data_export(arguments)
-
-
-# Tool-specific implementation below the class so each is small and isolated.
-
-def _do_execute_data_export(arguments):
-    src = str(arguments.get('source', '')).strip()
-    fmt = str(arguments.get('format', 'csv')).lower()
-    if not src:
-        return {'error': 'source is required'}
-    full = _resolve(arguments, src)
-    if not full:
-        return {'error': f'source not found: {src}'}
-    try:
         import pandas as pd
-        df = pd.read_csv(full) if full.endswith('.csv') else pd.read_parquet(full)
-        layers = _layer_roots(arguments)
-        my = next((r for n,r in layers if n == 'my_data'), None) or os.path.dirname(full)
-        os.makedirs(my, exist_ok=True)
-        base = os.path.splitext(os.path.basename(full))[0]
-        if fmt == 'csv':
-            out = os.path.join(my, base + '_export.csv'); df.to_csv(out, index=False)
-        elif fmt == 'parquet':
-            out = os.path.join(my, base + '_export.parquet'); df.to_parquet(out, index=False)
+
+        data = arguments.get('data', {})
+        filename = Path(arguments.get('filename', 'export.csv')).name
+        subfolder = arguments.get('subfolder', 'exports')
+        versioning = arguments.get('versioning', True)
+        include_index = arguments.get('include_index', False)
+
+        ext = Path(filename).suffix.lower()
+        fmt = arguments.get('format')
+        if not fmt:
+            fmt = 'parquet' if ext in ('.parquet', '.pq') else 'csv'
+
+        if isinstance(data, list):
+            rows = data
+        elif isinstance(data, dict):
+            rows = data.get('data', [])
         else:
-            return {'error': f'unsupported format {fmt}'}
-        return {'source': full, 'output': out, 'rows': len(df)}
-    except Exception as e:
-        return {'error': str(e), 'source': full}
+            rows = []
+        if not rows:
+            return {'error': 'data is empty — nothing to export.'}
+
+        df = pd.DataFrame(rows)
+
+        _, my_data, _ = get_roots(arguments)
+        if not my_data:
+            return {'error': 'my_data layer not available on worker context'}
+
+        folder = my_data / subfolder if subfolder else my_data
+        folder.mkdir(parents=True, exist_ok=True)
+        dest = folder / filename
+
+        archived_as = None
+        if dest.exists() and versioning:
+            ts = datetime.now(tz=timezone.utc).strftime('%Y-%m-%d_%H%M%S')
+            archive_name = f"{dest.stem}_{ts}{dest.suffix}"
+            shutil.copy2(str(dest), str(folder / archive_name))
+            dest.unlink()
+            archived_as = archive_name
+
+        try:
+            if fmt == 'parquet':
+                buf = io.BytesIO()
+                _df_to_pq(df, buf)
+                with open(dest, 'wb') as fh:
+                    fh.write(buf.getvalue())
+                size_bytes = len(buf.getvalue())
+            else:
+                csv_buf = io.StringIO()
+                df.to_csv(csv_buf, index=include_index, encoding='utf-8')
+                csv_text = csv_buf.getvalue()
+                with open(dest, 'w', encoding='utf-8') as fh:
+                    fh.write(csv_text)
+                size_bytes = len(csv_text.encode('utf-8'))
+        except Exception as exc:
+            return {'error': f'Export failed: {exc}'}
+
+        return {
+            'path':        str(dest),
+            'filename':    filename,
+            'format':      fmt,
+            'rows_written': len(df),
+            'size_bytes':  size_bytes,
+            'versioned':   archived_as is not None,
+            'archived_as': archived_as,
+            'written_at':  datetime.now(tz=timezone.utc).isoformat(),
+            '_source':     str(dest),
+        }
