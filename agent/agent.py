@@ -12,7 +12,7 @@ from .summariser import SummarisationMiddleware
 
 _MAX_HISTORY_CHARS = 800_000  # Hard fallback only — SummarisationMiddleware fires first at 180k tokens
 
-_DB_PATH = os.getenv('CHECKPOINT_DB_PATH', './sajhamcpserver/data/checkpoints.db')
+_DB_PATH = os.getenv("CHECKPOINT_DB_PATH", f"./{os.getenv("LEGACY_FORK_BASE","sajhamcpserver")}/data/checkpoints.db")
 
 class MessageTrimmer(AgentMiddleware):
     """Trims old messages before each model call to stay under Claude's 200k token limit."""

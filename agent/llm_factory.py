@@ -16,7 +16,7 @@ import json
 import os
 import pathlib
 
-_CONFIG_PATH = pathlib.Path(__file__).parent.parent / 'sajhamcpserver' / 'config' / 'llm_config.json'
+_CONFIG_PATH = pathlib.Path(__file__).parent.parent / os.getenv('LEGACY_FORK_BASE','sajhamcpserver') / 'config' / 'llm_config.json'
 
 
 def _load_file_config() -> dict:

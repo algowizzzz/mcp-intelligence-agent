@@ -11,7 +11,7 @@ import logging
 from pathlib import Path
 
 # SAJHA must run from its own directory — it uses relative paths for config/data
-SAJHA_DIR = Path(__file__).parent / 'sajhamcpserver'
+SAJHA_DIR = Path(__file__).parent / os.getenv('LEGACY_FORK_BASE','sajhamcpserver')
 os.chdir(SAJHA_DIR)
 sys.path.insert(0, str(SAJHA_DIR))
 

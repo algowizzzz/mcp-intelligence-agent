@@ -705,6 +705,46 @@
       ],
       "assigned_admins": [],
       "assigned_users": []
+    },
+    {
+      "worker_id": "w-5cd44941",
+      "name": "Isolation Test A",
+      "description": "",
+      "created_by": "risk_agent",
+      "created_at": "2026-05-18T03:14:06.115518Z",
+      "enabled": true,
+      "system_prompt": "test",
+      "domain_data_path": "./data/workers/w-5cd44941/domain_data",
+      "workflows_path": "./data/workers/w-5cd44941/workflows/verified",
+      "my_workflows_path": "./data/workers/w-5cd44941/workflows/my",
+      "templates_path": "./data/workers/w-5cd44941/templates",
+      "my_data_path": "./data/workers/w-5cd44941/my_data",
+      "common_data_path": "./data/common",
+      "enabled_tools": [
+        "*"
+      ],
+      "assigned_admins": [],
+      "assigned_users": []
+    },
+    {
+      "worker_id": "w-38d7ae5c",
+      "name": "Isolation Test B",
+      "description": "",
+      "created_by": "risk_agent",
+      "created_at": "2026-05-18T03:14:06.127138Z",
+      "enabled": true,
+      "system_prompt": "test",
+      "domain_data_path": "./data/workers/w-38d7ae5c/domain_data",
+      "workflows_path": "./data/workers/w-38d7ae5c/workflows/verified",
+      "my_workflows_path": "./data/workers/w-38d7ae5c/workflows/my",
+      "templates_path": "./data/workers/w-38d7ae5c/templates",
+      "my_data_path": "./data/workers/w-38d7ae5c/my_data",
+      "common_data_path": "./data/common",
+      "enabled_tools": [
+        "*"
+      ],
+      "assigned_admins": [],
+      "assigned_users": []
     }
   ]
 }

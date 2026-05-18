@@ -54,7 +54,7 @@ def _get_sajha_jwt() -> str:
 # Carries user_id, worker_id, domain_data_path, common_data_path for SAJHA headers + audit.
 _worker_ctx: ContextVar[dict] = ContextVar('worker_ctx', default={})
 
-_AUDIT_FILE = pathlib.Path('sajhamcpserver/data/audit/tool_calls.jsonl')
+_AUDIT_FILE = pathlib.Path(os.getenv("LEGACY_FORK_BASE","sajhamcpserver") + "/data/audit/tool_calls.jsonl")
 
 
 def _service_headers() -> dict:
@@ -108,7 +108,7 @@ def _worker_context_for_args() -> dict:
     ctx = _worker_ctx.get() or {}
     uid = ctx.get('user_id', '')
     repo_root = pathlib.Path(__file__).resolve().parent.parent
-    sajha_root = repo_root / 'sajhamcpserver'
+    sajha_root = repo_root / os.getenv("LEGACY_FORK_BASE","sajhamcpserver")
 
     def _abs(p: str) -> str:
         if not p:
@@ -219,7 +219,7 @@ def _truncate_result(result: dict, tool_name: str) -> dict:
 _DB_ENABLED = bool(os.getenv('DATABASE_URL'))
 if _DB_ENABLED:
     import sys as _sys
-    _sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / 'sajhamcpserver'))
+    _sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / os.getenv('LEGACY_FORK_BASE','sajhamcpserver')))
     from sajha.db import repo as _db_repo  # noqa: E402
 
 

@@ -263,7 +263,7 @@
       "user_name": "iso_user_a",
       "display_name": "iso_user_a",
       "avatar_initials": "I",
-      "password_hash": "$2b$12$joH1NnmSo3gMXzp/FGtnAOgbrvMyi8DmqQi8aUUsiTNBE5B8eIAFa",
+      "password_hash": "$2b$12$rXYVOevGhXoStPguNUxzWuSK7IAgHYCj4ddT71nncT3eoZwAgAUly",
       "role": "user",
       "worker_id": "w-test-iso-a",
       "tools": [
@@ -280,7 +280,7 @@
       "user_name": "iso_user_b",
       "display_name": "iso_user_b",
       "avatar_initials": "I",
-      "password_hash": "$2b$12$RCTgqhPlSLLS/mEuHFO70u3wNA29JP3u9HRCqXEUwvQwzV9gfFBnG",
+      "password_hash": "$2b$12$hoxEd52hneuN1oN8UXdlte9OvlNtWD89h9er647WOKjtZvbvsjjIO",
       "role": "user",
       "worker_id": "w-test-iso-b",
       "tools": [

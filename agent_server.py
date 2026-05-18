@@ -20,8 +20,12 @@ from agent.prompt import get_system_prompt
 from agent.tools import _service_headers, _worker_ctx, SAJHA_BASE, get_tools_for_worker, AGENT_TOOLS
 from agent.summariser import count_tokens_accurate
 
-_WORKFLOWS_DIR = pathlib.Path('sajhamcpserver/data/workflows')
-_UPLOADS_DIR   = pathlib.Path('sajhamcpserver/data/uploads')
+# REQ-17: legacy-fork base location. Default 'sajhamcpserver' (in-tree), can be
+# overridden to point at archived fork location after retirement (Story 10).
+_LEGACY_BASE = os.getenv('LEGACY_FORK_BASE', 'sajhamcpserver')
+
+_WORKFLOWS_DIR = pathlib.Path(f'{_LEGACY_BASE}/data/workflows')
+_UPLOADS_DIR   = pathlib.Path(f'{_LEGACY_BASE}/data/uploads')
 # _METADATA_FILE is now per-worker — resolved in _read/_write_metadata via worker_id.
 # This sentinel is kept for local single-worker dev fallback only.
 _METADATA_FILE = _WORKFLOWS_DIR / '.metadata.json'
@@ -30,14 +34,14 @@ _METADATA_FILE = _WORKFLOWS_DIR / '.metadata.json'
 def _worker_metadata_file(worker_id: str) -> pathlib.Path:
     """Return per-worker metadata file path (local dev fallback only)."""
     if worker_id:
-        return pathlib.Path(f'sajhamcpserver/data/workers/{worker_id}/workflows/.metadata.json')
+        return pathlib.Path(f"{_LEGACY_BASE}/data/workers/{worker_id}/workflows/.metadata.json")
     return _METADATA_FILE
 
 # SSE writer ContextVar — set per-request so sub_agent_tool can forward events
 # into the active SSE stream without needing a reference to the stream generator.
 from agent.sub_agent_tool import set_stream_writer as _set_stream_writer
 
-_sys.path.insert(0, str(pathlib.Path(__file__).parent / 'sajhamcpserver'))
+_sys.path.insert(0, str(pathlib.Path(__file__).parent / _LEGACY_BASE))
 from sajha.tools.impl.fs_index import build_index, get_index
 from sajha.worker_repository import WorkerRepository as _WorkerRepository, PostgresWorkerRepository as _PGWorkerRepository
 from sajha.storage import storage as _storage
@@ -49,8 +53,8 @@ if _DB_ENABLED:
     from sajha.db import repo as _db_repo
 
 _JWT_SECRET = os.getenv('JWT_SECRET', 'sajha-dev-secret-change-in-prod')
-_SAJHA_USERS_FILE  = pathlib.Path('sajhamcpserver/config/users.json')
-_SAJHA_WORKERS_FILE = pathlib.Path('sajhamcpserver/config/workers.json')
+_SAJHA_USERS_FILE  = pathlib.Path(f"{_LEGACY_BASE}/config/users.json")
+_SAJHA_WORKERS_FILE = pathlib.Path(f"{_LEGACY_BASE}/config/workers.json")
 
 _STORAGE_BACKEND = _os.environ.get('STORAGE_BACKEND', 'local')
 
@@ -300,7 +304,7 @@ def _seed_worker_folders(worker_id: str):
     """Create the full scoped folder tree for a new worker (G-07). Skipped in S3 mode."""
     if _S3_MODE:
         return  # S3 has no directories; folders are virtual
-    base = pathlib.Path(f'sajhamcpserver/data/workers/{worker_id}')
+    base = pathlib.Path(f"{_LEGACY_BASE}/data/workers/{worker_id}")
     for sub in [
         'domain_data',
         'workflows/verified', 'workflows/my',
@@ -313,8 +317,8 @@ def _clone_worker_folder(src_id: str, dst_id: str):
     """Clone source worker's folder to destination, excluding my_data (user-owned, REQ-MD-01)."""
     if _S3_MODE:
         return  # S3 mode: worker templates/domain data cloning handled separately if needed
-    src = pathlib.Path(f'sajhamcpserver/data/workers/{src_id}')
-    dst = pathlib.Path(f'sajhamcpserver/data/workers/{dst_id}')
+    src = pathlib.Path(f"{_LEGACY_BASE}/data/workers/{src_id}")
+    dst = pathlib.Path(f"{_LEGACY_BASE}/data/workers/{dst_id}")
     if src.exists():
         shutil.copytree(str(src), str(dst),
                         ignore=shutil.ignore_patterns('my_data'),  # exclude entire my_data tree
@@ -323,7 +327,7 @@ def _clone_worker_folder(src_id: str, dst_id: str):
     (dst / 'my_data').mkdir(parents=True, exist_ok=True)
 
 
-_DATA_ROOT     = pathlib.Path('sajhamcpserver/data')
+_DATA_ROOT     = pathlib.Path(f"{_LEGACY_BASE}/data")
 _COMMON_DATA   = _DATA_ROOT / 'common'
 _AUDIT_LOG     = _DATA_ROOT / 'audit' / 'tool_calls.jsonl'
 
@@ -387,7 +391,7 @@ def _resolve_worker_path(worker: dict, section: str, rel: str = '') -> pathlib.P
     All paths are relative to sajhamcpserver/ as the base directory.
     Creates the root if it doesn't exist (lazy mkdir on first access).
     """
-    base = pathlib.Path('sajhamcpserver')
+    base = pathlib.Path(_LEGACY_BASE)
     dd = worker.get('domain_data_path', './data/domain_data')
     mapping = {
         'domain_data':        dd,
@@ -449,7 +453,7 @@ def _assign_user_to_worker(user_id: str, worker_id: str | None, role: str | None
                     if _S3_MODE:
                         pass  # S3: directories are virtual; skip mkdir
                     else:
-                        user_dir = (pathlib.Path('sajhamcpserver') / raw_my_data.lstrip('./') / user_id).resolve()
+                        user_dir = (pathlib.Path(_LEGACY_BASE) / raw_my_data.lstrip('./') / user_id).resolve()
                         user_dir.mkdir(parents=True, exist_ok=True)
                 except Exception as _e:
                     import logging as _logging
@@ -484,7 +488,7 @@ def _admin_section_roots_for_worker(worker: dict) -> dict:
       my_data    → my_data_path    (canonical)
     common is writable by admin+ and read-only for users (REQ-10).
     """
-    base = pathlib.Path('sajhamcpserver')
+    base = pathlib.Path(_LEGACY_BASE)
     dd     = base / worker.get('domain_data_path',  './data/domain_data').lstrip('./')
     wf     = base / worker.get('workflows_path',     './data/workflows/verified').lstrip('./')
     mywf   = base / worker.get('my_workflows_path',  './data/workflows/my').lstrip('./')
@@ -620,7 +624,7 @@ async def _lifespan(app: FastAPI):
         except Exception as e:
             print(f'WARNING: PostgresSaver failed ({e}), falling back to SQLite checkpointer')
     # SQLite fallback — local dev without DATABASE_URL
-    _db_path = os.getenv('CHECKPOINT_DB_PATH', './sajhamcpserver/data/checkpoints.db')
+    _db_path = os.getenv("CHECKPOINT_DB_PATH", f"./{_LEGACY_BASE}/data/checkpoints.db")
     pathlib.Path(_db_path).parent.mkdir(parents=True, exist_ok=True)
     async with AsyncSqliteSaver.from_conn_string(_db_path) as cp:
         _agent_module.set_checkpointer(cp)
@@ -961,7 +965,7 @@ async def super_delete_worker(worker_id: str, req: DeleteWorkerRequest, _: dict 
     if req.confirm_name != w['name']:
         raise HTTPException(status_code=400, detail='Confirmation name does not match worker name')
     # Delete folder tree
-    base = pathlib.Path(f'sajhamcpserver/data/workers/{worker_id}')
+    base = pathlib.Path(f"{_LEGACY_BASE}/data/workers/{worker_id}")
     if _S3_MODE:
         for rel in _storage.list_prefix(str(base)):
             _storage.delete(str(base).rstrip('/') + '/' + rel)
@@ -1118,7 +1122,7 @@ async def super_reset_password(user_id: str, req: ResetPasswordRequest = ResetPa
 
 # ── Super Admin — LLM Provider Config ─────────────────────────────────────────
 
-_LLM_CONFIG_FILE = pathlib.Path('sajhamcpserver/config/llm_config.json')
+_LLM_CONFIG_FILE = pathlib.Path(f"{_LEGACY_BASE}/config/llm_config.json")
 
 _LLM_DEFAULTS = {
     'anthropic':  {'model': 'claude-sonnet-4-20250514', 'max_tokens': 8192},
@@ -1274,7 +1278,7 @@ def _get_admin_worker(payload: dict) -> dict:
 @app.get('/api/mcp/tools')
 async def mcp_tools_list(_: dict = Depends(require_admin)):
     """Return tool list built from SAJHA config/tools JSON files — no live SAJHA needed."""
-    tools_dir = pathlib.Path('sajhamcpserver/config/tools')
+    tools_dir = pathlib.Path(f"{_LEGACY_BASE}/config/tools")
     tools = []
     for f in sorted(tools_dir.glob('*.json')):
         try:
@@ -1537,7 +1541,7 @@ async def upload_file(file: UploadFile = File(...), payload: dict = Depends(requ
             # pathlib.Path() / .resolve() would prepend the container cwd and corrupt the key.
             user_dir = raw_my_data.rstrip('/') + '/' + user_id
         else:
-            my_data_dir = (pathlib.Path('sajhamcpserver') / raw_my_data.lstrip('./')).resolve()
+            my_data_dir = (pathlib.Path(_LEGACY_BASE) / raw_my_data.lstrip('./')).resolve()
             user_dir = my_data_dir / user_id
             user_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1566,7 +1570,7 @@ async def upload_file(file: UploadFile = File(...), payload: dict = Depends(requ
             now_iso = datetime.fromtimestamp(stat.st_mtime, tz=_tz.utc).isoformat()
         # path: in S3 mode strip leading './' so client sees 'data/workers/.../hello_test.py'
         rel_path = (dest.lstrip('./') if _S3_MODE
-                    else str(dest.relative_to(pathlib.Path('sajhamcpserver').resolve())).replace('\\', '/'))
+                    else str(dest.relative_to(pathlib.Path(_LEGACY_BASE).resolve())).replace('\\', '/'))
         return JSONResponse(content={
             'success': True,
             'filename': safe_name,
@@ -1635,7 +1639,7 @@ async def list_workspace_files(payload: dict = Depends(require_jwt)):
     if _S3_MODE:
         user_dir = raw.rstrip('/') + '/' + payload['user_id']
     else:
-        base = pathlib.Path('sajhamcpserver')
+        base = pathlib.Path(_LEGACY_BASE)
         user_dir = (base / raw.lstrip('./')).resolve() / payload['user_id']
     files = []
     if _S3_MODE:
@@ -1809,7 +1813,7 @@ def _resolve_fs_path(worker: dict, user_id: str, section: str, rel: str = ''):
                     raise HTTPException(status_code=400, detail='Path traversal not allowed')
                 return root_str.rstrip('/') + '/' + rel_clean
             return root_str
-        base = pathlib.Path('sajhamcpserver')
+        base = pathlib.Path(_LEGACY_BASE)
         root = (base / raw.lstrip('./')).resolve() / user_id
         root.mkdir(parents=True, exist_ok=True)
         if rel:
@@ -2124,7 +2128,7 @@ async def fs_mark_file_used(section: str, request: Request, path: str = '', payl
         except Exception:
             pass
     else:
-        audit_path = pathlib.Path('sajhamcpserver/data/audit/file_used.jsonl')
+        audit_path = pathlib.Path(f"{_LEGACY_BASE}/data/audit/file_used.jsonl")
         audit_path.parent.mkdir(parents=True, exist_ok=True)
         with open(audit_path, 'a') as f:
             f.write(json.dumps({
@@ -2188,7 +2192,7 @@ async def fs_delete_folder(section: str, path: str = '', payload: dict = Depends
 def _resolve_charts_root(worker: dict, user_id: str) -> pathlib.Path:
     """Resolve per-user charts directory from worker my_data_path."""
     raw = worker.get('my_data_path', './data/uploads')
-    base = pathlib.Path('sajhamcpserver')
+    base = pathlib.Path(_LEGACY_BASE)
     return (base / raw.lstrip('./')).resolve() / user_id / 'charts'
 
 
@@ -3345,7 +3349,7 @@ async def worker_tools_list(worker_id: str, payload: dict = Depends(require_jwt)
     if not w:
         raise HTTPException(status_code=404, detail='Worker not found')
     enabled = w.get('enabled_tools', ['*'])
-    tools_dir = pathlib.Path('sajhamcpserver/config/tools')
+    tools_dir = pathlib.Path(f"{_LEGACY_BASE}/config/tools")
     tools = []
     for f in sorted(tools_dir.glob('*.json')):
         try:
@@ -3496,7 +3500,7 @@ async def super_audit_log(
 
 # ── Connectors API ────────────────────────────────────────────────────────────
 
-_CONNECTORS_FILE = pathlib.Path('sajhamcpserver/config/connectors.json')
+_CONNECTORS_FILE = pathlib.Path(f"{_LEGACY_BASE}/config/connectors.json")
 
 _CONNECTOR_DEFAULTS = [
     {
