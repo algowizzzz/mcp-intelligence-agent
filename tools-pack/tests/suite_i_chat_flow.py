@@ -163,13 +163,21 @@ def main() -> int:
     log('SKIP', 'I-08/I-09 loop detection',
         'requires intentional LLM loop in a tool-using prompt; non-deterministic with LLM-driven agents')
 
-    # I-10 / I-11 — Token budget
+    # I-10 / I-11 — Token budget — worker w-test-iso-a is configured with
+    # max_tokens_per_query=500 but probing budget events requires holding an
+    # SSE stream long enough for them to fire, which is LLM-pace-dependent
+    # and flaky in a unit-test. Test infrastructure is in place; mark SKIP.
     print('\n-- I-10 / I-11: token budget warning + exceeded --')
-    log('SKIP', 'I-10/I-11 token budget', 'worker config has no max_tokens_per_query set in this fixture')
+    log('SKIP', 'I-10/I-11 token budget',
+        'worker config wired (max_tokens_per_query=500) but probe is LLM-pace-dependent — manual verification recommended')
 
-    # I-12 / I-13 / I-14 — HITL
+    # I-12 / I-13 / I-14 — HITL — worker w-test-iso-a has hitl_triggers=['file_read','delete_*']
+    # but the HumanInTheLoopMiddleware is OPTIONAL — not added to the default stack
+    # by agent/agent.py:create_agent_for_worker, so even configured triggers don't fire
+    # until the worker is created with extra_middleware=HumanInTheLoopMiddleware.
     print('\n-- I-12 / I-13 / I-14: HITL approval flow --')
-    log('SKIP', 'I-12/I-13/I-14 HITL', 'worker has no hitl_triggers configured in this fixture')
+    log('SKIP', 'I-12/I-13/I-14 HITL',
+        'fixture wired (hitl_triggers set) but HumanInTheLoopMiddleware is optional and not in default middleware stack')
 
     # I-15 — Tool error handled gracefully
     print('\n-- I-15: tool error handled gracefully --')
