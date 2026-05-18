@@ -187,4 +187,4 @@ Status quo. Pin our v2.9.8 fork; accept that we won't benefit from upstream's 50
 - Upstream API surface: `sajha/routes/api_routes.py`, `mcp_routes.py`
 - Our fork: `mcp-intelligence-agent/sajhamcpserver/` (v2.9.8)
 - Our agent SAJHA caller: `agent/tools.py:_service_headers()`, `_call_sajha()`
-- Companion docs: [REQ-17_PM_Brief.md](REQ-17_PM_Brief.md), [REQ-17_Jr_Dev_Stories.md](REQ-17_Jr_Dev_Stories.md)
+- Companion docs: [REQ-17_PM_Brief.md](REQ-17_PM_Brief.md), [REQ-17_Jr_Dev_Stories.md](REQ-17_Jr_Dev_Stories.md), [REQ-17_Regression_Test_Suite.md](REQ-17_Regression_Test_Suite.md)

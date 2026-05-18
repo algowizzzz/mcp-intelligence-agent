@@ -141,6 +141,7 @@ Handover entry point: platform purpose, run commands, folder map (01–06). Incl
 | [REQ-17_SAJHA_Upstream_Sync.md](requirements/pending/REQ-17_SAJHA_Upstream_Sync.md) | **Pending — Analysis & Planning** (2026-05-17). Adopt upstream `ajsinha/sajhamcpserver` v5.0.0 as-is; retire embedded fork; custom tools and worker-isolation move into a tools-pack drop-in. Recommends Option A (strict adoption). ~2 weeks effort. |
 | [REQ-17_PM_Brief.md](requirements/pending/REQ-17_PM_Brief.md) | PM-facing brief for REQ-17: business case, time/risk estimate, decision points, what changes for users. |
 | [REQ-17_Jr_Dev_Stories.md](requirements/pending/REQ-17_Jr_Dev_Stories.md) | 11 sequenced stories (0–10) implementing REQ-17, starting with a 1-day plugin-system spike. Story 7 (worker-isolation e2e test) is the merge gate. |
+| [REQ-17_Regression_Test_Suite.md](requirements/pending/REQ-17_Regression_Test_Suite.md) | Holistic full-stack regression suite (~190 test items across auth/users/workers/prompts/connectors/LLM/files/tools/chat/workflows/UI/audit/edge cases) for pre-migration baseline + post-migration validation. Worker-isolation tests are hard gate. |
 
 ---
 
