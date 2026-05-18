@@ -1,6 +1,8 @@
 # MCP Intelligence Agent — Developer Reference
 
 > For first-time local setup (venv, env vars, LLM provider config, known Postgres gotcha), see [LOCAL_DEV_SETUP.md](LOCAL_DEV_SETUP.md). For a per-file index of every active doc, see [DOCS_INDEX.md](DOCS_INDEX.md). For older UAT scripts, ad-hoc tests, data-ingestion scripts, and legacy Word docs, see [archive/INDEX.md](archive/INDEX.md).
+>
+> **REQ-17 (upstream SAJHA cutover) is in progress.** The active SAJHA today is still our embedded `sajhamcpserver/` fork. Upstream lives as a git submodule at `sajhamcpserver-upstream/` (v5.0.0 pinned), with our custom tools overlaid via `tools-pack/`. Switch the agent to upstream by setting env `SAJHA_AUTH_MODE=jwt` + `SAJHA_BASE_URL=http://localhost:3002` and starting `python sajhamcpserver-upstream/run_server.py` with `SAJHA_CONFIG_TOOLS_DIR=$(pwd)/tools-pack/configs PYTHONPATH=$(pwd)/tools-pack`. See [requirements/pending/REQ-17_SAJHA_Upstream_Sync.md](requirements/pending/REQ-17_SAJHA_Upstream_Sync.md) for full status.
 
 ## Architecture
 Three-layer system:

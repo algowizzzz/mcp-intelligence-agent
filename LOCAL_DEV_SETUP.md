@@ -1,5 +1,8 @@
 # Local Dev Setup & Bug Fix Notes
 
+> **REQ-17 update (2026-05-17):** This guide still describes running our embedded SAJHA fork (`sajhamcpserver/`). To run against upstream + tools-pack instead, see the "Running on upstream SAJHA" section at the bottom of this file.
+
+
 **Session:** 2026-05-15
 **Goal:** Get the app running locally end-to-end on macOS, switch LLM to xAI Grok, and fix a file-discovery bug.
 
@@ -192,4 +195,68 @@ If you re-clone the repo on a new machine, you need to redo steps 1–5 above. N
 commit b307bc3
 Author: Saad Ahmed <saadahmed@example.com>
 chore: reset test_user dev credentials
+```
+
+---
+
+## Running on upstream SAJHA (REQ-17 in progress)
+
+The upstream SAJHA server (`sajhamcpserver-upstream/`, v5.0.0) is a git submodule, never modified. Our 31 custom tools live in `tools-pack/` and load into upstream via env vars.
+
+### One-time submodule init
+
+```bash
+git submodule update --init --recursive
+./venv/bin/pip install pydantic-settings sse-starlette "python-jose[cryptography]"
+```
+
+### Run upstream + tools-pack
+
+```bash
+# Terminal 1 — upstream SAJHA on :3002 with our tools
+cd sajhamcpserver-upstream
+SAJHA_CONFIG_TOOLS_DIR=$(cd ../tools-pack/configs && pwd) \
+PYTHONPATH=$(cd ../tools-pack && pwd) \
+SAJHA_SERVER_PORT=3002 \
+  ../venv/bin/python run_server.py
+
+# Terminal 2 — agent on :8000, talks to upstream via JWT
+cd ..
+SAJHA_AUTH_MODE=jwt \
+SAJHA_ADMIN_USER=admin \
+SAJHA_ADMIN_PASS=admin123 \
+  ./venv/bin/python -m uvicorn agent_server:app --host 127.0.0.1 --port 8000
+```
+
+### What's different vs the fork
+
+- **Auth:** agent logs in to upstream as admin once, caches JWT (env `SAJHA_AUTH_MODE=jwt`). API-key auth doesn't grant tool access in upstream's design (`is_admin=False` hardcoded for apikey path).
+- **Tool count:** today, only 1 tool (`document_search` aka BM25) has been ported and is loaded. The remaining ~30 are in flight per REQ-17 Story 4.
+- **Worker context:** flows from the agent to upstream tools via `arguments['_worker_context']` (a dict — mapped from our X-Worker-* HTTP headers). Tools read it via `tools_pack_lib.worker_ctx.get_data_layers`.
+- **Upstream's 500 built-in tools:** disabled (we override `SAJHA_CONFIG_TOOLS_DIR` to point at our tools-pack only). Per PM decision, the 500 tools will be reviewed later.
+
+### Docker (preview — not yet active)
+
+`Dockerfile.upstream` + `supervisord.upstream.conf` define the production-style single-container deployment. They're committed but not yet wired into `docker-compose.prod.yml`. See [requirements/pending/REQ-17_SAJHA_Upstream_Sync.md](requirements/pending/REQ-17_SAJHA_Upstream_Sync.md) Story 8.
+
+### Validating
+
+```bash
+# Smoke
+curl -s http://localhost:3002/health
+curl -s http://localhost:8000/health
+
+# JWT login as upstream admin
+curl -s -X POST http://localhost:3002/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"admin","password":"admin123"}'
+
+# Verify tool registered
+curl -s -X POST http://localhost:3002/mcp \
+  -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":"1","method":"tools/list","params":{}}'
+
+# Multi-worker isolation gate (writes test fixtures, runs gate)
+./venv/bin/python tools-pack/tests/test_worker_isolation.py
 ```
