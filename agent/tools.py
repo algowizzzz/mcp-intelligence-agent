@@ -16,6 +16,40 @@ SAJHA_BASE = os.getenv('SAJHA_BASE_URL', 'http://localhost:3002')
 # Set SAJHA_API_KEY in .env to the full-access API key from sajhamcpserver/config/apikeys.json.
 _SAJHA_API_KEY = os.getenv('SAJHA_API_KEY', 'sja_full_access_admin')
 
+# REQ-17: Upstream SAJHA hardcodes is_admin=False for API-key auth, so it cannot
+# grant tool access. We login as an admin user and cache a JWT instead.
+# These env vars are only used when SAJHA_AUTH_MODE=jwt (i.e. against upstream).
+_SAJHA_AUTH_MODE = os.getenv('SAJHA_AUTH_MODE', 'apikey')   # 'apikey' (legacy fork) or 'jwt' (upstream)
+_SAJHA_ADMIN_USER = os.getenv('SAJHA_ADMIN_USER', 'admin')
+_SAJHA_ADMIN_PASS = os.getenv('SAJHA_ADMIN_PASS', 'admin123')
+_SAJHA_JWT_CACHE: dict = {'token': '', 'expires_at': 0}
+
+
+def _get_sajha_jwt() -> str:
+    """REQ-17: Login as admin once, cache JWT, refresh on expiry.
+    Only used when SAJHA_AUTH_MODE=jwt (upstream pathway)."""
+    import time as _time
+    now = _time.time()
+    if _SAJHA_JWT_CACHE['token'] and now < _SAJHA_JWT_CACHE['expires_at'] - 60:
+        return _SAJHA_JWT_CACHE['token']
+    try:
+        import httpx as _httpx
+        r = _httpx.post(
+            f'{SAJHA_BASE}/api/auth/login',
+            json={'user_id': _SAJHA_ADMIN_USER, 'password': _SAJHA_ADMIN_PASS},
+            timeout=10.0, trust_env=False,
+        )
+        r.raise_for_status()
+        data = r.json()
+        token = data.get('token') or data.get('access_token') or ''
+        if token:
+            _SAJHA_JWT_CACHE['token'] = token
+            _SAJHA_JWT_CACHE['expires_at'] = now + 3000  # token has 1hr life; refresh at 50min
+            return token
+    except Exception as e:
+        print(f'WARNING: SAJHA JWT login failed: {e}; falling back to API key')
+    return ''
+
 # Per-request worker context — set by agent_server before each agent invocation.
 # Carries user_id, worker_id, domain_data_path, common_data_path for SAJHA headers + audit.
 _worker_ctx: ContextVar[dict] = ContextVar('worker_ctx', default={})
@@ -30,10 +64,14 @@ def _service_headers() -> dict:
     We send both so the call works against either our legacy fork or upstream.
     """
     ctx = _worker_ctx.get()
-    headers = {
-        'Authorization': _SAJHA_API_KEY,   # legacy fork compatibility
-        'X-API-Key': _SAJHA_API_KEY,        # upstream v5.0.0 expects this
-    }
+    if _SAJHA_AUTH_MODE == 'jwt':
+        jwt = _get_sajha_jwt()
+        headers = {'Authorization': f'Bearer {jwt}'} if jwt else {'X-API-Key': _SAJHA_API_KEY}
+    else:
+        headers = {
+            'Authorization': _SAJHA_API_KEY,   # legacy fork — bare key as Authorization
+            'X-API-Key': _SAJHA_API_KEY,        # upstream v5.0.0 expects this header
+        }
     if ctx:
         if ctx.get('worker_id'):
             headers['X-Worker-Id'] = ctx['worker_id']
@@ -64,20 +102,35 @@ def _worker_context_for_args() -> dict:
     Upstream's tool.execute() only receives `arguments` — it has no access to HTTP
     headers. So we embed worker scope inside arguments under a `_worker_context` key.
     Our tools-pack tools read from this dict via tools_pack_lib.worker_ctx.get_data_layers().
+
+    Paths are converted to absolute so they resolve correctly regardless of upstream's CWD.
     """
     ctx = _worker_ctx.get() or {}
     uid = ctx.get('user_id', '')
+    repo_root = pathlib.Path(__file__).resolve().parent.parent
+    sajha_root = repo_root / 'sajhamcpserver'
+
+    def _abs(p: str) -> str:
+        if not p:
+            return ''
+        path = pathlib.Path(p)
+        if path.is_absolute():
+            return str(path)
+        # Strip leading ./ then resolve against sajhamcpserver/ where worker data lives
+        p_clean = p.lstrip('./').lstrip('/')
+        return str(sajha_root / p_clean)
+
     my_data = ctx.get('my_data_path', '')
     if my_data and uid:
         my_data = my_data.rstrip('/') + '/' + uid
     return {
         'worker_id':         ctx.get('worker_id', ''),
         'user_id':           uid,
-        'domain_data_path':  ctx.get('domain_data_path', ''),
-        'common_data_path':  ctx.get('common_data_path', ''),
-        'my_data_path':      my_data,
-        'workflows_path':    ctx.get('workflows_path', ''),
-        'my_workflows_path': ctx.get('my_workflows_path', ''),
+        'domain_data_path':  _abs(ctx.get('domain_data_path', '')),
+        'common_data_path':  _abs(ctx.get('common_data_path', '')),
+        'my_data_path':      _abs(my_data),
+        'workflows_path':    _abs(ctx.get('workflows_path', '')),
+        'my_workflows_path': _abs(ctx.get('my_workflows_path', '')),
     }
 
 
@@ -393,9 +446,17 @@ def discover_sajha_tools() -> list:
             # trust_env=False prevents httpx from picking up system SOCKS/HTTP proxy env vars.
             # Without this, if ALL_PROXY or HTTPS_PROXY is set to a socks5:// URL and the
             # 'socksio' package is not installed, tool discovery fails silently.
+            # REQ-17: upstream uses /mcp not /api/mcp, plus JWT or X-API-Key
+            if _SAJHA_AUTH_MODE == 'jwt':
+                jwt = _get_sajha_jwt()
+                disc_headers = {'Authorization': f'Bearer {jwt}'} if jwt else {'X-API-Key': _SAJHA_API_KEY}
+                disc_path = '/mcp'
+            else:
+                disc_headers = {'Authorization': _SAJHA_API_KEY, 'X-API-Key': _SAJHA_API_KEY}
+                disc_path = '/api/mcp'
             list_r = _httpx.post(
-                f'{SAJHA_BASE}/api/mcp',
-                headers={'Authorization': _SAJHA_API_KEY},
+                f'{SAJHA_BASE}{disc_path}',
+                headers=disc_headers,
                 json={'jsonrpc': '2.0', 'id': '1', 'method': 'tools/list', 'params': {}},
                 timeout=10.0,
                 trust_env=False,
