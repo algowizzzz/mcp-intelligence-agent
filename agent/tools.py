@@ -439,7 +439,9 @@ def discover_sajha_tools() -> list:
     import httpx as _httpx
     import time as _time
 
-    _MIN_EXPECTED_TOOLS = 30  # SAJHA should always serve more than this
+    # SAJHA should always serve a meaningful set; lower threshold post-REQ-17 since
+    # upstream's tools/list may filter some entries (e.g. those without descriptions).
+    _MIN_EXPECTED_TOOLS = 5
 
     for attempt in range(6):
         try:

@@ -1,0 +1,39 @@
+name: verify tools-pack
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools-pack/**'
+      - 'sajhamcpserver-upstream'
+  pull_request:
+    paths:
+      - 'tools-pack/**'
+      - 'sajhamcpserver-upstream'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install upstream deps
+        run: |
+          pip install --quiet \
+            -r sajhamcpserver-upstream/requirements.txt \
+            -r tools-pack/requirements.txt \
+            pydantic-settings sse-starlette "python-jose[cryptography]"
+      - name: Verify all tool imports compile + extend BaseMCPTool
+        env:
+          PYTHONPATH: tools-pack:sajhamcpserver-upstream
+        run: python tools-pack/tests/verify_imports.py
+      - name: Verify upstream submodule is unmodified
+        run: |
+          git -C sajhamcpserver-upstream diff --quiet || (
+            echo "::error::Upstream submodule has uncommitted changes."
+            git -C sajhamcpserver-upstream diff --stat
+            exit 1
+          )
