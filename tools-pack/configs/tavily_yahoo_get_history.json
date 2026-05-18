@@ -1,0 +1,16 @@
+{
+  "name": "yahoo_get_history",
+  "implementation": "tools_pack_impl.tavily_yahoo_get_history.TavilyYahooGetHistory",
+  "description": "Retrieve historical stock price summary via Tavily/Yahoo Finance",
+  "version": "2.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "_worker_context": {
+        "type": "object",
+        "description": "Injected by agent"
+      }
+    }
+  }
+}

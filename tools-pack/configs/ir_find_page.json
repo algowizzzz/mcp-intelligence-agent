@@ -1,0 +1,80 @@
+{
+  "name": "ir_find_page",
+  "implementation": "tools_pack_impl.ir_find_page.IRFindPageTool",
+  "description": "Find the investor relations page URL for any publicly traded company. Universal coverage via Tavily search \u2014 not limited to pre-configured companies.",
+  "version": "2.0.0",
+  "enabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "ticker": {
+        "type": "string",
+        "description": "Stock ticker symbol (e.g., AAPL, BMO, JPM, TSLA)"
+      },
+      "company_name": {
+        "type": "string",
+        "description": "Optional company name to improve search accuracy"
+      },
+      "_worker_context": {
+        "type": "object",
+        "description": "Injected by agent"
+      }
+    },
+    "required": [
+      "ticker"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "ticker": {
+        "type": "string"
+      },
+      "company_name": {
+        "type": "string"
+      },
+      "ir_page_url": {
+        "type": "string"
+      },
+      "success": {
+        "type": "boolean"
+      },
+      "sources": {
+        "type": "array"
+      }
+    }
+  },
+  "metadata": {
+    "author": "Ashutosh Sinha",
+    "category": "Financial Analysis",
+    "tags": [
+      "investor relations",
+      "IR page",
+      "URL",
+      "universal"
+    ],
+    "rateLimit": 30,
+    "cacheTTL": 86400,
+    "examples": [
+      {
+        "description": "Find Apple's IR page",
+        "input": {
+          "ticker": "AAPL"
+        }
+      },
+      {
+        "description": "Find Bank of Montreal's IR page",
+        "input": {
+          "ticker": "BMO",
+          "company_name": "Bank of Montreal"
+        }
+      },
+      {
+        "description": "Find JPMorgan's IR page",
+        "input": {
+          "ticker": "JPM"
+        }
+      }
+    ]
+  }
+}
